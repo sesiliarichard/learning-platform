@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teacher Login — ASAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+
+    <!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+    if (typeof window.supabase === 'undefined') {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
+    }
+</script>
+<script src="supabase-config.js"></script>
+
+<script>
+    const db = supabaseClient;
+</script>
+<script src="auth.js"></script>  
+<style>body{display:none}</style>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy:  #0d1b3e;
+            --sky:   #29abe2;
+            --sky2:  #1a6fa8;
+            --sky3:  #0d4f7c;
+            --muted: #6b8caa;
+            --light: #f8faff;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #0d1b3e 0%, #1a6fa8 60%, #29abe2 100%);
+        }
+
+        .wrapper {
+            display: flex; width: 100%; max-width: 1100px;
+            min-height: 640px; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 32px 80px rgba(13,27,62,0.6);
+        }
+
+        /* ── LEFT PANEL ────────────────────────────── */
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(160deg, var(--navy) 0%, var(--sky3) 55%, var(--sky2) 100%);
+            padding: 56px 44px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+        }
+        /* Decorative circle */
+        .left-panel::before {
+            content: ''; position: absolute;
+            width: 320px; height: 320px; border-radius: 50%;
+            background: rgba(41,171,226,0.08);
+            bottom: -80px; right: -80px;
+        }
+        .left-panel::after {
+            content: ''; position: absolute;
+            width: 160px; height: 160px; border-radius: 50%;
+            background: rgba(255,255,255,0.03);
+            top: 50px; left: -50px;
+        }
+
+        /* Brand */
+        .brand {
+            display: flex; align-items: center; gap: 14px;
+            position: relative; z-index: 1;
+        }
+        .brand-logo {
+            width: 56px; height: 56px; border-radius: 14px;
+            overflow: hidden; background: white; flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .brand-text h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 18px; font-weight: 800; color: white;
+        }
+        .brand-text p { font-size: 11px; color: #93c5fd; margin-top: 3px; }
+
+        /* Mid */
+        .left-mid { position: relative; z-index: 1; }
+        .left-mid h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 28px; font-weight: 800;
+            color: white; line-height: 1.2; margin-bottom: 12px;
+        }
+        .left-mid h2 span { color: var(--sky); }
+        .left-mid p { font-size: 13px; color: #93c5fd; line-height: 1.7; margin-bottom: 24px; }
+
+        .features-list { list-style: none; position: relative; z-index: 1; }
+        .features-list li {
+            display: flex; align-items: center; gap: 11px;
+            padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+            font-size: 13px; color: #bfdbfe;
+        }
+        .features-list li:last-child { border-bottom: none; }
+        .features-list i { color: var(--sky); font-size: 13px; width: 16px; flex-shrink: 0; }
+
+        .left-foot { font-size: 11px; color: #4b7fa8; position: relative; z-index: 1; }
+
+        /* ── RIGHT PANEL ───────────────────────────── */
+        .right-panel {
+            flex: 1.1; background: var(--light);
+            padding: 56px 48px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+
+        /* Teacher badge */
+        .teacher-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(41,171,226,0.12); color: var(--sky2);
+            border: 1.5px solid rgba(41,171,226,0.3);
+            border-radius: 20px; padding: 5px 14px;
+            font-size: 11px; font-weight: 700;
+            margin-bottom: 20px; width: fit-content;
+            font-family: 'Syne', sans-serif;
+        }
+
+        .rp-hd { margin-bottom: 26px; }
+        .rp-hd h2 {
+            font-family: 'Syne', sans-serif;
+            font-size: 24px; font-weight: 800;
+            color: var(--navy); margin-bottom: 5px;
+        }
+        .rp-hd p { font-size: 13px; color: var(--muted); }
+
+        /* Alerts */
+        .alert {
+            padding: 11px 14px; border-radius: 10px;
+            margin-bottom: 16px; font-size: 12px;
+            display: none; align-items: center; gap: 9px;
+        }
+        .alert.show { display: flex; }
+        .alert.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .alert.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+
+        /* Form */
+        .fg { margin-bottom: 16px; }
+        .fl { display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+        .fi { position: relative; }
+        .fi .ico {
+            position: absolute; left: 13px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted); font-size: 13px; pointer-events: none;
+        }
+        .fc {
+            width: 100%; background: white;
+            border: 1.5px solid #c8dcea; border-radius: 10px;
+            color: var(--navy); font-family: 'DM Sans', sans-serif;
+            font-size: 13px; padding: 12px 13px 12px 38px;
+            outline: none; transition: all .2s;
+        }
+        .fc:focus {
+            border-color: var(--sky);
+            box-shadow: 0 0 0 3px rgba(41,171,226,0.15);
+        }
+        .fc::placeholder { color: #9bb5cc; }
+
+        .eye-btn {
+            position: absolute; right: 12px; top: 50%;
+            transform: translateY(-50%);
+            background: none; border: none;
+            color: var(--muted); cursor: pointer; font-size: 13px;
+        }
+        .eye-btn:hover { color: var(--sky); }
+
+        .forgot-row { display: flex; justify-content: flex-end; margin: -8px 0 14px; }
+        .link-btn {
+            background: none; border: none;
+            color: var(--sky); font-size: 12px;
+            cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600;
+        }
+        .link-btn:hover { color: var(--sky2); text-decoration: underline; }
+
+        /* Submit button */
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--sky) 0%, var(--sky2) 100%);
+            color: white; border: none; border-radius: 10px;
+            font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+            padding: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all .2s;
+            box-shadow: 0 4px 16px rgba(41,171,226,0.35);
+        }
+        .btn-submit:hover   { opacity: .92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(41,171,226,0.45); }
+        .btn-submit:active  { transform: translateY(0); }
+        .btn-submit:disabled{ opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Info note */
+        .info-note {
+            display: flex; align-items: flex-start; gap: 8px;
+            background: rgba(41,171,226,0.07); border: 1px solid rgba(41,171,226,0.2);
+            border-radius: 9px; padding: 10px 13px;
+            margin-top: 16px; font-size: 11px; color: var(--muted); line-height: 1.5;
+        }
+        .info-note i { color: var(--sky); font-size: 12px; flex-shrink: 0; margin-top: 1px; }
+
+        /* Portal links */
+        .portal-links {
+            text-align: center; margin-top: 16px;
+            font-size: 11px; color: #9bb5cc;
+            padding-top: 14px; border-top: 1px solid #ddeaf5;
+        }
+        .portal-links a {
+            color: var(--sky2); font-weight: 600; margin: 0 4px;
+            text-decoration: none;
+        }
+        .portal-links a:hover { color: var(--sky); }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin .8s linear infinite; display: inline-block; }
+
+        @media (max-width: 900px) {
+            .wrapper { flex-direction: column; max-width: 480px; min-height: auto; }
+            .left-panel { padding: 36px 28px; }
+            .right-panel { padding: 36px 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <!-- ── LEFT PANEL ──────────────────────────────────── -->
+    <div class="left-panel">
+
+        <!-- Brand -->
+        <div class="brand">
+            <div class="brand-logo">
+                <img src="images/logo.jpg" alt="ASAI Logo"/>
+            </div>
+            <div class="brand-text">
+                <h1>ASAI</h1>
+                <p>African Women's School of AI</p>
+            </div>
+        </div>
+
+        <!-- Mid content -->
+        <div class="left-mid">
+            <h2>Teacher <span>Portal</span></h2>
+            <p>Welcome back! Access your courses, grade student work, run live sessions, and manage your classes all in one place.</p>
+            <ul class="features-list">
+                <li><i class="fas fa-book-open"></i> View & manage your courses</li>
+                <li><i class="fas fa-users"></i> Monitor student progress</li>
+                <li><i class="fas fa-check-double"></i> Grade assignments & quizzes</li>
+                <li><i class="fas fa-broadcast-tower"></i> Host live sessions</li>
+                <li><i class="fas fa-comments"></i> Reply to student discussions</li>
+                <li><i class="fas fa-folder-open"></i> Access learning resources</li>
+            </ul>
+        </div>
+
+        <div class="left-foot">
+            © 2025 African Women's School of AI. All rights reserved.
+        </div>
+    </div>
+
+    <!-- ── RIGHT PANEL ─────────────────────────────────── -->
+    <div class="right-panel">
+
+        <!-- Teacher badge -->
+        <div class="teacher-badge">
+            <i class="fas fa-chalkboard-teacher"></i> Teacher Portal
+        </div>
+
+        <!-- LOGIN VIEW -->
+        <div id="loginView">
+            <div class="rp-hd">
+                <h2>Join Our Community</h2>
+                <p>Sign in with your teacher account to continue</p>
+            </div>
+
+            <!-- Alert -->
+            <div class="alert" id="alertBox">
+                <i class="fas fa-exclamation-circle"></i>
+                <span id="alertMsg"></span>
+            </div>
+
+            <form onsubmit="handleTeacherLogin(event)">
+
+                <div class="fg">
+                    <label class="fl">Email Address</label>
+                    <div class="fi">
+                        <i class="fas fa-envelope ico"></i>
+                        <input type="email" id="teacherEmail" class="fc"
+                            placeholder="email adress" required autocomplete="email"/>
+                    </div>
+                </div>
+
+                <div class="fg">
+                    <label class="fl">Password</label>
+                    <div class="fi">
+                        <i class="fas fa-lock ico"></i>
+                        <input type="password" id="teacherPassword" class="fc"
+                            placeholder="Enter your password" required autocomplete="current-password"/>
+                        <button type="button" class="eye-btn" onclick="togglePw()">
+                            <i class="fas fa-eye" id="eyeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="forgot-row">
+                    <button type="button" class="link-btn" onclick="showForgot()">
+                        Forgot password?
+                    </button>
+                </div>
+
+                <button type="submit" class="btn-submit" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span id="loginBtnText">Sign In</span>
+                </button>
+
+            </form>
+
+            <!-- Info note -->
+            <div class="info-note">
+                <i class="fas fa-info-circle"></i>
+                Teacher accounts are created by your Admin only. Contact your administrator if you need access.
+            </div>
+
+            <!-- Portal links -->
+            <div class="portal-links">
+                Are you a student? <a href="login.html">Student Login</a>
+                &nbsp;|&nbsp;
+                Admin? <a href="admin-login.html">Admin Portal</a>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD VIEW -->
+        <div id="forgotView" style="display:none">
+            <div class="rp-hd">
+                <h2>Reset Password</h2>
+                <p>We'll send a password reset link to your email</p>
+            </div>
+
+            <div class="alert" id="resetAlertBox">
+                <i class="fas fa-info-circle"></i>
+                <span id="resetAlertMsg"></span>
+            </div>
+
+            <form onsubmit="handleForgot(event)">
+                <div class="fg">
+                    <label class="fl">Your Teacher Email</label>
+                    <div class="fi">
+                        <i class="fas fa-envelope ico"></i>
+                        <input type="email" id="resetEmail" class="fc"
+                            placeholder="email adress" required/>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" id="resetBtn">
+                    <i class="fas fa-paper-plane"></i>
+                    <span id="resetBtnText">Send Reset Link</span>
+                </button>
+            </form>
+
+            <div style="text-align:center; margin-top:20px">
+                <button class="link-btn" onclick="showLogin()">← Back to Sign In</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    // ── AUTO-REDIRECT IF ALREADY LOGGED IN, OR SHOW PAGE ────
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { data: { session } } = await db.auth.getSession();
+
+        if (!session) {
+            // Not logged in — show the login page
+            document.body.style.display = 'flex';
+            return;
+        }
+
+        // Already logged in — check role
+        const { data: profile } = await db
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+        if (profile?.role === 'teacher' || profile?.role === 'instructor') {
+            // Already a teacher — go straight to dashboard
+            window.location.replace('Teachers.html');
+        } else if (profile?.role === 'admin') {
+            window.location.replace('admin.html');
+        } else if (profile?.role === 'student') {
+            window.location.replace('student-dashboard.html');
+        } else {
+            // Unknown role — show login
+            document.body.style.display = 'flex';
+        }
+
+    } catch (err) {
+        // Any error — just show the login page
+        document.body.style.display = 'flex';
+    }
+});
+
+    // ── HELPERS ──────────────────────────────────────────────
+    function showAlert(msg, type = 'error', boxId = 'alertBox', msgId = 'alertMsg') {
+        const box = document.getElementById(boxId);
+        const el  = document.getElementById(msgId);
+        el.textContent  = msg;
+        box.className   = `alert ${type} show`;
+        if (type === 'success') setTimeout(() => box.classList.remove('show'), 5000);
+    }
+    function hideAlert(boxId = 'alertBox') {
+        document.getElementById(boxId)?.classList.remove('show');
+    }
+
+    // ── PASSWORD TOGGLE ──────────────────────────────────────
+    function togglePw() {
+        const inp  = document.getElementById('teacherPassword');
+        const icon = document.getElementById('eyeIcon');
+        inp.type       = inp.type === 'password' ? 'text' : 'password';
+        icon.className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+    }
+
+    // ── SWITCH VIEWS ─────────────────────────────────────────
+    function showForgot() {
+        document.getElementById('loginView').style.display  = 'none';
+        document.getElementById('forgotView').style.display = 'block';
+        hideAlert();
+    }
+    function showLogin() {
+        document.getElementById('forgotView').style.display = 'none';
+        document.getElementById('loginView').style.display  = 'block';
+        hideAlert('resetAlertBox');
+    }
+
+    // ── TEACHER LOGIN ────────────────────────────────────────
+ async function handleTeacherLogin(e) {
+  e.preventDefault();
+  hideAlert();
+
+  const email    = document.getElementById('teacherEmail').value.trim();
+  const password = document.getElementById('teacherPassword').value;
+  const btn      = document.getElementById('loginBtn');
+  const btnText  = document.getElementById('loginBtnText');
+
+  btn.disabled = true;
+  btnText.innerHTML = '<i class="fas fa-spinner spin"></i> Signing in…';
+
+  try {
+    // 1️⃣ Auth
+    // Sign out any existing session first
+await db.auth.signOut();
+
+const { data, error } = await db.auth.signInWithPassword({ 
+    email, 
+    password 
+});
+if (error) throw error;
+
+    const userId = data.user.id;
+
+    // 2️⃣ Role check (SAFE)
+    const { data: profile, error: pErr } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    console.log('Profile found:', profile);
+console.log('Role is:', profile?.role);
+
+if (pErr) {
+    await db.auth.signOut();
+    throw new Error('Could not fetch profile. Contact admin.');
+}
+
+if (!profile) {
+    await db.auth.signOut();
+    throw new Error('No profile found for this account. Contact admin.');
+}
+
+if (profile.role !== 'teacher' && profile.role !== 'instructor') {
+    await db.auth.signOut();
+    throw new Error(`Access denied. Your role is "${profile.role}". This portal is for teachers only.`);
+}
+
+    // 3️⃣ Redirect ONCE
+    window.location.replace('Teachers.html');
+
+  } catch (err) {
+    let msg = err.message;
+    if (msg.includes('Invalid login credentials')) msg = 'Wrong email or password.';
+    if (msg.includes('Email not confirmed')) msg = 'Please confirm your email first.';
+
+    showAlert(msg, 'error');
+    btn.disabled = false;
+    btnText.innerHTML = 'Sign In';
+  }
+}
+
+    // ── FORGOT PASSWORD ──────────────────────────────────────
+    async function handleForgot(e) {
+        e.preventDefault();
+        hideAlert('resetAlertBox');
+
+        const email   = document.getElementById('resetEmail').value.trim();
+        const btn     = document.getElementById('resetBtn');
+        const btnText = document.getElementById('resetBtnText');
+
+        btn.disabled = true;
+        btnText.innerHTML = '<i class="fas fa-spinner spin"></i> Sending…';
+
+        try {
+            const { error } = await db.auth.resetPasswordForEmail(email, {
+                redirectTo: window.location.origin + '/teacher-login.html',
+            });
+            if (error) throw error;
+
+            showAlert('Reset link sent! Check your email inbox.', 'success', 'resetAlertBox', 'resetAlertMsg');
+            btnText.innerHTML = '<i class="fas fa-check"></i> Link Sent!';
+
+        } catch (err) {
+            showAlert(err.message || 'Failed to send reset link.', 'error', 'resetAlertBox', 'resetAlertMsg');
+            btn.disabled = false;
+            btnText.innerHTML = 'Send Reset Link';
+        }
+    }
+
+   
+</script>
+</body>
+</html>

@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>African Women's School of AI</title>
+    <!-- Favicon - Multiple sizes for better display -->
+<!-- Favicon Implementation - Optimized -->
+<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+<link rel="preload" as="image" href="images/girl.png">
+<link rel="preload" as="image" href="images/logo-non.png">
+<link rel="preload" as="image" href="images/girl2.png">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: #1e293b;
+            line-height: 1.6;
+            background: #ffffff;
+            overflow-x: hidden;
+        }
+
+        /* Navigation - Premium Style */
+   nav {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px); /* Safari support - MUST come first */
+    backdrop-filter: blur(10px);
+    padding: 1.2rem 5%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    border-bottom: 1px solid rgba(0, 153, 255, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+nav:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(10px)) {
+    nav {
+        background: rgba(255, 255, 255, 0.98);
+    }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    nav {
+        padding: 1rem 3%;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+}
+
+        nav:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+             height: 70px; /* Adjust based on your logo size */
+        }
+        .logo-image {
+    height: 100%;
+    width: auto;
+    max-height: 100px;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.logo-image:hover {
+    transform: scale(1.05);
+}
+
+/* Fallback if image doesn't load */
+.logo-image[alt]:after {
+    content: attr(alt);
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #0099ff 0%, #00bbff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+}
+        /* Auth Buttons - Premium Design */
+        .auth-buttons {
+            display: flex;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        .auth-buttons a {
+            padding: 0.65rem 1.8rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-block;
+            text-align: center;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.3px;
+        }
+
+        .auth-buttons a::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .auth-buttons a:hover::before {
+            left: 100%;
+        }
+
+       /* About Us Button */
+.auth-buttons .about-btn {
+    background: white;
+    color: #0099ff;
+    border: 2px solid #0099ff;
+    box-shadow: 0 2px 8px rgba(0, 153, 255, 0.1);
+}
+
+.auth-buttons .about-btn:hover {
+    background: #0099ff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 153, 255, 0.25);
+}
+
+/* Dashboard Button */
+.auth-buttons .dashboard-btn {
+    background: white;
+    color: #0099ff;
+    border: 2px solid #0099ff;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.1);
+}
+
+.auth-buttons .dashboard-btn:hover {
+    background: #0099ff;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.25);
+}
+
+/* Sign Up Button */
+.auth-buttons .signup-btn {
+    background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+    color: white;
+    border: 2px solid transparent;
+    box-shadow: 0 4px 15px rgba(0, 153, 255, 0.3);
+}
+
+.auth-buttons .signup-btn:hover {
+    background: linear-gradient(135deg, #0077cc 0%, #0066b3 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 153, 255, 0.4);
+}
+        /* Common styles */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        .section-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #0099ff 0%, #00bbff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 3.5rem;
+            position: relative;
+            letter-spacing: -1px;
+        }
+
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 120px;
+            height: 5px;
+            background: linear-gradient(90deg, transparent, #0099ff, transparent);
+            border-radius: 10px;
+        }
+
+        /* Hero Section - Premium Redesign */
+        .hero {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #e6f7ff 100%);
+            padding: 5rem 5%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 85vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 153, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .hero-content {
+            flex: 1;
+            max-width: 650px;
+            z-index: 2;
+            animation: slideInLeft 0.8s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .hero-content h1 {
+            font-size: 3.8rem;
+            font-weight: 900;
+            color: #0f172a;
+            margin-bottom: 1.8rem;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+        }
+
+        .hero-content h1 span {
+            background: linear-gradient(135deg, #0099ff 0%, #00bbff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            color: #475569;
+            margin-bottom: 2.5rem;
+            line-height: 1.8;
+            font-weight: 400;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+            color: white;
+            padding: 1.1rem 2.5rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(0, 153, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 153, 255, 0.4);
+        }
+
+        .cta-button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Hero Image Section */
+        .hero-image-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+
+        .image-wrapper {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .circle-bg {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            background: linear-gradient(135deg, #b3e5ff 0%, #80d4ff 100%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .person-image-container {
+            position: absolute;
+            width: 480px;
+            height: 480px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .person-image {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Floating info elements */
+        .info-element {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 3;
+            border: 1px solid #f1f5f9;
+            min-width: 220px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .info-1 {
+            top: 15%;
+            left: 0;
+            animation-delay: 0s;
+        }
+
+        .info-2 {
+            top: 50%;
+            right: 0;
+            animation-delay: 2s;
+        }
+
+        .info-3 {
+            bottom: 20%;
+            left: 10%;
+            animation-delay: 4s;
+        }
+
+        .info-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+        .info-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .info-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .icon-purple {
+            background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+            color: white;
+        }
+
+        .icon-blue {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+
+        .icon-pink {
+            background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+            color: white;
+        }
+
+        .info-text {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            line-height: 1.3;
+        }
+
+        /* Features Bar */
+.features-bar {
+    background: linear-gradient(135deg, #478bb8 0%, #2798e9 100%);
+    color: white;
+    padding: 2.5rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.features-track {
+    display: flex;
+    align-items: center;
+    gap: 4rem;
+    animation: scrollFeatures 18s linear infinite;
+    width: max-content;
+}
+
+.features-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scrollFeatures {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+        .features-bar::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -10%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 200px;
+            transition: transform 0.3s ease;
+            z-index: 1;
+        }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 90px;
+            height: 90px;
+            margin-bottom: 15px;
+            border-radius: 50%;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+        }
+
+        .feature-item:hover .feature-icon {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+        }
+
+        .feature-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .feature-item span:last-child {
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.3px;
+        }
+
+        
+        /* Benefits Section */
+        .benefits {
+            padding: 4rem 5%;
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .benefits-image {
+            flex: 1;
+        }
+
+        .benefits-image img {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .benefits-content {
+            flex: 1;
+        }
+
+        .benefits-content h2 {
+            font-size: 2.5rem;
+            color: #0099ff;
+            margin-bottom: 2rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            gap: 1.2rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+
+        .benefit-item:hover {
+            background: linear-gradient(135deg, rgba(0, 153, 255, 0.03) 0%, rgba(0, 187, 255, 0.03) 100%);
+            border-color: rgba(0, 153, 255, 0.2);
+            transform: translateX(8px);
+            box-shadow: 0 4px 20px rgba(0, 153, 255, 0.1);
+        }
+
+        .benefit-icon {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #e6f7ff 0%, #b3e5ff 100%);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0099ff;
+            font-size: 1.5rem;
+            font-weight: bold;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 153, 255, 0.15);
+        }
+
+        .benefit-text h3 {
+            color: #0f172a;
+            margin-bottom: 0.6rem;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .benefit-text p {
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+        
+
+        /* Footer */
+        footer {
+            background: #0099ff;
+            color: white;
+            padding: 3rem 5%;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .footer-section a:hover {
+            opacity: 1;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            width: 40px;
+            height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: white;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Modal for displaying larger images */
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .image-modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 80%;
+            max-height: 80%;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .modal-content img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            color: #333;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            z-index: 10001;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .close-modal:hover {
+            background: #f3f4f6;
+        }
+
+        .image-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Animation for modal */
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .hero {
+                flex-direction: column;
+                text-align: center;
+                gap: 3rem;
+            }
+            
+            .hero-content {
+                max-width: 100%;
+            }
+            
+            .hero-content h1 {
+                font-size: 3rem;
+            }
+            
+            .image-wrapper {
+                width: 400px;
+                height: 400px;
+            }
+            
+            .person-image-container {
+                width: 320px;
+                height: 320px;
+            }
+            
+            .circle-bg {
+                width: 250px;
+                height: 250px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-buttons {
+                gap: 0.5rem;
+            }
+            
+            .auth-buttons a {
+                padding: 0.5rem 1rem;
+                font-size: 0.85rem;
+            }
+            
+            .benefits {
+                flex-direction: column;
+            }
+            
+            .search-box {
+                flex-direction: column;
+            }
+            
+            .hero-content h1 {
+                font-size: 2.5rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .image-wrapper {
+                width: 350px;
+                height: 350px;
+            }
+            
+            .person-image-container {
+                width: 280px;
+                height: 280px;
+            }
+            
+            .circle-bg {
+                width: 220px;
+                height: 220px;
+            }
+            
+            .info-element {
+                min-width: 180px;
+                padding: 12px;
+            }
+            
+            .info-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+        }
+        /* Learning Roadmap Section Styles */
+.learning-roadmap {
+    padding: 5rem 5%;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    display: grid;
+    grid-template-columns: 1fr 1fr;  
+    gap: 4rem;
+    align-items: center;
+}
+
+.roadmap-image {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.roadmap-image img {
+    width: 100%;
+    max-width: 100%;     
+    height: 500px;       
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 24px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+}
+
+.roadmap-image img:hover {
+    transform: scale(1.02);
+}
+
+.roadmap-container {
+     width: 100%; 
+    }
+.roadmap-card {
+    background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+    border-radius: 24px;
+    padding: 2.5rem;
+    box-shadow: 0 20px 60px rgba(0, 153, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+    
+}
+
+.roadmap-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    border-radius: 50%;
+}
+
+.roadmap-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.roadmap-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.9);
+    text-transform: uppercase;
+}
+
+.roadmap-icon {
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #00bbff 0%, #0099ff 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.3rem;
+    font-weight: bold;
+    box-shadow: 0 8px 20px rgba(0, 187, 255, 0.4);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.roadmap-icon:hover {
+    transform: scale(1.1);
+}
+
+.roadmap-title {
+    font-size: 2rem;
+    color: white;
+    margin-bottom: 2rem;
+    position: relative;
+    z-index: 2;
+}
+
+.roadmap-title .highlight {
+    background: linear-gradient(135deg, #00bbff 0%, #80d4ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.accordion-items {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: relative;
+    z-index: 2;
+}
+
+.accordion-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transition: all 0.3s ease;
+}
+
+.accordion-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.3rem 1.5rem;
+    cursor: pointer;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    -webkit-user-select: none;  /* Add this for Safari */
+    user-select: none;
+}
+
+.accordion-header:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.accordion-number {
+    margin-right: 0.8rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95rem;
+}
+
+.accordion-title-text {
+    flex: 1;
+}
+
+.accordion-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.accordion-item.active .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+    padding: 0 1.5rem;
+}
+
+.accordion-item.active .accordion-content {
+    max-height: 300px;
+    padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.accordion-content-text {
+    color: rgba(255, 255, 255, 0.9);
+    line-height: 1.7;
+    font-size: 0.95rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Responsive Design */
+@media (max-width: 992px) {
+    .learning-roadmap {
+        flex-direction: column;
+        gap: 3rem;
+    }
+
+
+    
+    .roadmap-image img {
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .roadmap-card {
+        padding: 2rem 1.5rem;
+    }
+    
+    .roadmap-title {
+        font-size: 1.6rem;
+    }
+    
+    .accordion-header {
+        padding: 1rem 1.2rem;
+        font-size: 0.9rem;
+    }
+    
+    .accordion-content-text {
+        font-size: 0.88rem;
+    }
+}
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+   
+<nav>
+    <div class="logo">
+        <img src="images/logo-non.png" alt="African Women's School of AI" class="logo-image">
+    </div>
+    <div class="auth-buttons">
+        <a href="https://asai.genderingaiconference.org/" target="_blank" rel="noopener noreferrer" class="about-btn">About Us</a>
+        <a href="student-dashboard.html" class="dashboard-btn">Dashboard</a>
+        <a href="login.html" class="signup-btn">Sign Up</a>
+    </div>
+</nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Empowering African Women Through AI Education</h1>
+            <p>Join our mission to bridge the gender gap in technology. Learn AI skills that transform careers and communities across Africa.</p>
+            <button class="cta-button">Start Your AI Journey</button>
+        </div>
+
+        <!-- Hero Image Section -->
+        <div class="hero-image-section">
+            <div class="image-wrapper">
+                <div class="circle-bg"></div>
+                
+                <div class="person-image-container">
+                    <img src="images/girl.png" alt="African woman learning AI" class="person-image">
+                </div>
+                
+                <div class="info-element info-1">
+                    <div class="info-icon icon-purple" onclick="showImageModal('images/online-c.jpeg', '5,000+ Online Courses')">
+                        <img src="images/online-c.jpeg" alt="Online Courses">
+                    </div>
+                    <span class="info-text">Online courses</span>
+                </div>
+
+                <div class="info-element info-2">
+                    <div class="info-icon icon-blue" onclick="showImageModal('images/Expert-instruction.jpg', 'Expert African Instructors')">
+                        <img src="images/Expert-instruction.jpg" alt="Expert Instruction">
+                    </div>
+                    <span class="info-text">Expert instruction</span>
+                </div>
+
+                <div class="info-element info-3">
+                    <div class="info-icon icon-pink" onclick="showImageModal('images/books.jpg', 'Lifetime Course Access')">
+                        <img src="images/books.jpg" alt="Lifetime Access">
+                    </div>
+                    <span class="info-text">Lifetime access</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Bar -->
+<div class="features-bar">
+    <div class="features-track">
+        <!-- Original items -->
+        <div class="feature-item">
+            <span class="feature-icon">
+               <img src="images/African-Expert-Tutors.jpg" alt="African Expert Tutors" loading="lazy">
+            </span>
+            <span>African Expert Tutors</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+               <img src="images/Industry-Certificates.jpg" alt="Industry Certificates" loading="lazy">
+            </span>
+            <span>Industry Certificates</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+               <img src="images/Peer-Support.avif" alt="Peer Support" loading="lazy">
+            </span>
+            <span>Peer Support</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+                <img src="images/Pan-African-Network.jpg" alt="Pan-African Network" loading="lazy">
+            </span>
+            <span>Pan-African Network</span>
+        </div>
+        <!-- Duplicated for seamless loop -->
+        <div class="feature-item">
+            <span class="feature-icon">
+                <img src="images/African-Expert-Tutors.jpg" alt="African Expert Tutors" loading="lazy">
+            </span>
+            <span>African Expert Tutors</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+                <img src="images/Industry-Certificates.jpg" alt="Industry Certificates" loading="lazy">
+            </span>
+            <span>Industry Certificates</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+                <img src="images/Peer-Support.avif" alt="Peer Support" loading="lazy">
+            </span>
+            <span>Peer Support</span>
+        </div>
+        <div class="feature-item">
+            <span class="feature-icon">
+                <img src="images/Pan-African-Network.jpg" alt="Pan-African Network" loading="lazy">
+            </span>
+            <span>Pan-African Network</span>
+        </div>
+    </div>
+</div>
+
+    
+
+<!-- "learning-roadmap" -->
+
+<section class="learning-roadmap">
+    <div class="roadmap-image">
+        <img src="images/girl2.png" alt="African woman learning AI" loading="lazy">
+    </div>
+    
+    <div class="roadmap-container">
+        <div class="roadmap-card">
+            
+            <h2 class="roadmap-title">Why Learn AI  <span class="highlight">With Us?</span></h2>
+            
+            <div class="accordion-items">
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="accordion-number">01</span>
+                        <span class="accordion-title-text">Flexible for African Schedules</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="accordion-content-text">
+                            Learn around work and family commitments. Access courses anytime from any device.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="accordion-number">02</span>
+                        <span class="accordion-title-text">Career-Focused Curriculum</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="accordion-content-text">
+                            Practical skills for African tech markets. Learn what employers actually need.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="accordion-number">03</span>
+                        <span class="accordion-title-text">Women-Only Community</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="accordion-content-text">
+                            Safe space for African women to learn, ask questions, and grow together.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="accordion-item">
+                    <div class="accordion-header" onclick="toggleAccordion(this)">
+                        <span class="accordion-number">04</span>
+                        <span class="accordion-title-text">African Recognition</span>
+                        <span class="accordion-icon">▼</span>
+                    </div>
+                    <div class="accordion-content">
+                        <p class="accordion-content-text">
+                            Certificates recognized by African tech companies and organizations.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+    
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>African Women's School of AI</h3>
+                <p>Empowering African women to lead in artificial intelligence and technology innovation.</p>
+                <div class="social-links">
+                    <a href="#">f</a>
+                    <a href="#">t</a>
+                    <a href="#">in</a>
+                </div>
+            </div>
+            <div class="footer-section">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="homepage.html">Home</a></li>
+                    <li><a href="https://asai.genderingaiconference.org/" target="_blank" rel="noopener noreferrer">About Us</a></li>
+                    <li><a href="login.html">Dashboard</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Support</h3>
+                <ul>
+                    <li><a href="#">Mentorship Program</a></li>
+                    <li><a href="#">Career Support</a></li>
+                    
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <ul>
+                    <li>Email: </li>
+                    <li>Phone: </li>
+                    <li>Locations: tanzania,arusha,leganga</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 African Women's School of AI. Empowering women across Africa.</p>
+        </div>
+    </footer>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <button class="close-modal" onclick="closeImageModal()">×</button>
+        <div class="modal-content">
+            <img id="modalImage" src="" alt="">
+            <div id="modalTitle" class="image-title"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Modal functionality
+        function showImageModal(imageSrc, title) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalTitle = document.getElementById('modalTitle');
+            
+            modalImage.src = imageSrc;
+            modalImage.alt = title;
+            modalTitle.textContent = title;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeImageModal() {
+            const modal = document.getElementById('imageModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal when clicking outside the image
+        document.getElementById('imageModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeImageModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+       
+
+        // CTA button redirect to login page
+        document.querySelector('.cta-button').addEventListener('click', function() {
+            window.location.href = 'login.html';
+        });
+        function toggleAccordion(element) {
+    const accordionItem = element.parentElement;
+    const allItems = document.querySelectorAll('.accordion-item');
+    
+    // Close all other items
+    allItems.forEach(item => {
+        if (item !== accordionItem) {
+            item.classList.remove('active');
+        }
+    });
+    
+    // Toggle current item
+    accordionItem.classList.toggle('active');
+}
+    </script>
+</body>
+</html>

@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login — ASAI</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>if(typeof window.supabase==='undefined')document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');</script>
+<script src="supabase-config.js"></script>
+
+<script>
+    const db = window.supabaseClient;
+</script>
+<script src="auth.js"></script> 
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --navy:  #0d1b3e;
+            --sky:   #29abe2;
+            --sky2:  #1a6fa8;
+            --sky3:  #0d4f7c;
+            --muted: #6b8caa;
+        }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #0d1b3e 0%, #1a6fa8 60%, #29abe2 100%);
+        }
+        .wrapper {
+            display: flex; width: 100%; max-width: 1100px;
+            min-height: 640px; border-radius: 24px; overflow: hidden;
+            box-shadow: 0 32px 80px rgba(13,27,62,0.6);
+        }
+        /* LEFT */
+        .left-panel {
+            flex: 1;
+            background: linear-gradient(160deg, var(--navy) 0%, var(--sky3) 55%, var(--sky2) 100%);
+            padding: 56px 44px;
+            display: flex; flex-direction: column; justify-content: space-between;
+            position: relative; overflow: hidden;
+        }
+        .left-panel::before {
+            content: ''; position: absolute;
+            width: 300px; height: 300px; border-radius: 50%;
+            background: rgba(41,171,226,0.08);
+            bottom: -70px; right: -70px;
+        }
+        .brand { display: flex; align-items: center; gap: 14px; position: relative; z-index: 1; }
+        .brand-logo {
+            width: 56px; height: 56px; border-radius: 14px;
+            overflow: hidden; background: white; flex-shrink: 0;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+        .brand-logo img { width: 100%; height: 100%; object-fit: cover; }
+        .brand-text h1 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: white; }
+        .brand-text p { font-size: 11px; color: #93c5fd; margin-top: 3px; }
+        .left-mid { position: relative; z-index: 1; }
+        .left-mid h2 {
+            font-family: 'Syne', sans-serif; font-size: 28px;
+            font-weight: 800; color: white; line-height: 1.2; margin-bottom: 12px;
+        }
+        .left-mid h2 span { color: var(--sky); }
+        .left-mid p { font-size: 13px; color: #93c5fd; line-height: 1.7; margin-bottom: 24px; }
+        .features-list { list-style: none; position: relative; z-index: 1; }
+        .features-list li {
+            display: flex; align-items: center; gap: 11px;
+            padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
+            font-size: 13px; color: #bfdbfe;
+        }
+        .features-list li:last-child { border-bottom: none; }
+        .features-list i { color: var(--sky); font-size: 13px; width: 16px; flex-shrink: 0; }
+        .left-foot { font-size: 11px; color: #4b7fa8; position: relative; z-index: 1; }
+        /* RIGHT */
+        .right-panel {
+            flex: 1.1; background: #f8faff;
+            padding: 56px 48px;
+            display: flex; flex-direction: column; justify-content: center;
+        }
+        .admin-badge {
+            display: inline-flex; align-items: center; gap: 7px;
+            background: rgba(13,27,62,0.1); color: var(--navy);
+            border: 1.5px solid rgba(13,27,62,0.2);
+            border-radius: 20px; padding: 5px 14px;
+            font-size: 11px; font-weight: 700;
+            margin-bottom: 20px; width: fit-content;
+            font-family: 'Syne', sans-serif;
+        }
+        .rp-hd { margin-bottom: 26px; }
+        .rp-hd h2 { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--navy); margin-bottom: 5px; }
+        .rp-hd p { font-size: 13px; color: var(--muted); }
+        .alert {
+            padding: 11px 14px; border-radius: 10px; margin-bottom: 16px;
+            font-size: 12px; display: none; align-items: center; gap: 9px;
+        }
+        .alert.show { display: flex; }
+        .alert.error   { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .alert.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .alert.warn    { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+        .fg { margin-bottom: 16px; }
+        .fl { display: block; font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+        .fi { position: relative; }
+        .fi .ico { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+        .fc {
+            width: 100%; background: white; border: 1.5px solid #c8dcea;
+            border-radius: 10px; color: var(--navy); font-family: 'DM Sans', sans-serif;
+            font-size: 13px; padding: 12px 13px 12px 38px; outline: none; transition: all .2s;
+        }
+        .fc:focus { border-color: var(--sky); box-shadow: 0 0 0 3px rgba(41,171,226,0.15); }
+        .fc::placeholder { color: #9bb5cc; }
+        .eye-btn {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: var(--muted); cursor: pointer; font-size: 13px;
+        }
+        .eye-btn:hover { color: var(--sky); }
+        .forgot-row { display: flex; justify-content: flex-end; margin: -8px 0 14px; }
+        .link-btn { background: none; border: none; color: var(--sky); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 600; }
+        .link-btn:hover { color: var(--sky2); text-decoration: underline; }
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, var(--sky) 0%, var(--sky2) 100%);
+            color: white; border: none; border-radius: 10px;
+            font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+            padding: 13px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: all .2s; box-shadow: 0 4px 16px rgba(41,171,226,0.35);
+        }
+        .btn-submit:hover { opacity: .92; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(41,171,226,0.45); }
+        .btn-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+        .security-note {
+            display: flex; align-items: center; gap: 8px;
+            background: rgba(13,27,62,0.05); border: 1px solid rgba(13,27,62,0.12);
+            border-radius: 8px; padding: 10px 13px;
+            margin-top: 16px; font-size: 11px; color: var(--muted);
+        }
+        .security-note i { color: var(--sky2); font-size: 12px; flex-shrink: 0; }
+        .portal-links { text-align: center; margin-top: 16px; font-size: 11px; color: #9bb5cc; padding-top: 14px; border-top: 1px solid #ddeaf5; }
+        .portal-links a { color: var(--sky2); font-weight: 600; margin: 0 4px; text-decoration: none; }
+        .portal-links a:hover { color: var(--sky); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spin { animation: spin .8s linear infinite; display: inline-block; }
+        @media (max-width: 900px) { .wrapper { flex-direction: column; max-width: 480px; } .left-panel { padding: 36px 28px; } .right-panel { padding: 36px 28px; } }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <!-- LEFT -->
+    <div class="left-panel">
+        <div class="brand">
+            <div class="brand-logo"><img src="images/logo.jpg" alt="ASAI Logo"/></div>
+            <div class="brand-text"><h1>ASAI</h1><p>African Women's School of AI</p></div>
+        </div>
+        <div class="left-mid">
+            <h2>Admin <span>Control</span><br/>Panel</h2>
+            <p>Manage your entire platform — courses, students, teachers, and content — all from one place.</p>
+            <ul class="features-list">
+                <li><i class="fas fa-users-cog"></i> Manage all students & teachers</li>
+                <li><i class="fas fa-book-open"></i> Create & manage all courses</li>
+                <li><i class="fas fa-file-alt"></i> Upload notes, quizzes & assignments</li>
+                <li><i class="fas fa-chart-bar"></i> View full platform analytics</li>
+                <li><i class="fas fa-bullhorn"></i> Send announcements to all users</li>
+                <li><i class="fas fa-shield-alt"></i> Full platform control & settings</li>
+            </ul>
+        </div>
+        <div class="left-foot">🔒 Restricted to authorised administrators only. All attempts are logged.</div>
+    </div>
+    <!-- RIGHT -->
+    <div class="right-panel">
+        <div class="admin-badge"><i class="fas fa-shield-alt"></i> Administrator Portal</div>
+
+        <!-- Login view -->
+        <div id="loginView">
+            <div class="rp-hd">
+                <h2>Admin Sign In</h2>
+                <p>Enter your administrator credentials to continue</p>
+            </div>
+            <div class="alert" id="alertBox">
+                <i class="fas fa-exclamation-circle"></i><span id="alertMsg"></span>
+            </div>
+            <form onsubmit="handleAdminLogin(event)">
+                <div class="fg">
+                    <label class="fl">Admin Email</label>
+                    <div class="fi">
+                        <i class="fas fa-envelope ico"></i>
+                        <input type="email" id="adminEmail" class="fc" placeholder="email adress" required autocomplete="email"/>
+                    </div>
+                </div>
+                <div class="fg">
+                    <label class="fl">Password</label>
+                    <div class="fi">
+                        <i class="fas fa-lock ico"></i>
+                        <input type="password" id="adminPassword" class="fc" placeholder="Enter your password" required/>
+                        <button type="button" class="eye-btn" onclick="togglePw()"><i class="fas fa-eye" id="eyeIcon"></i></button>
+                    </div>
+                </div>
+                <div class="forgot-row">
+                    <button type="button" class="link-btn" onclick="showForgot()">Forgot password?</button>
+                </div>
+                <button type="submit" class="btn-submit" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i><span id="loginBtnText">Sign In to Admin Panel</span>
+                </button>
+            </form>
+            <div class="security-note">
+                <i class="fas fa-shield-alt"></i>
+                Unauthorised access attempts are logged. Admin accounts are created by the system only.
+            </div>
+            <div class="portal-links">
+                Not an admin? <a href="login.html">Student Login</a> | <a href="teacher-login.html">Teacher Login</a>
+            </div>
+        </div>
+
+        <!-- Forgot password view -->
+        <div id="forgotView" style="display:none">
+            <div class="rp-hd">
+                <h2>Reset Password</h2>
+                <p>We'll send a reset link to your admin email</p>
+            </div>
+            <div class="alert" id="resetAlertBox">
+                <i class="fas fa-info-circle"></i><span id="resetAlertMsg"></span>
+            </div>
+            <form onsubmit="handleForgot(event)">
+                <div class="fg">
+                    <label class="fl">Admin Email</label>
+                    <div class="fi">
+                        <i class="fas fa-envelope ico"></i>
+                        <input type="email" id="resetEmail" class="fc" placeholder="email adress" required/>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" id="resetBtn">
+                    <i class="fas fa-paper-plane"></i><span id="resetBtnText">Send Reset Link</span>
+                </button>
+            </form>
+            <div style="text-align:center;margin-top:18px">
+                <button class="link-btn" onclick="showLogin()">← Back to Sign In</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    function showAlert(msg, type='error', boxId='alertBox', msgId='alertMsg') {
+        const box=document.getElementById(boxId), el=document.getElementById(msgId);
+        el.textContent=msg; box.className=`alert ${type} show`;
+        if(type==='success') setTimeout(()=>box.classList.remove('show'),5000);
+    }
+    function hideAlert(boxId='alertBox') { document.getElementById(boxId)?.classList.remove('show'); }
+    function togglePw() {
+        const inp=document.getElementById('adminPassword'), icon=document.getElementById('eyeIcon');
+        inp.type=inp.type==='password'?'text':'password';
+        icon.className=inp.type==='password'?'fas fa-eye':'fas fa-eye-slash';
+    }
+    function showForgot() { document.getElementById('loginView').style.display='none'; document.getElementById('forgotView').style.display='block'; hideAlert(); }
+    function showLogin()  { document.getElementById('forgotView').style.display='none'; document.getElementById('loginView').style.display='block'; hideAlert('resetAlertBox'); }
+
+    async function handleAdminLogin(e) {
+  e.preventDefault();
+  hideAlert();
+
+  const email    = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  const btn      = document.getElementById('loginBtn');
+  const txt      = document.getElementById('loginBtnText');
+
+  btn.disabled = true;
+  txt.innerHTML = '<i class="fas fa-spinner spin"></i> Verifying…';
+
+  try {
+    // 1️⃣ Authenticate
+    const { data, error } = await db.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+
+    const userId = data.user.id;
+
+    // 2️⃣ Check role by USER ID
+    const { data: profile, error: pErr } = await db
+      .from('profiles')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (pErr || profile?.role !== 'admin') {
+      await db.auth.signOut();
+      throw new Error('Access denied. This portal is for Admins only.');
+    }
+
+    // 3️⃣ Redirect ONCE
+    window.location.replace('admin.html');
+
+  } catch (err) {
+    let msg = err.message;
+    if (msg.includes('Invalid login credentials')) msg = 'Wrong email or password.';
+    if (msg.includes('Too many requests')) msg = 'Too many attempts. Please wait.';
+    showAlert(msg, 'error');
+    btn.disabled = false;
+    txt.innerHTML = 'Sign In to Admin Panel';
+  }
+}
+
+    async function handleForgot(e) {
+        e.preventDefault(); hideAlert('resetAlertBox');
+        const email=document.getElementById('resetEmail').value.trim();
+        const btn=document.getElementById('resetBtn'), txt=document.getElementById('resetBtnText');
+        btn.disabled=true; txt.innerHTML='<i class="fas fa-spinner spin"></i> Sending…';
+        try {
+            const{error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+'/admin-login.html'});
+            if(error) throw error;
+            showAlert('Reset link sent! Check your email inbox.','success','resetAlertBox','resetAlertMsg');
+            txt.innerHTML='<i class="fas fa-check"></i> Link Sent!';
+        } catch(err) {
+            showAlert(err.message||'Failed to send reset link.','error','resetAlertBox','resetAlertMsg');
+            btn.disabled=false; txt.innerHTML='Send Reset Link';
+        }
+    }
+
+</script>
+</body>
+</html>

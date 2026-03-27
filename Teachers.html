@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Teacher Dashboard – ASAI</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="techer.css"/>
+<link rel="icon" type="image/png" sizes="32x32" href="images\favicon-32x32.png">
+<link rel="shortcut icon" href="images\favicon-32x32.png">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+    if (typeof window.supabase === 'undefined') {
+        document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
+    }
+</script>
+<script src="supabase-config.js"></script>
+<script>
+    const db = supabaseClient;
+</script>
+<script src="auth.js"></script>
+<script src="teacher-init.js"></script>
+<script src="teacher-courses.js"></script>
+<script src="teacher-students.js"></script>
+<script src="teacher-quizzes.js"></script>
+<script src="teacher-assignments.js"></script>
+<script src="teacher-grading.js"></script>
+<script src="teacher-discussions.js"></script>
+<script src="teacher-discussions-ui.js"></script>
+<script src="teacher-resources.js"></script>
+<script src="teacher-recording.js"></script>
+<script src="ai-grader.js"></script>
+<script src="ai-grader-teacher.js"></script>
+<style>body{visibility:hidden}</style>
+<script>
+(async function() {
+    try {
+        const { data } = await db.auth.getSession();
+
+        if (!data?.session?.user) {
+            window.location.replace('teacher-login.html');
+            return;
+        }
+
+        const { data: profile } = await db
+            .from('profiles')
+            .select('role')
+            .eq('id', data.session.user.id)
+            .maybeSingle();
+
+        if (!profile) {
+            window.location.replace('teacher-login.html');
+            return;
+        }
+
+        if (profile.role !== 'teacher' && profile.role !== 'instructor') {
+            await db.auth.signOut();
+            if (profile.role === 'student') {
+                window.location.replace('student-dashboard.html');
+            } else if (profile.role === 'admin') {
+                window.location.replace('admin.html');
+            } else {
+                window.location.replace('teacher-login.html');
+            }
+            return;
+        }
+
+        // ✅ Auth confirmed — init dashboard
+        const initAndShow = async () => {
+            await initTeacherDashboard();
+            document.body.style.visibility = 'visible';
+        };
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initAndShow);
+        } else {
+            await initAndShow();
+        }
+
+    } catch(e) {
+        window.location.replace('teacher-login.html');
+    }
+})();
+</script>
+</head>
+<body>
+
+<aside class="sb" id="sidebar">
+  <div class="sb-brand">
+           <img src="images/logo.jpg" alt="logo">
+                
+   <div><span class="sb-nm">ASAI</span><span class="sb-rl">Teacher Portal</span></div>
+  </div>
+  <nav class="sb-nav">
+    <div class="grp">
+      <span class="grp-lbl">Overview</span>
+      <a href="#" class="nl active" data-s="overview"><i class="fas fa-th-large"></i><span>Dashboard</span></a>
+      <a href="#" class="nl" data-s="courses"><i class="fas fa-book-open"></i><span>My Courses</span></a>
+    </div>
+    <div class="grp">
+      <span class="grp-lbl">Teaching</span>
+      <a href="#" class="nl" data-s="content"><i class="fas fa-pen-nib"></i><span>Content Studio</span></a>
+      <a href="#" class="nl" data-s="quizzes"><i class="fas fa-clipboard-list"></i><span>Quizzes</span></a>
+      <a href="#" class="nl" data-s="assignments"><i class="fas fa-file-alt"></i><span>Assignments</span></a>
+      <a href="#" class="nl" data-s="sessions"><i class="fas fa-broadcast-tower"></i><span>Live Sessions</span><span class="nb nb-live">Live</span></a>
+    </div>
+    <div class="grp">
+      <span class="grp-lbl">Students</span>
+      <a href="#" class="nl" data-s="studentWork"><i class="fas fa-eye"></i><span>Student Work</span><span class="nb nb-amb" id="pendBadge">4</span></a>
+      <a href="#" class="nl" data-s="students"><i class="fas fa-users"></i><span>My Students</span></a>
+      <a href="#" class="nl" data-s="grading"><i class="fas fa-check-double"></i><span>Grade Center</span></a>
+      <a href="#" class="nl" data-s="discussions"><i class="fas fa-comments"></i><span>Discussions</span></a>
+    </div>
+    <div class="grp">
+      <span class="grp-lbl">Communicate</span>
+      <a href="#" class="nl" data-s="announcements"><i class="fas fa-bullhorn"></i><span>Announcements</span></a>
+      <a href="#" class="nl" data-s="resources"><i class="fas fa-folder-open"></i><span>Resources</span></a>
+    </div>
+  </nav>
+  <div class="sb-foot">
+    <div class="sb-av" id="sbAv">AM</div>
+    <div class="sb-info"><span class="sb-uname" id="sbName">Dr. Amina Mohammed</span><span class="sb-stat">● Online</span></div>
+    <button class="lo-btn" onclick="handleLogout()" aria-label="Logout">
+  <i class="fas fa-sign-out-alt"></i>
+</button>
+</aside>  
+
+<button class="mob-btn" id="mobBtn" aria-label="Open menu">
+  <i class="fas fa-bars"></i>
+</button>
+
+<main class="mn">
+  <header class="topbar">
+    <div class="tb-l"><h1 id="pgTitle">Dashboard</h1><small id="pgSub">Overview</small></div>
+    <div class="tb-r">
+      <div class="srch"><i class="fas fa-search"></i><input type="text" placeholder="Search students, courses…"/></div>
+      <button class="tb-btn"><i class="fas fa-bell"></i><span class="tb-bdg">3</span></button>
+      <div class="tb-av" id="tbAv">AM</div>
+    </div>
+  </header>
+
+  <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastMsg">Done!</span></div>
+
+ <section id="overviewSection" class="sec active">
+  <div class="welcome">
+    <div>
+      <h2><span id="timeGreeting">Good morning</span>, <span id="welcomeN">Dr. Amina</span> 👋</h2>
+      <p>Here's what's happening with your courses today.</p>
+    </div>
+    <button class="btn bp pulse" onclick="showSec('sessions')">
+      <i class="fas fa-video"></i> Start Live Session
+    </button>
+  </div>
+
+  <div class="stats-g">
+    <div class="sc"><div class="si si--cyan"><i class="fas fa-users"></i></div><div><div class="sv" id="stStu">8</div><div class="sl">Total Students</div></div><div class="st up"><i class="fas fa-arrow-up"></i> 12%</div></div>
+    <div class="sc"><div class="si si--blue"><i class="fas fa-book-open"></i></div><div><div class="sv" id="stCou">4</div><div class="sl">Active Courses</div></div><div class="st ne"><i class="fas fa-minus"></i> Stable</div></div>
+    <div class="sc"><div class="si si--amber"><i class="fas fa-clock"></i></div><div><div class="sv" id="stPnd">4</div><div class="sl">Pending Reviews</div></div><div class="st dn"><i class="fas fa-exclamation"></i> Needs attention</div></div>
+    <div class="sc"><div class="si si--teal"><i class="fas fa-chart-line"></i></div><div><div class="sv" id="stAvg">80%</div><div class="sl">Avg. Score</div></div><div class="st up"><i class="fas fa-arrow-up"></i> 3%</div></div>
+  </div>
+
+  <div class="ov-g">
+    <div class="card"><div class="card-hd"><h3>Needs Grading</h3><button class="lbtn" onclick="showSec('grading')">View all</button></div><div id="ovPend"></div></div>
+    <div class="card"><div class="card-hd"><h3>Course Progress</h3><button class="lbtn" onclick="showSec('courses')">View all</button></div><div id="ovCou"></div></div>
+    <div class="card span2"><div class="card-hd"><h3>Recent Activity</h3><span class="activity-label">Last 48 hours</span></div><div id="actFeed"></div></div>
+  </div>
+</section>
+
+<section id="coursesSection" class="sec">
+  <div class="sec-tb"><h2 class="sec-ttl">My Courses</h2></div>
+  <div class="cg2" id="coursesGrid"></div>
+</section>
+
+<section id="contentSection" class="sec">
+  <div class="sec-tb">
+    <h2 class="sec-ttl">Content Studio</h2>
+  </div>
+  <div class="filter-field">
+  <label class="fl" for="contentCouSel">Select Course</label>
+  <select class="fc" id="contentCouSel" title="Select Course" onchange="loadContentChapters()">
+    <option value="">Choose a course…</option>
+  </select>
+</div>
+  <div id="contentArea">
+    <div class="empty"><i class="fas fa-book-open"></i><p>Select a course to view chapters &amp; topics</p></div>
+  </div>
+</section>
+
+  <section id="quizzesSection" class="sec">
+    <div class="sec-tb"><h2 class="sec-ttl">Quiz Management</h2>
+    </div>
+   <div class="tabs">
+  <button class="tab active" data-tab="qzList">All Quizzes</button>
+  <button class="tab" data-tab="qzResults">Student Results</button>
+  </div>
+    <div id="qzList" class="tp active"><div id="quizzesGrid" class="ig"></div></div>
+    <div id="qzResults" class="tp"><div id="quizResGrid" class="ig"></div></div>
+  </section>
+
+  <section id="assignmentsSection" class="sec">
+    <div class="sec-tb"><h2 class="sec-ttl">Assignments</h2>
+    
+    </div>
+ <div class="tabs">
+  <button class="tab active" data-tab="assList">All Assignments</button>
+  <button class="tab" data-tab="assSubs">Submissions</button>
+</div>
+    <div id="assList" class="tp active"><div id="assignGrid" class="ig"></div></div>
+    <div id="assSubs" class="tp"><div id="assignSubGrid" class="ig"></div></div>
+  </section>
+
+  <section id="sessionsSection" class="sec">
+  <div class="sec-tb">
+    <h2 class="sec-ttl">Live Sessions</h2>
+    <button class="btn bp pulse" onclick="startSession()"><i class="fas fa-video"></i> Start Now</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="sActive">Active</button>
+    <button class="tab" data-tab="sScheduled">Scheduled</button>
+    <button class="tab" data-tab="sRecs" onclick="loadSavedRecordings()">Recordings <span class="nb nb-grn" id="recBadge" class="hidden">0</span></button>
+  </div>
+  <div id="sActive" class="tp active">
+    <div id="activeSessionArea"><div class="empty"><i class="fas fa-broadcast-tower"></i><p>No active session. Click "Start Now" to begin.</p></div></div>
+  </div>
+  <div id="sScheduled" class="tp">
+    <button class="btn bs mb-12" onclick="openM('schedModal')"><i class="fas fa-calendar-plus"></i> Schedule Session</button>
+    <div id="scheduledList"><div class="empty"><i class="fas fa-calendar"></i><p>No scheduled sessions.</p></div></div>
+  </div>
+  <div id="sRecs" class="tp">
+    <div class="recs-hd">
+      <p class="recs-info"><i class="fas fa-info-circle"></i> All session recordings are saved here.</p>
+      <button class="btn bg" onclick="downloadAllRecs()"><i class="fas fa-download"></i> Download All</button>
+    </div>
+    <div id="recList"><div class="empty"><i class="fas fa-film"></i><p>Recordings appear here after sessions end.</p></div></div>
+  </div>
+</section>
+
+<section id="studentWorkSection" class="sec">
+  <div class="sec-tb">
+    <h2 class="sec-ttl">Student Work</h2>
+    <div class="sec-tb__actions">
+      <select class="fc sm" id="swCouFilter" title="Filter by Course" aria-label="Filter by Course" onchange="renderSWList()">
+        <option value="">All Courses</option>
+      </select>
+      <select class="fc sm" id="swTypeFilter" title="Filter by Type" aria-label="Filter by Type" onchange="renderSWList()">
+        <option value="assignments">Assignments</option>
+        <option value="quizzes">Quizzes</option>
+        <option value="notes">Course Notes</option>
+      </select>
+    </div>
+  </div>
+  <div class="sw-wrap">
+    <div class="sw-left">
+      <div class="sw-lhd">
+        <h4>Students</h4>
+        <div class="chip-group">
+          <span class="chip ca" id="swPendCnt">4 pending</span>
+          <span class="chip cg" id="swGradedCnt">2 graded</span>
+        </div>
+      </div>
+      <div class="sw-srch"><input type="text" id="swSearch" placeholder="Search student…" oninput="renderSWList()"/></div>
+      <div class="sw-list" id="swStudentList"></div>
+    </div>
+    <div class="sw-right">
+      <div class="sw-rhd">
+        <div><h3 id="swDTitle">Select a student</h3><p id="swDSub">Choose a student to view their work</p></div>
+        <div id="swDBadges"></div>
+      </div>
+      <div class="sw-body" id="swDBody">
+        <div class="empty empty--offset"><i class="fas fa-hand-point-left"></i><p>Click a student to view assignments, quizzes, or course notes</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+<section id="studentsSection" class="sec">
+  <div class="sec-tb">
+    <h2 class="sec-ttl">My Students</h2>
+    <div class="sec-tb__actions">
+      <select class="fc sm" id="stuCouFilter" title="Filter by Course" aria-label="Filter by Course" onchange="filterStudents()">
+        <option value="">All Courses</option>
+      </select>
+      <input type="text" class="fc sm w-150" id="stuSearch" title="Search by Name" aria-label="Search by Name" placeholder="Search name…" oninput="filterStudents()"/>
+    </div>
+  </div>
+  <div class="dt-wrap">
+    <table class="dt">
+      <thead><tr><th>Student</th><th>Course</th><th>Progress</th><th>Last Active</th><th>Avg Score</th><th>Actions</th></tr></thead>
+      <tbody id="stuTBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="gradingSection" class="sec">
+  <div class="sec-tb">
+    <h2 class="sec-ttl">Grade Center</h2>
+    <div class="sec-tb__actions">
+      <select class="fc sm" id="gcTypeFilter" title="Filter by Type" aria-label="Filter by Type" onchange="loadGrading()">
+        <option value="all">All Types</option>
+        <option value="quiz">Quizzes</option>
+        <option value="assignment">Assignments</option>
+      </select>
+      <select class="fc sm" id="gcCouFilter" title="Filter by Course" aria-label="Filter by Course" onchange="loadGrading()">
+        <option value="">All Courses</option>
+      </select>
+    </div>
+  </div>
+  <div id="gradingGrid" class="gc"></div>
+</section>
+
+  <section id="discussionsSection" class="sec">
+    <div class="sec-tb"><h2 class="sec-ttl">Discussions</h2></div>
+    <div id="discList"></div>
+  </section>
+
+   <section id="announcementsSection" class="sec">
+    <div class="sec-tb"><h2 class="sec-ttl">Announcements</h2></div>
+    <div id="annList"></div>
+   </section>
+
+  <section id="resourcesSection" class="sec">
+    <div class="sec-tb"><h2 class="sec-ttl">Learning Resources</h2><button class="btn bp" onclick="openM('resModal')"><i class="fas fa-upload"></i> Upload Resource</button></div>
+    <div class="tabs"><button class="tab active" data-tab="rAll">All</button><button class="tab" data-tab="rPDFs">PDFs</button><button class="tab" data-tab="rDS">Datasets</button><button class="tab" data-tab="rCode">Code</button><button class="tab" data-tab="rLinks">Links</button></div>
+    <div id="rAll" class="tp active"><div id="resGrid" class="ig"></div></div>
+    <div id="rPDFs" class="tp"><div id="resPDFGrid" class="ig"></div></div>
+    <div id="rDS" class="tp"><div id="resDSGrid" class="ig"></div></div>
+    <div id="rCode" class="tp"><div id="resCodeGrid" class="ig"></div></div>
+    <div id="rLinks" class="tp"><div id="resLinksGrid" class="ig"></div></div>
+  </section>
+</main>
+
+<!-- MODALS -->
+<div class="modal" id="chapterModal">
+  <div class="mb mbw">
+    <div class="mh">
+      <h3>Create Chapter</h3>
+      <button onclick="closeM('chapterModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="info-banner info-banner--amber">
+      <i class="fas fa-info-circle"></i> Note: Only Admins can create course notes/content. Teachers can <strong>view</strong> notes read-only.
+    </div>
+    <form id="chapterForm" onsubmit="handleCreateChapter(event)">
+      <div class="fg">
+        <label class="fl" for="chCouSel">Course *</label>
+        <select name="courseId" required id="chCouSel" class="fc" title="Select Course" aria-label="Select Course">
+          <option value="">Select course…</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl" for="chapterTitle">Chapter Title *</label>
+        <input type="text" name="chapterTitle" id="chapterTitle" required class="fc" placeholder="e.g. Introduction to Neural Networks" title="Chapter Title" aria-label="Chapter Title"/>
+      </div>
+      <div class="fg">
+        <label class="fl" for="chapterDesc">Description</label>
+        <textarea name="description" id="chapterDesc" rows="2" class="fc" placeholder="Brief overview…" title="Description" aria-label="Description"></textarea>
+      </div>
+      <div class="divider"></div>
+      <div class="topics-hdr">
+        <h4>Topics</h4>
+        <button type="button" class="btn bg btn--xs" onclick="addTopic()" title="Add Topic" aria-label="Add Topic">
+          <i class="fas fa-plus"></i> Add Topic
+        </button>
+      </div>
+      <div id="topicsFields">
+        <div class="tf" data-i="0">
+          <div class="tfh">
+            <span>Topic 1</span>
+            <button type="button" onclick="removeTopic(0)" title="Remove Topic" aria-label="Remove Topic">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <input type="text" name="t0_title" class="fc mb-5" placeholder="Topic title *" required title="Topic Title" aria-label="Topic Title"/>
+          <div class="me-tb">
+            <button type="button" onclick="fmt(0,'bold')" title="Bold" aria-label="Bold"><i class="fas fa-bold"></i></button>
+            <button type="button" onclick="fmt(0,'italic')" title="Italic" aria-label="Italic"><i class="fas fa-italic"></i></button>
+            <button type="button" onclick="fmt(0,'insertUnorderedList')" title="Bullet List" aria-label="Bullet List"><i class="fas fa-list-ul"></i></button>
+            <button type="button" onclick="fmt(0,'insertOrderedList')" title="Numbered List" aria-label="Numbered List"><i class="fas fa-list-ol"></i></button>
+          </div>
+          <div class="me" contenteditable="true" id="te0" role="textbox" aria-label="Topic Content" aria-multiline="true"></div>
+          <div class="tmr">
+            <input type="number" name="t0_dur" class="fc" placeholder="Read time (min)" min="1" title="Read Time in Minutes" aria-label="Read Time in Minutes"/>
+            <select name="t0_cat" class="fc" title="Difficulty Category" aria-label="Difficulty Category">
+              <option>Basics</option>
+              <option>Intermediate</option>
+              <option>Advanced</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('chapterModal')">Cancel</button>
+        <button type="submit" class="btn bp"><i class="fas fa-save"></i> Save Chapter</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="modal" id="quizModal">
+  <div class="mb mbw">
+    <div class="mh">
+      <h3>Create Quiz</h3>
+      <button onclick="closeM('quizModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="quizForm" onsubmit="handleCreateQuiz(event)">
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="quizTitle">Quiz Title *</label>
+          <input type="text" name="title" id="quizTitle" required class="fc" placeholder="e.g. Chapter 3 Quiz" title="Quiz Title" aria-label="Quiz Title"/>
+        </div>
+        <div class="fg">
+          <label class="fl" for="qzCouSel">Course *</label>
+          <select name="courseId" required id="qzCouSel" class="fc" title="Select Course" aria-label="Select Course">
+            <option value="">Select course…</option>
+          </select>
+        </div>
+      </div>
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="quizTimeLimit">Time Limit (min)</label>
+          <input type="number" name="timeLimit" id="quizTimeLimit" class="fc" placeholder="30" min="1" title="Time Limit in Minutes" aria-label="Time Limit in Minutes"/>
+        </div>
+        <div class="fg">
+          <label class="fl" for="quizPassingScore">Passing Score (%)</label>
+          <input type="number" name="passingScore" id="quizPassingScore" value="60" class="fc" min="1" max="100" title="Passing Score Percentage" aria-label="Passing Score Percentage"/>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="topics-hdr">
+        <h4>Questions <span id="qCount" class="text-muted">(0)</span></h4>
+        <button type="button" class="btn bg btn--xs" onclick="openM('addQModal')" title="Add Question" aria-label="Add Question">
+          <i class="fas fa-plus"></i> Add Question
+        </button>
+      </div>
+      <div id="qzQPreview"></div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('quizModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Save Quiz" aria-label="Save Quiz"><i class="fas fa-save"></i> Save Quiz</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="addQModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Add Question</h3>
+      <button onclick="closeM('addQModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fg">
+      <label class="fl" for="qType">Type</label>
+      <select id="qType" class="fc" onchange="renderQOpts()" title="Question Type" aria-label="Question Type">
+        <option value="mcq">Multiple Choice</option>
+        <option value="tf">True / False</option>
+        <option value="short">Short Answer</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label class="fl" for="qText">Question Text *</label>
+      <textarea id="qText" rows="3" class="fc" placeholder="Enter your question…" title="Question Text" aria-label="Question Text"></textarea>
+    </div>
+    <div id="qOptsArea"></div>
+    <div class="fg">
+      <label class="fl" for="qPoints">Points</label>
+      <input type="number" id="qPoints" value="1" min="1" class="fc" title="Points" aria-label="Points"/>
+    </div>
+    <div class="ma">
+      <button type="button" class="btn bg" onclick="closeM('addQModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+      <button type="button" class="btn bp" onclick="saveQ()" title="Add Question" aria-label="Add Question">Add Question</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="assignModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Create Assignment</h3>
+      <button onclick="closeM('assignModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="assignForm" onsubmit="handleCreateAssignment(event)">
+      <div class="fg">
+        <label class="fl" for="assignTitle">Title *</label>
+        <input type="text" name="title" id="assignTitle" required class="fc" placeholder="Assignment title" title="Assignment Title" aria-label="Assignment Title"/>
+      </div>
+      <div class="fg">
+        <label class="fl" for="assgnCouSel">Course *</label>
+        <select name="courseId" required id="assgnCouSel" class="fc" title="Select Course" aria-label="Select Course">
+          <option value="">Select course…</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl" for="assignInstructions">Instructions *</label>
+        <textarea name="instructions" id="assignInstructions" rows="4" required class="fc" placeholder="Describe what students need to do…" title="Instructions" aria-label="Instructions"></textarea>
+      </div>
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="assignDueDate">Due Date *</label>
+          <input type="date" name="dueDate" id="assignDueDate" required class="fc" title="Due Date" aria-label="Due Date"/>
+        </div>
+        <div class="fg">
+          <label class="fl" for="assignMaxPoints">Max Points</label>
+          <input type="number" name="maxPoints" id="assignMaxPoints" value="100" min="1" class="fc" title="Max Points" aria-label="Max Points"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl" for="assignSubType">Submission Type</label>
+        <select name="subType" id="assignSubType" class="fc" title="Submission Type" aria-label="Submission Type">
+          <option value="file">File Upload</option>
+          <option value="text">Text Response</option>
+          <option value="both">Both</option>
+        </select>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('assignModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Create Assignment" aria-label="Create Assignment"><i class="fas fa-save"></i> Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="gradeModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Grade Submission</h3>
+      <button onclick="closeM('gradeModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="gmInfo"></div>
+    <form id="gradeForm" onsubmit="submitGradeFromModal(event)">
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="gmScore">Score * (out of <span id="gmMax">100</span>)</label>
+          <input type="number" name="score" id="gmScore" required min="0" class="fc" title="Score" aria-label="Score"/>
+        </div>
+        <div class="fg">
+          <label class="fl" for="gmGrade">Grade Letter</label>
+          <select name="grade" id="gmGrade" class="fc" title="Grade Letter" aria-label="Grade Letter">
+            <option>A+</option><option>A</option><option>A-</option>
+            <option>B+</option><option>B</option><option>B-</option>
+            <option>C+</option><option>C</option><option>F</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl" for="gradeFeedback">Feedback *</label>
+        <textarea name="feedback" id="gradeFeedback" rows="4" required class="fc" placeholder="Provide constructive feedback…" title="Feedback" aria-label="Feedback"></textarea>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('gradeModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Submit Grade" aria-label="Submit Grade"><i class="fas fa-check"></i> Submit Grade</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="announModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>New Announcement</h3>
+      <button onclick="closeM('announModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="announForm" onsubmit="handleAnnouncement(event)">
+      <div class="fg">
+        <label class="fl" for="announTitle">Title *</label>
+        <input type="text" name="title" id="announTitle" required class="fc" title="Announcement Title" aria-label="Announcement Title"/>
+      </div>
+      <div class="fg">
+        <label class="fl" for="announMessage">Message *</label>
+        <textarea name="message" id="announMessage" rows="4" required class="fc" title="Message" aria-label="Message"></textarea>
+      </div>
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="annCouSel">Target Course</label>
+          <select name="courseId" id="annCouSel" class="fc" title="Target Course" aria-label="Target Course">
+            <option value="all">All My Courses</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl" for="announPriority">Priority</label>
+          <select name="priority" id="announPriority" class="fc" title="Priority" aria-label="Priority">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="cklbl">
+          <input type="checkbox" name="notifyEmail" checked aria-label="Notify students via email"/> Notify students via email
+        </label>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('announModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Send Announcement" aria-label="Send Announcement"><i class="fas fa-paper-plane"></i> Send</button>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="modal" id="resModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Upload Resource</h3>
+      <button onclick="closeM('resModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="resForm" onsubmit="handleResUpload(event)">
+      <div class="fg">
+        <label class="fl" for="resTitle">Title *</label>
+        <input type="text" name="title" id="resTitle" required class="fc" placeholder="Resource title" title="Resource Title" aria-label="Resource Title"/>
+      </div>
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="resTypeSel">Type *</label>
+          <select name="type" required id="resTypeSel" class="fc" onchange="toggleResUrl()" title="Resource Type" aria-label="Resource Type">
+            <option value="pdfs">PDF</option>
+            <option value="datasets">Dataset</option>
+            <option value="code">Code/ZIP</option>
+            <option value="links">External Link</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl" for="resCouSel">Course</label>
+          <select name="courseId" id="resCouSel" class="fc" title="Select Course" aria-label="Select Course">
+            <option value="all">All Courses</option>
+          </select>
+        </div>
+      </div>
+      <div id="resFileGrp" class="fg">
+  <label class="fl" for="resFileInput">File *</label>
+  <div class="upload-zone" onclick="document.getElementById('resFileInput').click()" tabindex="0" aria-label="Click to browse or drag and drop a file">
+    <i class="fas fa-cloud-upload-alt upload-zone__icon"></i>
+    <span class="upload-zone__label">Click to browse or drag &amp; drop</span>
+  </div>
+  <input type="file" id="resFileInput" class="hidden" onchange="showResName(this)" aria-label="Upload File"/>
+  <p id="resFileName" class="upload-filename hidden"></p>
+</div>
+      <div id="resUrlGrp" class="fg hidden">
+        <label class="fl" for="resUrl">External URL *</label>
+        <input type="url" name="url" id="resUrl" class="fc" placeholder="https://…" title="External URL" aria-label="External URL"/>
+      </div>
+      <div class="fg">
+        <label class="fl" for="resDescription">Description</label>
+        <textarea name="description" id="resDescription" rows="2" class="fc" placeholder="Brief description…" title="Description" aria-label="Description"></textarea>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('resModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Upload Resource" aria-label="Upload Resource"><i class="fas fa-upload"></i> Upload</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="schedModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Schedule a Session</h3>
+      <button onclick="closeM('schedModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <form id="schedForm" onsubmit="handleSchedule(event)">
+      <div class="fg">
+        <label class="fl" for="schedCouSel">Course *</label>
+        <select name="courseId" required id="schedCouSel" class="fc" title="Select Course" aria-label="Select Course">
+          <option value="">Select course…</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="fl" for="schedTitle">Session Title *</label>
+        <input type="text" name="title" id="schedTitle" required class="fc" placeholder="e.g. Week 4 Live Review" title="Session Title" aria-label="Session Title"/>
+      </div>
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl" for="schedDate">Date *</label>
+          <input type="date" name="date" id="schedDate" required class="fc" title="Session Date" aria-label="Session Date"/>
+        </div>
+        <div class="fg">
+          <label class="fl" for="schedTime">Time *</label>
+          <input type="time" name="time" id="schedTime" required class="fc" title="Session Time" aria-label="Session Time"/>
+        </div>
+      </div>
+      <div class="fg">
+        <label class="cklbl">
+          <input type="checkbox" name="notify" checked aria-label="Notify students"/> Notify students
+        </label>
+      </div>
+      <div class="ma">
+        <button type="button" class="btn bg" onclick="closeM('schedModal')" title="Cancel" aria-label="Cancel">Cancel</button>
+        <button type="submit" class="btn bp" title="Schedule Session" aria-label="Schedule Session"><i class="fas fa-calendar-check"></i> Schedule</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="stuModal">
+  <div class="mb">
+    <div class="mh">
+      <h3>Student Profile</h3>
+      <button onclick="closeM('stuModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="stuModalContent"></div>
+    <div class="ma">
+      <button class="btn bg" onclick="closeM('stuModal')" title="Close" aria-label="Close">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="playRecModal">
+  <div class="mb mbw">
+    <div class="mh">
+      <h3 id="playRecTitle">Recording Playback</h3>
+      <button onclick="closeM('playRecModal');stopPlay()" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <video id="playRecVideo" controls class="rec-video" aria-label="Recording Playback Video"></video>
+    <div id="playRecActions" class="rec-actions"></div>
+  </div>
+</div>
+
+<script>
+function handleSchedule(e){
+  e.preventDefault(); const fd=new FormData(e.target); const c=courses.find(x=>x.id==fd.get('courseId'));
+  const list=document.getElementById('scheduledList');
+  const card=document.createElement('div'); card.className='rec-c';
+  card.innerHTML=`<div class="rec-th"><i class="fas fa-calendar-alt" style="color:var(--acc)"></i></div><div class="rec-info"><div class="rec-ttl">${fd.get('title')}</div><div class="rec-meta"><span>${c?.title}</span><span>${fd.get('date')} at ${fd.get('time')}</span></div></div><button class="btn bp" onclick="startSession()"><i class="fas fa-video"></i> Start</button>`;
+  if(list.querySelector('.empty')) list.innerHTML=''; list.prepend(card);
+  closeM('schedModal'); e.target.reset(); toast('Session scheduled!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// QUIZ RESULTS TAB — fixed layout + improved design
+// ═══════════════════════════════════════════════════════════════
+async function renderQuizResultsTab(highlightQuizId = null) {
+  const rg = document.getElementById('quizResGrid');
+  if (!rg) return;
+
+  rg.innerHTML = `<div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Loading results…</p></div>`;
+
+  const submissions = await fetchQuizSubmissions();
+
+  if (!submissions.length) {
+    rg.innerHTML = `<div class="empty"><i class="fas fa-chart-bar"></i><p>No quiz submissions yet.</p></div>`;
+    return;
+  }
+
+  const courseIds  = [...new Set(submissions.map(s => s.course_id).filter(Boolean))];
+  const courseOpts = courseIds.map(id => {
+    const c = teacherState.courses.find(x => x.id === id);
+    return `<option value="${id}">${_esc(c?.title || id)}</option>`;
+  }).join('');
+
+  const total   = submissions.length;
+  const avg     = Math.round(submissions.reduce((a, s) => a + (s.score || 0), 0) / total);
+  const passing = submissions.filter(s => (s.score || 0) >= (s.passing_score || 60)).length;
+  const passRate = Math.round((passing / total) * 100);
+
+  rg.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0;width:100%">
+
+      <!-- ── Stats row ── -->
+      <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--acc)">${total}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Total Submissions</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--grn)">${avg}%</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Average Score</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:${passRate>=60?'var(--grn)':'var(--amb)'}">${passRate}%</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Pass Rate</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--red)">${total - passing}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Failed</div>
+        </div>
+      </div>
+
+      <!-- ── Filter bar ── -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                  background:var(--bg2);border:1.5px solid var(--bdr);
+                  border-radius:var(--r) var(--r) 0 0;flex-wrap:wrap">
+        <i class="fas fa-filter" style="color:var(--acc);font-size:13px"></i>
+        <span style="font-size:12px;font-weight:600;color:var(--txt2)">Filter by Course:</span>
+        <select id="qzCourseFilter" class="fc sm" style="width:auto;min-width:200px"
+                onchange="filterQzTable()" title="Filter by Course">
+          <option value="">All Courses</option>
+          ${courseOpts}
+        </select>
+        <div style="margin-left:auto;display:flex;gap:16px;align-items:center;font-size:11px;color:var(--mut)">
+          <span><i class="fas fa-question-circle" style="color:var(--acc)"></i>
+            &nbsp;<strong style="color:var(--txt)">${total}</strong> submission${total!==1?'s':''}</span>
+          <span style="color:var(--bdr)">|</span>
+          <span><i class="fas fa-book-open" style="color:var(--acc)"></i>
+            &nbsp;<strong style="color:var(--txt)">All Courses</strong></span>
+        </div>
+      </div>
+
+      <!-- ── Table header label ── -->
+      <div style="border-bottom:2px solid var(--bdr);border-left:1.5px solid var(--bdr);
+                  border-right:1.5px solid var(--bdr);padding:0 16px;background:#fff">
+        <button class="lbtn" style="padding:10px 0;margin-right:24px;
+                border-bottom:2px solid var(--acc);color:var(--acc);
+                font-size:13px;font-weight:700;margin-bottom:-2px">
+          <i class="fas fa-poll" style="margin-right:6px"></i>Quiz Submissions
+        </button>
+      </div>
+
+      <!-- ── Table ── -->
+      <div class="dt-wrap" style="border-radius:0;border-top:none">
+        <table class="dt" id="qzTable">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Quiz</th>
+              <th>Course</th>
+              <th style="text-align:center">Score</th>
+              <th style="text-align:center">Status</th>
+              <th style="text-align:center">Submitted</th>
+              <th style="text-align:center">Time Spent</th>
+              <th style="text-align:center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="qzTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div style="padding:10px 16px;font-size:11px;color:var(--mut);background:#fff;
+                  border:1.5px solid var(--bdr);border-top:none;
+                  border-radius:0 0 var(--r) var(--r)">
+        Showing <strong id="qzCount">${total}</strong>
+        quiz submission${total!==1?'s':''} across all courses
+      </div>
+
+    </div>`;
+
+  window._qzRows = submissions;
+  _buildQzRows(submissions);
+}
+
+function _buildQzRows(subs) {
+  const body    = document.getElementById('qzTableBody');
+  const countEl = document.getElementById('qzCount');
+  if (!body) return;
+  if (countEl) countEl.textContent = subs.length;
+  body.innerHTML = '';
+
+  if (!subs.length) {
+    body.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--mut)">
+      <i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>
+      No submissions match this filter.</td></tr>`;
+    return;
+  }
+
+  subs.forEach(s => {
+    const sc      = s.score || 0;
+    const quiz    = teacherState.quizzes.find(q => q.id === s.quiz_id);
+    const passing = quiz?.passing_score || 60;
+    const passed  = sc >= passing;
+    const col     = sc >= 80 ? 'var(--grn)' : sc >= 60 ? 'var(--amb)' : 'var(--red)';
+    const course  = teacherState.courses.find(c => c.id === s.course_id);
+    const cColor  = course?.color || '#1a9fd4';
+    const timeSec = s.time_spent || 0;
+    const timeStr = timeSec > 0 ? `${Math.floor(timeSec/60)}m ${timeSec%60}s` : '—';
+    const date    = s.submitted_at
+      ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : '—';
+    const initials = (s.student_name||'S').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+    const tr = document.createElement('tr');
+    tr.dataset.courseId = s.course_id || '';
+    tr.innerHTML = `
+      <td>
+        <div class="stu-c">
+          <div class="stu-av" style="background:${cColor}">${initials}</div>
+          <div>
+            <div class="stu-name">${_esc(s.student_name)}</div>
+            <div class="stu-email">${_esc(s.student_email||'')}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:12px;color:var(--txt);font-weight:500">${_esc(s.quiz_title)}</td>
+      <td>
+        <span style="background:${cColor}18;color:${cColor};padding:3px 10px;
+                     border-radius:20px;font-size:11px;font-weight:700;
+                     display:inline-block;max-width:150px;white-space:nowrap;
+                     overflow:hidden;text-overflow:ellipsis">
+          ${_esc(course?.title||'—')}
+        </span>
+      </td>
+      <td style="text-align:center">
+        <div style="font-size:18px;font-weight:800;color:${col};line-height:1.1">${sc}%</div>
+        ${s.correct_answers!=null
+          ? `<div style="font-size:10px;color:var(--mut)">${s.correct_answers}/${s.total_questions||'?'} correct</div>`
+          : ''}
+      </td>
+      <td style="text-align:center">
+        <span style="background:${passed?'var(--grn)':'var(--red)'}18;
+                     color:${passed?'var(--grn)':'var(--red)'};
+                     padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">
+          ${passed?'✓ Passed':'✗ Failed'}
+        </span>
+      </td>
+      <td style="text-align:center;font-size:11px;color:var(--mut)">${date}</td>
+      <td style="text-align:center;font-size:11px;color:var(--mut)">${timeStr}</td>
+      <td style="text-align:center">
+        <button onclick="deleteQuizSubmission('${s.id}')"
+                class="btn bg d" title="Delete" style="padding:5px 10px;font-size:11px">
+          <i class="fas fa-trash"></i>
+        </button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+function filterQzTable() {
+  const val      = document.getElementById('qzCourseFilter')?.value || '';
+  const rows     = window._qzRows || [];
+  const filtered = val ? rows.filter(s => String(s.course_id) === String(val)) : rows;
+  _buildQzRows(filtered);
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// ASSIGNMENT SUBMISSIONS TAB — fixed layout + improved design
+// ═══════════════════════════════════════════════════════════════
+async function renderAssignmentSubmissions(filterAssignmentId = null) {
+  const sg = document.getElementById('assignSubGrid');
+  if (!sg) return;
+
+  sg.innerHTML = `<div class="empty"><i class="fas fa-spinner fa-spin"></i><p>Loading submissions…</p></div>`;
+
+  const submissions = await fetchAssignmentSubmissions(filterAssignmentId);
+
+  if (!submissions.length) {
+    sg.innerHTML = `<div class="empty"><i class="fas fa-file-upload"></i><p>No submissions yet.</p></div>`;
+    return;
+  }
+
+  const pending    = submissions.filter(s => !s.is_graded);
+  const graded     = submissions.filter(s =>  s.is_graded);
+  const total      = submissions.length;
+  const passRate   = graded.length ? Math.round((graded.filter(s => {
+    const pct = Math.round(((s.score||0)/(s.max_points||100))*100);
+    return pct >= 60;
+  }).length / graded.length) * 100) : 0;
+
+  const courseIds  = [...new Set(submissions.map(s => s.course_id).filter(Boolean))];
+  const courseOpts = courseIds.map(id => {
+    const c = teacherState.courses.find(x => x.id === id);
+    return `<option value="${id}">${_esc(c?.title || id)}</option>`;
+  }).join('');
+
+  sg.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:0;width:100%">
+
+      <!-- ── Stats row ── -->
+      <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--acc)">${total}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Total Submissions</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:${pending.length?'var(--amb)':'var(--grn)'}">${pending.length}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Pending Grade</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:var(--grn)">${graded.length}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Graded</div>
+        </div>
+        <div style="flex:1;min-width:120px;background:var(--bg2);border:1.5px solid var(--bdr);border-radius:var(--r);padding:14px 18px;text-align:center">
+          <div style="font-size:24px;font-weight:800;color:${passRate>=60?'var(--grn)':'var(--amb)'}">${graded.length?passRate+'%':'—'}</div>
+          <div style="font-size:11px;color:var(--mut);margin-top:2px">Pass Rate</div>
+        </div>
+      </div>
+
+      <!-- ── Filter bar ── -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;
+                  background:var(--bg2);border:1.5px solid var(--bdr);
+                  border-radius:var(--r) var(--r) 0 0;flex-wrap:wrap">
+        <i class="fas fa-filter" style="color:var(--acc);font-size:13px"></i>
+        <span style="font-size:12px;font-weight:600;color:var(--txt2)">Filter by Course:</span>
+        <select id="assCourseFilter" class="fc sm" style="width:auto;min-width:200px"
+                onchange="filterAssTable()" title="Filter by Course">
+          <option value="">All Courses</option>
+          ${courseOpts}
+        </select>
+        <div style="margin-left:auto;display:flex;gap:16px;align-items:center;font-size:11px;color:var(--mut)">
+          <span><i class="fas fa-list-check" style="color:var(--acc)"></i>
+            &nbsp;<strong style="color:var(--txt)">${total}</strong> submission${total!==1?'s':''}</span>
+          <span style="color:var(--bdr)">|</span>
+          <span><i class="fas fa-book-open" style="color:var(--acc)"></i>
+            &nbsp;<strong style="color:var(--txt)">All Courses</strong></span>
+        </div>
+      </div>
+
+      <!-- ── Table header label ── -->
+      <div style="border-bottom:2px solid var(--bdr);border-left:1.5px solid var(--bdr);
+                  border-right:1.5px solid var(--bdr);padding:0 16px;background:#fff">
+        <button class="lbtn" style="padding:10px 0;margin-right:24px;
+                border-bottom:2px solid var(--acc);color:var(--acc);
+                font-size:13px;font-weight:700;margin-bottom:-2px">
+          <i class="fas fa-file-alt" style="margin-right:6px"></i>Assignment Submissions
+        </button>
+      </div>
+
+      <!-- ── Table ── -->
+      <div class="dt-wrap" style="border-radius:0;border-top:none">
+        <table class="dt" id="assTable">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Assignment</th>
+              <th>Course</th>
+              <th style="text-align:center">Score</th>
+              <th style="text-align:center">Status</th>
+              <th style="text-align:center">Submitted</th>
+              <th style="text-align:center">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="assSubTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- ── Footer ── -->
+      <div style="padding:10px 16px;font-size:11px;color:var(--mut);background:#fff;
+                  border:1.5px solid var(--bdr);border-top:none;
+                  border-radius:0 0 var(--r) var(--r)">
+        Showing <strong id="assCount">${total}</strong>
+        submission${total!==1?'s':''} across all courses
+        &nbsp;•&nbsp; Pending grade:
+        <strong style="color:${pending.length?'var(--amb)':'var(--grn)'}">${pending.length}</strong>
+      </div>
+
+    </div>`;
+
+  window._assRows = [...pending, ...graded];
+  _buildAssRows(window._assRows);
+}
+
+function _buildAssRows(subs) {
+  const body    = document.getElementById('assSubTableBody');
+  const countEl = document.getElementById('assCount');
+  if (!body) return;
+  if (countEl) countEl.textContent = subs.length;
+  body.innerHTML = '';
+
+  if (!subs.length) {
+    body.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--mut)">
+      <i class="fas fa-inbox" style="font-size:24px;display:block;margin-bottom:8px"></i>
+      No submissions match this filter.</td></tr>`;
+    return;
+  }
+
+  subs.forEach(s => {
+    const c        = teacherState.courses.find(x => x.id === s.course_id);
+    const color    = c?.color || '#1a9fd4';
+    const maxPts   = s.max_points || 100;
+    const isGraded = s.is_graded;
+    const pct      = isGraded && s.score != null ? Math.round((s.score / maxPts) * 100) : null;
+    const scoreCol = pct != null ? (pct>=80?'var(--grn)':pct>=60?'var(--amb)':'var(--red)') : 'var(--mut)';
+    const date     = s.submitted_at
+      ? new Date(s.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+      : '—';
+    const initials  = (s.student_name||'S').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const safeName  = (s.student_name||'').replace(/'/g,"\\'");
+    const safeTitle = (s.assignment_title||'').replace(/'/g,"\\'");
+
+    const tr = document.createElement('tr');
+    tr.dataset.courseId = s.course_id || '';
+    tr.innerHTML = `
+      <td>
+        <div class="stu-c">
+          <div class="stu-av" style="background:${color}">${initials}</div>
+          <div>
+            <div class="stu-name">${_esc(s.student_name)}</div>
+            <div class="stu-email">${_esc(s.student_email||'')}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div style="font-size:12px;font-weight:600;color:var(--txt)">${_esc(s.assignment_title)}</div>
+        ${s.file_url
+          ? `<a href="${_esc(s.file_url)}" target="_blank"
+               style="font-size:10px;color:var(--acc)">
+               <i class="fas fa-paperclip"></i> attachment</a>`
+          : ''}
+      </td>
+      <td>
+        <span style="background:${color}18;color:${color};padding:3px 10px;
+                     border-radius:20px;font-size:11px;font-weight:700;
+                     display:inline-block;max-width:150px;white-space:nowrap;
+                     overflow:hidden;text-overflow:ellipsis">
+          ${_esc(c?.title||'—')}
+        </span>
+      </td>
+      <td style="text-align:center">
+        ${isGraded && s.score != null ? `
+          <div style="font-size:18px;font-weight:800;color:${scoreCol};line-height:1.1">
+            ${s.score}<span style="font-size:10px;font-weight:400;color:var(--mut)">/${maxPts}</span>
+          </div>
+          <div style="font-size:10px;color:${scoreCol}">${pct}%</div>
+        ` : `<div style="font-size:11px;color:var(--mut)">—</div>`}
+      </td>
+      <td style="text-align:center">
+        <span style="background:${isGraded?'var(--grn)':'var(--amb)'}18;
+                     color:${isGraded?'var(--grn)':'var(--amb)'};
+                     padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700">
+          ${isGraded?'✓ Graded':'⏳ Pending'}
+        </span>
+      </td>
+      <td style="text-align:center;font-size:11px;color:var(--mut)">${date}</td>
+      <td style="text-align:center">
+        <div style="display:flex;gap:5px;justify-content:center">
+          <button class="bxs" onclick="openGradePanel('${s.id}','${safeName}','${safeTitle}',${maxPts})"
+                  title="${isGraded?'Edit grade':'Grade submission'}"
+                  style="font-size:11px">
+            <i class="fas fa-${isGraded?'edit':'pen'}"></i> ${isGraded?'Edit':'Grade'}
+          </button>
+          ${s.file_url
+            ? `<a href="${_esc(s.file_url)}" download class="btn bg"
+                  title="Download" style="padding:5px 9px;font-size:11px">
+                  <i class="fas fa-download"></i>
+               </a>`
+            : ''}
+        </div>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+function filterAssTable() {
+  const val      = document.getElementById('assCourseFilter')?.value || '';
+  const rows     = window._assRows || [];
+  const filtered = val ? rows.filter(s => String(s.course_id) === String(val)) : rows;
+  _buildAssRows(filtered);
+}
+function updateGreeting() {
+  const hour = new Date().getHours();
+  let greeting;
+  if (hour >= 5 && hour < 12) {
+    greeting = 'Good morning';
+  } else if (hour >= 12 && hour < 17) {
+    greeting = 'Good afternoon';
+  } else if (hour >= 17 && hour < 21) {
+    greeting = 'Good evening';
+  } else {
+    greeting = 'Good night';
+  }
+  const el = document.getElementById('timeGreeting');
+  if (el) el.textContent = greeting;
+}
+
+// Run immediately and update every minute
+updateGreeting();
+setInterval(updateGreeting, 60000);
+
+window.loadTeacherAnnouncementsUI = async function() {
+    const container = document.getElementById('annList');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading announcements…</p>
+        </div>`;
+
+    try {
+        const { data, error } = await db
+            .from('announcements')
+            .select('id, title, message, priority, created_at, course_id')
+            .eq('published', true)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!data || !data.length) {
+            container.innerHTML = `
+                <div class="empty">
+                    <i class="fas fa-bullhorn"></i>
+                    <p>No announcements from admin yet.</p>
+                </div>`;
+            return;
+        }
+
+        const priorityColors = { urgent: '#ef4444', high: '#f59e0b', normal: '#6b7280' };
+
+        container.innerHTML = data.map(ann => {
+            const timeAgo = (() => {
+                const sec = Math.floor((new Date() - new Date(ann.created_at)) / 1000);
+                for (const [s, u] of [[31536000,'year'],[2592000,'month'],[604800,'week'],
+                    [86400,'day'],[3600,'hour'],[60,'minute']]) {
+                    const n = Math.floor(sec / s);
+                    if (n >= 1) return `${n} ${u}${n > 1 ? 's' : ''} ago`;
+                }
+                return 'Just now';
+            })();
+
+            const priority = ann.priority || 'normal';
+            const pColor = priorityColors[priority] || '#6b7280';
+
+            return `
+                <div style="margin-bottom:16px;">
+                    <div style="background:linear-gradient(160deg,#1a2a6c,#162055);
+                                border-radius:16px;padding:22px 26px;color:white;
+                                position:relative;overflow:hidden;
+                                border-left:4px solid #22d3ee;
+                                box-shadow:0 8px 28px rgba(26,42,108,0.3);">
+                        <div style="font-size:10px;font-weight:700;letter-spacing:2px;
+                                    text-transform:uppercase;color:rgba(255,255,255,0.5);
+                                    margin-bottom:6px;">Admin Announcement</div>
+                        <div style="font-size:17px;font-weight:800;color:white;
+                                    margin-bottom:10px;line-height:1.3;">
+                            ${_esc(ann.title)}
+                        </div>
+                        <div style="font-size:13px;color:rgba(255,255,255,0.8);
+                                    line-height:1.65;margin-bottom:14px;">
+                            ${_esc(ann.message || '')}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;
+                                    padding-top:12px;border-top:1px solid rgba(255,255,255,0.1);">
+                            <span style="padding:3px 10px;border-radius:20px;font-size:11px;
+                                         font-weight:700;background:${priority === 'urgent'
+                                            ? 'rgba(239,68,68,0.3)'
+                                            : priority === 'high'
+                                            ? 'rgba(245,158,11,0.3)'
+                                            : 'rgba(255,255,255,0.1)'};
+                                         color:${pColor};border:1px solid ${pColor}50;">
+                                ${priority}
+                            </span>
+                            <span style="font-size:11px;color:rgba(255,255,255,0.4);">
+                                <i class="fas fa-clock"></i> ${timeAgo}
+                            </span>
+                        </div>
+                    </div>
+                </div>`;
+        }).join('');
+
+    } catch (err) {
+        console.error('Announcements error:', err);
+        container.innerHTML = `
+            <div class="empty">
+                <i class="fas fa-exclamation-triangle"></i>
+                <p>Failed to load: ${err.message}</p>
+            </div>`;
+    }
+};
+
+</script>
+
+</body>
+</html>
