@@ -20,17 +20,14 @@ const AIGrader = (() => {
   /* ----------------------------------------------------------
      CALL CLAUDE
   ---------------------------------------------------------- */
- async function callClaude(systemPrompt, userMessage) {
+async function callClaude(systemPrompt, userMessage) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
 
   const response = await fetch(API_URL, {
     method: 'POST',
     signal: controller.signal,
-    headers: { 
-      'Content-Type': 'application/json',
-      'anthropic-version': '2023-06-01'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: MODEL,
       max_tokens: MAX_TOKENS,
@@ -46,10 +43,27 @@ const AIGrader = (() => {
     throw new Error(err?.error?.message || `API error ${response.status}`);
   }
 
-  const data  = await response.json();
-  const raw   = data.content?.[0]?.text || '';
+  const data = await response.json();
+
+  // Handle error returned from proxy
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  const raw = data.content?.[0]?.text || '';
+
+  if (!raw) {
+    throw new Error('Empty response from Claude');
+  }
+
   const clean = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-  return JSON.parse(clean);
+
+  try {
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error('Claude raw response:', raw);
+    throw new Error('Claude returned invalid JSON: ' + raw.substring(0, 100));
+  }
 }
 
   /* ----------------------------------------------------------
