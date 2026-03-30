@@ -226,13 +226,14 @@ Provide a grading SUGGESTION for the teacher to review.`;
         studentName: sub.studentName
       };
 
-    } catch (err) {
-      console.error('AIGrader.analyse error:', err.message);
-      await sb.from('assignment_submissions')
-      .update({ ai_grading_status: 'failed' })
-      .eq('id', submissionId);
-      return { success: false, error: err.message };
-    }
+} catch (err) {
+  const errMsg = err?.message || JSON.stringify(err) || 'Unknown error';
+  console.error('AIGrader.analyse error:', errMsg, err);
+  await sb.from('assignment_submissions')
+    .update({ ai_grading_status: 'failed' })
+    .eq('id', submissionId);
+  return { success: false, error: errMsg };
+}
   }
 
   /* ----------------------------------------------------------
