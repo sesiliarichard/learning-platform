@@ -13,8 +13,11 @@
             document.write('<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"><\/script>');
         }
     </script>
-<script src="supabase-config.js" defer></script>
-<script src="auth.js" defer></script>
+    <script src="supabase-config.js"></script>
+    <script>
+    const db = supabaseClient;
+</script>
+    <script src="auth.js"></script>
     <style>body { visibility: hidden; }</style>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
