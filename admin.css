@@ -9,7 +9,9 @@
             background: linear-gradient(135deg, #e8e4f3 0%, #d4d4f0 100%);
             min-height: 100vh;
             display: flex;
-            overflow: hidden;
+            margin: 0;
+            overflow-x: hidden;
+           overflow-y: auto;
         }
 
         body.dark-mode {
@@ -20,7 +22,8 @@
 .container {
     display: flex;
     width: 100%;
-    height: 100vh;
+    display: flex;
+    min-height: 100vh;
     background: white;
     overflow: hidden;
     align-items: stretch;
@@ -166,16 +169,19 @@
         /* Main Content */
 .main-content {
     flex: 1 1 auto !important;
-    width: 0 !important;
+    width: calc(100vw - 280px) !important;
     min-width: 0 !important;
-    max-width: 100% !important;
+    max-width: none !important;
     padding: 35px 40px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    height: 100vh !important;
     background: #f8f9fa;
     box-sizing: border-box;
     position: relative;
+        flex: 1;
+    overflow-y: auto;
+    padding: 20px;
 }
         body.dark-mode .main-content {
             background: #0f172a;
@@ -4330,12 +4336,70 @@ body.dark-mode .page-btn.active {
     box-sizing: border-box !important;
 }
 
-/* ── FIX: Force main-content to fill remaining space ── */
+
+/* Fix section heights */
+.dashboard-section.active {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    overflow: visible !important;
+}
+
+/* Fix container */
+.container {
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Fix sidebar width */
+.sidebar {
+    width: 280px !important;
+    min-width: 280px !important;
+    flex-shrink: 0 !important;
+}
+/* ===== SCROLL FIX ===== */
+html, body {
+    height: 100%;
+    overflow: hidden;
+}
+
+.container {
+    display: flex !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+}
+
+.sidebar {
+    width: 280px !important;
+    min-width: 280px !important;
+    flex-shrink: 0 !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+}
+
 .main-content {
     flex: 1 1 auto !important;
-    width: auto !important;
     min-width: 0 !important;
-    max-width: none !important;
-    overflow-x: hidden !important;
+    width: auto !important;  
+    height: 100vh !important;
     overflow-y: auto !important;
+    overflow-x: hidden !important;
+    display: block !important;
+}
+
+.dashboard-section.active {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+}
+
+/* Make sure sections fill width */
+.dashboard-section.active,
+#analyticsSection.active {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
