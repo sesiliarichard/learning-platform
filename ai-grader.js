@@ -24,48 +24,50 @@ async function callClaude(systemPrompt, userMessage) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    signal: controller.signal,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: MODEL,
-      max_tokens: MAX_TOKENS,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }]
-    })
-  });
-
-  clearTimeout(timeout);
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API error ${response.status}`);
-  }
-
-  const data = await response.json();
-
-  // Handle error returned from proxy
-  if (data.error) {
-    throw new Error(data.error);
-  }
-
-  const raw = data.content?.[0]?.text || '';
-
-  if (!raw) {
-    throw new Error('Empty response from Claude');
-  }
-
-  const clean = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
-
   try {
-    return JSON.parse(clean);
-  } catch (e) {
-    console.error('Claude raw response:', raw);
-    throw new Error('Claude returned invalid JSON: ' + raw.substring(0, 100));
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }]
+      })
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err?.error?.message || `API error ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) throw new Error(typeof data.error === 'object' ? JSON.stringify(data.error) : data.error);
+
+    const raw = data.content?.[0]?.text || '';
+    if (!raw) throw new Error('Empty response from Claude');
+
+    const clean = raw.replace(/```json\s*/gi, '').replace(/```/g, '').trim();
+
+    try {
+      return JSON.parse(clean);
+    } catch (e) {
+      console.error('Claude raw response:', raw);
+      throw new Error('Invalid JSON from Claude: ' + raw.substring(0, 200));
+    }
+
+  } catch (err) {
+    clearTimeout(timeout);
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out — Claude took too long to respond');
+    }
+    throw new Error(err?.message || JSON.stringify(err));
   }
 }
-
   /* ----------------------------------------------------------
      BUILD SUGGESTION — calls Claude, returns suggestion object.
      NOTHING is written to the database here.
