@@ -62,7 +62,12 @@ async function loginUser({ email, password, rememberMe = false }) {
             .eq('id', data.user.id)
             .maybeSingle();
 
-        if (profileError) throw profileError;
+  if (profileError) throw profileError;
+
+        // ✅ Guard: profile may not exist yet (email not confirmed)
+        if (!profile) {
+            throw new Error('Profile not found. Please confirm your email first, then log in.');
+        }
 
         // Save to sessionStorage so dashboard pages can read it
         sessionStorage.setItem('userEmail', profile.email);
