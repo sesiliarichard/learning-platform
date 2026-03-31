@@ -6,14 +6,15 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 function initSupabase() {
     if (typeof window.supabase !== 'undefined') {
-        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true,
-                storageKey: 'sb-tnuztjayhzkrjhxjtgkf-auth-token'
-            }
-        });
+window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storageKey: 'sb-tnuztjayhzkrjhxjtgkf-auth-token',
+        storage: window.localStorage
+    }
+});
         window.db = window.supabaseClient;
         console.log('✅ Supabase client initialized');
     } else {
