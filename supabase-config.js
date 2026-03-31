@@ -9,8 +9,7 @@ function initSupabase() {
 
         // Clear corrupted tokens before initializing
         try {
-            const tokenKey = 'sb-tnuztjayhzkrjhxjtgkf-auth-token';
-            const raw = localStorage.getItem(tokenKey);
+        localStorage.removeItem('sb-tnuztjayhzkrjhxjtgkf-auth-token');
             if (raw) {
                 const parsed = JSON.parse(raw);
                 // If token exists but has no refresh_token, it's corrupted — clear it

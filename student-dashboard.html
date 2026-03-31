@@ -4407,12 +4407,14 @@ if (typeof showToast === 'undefined') {
 
 (async () => {
     try {
-        if (typeof db === 'undefined') {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (typeof supabaseClient === 'undefined') {
             window.location.replace('login.html');
             return;
         }
 
-        const { data, error } = await db.auth.getSession();
+        const { data, error } = await supabaseClient.auth.getSession();
 
         if (error || !data?.session) {
             sessionStorage.clear();
