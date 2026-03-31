@@ -4407,7 +4407,7 @@ if (typeof showToast === 'undefined') {
 
 (async () => {
     try {
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1500));
         
         if (typeof supabaseClient === 'undefined') {
             window.location.replace('login.html');
@@ -4416,11 +4416,17 @@ if (typeof showToast === 'undefined') {
 
         const { data, error } = await supabaseClient.auth.getSession();
 
+        console.log('Session check:', data?.session ? 'Found ✅' : 'Not found ❌');
+
         if (error || !data?.session) {
-            sessionStorage.clear();
-            localStorage.removeItem('userProfileData');
-            window.location.replace('login.html');
-            return;
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const retry = await supabaseClient.auth.getSession();
+            if (!retry.data?.session) {
+                sessionStorage.clear();
+                localStorage.removeItem('userProfileData');
+                window.location.replace('login.html');
+                return;
+            }
         }
 
         const { data: profile } = await db

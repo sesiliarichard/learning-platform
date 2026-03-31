@@ -7,9 +7,10 @@ const SUPABASE_ANON_KEY = 'sb_publishable_nGNcyhaeIbVPqAgLiFnrtA_EATCLCnI';
 function initSupabase() {
     if (typeof window.supabase !== 'undefined') {
 
-        // Clear corrupted tokens before initializing
+        // Only clear token if it is corrupted — NOT every time
         try {
-        localStorage.removeItem('sb-tnuztjayhzkrjhxjtgkf-auth-token');
+            const tokenKey = 'sb-tnuztjayhzkrjhxjtgkf-auth-token';
+            const raw = localStorage.getItem(tokenKey);
             if (raw) {
                 const parsed = JSON.parse(raw);
                 // If token exists but has no refresh_token, it's corrupted — clear it
@@ -19,8 +20,7 @@ function initSupabase() {
                 }
             }
         } catch(e) {
-            // If JSON parse fails, token is corrupted — clear all auth data
-            localStorage.clear();
+            localStorage.removeItem('sb-tnuztjayhzkrjhxjtgkf-auth-token');
             console.warn('🧹 Cleared invalid auth storage');
         }
 
