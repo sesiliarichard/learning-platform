@@ -733,24 +733,24 @@ document.getElementById('loginFormElement').addEventListener('submit', async fun
     }
 
     // ── Fetch role from Supabase ─────────────────────────────
-    const { data: { user } } = await db.auth.getUser();
+    // Use result.user directly — no extra network call needed
+    const user = result.user;
 
-// Try by id first, then fall back to email
-let { data: profile } = await db
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle();
-
-// Fallback: look up by email if id lookup returned nothing
-if (!profile) {
-    const { data: profileByEmail } = await db
+    let { data: profile } = await db
         .from('profiles')
         .select('role')
-        .eq('email', user.email)
+        .eq('id', user.id)
         .maybeSingle();
-    profile = profileByEmail;
-}
+
+    // Fallback: look up by email if id lookup returned nothing
+    if (!profile) {
+        const { data: profileByEmail } = await db
+            .from('profiles')
+            .select('role')
+            .eq('email', user.email)
+            .maybeSingle();
+        profile = profileByEmail;
+    }
 
 const role = profile?.role;
 
