@@ -18,6 +18,8 @@ async function getStudentProfile(userId = null) {
     try {
         // If no userId passed, get the currently logged-in user
         if (!userId) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('Not authenticated');
             const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
             if (authError || !user) throw new Error('Not authenticated');
             userId = user.id;
@@ -201,6 +203,8 @@ async function uploadStudentAvatar(file) {
 async function getStudentStats(userId = null) {
     try {
         if (!userId) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('Not authenticated');
             const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
             if (authError || !user) throw new Error('Not authenticated');
             userId = user.id;
@@ -382,6 +386,10 @@ function formatMemberSince(dateString) {
 // Loads profile + stats into the dashboard
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check session before loading anything
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session) return; // Not logged in — skip profile loading
+
     // Load profile
     const profileResult = await getStudentProfile();
     if (profileResult.success) {

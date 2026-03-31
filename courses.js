@@ -239,10 +239,12 @@ async function loadStudentDashboardCourses() {
     console.log('✅ Courses from DB:', result.courses.length, result.courses.map(c => c.title));
 
     // Also get enrollment progress if student is logged in
+    // Also get enrollment progress if student is logged in
     let progressMap = {};
     try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
+        if (session && user) {
             const { data: enrollments } = await supabaseClient
                 .from('enrollments')
                 .select('course_id, progress')

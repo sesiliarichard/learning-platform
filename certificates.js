@@ -6,7 +6,16 @@
 //      keep them pending (draft) or publish + email them.
 // ============================================================
 
-const _certDB = window.supabaseClient || window.db;
+function getCertDB() {
+    return window.supabaseClient || window.db;
+}
+const _certDB = new Proxy({}, {
+    get(_, prop) {
+        const client = window.supabaseClient || window.db;
+        if (!client) throw new Error('Supabase not ready');
+        return client[prop];
+    }
+});
 
 let _allRows  = [];
 let _certTpl  = 'classic';
