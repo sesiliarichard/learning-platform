@@ -40,12 +40,6 @@
  <script src="discussions-ui.js"></script>
  <script src="ai-grader.js"></script>
 <script src="ai-grader-student.js"></script>
- <script>
-document.addEventListener('DOMContentLoaded', async () => {
-    const session = await requireAuth('login.html');
-    if (!session) return;
-});
-</script>
 </head>
 
 <body>
@@ -1650,9 +1644,10 @@ async function loadCoursesFromDB() {
     
     console.log('✅ Courses loaded:', Object.keys(coursesData));
 
-    // Load real progress from enrollments table
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (user) {
+// Load real progress from enrollments table
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session?.user) {
+        const user = session.user;
         const { data: enrollments } = await supabaseClient
             .from('enrollments')
             .select('course_id, progress')
@@ -1666,7 +1661,7 @@ async function loadCoursesFromDB() {
             });
         }
 
-        renderCourseCards(); // re-render cards with real progress %
+        renderCourseCards(); 
     }
 }
 
@@ -4418,9 +4413,11 @@ if (typeof showToast === 'undefined') {
             return;
         }
 
-        const { data } = await db.auth.getSession();
+        const { data, error } = await db.auth.getSession();
 
-        if (!data?.session?.user) {
+        if (error || !data?.session) {
+            sessionStorage.clear();
+            localStorage.removeItem('userProfileData');
             window.location.replace('login.html');
             return;
         }
@@ -4428,10 +4425,10 @@ if (typeof showToast === 'undefined') {
         const { data: profile } = await db
             .from('profiles')
             .select('role')
-            .eq('email', data.session.user.email)
+            .eq('id', data.session.user.id)
             .maybeSingle();
 
-        if (profile?.role !== 'student') {
+        if (!profile || profile.role !== 'student') {
             await db.auth.signOut();
             window.location.replace('login.html');
             return;
@@ -4440,6 +4437,8 @@ if (typeof showToast === 'undefined') {
         document.body.style.visibility = 'visible';
 
     } catch (e) {
+        sessionStorage.clear();
+        localStorage.removeItem('userProfileData');
         window.location.replace('login.html');
     }
 })();
