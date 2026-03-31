@@ -498,7 +498,9 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
     if (event === 'TOKEN_REFRESHED') {
         if (!session) {
-            console.warn('⚠️ Token refresh failed, redirecting to login');
+            console.warn('⚠️ Token refresh failed, clearing storage and redirecting');
+            // Clear the bad token completely
+            localStorage.removeItem('sb-tnuztjayhzkrjhxjtgkf-auth-token');
             sessionStorage.clear();
             localStorage.removeItem('userProfileData');
             window.location.replace('login.html');
