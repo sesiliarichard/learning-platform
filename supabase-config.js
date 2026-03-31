@@ -6,15 +6,34 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 function initSupabase() {
     if (typeof window.supabase !== 'undefined') {
-window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        storageKey: 'sb-tnuztjayhzkrjhxjtgkf-auth-token',
-        storage: window.localStorage
-    }
-});
+
+        // Clear corrupted tokens before initializing
+        try {
+            const tokenKey = 'sb-tnuztjayhzkrjhxjtgkf-auth-token';
+            const raw = localStorage.getItem(tokenKey);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                // If token exists but has no refresh_token, it's corrupted — clear it
+                if (!parsed?.refresh_token) {
+                    localStorage.removeItem(tokenKey);
+                    console.warn('🧹 Cleared corrupted auth token');
+                }
+            }
+        } catch(e) {
+            // If JSON parse fails, token is corrupted — clear all auth data
+            localStorage.clear();
+            console.warn('🧹 Cleared invalid auth storage');
+        }
+
+        window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                storageKey: 'sb-tnuztjayhzkrjhxjtgkf-auth-token',
+                storage: window.localStorage
+            }
+        });
         window.db = window.supabaseClient;
         console.log('✅ Supabase client initialized');
     } else {
