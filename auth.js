@@ -252,6 +252,9 @@ async function getSession() {
 // ─────────────────────────────────────────────
 async function getCurrentUser() {
     try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
         const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
         if (authError || !user) throw new Error('Not authenticated');
 
@@ -373,17 +376,26 @@ async function uploadProfilePicture(file) {
 // Call this at top of student-dashboard.html
 // Redirects to login if not authenticated
 // ─────────────────────────────────────────────
+// ✅ Fixed version
 async function requireAuth(redirectUrl = 'login.html') {
-    const { data: { session } } = await supabaseClient.auth.getSession();
+    try {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
 
-    if (!session) {
+        if (error || !session) {
+            sessionStorage.clear();
+            localStorage.removeItem('userProfileData');
+            window.location.replace(redirectUrl);
+            return null;
+        }
+        return session;
+    } catch (error) {
+        console.error('❌ requireAuth error:', error.message);
+        sessionStorage.clear();
+        localStorage.removeItem('userProfileData');
         window.location.replace(redirectUrl);
         return null;
     }
-
-    return session;
 }
-
 // ─────────────────────────────────────────────
 // 12. PROTECT ADMIN PAGES
 // Call this at top of admin.html
@@ -485,7 +497,14 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     }
 
     if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 Session token refreshed');
+        if (!session) {
+            console.warn('⚠️ Token refresh failed, redirecting to login');
+            sessionStorage.clear();
+            localStorage.removeItem('userProfileData');
+            window.location.replace('login.html');
+        } else {
+            console.log('🔄 Session token refreshed');
+        }
     }
 
     if (event === 'PASSWORD_RECOVERY') {
