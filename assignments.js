@@ -45,7 +45,6 @@ async function createAssignment({ title, courseId, instructions, dueDate, maxPoi
 // ─────────────────────────────────────────────
 async function getCourseAssignments(courseId) {
     try {
-        // ── Safe user fetch ───────────────────────────────
         const { data: authData, error: authError } = await supabaseClient
             .auth.getUser();
 
@@ -53,14 +52,13 @@ async function getCourseAssignments(courseId) {
             return { success: false, error: 'Not authenticated', assignments: [] };
         }
 
-        const user = authData.user;
+        const userId = authData.user.id;
 
         if (!courseId) {
-            console.error('getCourseAssignments: courseId is undefined');
             return { success: false, error: 'Course ID missing', assignments: [] };
         }
 
-        // ── Fetch assignments ─────────────────────────────
+        // ── Fetch assignments ──────────────────────────────
         const { data, error } = await supabaseClient
             .from('assignments')
             .select('*')
@@ -69,25 +67,32 @@ async function getCourseAssignments(courseId) {
             .order('due_date', { ascending: true });
 
         if (error) throw error;
+        if (!data || data.length === 0) return { success: true, assignments: [] };
 
-        // ── Check submissions for each assignment ─────────
-        const assignments = await Promise.all((data || []).map(async (assignment) => {
-            let submission = null;
-            if (user?.id) {
-                const { data: sub } = await supabaseClient
-                    .from('assignment_submissions')
-                    .select('id, submitted_at, score, graded_at, grade')
-                    .eq('assignment_id', assignment.id)
-                    .eq('student_id', user.id)  // ← safe now
-                    .maybeSingle();
-                submission = sub;
-            }
-            return { 
-                ...assignment, 
-                isSubmitted: !!submission, 
-                submission: submission 
+        // ── Fetch ALL submissions in ONE query ─────────────
+        const assignmentIds = data.map(a => a.id);
+
+        const { data: allSubs } = await supabaseClient
+            .from('assignment_submissions')
+            .select('id, assignment_id, submitted_at, score, graded_at, grade')
+            .eq('student_id', userId)
+            .in('assignment_id', assignmentIds);
+
+        // Build a map for quick lookup
+        const subsMap = {};
+        (allSubs || []).forEach(sub => {
+            subsMap[sub.assignment_id] = sub;
+        });
+
+        // ── Merge assignments with their submission ────────
+        const assignments = data.map(assignment => {
+            const submission = subsMap[assignment.id] || null;
+            return {
+                ...assignment,
+                isSubmitted: !!submission,
+                submission:  submission
             };
-        }));
+        });
 
         return { success: true, assignments };
 
@@ -96,7 +101,6 @@ async function getCourseAssignments(courseId) {
         return { success: false, error: error.message, assignments: [] };
     }
 }
-
 // ─────────────────────────────────────────────
 // 3. SUBMIT ASSIGNMENT
 // ─────────────────────────────────────────────
