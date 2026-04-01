@@ -1690,6 +1690,7 @@ function renderCourseCards() {
             card.className = 'course-card';
             card.dataset.course = course.id;
 
+            const progress = course.progress || 0;
             card.innerHTML = `
                 <div class="course-thumbnail ${colors[index % colors.length]}">
                     <i class="fas ${icons[index % icons.length]} course-icon-large"></i>
@@ -1700,8 +1701,12 @@ function renderCourseCards() {
                     <div class="meta-row"><span>⏱️</span><span>12 weeks</span></div>
                 </div>
                 <div class="progress-container">
-                    <div class="progress-circle" data-progress="0"><span>0%</span></div>
-                    <div class="next-class">Click to view</div>
+                    <div class="progress-circle" data-progress="${progress}">
+                        <span>${progress}%</span>
+                    </div>
+                    <div class="next-class">
+                        ${progress === 0 ? 'Not started' : progress >= 100 ? 'Completed!' : progress + '% complete'}
+                    </div>
                 </div>
             `;
 
@@ -2701,10 +2706,12 @@ async function toggleNoteComplete(index) {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) { displayNote(index); updateNotesProgress(); return; }
 
+    const courseId = window.currentCourseId || window.currentCourse;
+
     if (isNowComplete) {
         await supabaseClient.from('course_progress').upsert({
             student_id: user.id,
-            course_id:  window.currentCourseId,
+            course_id:  courseId,
             topic_id:   note.id,
             completed:  true
         }, { onConflict: 'student_id,course_id,topic_id' });
@@ -2717,7 +2724,10 @@ async function toggleNoteComplete(index) {
 
     displayNote(index);
     updateNotesProgress();
-    await syncCourseProgressToDB(user.id, window.currentCourseId);
+
+    if (courseId) {
+        await syncCourseProgressToDB(user.id, courseId);
+    }
 }
 
 // Update progress bar
@@ -2807,132 +2817,131 @@ window.addEventListener('beforeunload', () => {
 let callFrame = null;
 let currentUserName = 'User';
 
-
 async function syncCourseProgressToDB(studentId, courseId) {
     try {
-        // ── 1. Notes progress ──────────────────────────────
-  // Get topic IDs via chapters (topics don't have course_id directly)
+        // ── NOTES ──────────────────────────────────────────────
         const { data: chapters } = await supabaseClient
             .from('chapters')
             .select('id')
-            .eq('course_id', courseId);
+            .eq('course_id', courseId)
+            .eq('published', true);
 
         const chapterIds = (chapters || []).map(c => c.id);
         let totalTopics = 0;
+        let doneTopics  = 0;
 
         if (chapterIds.length > 0) {
-            const { count } = await supabaseClient
+            const { count: tCount } = await supabaseClient
                 .from('topics')
-                .select('id', { count: 'exact' })
+                .select('id', { count: 'exact', head: true })
                 .in('chapter_id', chapterIds);
-            totalTopics = count || 0;
+            totalTopics = tCount || 0;
+
+            const { count: dCount } = await supabaseClient
+                .from('course_progress')
+                .select('id', { count: 'exact', head: true })
+                .eq('student_id', studentId)
+                .eq('course_id', courseId)
+                .eq('completed', true);
+            doneTopics = dCount || 0;
         }
 
-const { count: doneTopics } = await supabaseClient
-            .from('course_progress')
-            .select('id', { count: 'exact' })
-            .eq('student_id', studentId)
-            .eq('course_id', courseId)
-            .eq('completed', true);
-
-        // ── 2. Quiz progress ───────────────────────────────
+        // ── QUIZZES ────────────────────────────────────────────
         const { count: totalQuizzes } = await supabaseClient
             .from('quizzes')
-            .select('id', { count: 'exact' })
+            .select('id', { count: 'exact', head: true })
             .eq('course_id', courseId);
 
-        const { data: quizSubs } = await supabaseClient
-            .from('quiz_submissions')
-            .select('quiz_id')
-            .eq('student_id', studentId);
-
-        // Only count quizzes that belong to this course
         let doneQuizzes = 0;
-        if (quizSubs && quizSubs.length > 0) {
+        if ((totalQuizzes || 0) > 0) {
             const { data: courseQuizIds } = await supabaseClient
                 .from('quizzes')
                 .select('id')
                 .eq('course_id', courseId);
 
-            if (courseQuizIds) {
-                const courseQuizIdSet = new Set(courseQuizIds.map(q => q.id));
-                const uniqueSubmitted = new Set(
-                    quizSubs
-                        .filter(s => courseQuizIdSet.has(s.quiz_id))
-                        .map(s => s.quiz_id)
-                );
-                doneQuizzes = uniqueSubmitted.size;
-            }
+            const courseQuizSet = new Set((courseQuizIds || []).map(q => q.id));
+
+            const { data: quizSubs } = await supabaseClient
+                .from('quiz_submissions')
+                .select('quiz_id')
+                .eq('student_id', studentId);
+
+            doneQuizzes = new Set(
+                (quizSubs || [])
+                    .filter(s => courseQuizSet.has(s.quiz_id))
+                    .map(s => s.quiz_id)
+            ).size;
         }
 
-        // ── 3. Assignment progress ─────────────────────────
+        // ── ASSIGNMENTS ────────────────────────────────────────
         const { count: totalAssignments } = await supabaseClient
             .from('assignments')
-            .select('id', { count: 'exact' })
+            .select('id', { count: 'exact', head: true })
             .eq('course_id', courseId);
 
-        const { data: assignSubs } = await supabaseClient
-            .from('assignment_submissions')
-            .select('assignment_id')
-            .eq('student_id', studentId);
-
         let doneAssignments = 0;
-        if (assignSubs && assignSubs.length > 0) {
+        if ((totalAssignments || 0) > 0) {
             const { data: courseAssignIds } = await supabaseClient
                 .from('assignments')
                 .select('id')
                 .eq('course_id', courseId);
 
-            if (courseAssignIds) {
-                const courseAssignIdSet = new Set(courseAssignIds.map(a => a.id));
-                const uniqueSubmitted = new Set(
-                    assignSubs
-                        .filter(s => courseAssignIdSet.has(s.assignment_id))
-                        .map(s => s.assignment_id)
-                );
-                doneAssignments = uniqueSubmitted.size;
-            }
+            const courseAssignSet = new Set((courseAssignIds || []).map(a => a.id));
+
+            const { data: assignSubs } = await supabaseClient
+                .from('assignment_submissions')
+                .select('assignment_id')
+                .eq('student_id', studentId);
+
+            doneAssignments = new Set(
+                (assignSubs || [])
+                    .filter(s => courseAssignSet.has(s.assignment_id))
+                    .map(s => s.assignment_id)
+            ).size;
         }
 
-        // ── 4. Weighted progress calculation ──────────────
-        // Notes = 40%, Quizzes = 30%, Assignments = 30%
-        const WEIGHTS = { notes: 0.4, quizzes: 0.3, assignments: 0.3 };
+        // ── WEIGHTED CALCULATION ───────────────────────────────
+        const categories = [
+            { total: totalTopics,          done: doneTopics,       weight: 0.40 },
+            { total: totalQuizzes  || 0,   done: doneQuizzes,      weight: 0.30 },
+            { total: totalAssignments || 0, done: doneAssignments, weight: 0.30 },
+        ];
 
-        const notesPct  = totalTopics    > 0 ? (doneTopics    / totalTopics)    * 100 : 0;
-        const quizPct   = totalQuizzes   > 0 ? (doneQuizzes   / totalQuizzes)   * 100 : 0;
-        const assignPct = totalAssignments > 0 ? (doneAssignments / totalAssignments) * 100 : 0;
+        const active = categories.filter(c => c.total > 0);
+        let pct = 0;
 
-        // If a category has no items, redistribute its weight equally
-        let totalWeight = 0;
-        let weightedSum = 0;
+        if (active.length > 0) {
+            const totalWeight = active.reduce((s, c) => s + c.weight, 0);
+            pct = Math.round(
+                active.reduce((s, c) =>
+                    s + (c.done / c.total) * (c.weight / totalWeight), 0
+                ) * 100
+            );
+        }
 
-        if (totalTopics > 0)      { weightedSum += notesPct  * WEIGHTS.notes;       totalWeight += WEIGHTS.notes; }
-        if (totalQuizzes > 0)     { weightedSum += quizPct   * WEIGHTS.quizzes;     totalWeight += WEIGHTS.quizzes; }
-        if (totalAssignments > 0) { weightedSum += assignPct * WEIGHTS.assignments; totalWeight += WEIGHTS.assignments; }
+        console.log(`📊 Progress ${courseId}: topics ${doneTopics}/${totalTopics} | quizzes ${doneQuizzes}/${totalQuizzes||0} | assignments ${doneAssignments}/${totalAssignments||0} → ${pct}%`);
 
-        const pct = totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
+        // ── SAVE ───────────────────────────────────────────────
+        const { error: upErr } = await supabaseClient
+            .from('enrollments')
+            .update({ progress: pct, updated_at: new Date().toISOString() })
+            .eq('student_id', studentId)
+            .eq('course_id', courseId);
 
-        console.log(`📊 Progress — Notes: ${notesPct.toFixed(0)}% | Quizzes: ${quizPct.toFixed(0)}% | Assignments: ${assignPct.toFixed(0)}% → Total: ${pct}%`);
+        if (upErr) {
+            await supabaseClient.from('enrollments').insert({
+                student_id: studentId,
+                course_id:  courseId,
+                progress:   pct,
+                updated_at: new Date().toISOString()
+            });
+        }
 
-        // ── 5. Save to enrollments ─────────────────────────
-
-const { error: upErr } = await supabaseClient
-    .from('enrollments')
-    .update({ progress: pct, updated_at: new Date().toISOString() })
-    .eq('student_id', studentId)
-    .eq('course_id', courseId);
-
-if (upErr) {
-    // If no row exists yet, insert it
-    await supabaseClient.from('enrollments').insert({
-        student_id: studentId,
-        course_id:  courseId,
-        progress:   pct,
-        updated_at: new Date().toISOString()
-    });
-}
-        // ── 6. Update the UI progress bar ──────────────────
         updateCourseProgressUI(pct);
+
+        if (window.coursesData?.[courseId]) {
+            window.coursesData[courseId].progress = pct;
+        }
 
         return pct;
 
