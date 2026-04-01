@@ -1686,11 +1686,12 @@ function renderCourseCards() {
         grid.innerHTML = '';
 
         Object.values(coursesData).forEach((course, index) => {
+            const progress = course.progress || 0;
             const card = document.createElement('div');
             card.className = 'course-card';
             card.dataset.course = course.id;
+            card.style.cursor = 'pointer';
 
-            const progress = course.progress || 0;
             card.innerHTML = `
                 <div class="course-thumbnail ${colors[index % colors.length]}">
                     <i class="fas ${icons[index % icons.length]} course-icon-large"></i>
@@ -1710,24 +1711,27 @@ function renderCourseCards() {
                 </div>
             `;
 
-            // Use addEventListener instead of onclick
-           card.addEventListener('click', function() {
+            card.addEventListener('click', function () {
                 const courseId = this.dataset.course;
-                console.log('✅ Card clicked! courseId:', courseId);
+                if (!courseId) return;
 
-                // Switch to Cohort Courses section in sidebar
-                const navItems = document.querySelectorAll('.nav-item');
-                navItems.forEach(nav => nav.classList.remove('active'));
-                const coursesNav = document.querySelector('[data-section="courses"]');
+                console.log('✅ Dashboard card clicked, navigating to course:', courseId);
+
+                // ── Step 1: highlight Cohort Courses in sidebar ──
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                const coursesNav = document.querySelector('.nav-item[data-section="courses"]');
                 if (coursesNav) coursesNav.classList.add('active');
 
-                // Show the courses section
+                // ── Step 2: hide all sections, show coursesSection ──
                 document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
                 const coursesSection = document.getElementById('coursesSection');
                 if (coursesSection) coursesSection.classList.add('active');
 
-                // Select the course and show its details
-                selectCourse(courseId);
+                // ── Step 3: open the specific course ──
+                // Small delay ensures the section is visible before selectCourse runs
+                setTimeout(() => {
+                    selectCourse(courseId);
+                }, 50);
             });
 
             grid.appendChild(card);
