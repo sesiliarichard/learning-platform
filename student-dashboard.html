@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="student-dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
        <!-- Favicon - Multiple sizes for better display -->
 <link rel="icon" type="image/png" sizes="32x32" href="images\favicon-32x32.png">
 <link rel="shortcut icon" href="images\favicon-32x32.png">
@@ -176,40 +176,62 @@
                     </div>
                 </div>
 
-                <!-- Statistics Row -->
-                <div class="stats-row">
+              <!-- Statistics Row -->
+<!-- Statistics Row -->
+<div class="stats-row">
+ 
+  <!-- Exam Grade Statistics -->
   <div class="stat-card" id="examGradeCard">
     <h4>
       Exam Grade Statistics
       <button class="filter-btn" id="gradeFilterBtn">Yearly ▼</button>
     </h4>
-    <div class="chart-container">
+    <div class="chart-container chart-container--relative">
       <div class="grade-badge" id="avgGradeBadge">—</div>
-      <canvas id="examGradeChart" height="180"></canvas>
+      <div class="chart-canvas-wrapper">
+        <canvas id="examGradeChart"></canvas>
+      </div>
     </div>
-    <div id="examGradeSubtitle"
-      style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center;">
+    <div id="examGradeSubtitle" class="exam-grade-subtitle">
       Loading...
     </div>
   </div>
-
+ 
+  <!-- Total Courses -->
   <div class="stat-card">
     <h4>Total Courses</h4>
-    <div class="stat-number" id="totalCoursesNum">
-      — <svg class="stat-icon" viewBox="0 0 50 50">...</svg>
+    <div class="stat-number">
+      <span id="totalCoursesNum">—</span>
+      <svg class="stat-icon" viewBox="0 0 50 50">
+        <rect x="5" y="10" width="15" height="25" fill="#7c3aed" rx="2"/>
+        <rect x="25" y="15" width="15" height="20" fill="#ec4899" rx="2"/>
+        <circle cx="35" cy="12" r="3" fill="#fbbf24"/>
+      </svg>
     </div>
+    <div id="coursesSubtitle" class="stat-subtitle"></div>
   </div>
-
+ 
+  <!-- Hours Spent -->
   <div class="stat-card">
     <h4>Hours Spent</h4>
-    <div class="stat-number" id="hoursSpentNum">
-      — <svg class="stat-icon" viewBox="0 0 50 50">...</svg>
+    <div class="stat-number">
+      <span id="hoursSpentNum">—</span>
+      <svg class="stat-icon" viewBox="0 0 50 50">
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#ef4444" stroke-width="3"/>
+        <circle cx="25" cy="25" r="20" fill="none" stroke="#7c3aed" stroke-width="3"
+                stroke-dasharray="75.4 125.6" transform="rotate(-90 25 25)"/>
+        <line x1="25" y1="25" x2="25" y2="15" stroke="#1f2937" stroke-width="2"/>
+        <line x1="25" y1="25" x2="32" y2="25" stroke="#1f2937" stroke-width="2"/>
+      </svg>
     </div>
+    <div id="hoursSubtitle" class="stat-subtitle"></div>
   </div>
+ 
+</div>
 </div>
 
-            <!-- Profile Section -->
-          
+
+           <!-- Profile Section -->
 <div id="profileSection" class="dashboard-section">
     <div class="profile-simple-page">
         <!-- Profile Header -->
@@ -1702,6 +1724,7 @@ async function initDashboard() {
     loadResults();
     calculateProfileStats();
     setMemberSinceDate();
+    await loadDashboardStats();
 }
 
         // Setup event listeners
@@ -4915,164 +4938,219 @@ async function loadCourseRecordings(courseId) {
     }
 }
 async function loadDashboardStats() {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return;
+  try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return;
 
-  // ── Fetch quiz submissions ──────────────────────────
-  const { data: quizSubs } = await supabaseClient
-    .from('quiz_submissions')
-    .select('score, submitted_at, quizzes(title, course_id)')
-    .eq('student_id', user.id)
-    .order('submitted_at', { ascending: true });
+    // ── Fetch all data in parallel ──────────────────────────────
+    const [quizRes, assignRes, enrollRes] = await Promise.all([
+      supabaseClient
+        .from('quiz_submissions')
+        .select('score, submitted_at')
+        .eq('student_id', user.id)
+        .order('submitted_at', { ascending: true }),
 
-  // ── Fetch assignment submissions ────────────────────
-  const { data: assignSubs } = await supabaseClient
-    .from('assignment_submissions')
-    .select('score, submitted_at, assignments(max_points)')
-    .eq('student_id', user.id)
-    .not('score', 'is', null);
+      supabaseClient
+        .from('assignment_submissions')
+        .select('score, submitted_at, assignments(max_points)')
+        .eq('student_id', user.id)
+        .not('score', 'is', null),
 
-  // ── Fetch enrollments for hours estimate ────────────
-  const { data: enrollments } = await supabaseClient
-    .from('enrollments')
-    .select('progress, course_id')
-    .eq('student_id', user.id);
+      supabaseClient
+        .from('enrollments')
+        .select('progress, course_id')
+        .eq('student_id', user.id)
+    ]);
 
-  // ── Compute average score (quiz + assignment) ───────
-  const allScores = [];
-  (quizSubs || []).forEach(s => {
-    if (s.score !== null) allScores.push(s.score);
-  });
-  (assignSubs || []).forEach(s => {
-    if (s.score !== null && s.assignments?.max_points) {
-      allScores.push(Math.round((s.score / s.assignments.max_points) * 100));
-    }
-  });
+    const quizSubs   = quizRes.data   || [];
+    const assignSubs = assignRes.data || [];
+    const enrollments = enrollRes.data || [];
 
-  const avgScore = allScores.length
-    ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1)
-    : null;
+    // ── Compute overall average score ───────────────────────────
+    const allScores = [];
 
-  // ── Update average badge ────────────────────────────
-  const badge = document.getElementById('avgGradeBadge');
-  if (badge) badge.textContent = avgScore ? avgScore + '%' : 'N/A';
-
-  const subtitle = document.getElementById('examGradeSubtitle');
-  if (subtitle) {
-    const q = (quizSubs || []).length;
-    const a = (assignSubs || []).length;
-    subtitle.textContent =
-      `${q} quiz${q !== 1 ? 'zes' : ''} · ${a} assignment${a !== 1 ? 's' : ''} graded`;
-  }
-
-  // ── Build monthly chart data (current year) ─────────
-  const year = new Date().getFullYear();
-  const monthlyScores = Array(12).fill(null).map(() => ({ sum: 0, count: 0 }));
-
-  (quizSubs || []).forEach(s => {
-    if (s.score === null) return;
-    const d = new Date(s.submitted_at);
-    if (d.getFullYear() !== year) return;
-    const m = d.getMonth();
-    monthlyScores[m].sum += s.score;
-    monthlyScores[m].count++;
-  });
-  (assignSubs || []).forEach(s => {
-    if (s.score === null || !s.assignments?.max_points) return;
-    const d = new Date(s.submitted_at);
-    if (d.getFullYear() !== year) return;
-    const m = d.getMonth();
-    const pct = Math.round((s.score / s.assignments.max_points) * 100);
-    monthlyScores[m].sum += pct;
-    monthlyScores[m].count++;
-  });
-
-  const chartData = monthlyScores.map(m =>
-    m.count > 0 ? Math.round(m.sum / m.count) : null
-  );
-
-  // ── Render Chart.js line chart ──────────────────────
-  const canvas = document.getElementById('examGradeChart');
-  if (canvas) {
-    canvas.style.width = '100%';
-
-    if (window._examChart) window._examChart.destroy();
-
-    window._examChart = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: ['Jan','Feb','Mar','Apr','May','Jun',
-                 'Jul','Aug','Sep','Oct','Nov','Dec'],
-        datasets: [{
-          label: 'Avg Score %',
-          data: chartData,
-          borderColor: '#7c3aed',
-          backgroundColor: 'rgba(124,58,237,0.08)',
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#7c3aed',
-          tension: 0.4,
-          fill: true,
-          spanGaps: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: ctx => ctx.raw !== null ? ctx.raw + '%' : 'No data'
-            }
-          }
-        },
-        scales: {
-          y: {
-            min: 0, max: 100,
-            ticks: {
-              stepSize: 20,
-              callback: v => v + '%',
-              font: { size: 10 },
-              color: '#9ca3af'
-            },
-            grid: { color: 'rgba(0,0,0,0.05)' }
-          },
-          x: {
-            ticks: {
-              font: { size: 10 },
-              color: '#9ca3af',
-              autoSkip: false,
-              maxRotation: 0
-            },
-            grid: { display: false }
-          }
-        }
+    quizSubs.forEach(s => {
+      if (s.score !== null && s.score !== undefined) {
+        allScores.push(Number(s.score));
       }
     });
-  }
 
-  // ── Total courses ───────────────────────────────────
-  const totalCourses = (enrollments || []).length ||
-                       Object.keys(coursesData || {}).length;
-  const el = document.getElementById('totalCoursesNum');
-  if (el) {
-    const icon = el.querySelector('svg');
-    el.textContent = totalCourses;
-    if (icon) el.appendChild(icon);
-  }
+    assignSubs.forEach(s => {
+      const maxPts = s.assignments?.max_points;
+      if (s.score !== null && maxPts) {
+        allScores.push(Math.round((s.score / maxPts) * 100));
+      }
+    });
 
-  // ── Hours estimate (progress × 12 weeks × avg hrs) ─
-  const totalProgress = (enrollments || [])
-    .reduce((sum, e) => sum + (e.progress || 0), 0);
-  const avgProgress = totalCourses > 0
-    ? totalProgress / totalCourses : 0;
-  const hoursEst = Math.round(totalCourses * (avgProgress / 100) * 36);
-  const hoursEl = document.getElementById('hoursSpentNum');
-  if (hoursEl) {
-    const icon = hoursEl.querySelector('svg');
-    hoursEl.textContent = hoursEst > 0 ? hoursEst + '+' : '0';
-    if (icon) hoursEl.appendChild(icon);
+    const avgScore = allScores.length
+      ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1)
+      : null;
+
+    // ── Update badge ────────────────────────────────────────────
+    const badge = document.getElementById('avgGradeBadge');
+    if (badge) {
+      badge.textContent = avgScore ? avgScore + '%' : 'N/A';
+    }
+
+    // ── Update subtitle ─────────────────────────────────────────
+    const subtitle = document.getElementById('examGradeSubtitle');
+    if (subtitle) {
+      const q = quizSubs.length;
+      const a = assignSubs.length;
+      if (q === 0 && a === 0) {
+        subtitle.textContent = 'No submissions yet';
+      } else {
+        subtitle.textContent =
+          q + ' quiz' + (q !== 1 ? 'zes' : '') +
+          ' · ' +
+          a + ' assignment' + (a !== 1 ? 's' : '') +
+          ' graded';
+      }
+    }
+
+    // ── Build monthly chart data (current year) ─────────────────
+    const year = new Date().getFullYear();
+    const monthly = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+
+    quizSubs.forEach(s => {
+      if (s.score === null) return;
+      const d = new Date(s.submitted_at);
+      if (d.getFullYear() !== year) return;
+      monthly[d.getMonth()].sum   += Number(s.score);
+      monthly[d.getMonth()].count += 1;
+    });
+
+    assignSubs.forEach(s => {
+      const maxPts = s.assignments?.max_points;
+      if (s.score === null || !maxPts) return;
+      const d = new Date(s.submitted_at);
+      if (d.getFullYear() !== year) return;
+      const pct = Math.round((s.score / maxPts) * 100);
+      monthly[d.getMonth()].sum   += pct;
+      monthly[d.getMonth()].count += 1;
+    });
+
+    const chartData = monthly.map(m =>
+      m.count > 0 ? Math.round(m.sum / m.count) : null
+    );
+
+    const hasAnyData = chartData.some(v => v !== null);
+
+    // ── Render Chart.js ─────────────────────────────────────────
+    const canvas = document.getElementById('examGradeChart');
+    if (canvas) {
+      // Destroy old chart if it exists
+      if (window._examChartInstance) {
+        window._examChartInstance.destroy();
+        window._examChartInstance = null;
+      }
+
+      if (!hasAnyData) {
+        // Draw placeholder message on canvas
+        const ctx = canvas.getContext('2d');
+        canvas.width  = canvas.offsetWidth  || 300;
+        canvas.height = 140;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle   = '#9ca3af';
+        ctx.font        = '13px Plus Jakarta Sans, sans-serif';
+        ctx.textAlign   = 'center';
+        ctx.fillText('No quiz or assignment data yet', canvas.width / 2, 70);
+        return;
+      }
+
+      window._examChartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: ['Jan','Feb','Mar','Apr','May','Jun',
+                   'Jul','Aug','Sep','Oct','Nov','Dec'],
+          datasets: [{
+            label: 'Avg Score %',
+            data: chartData,
+            borderColor: '#7c3aed',
+            backgroundColor: 'rgba(124,58,237,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointBackgroundColor: '#7c3aed',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            tension: 0.4,
+            fill: true,
+            spanGaps: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: ctx => ctx.raw !== null ? 'Avg: ' + ctx.raw + '%' : 'No data'
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 100,
+              ticks: {
+                stepSize: 25,
+                callback: v => v + '%',
+                font: { size: 10 },
+                color: '#9ca3af'
+              },
+              grid: { color: 'rgba(0,0,0,0.05)' }
+            },
+            x: {
+              ticks: {
+                font: { size: 10 },
+                color: '#9ca3af',
+                autoSkip: false,
+                maxRotation: 0
+              },
+              grid: { display: false }
+            }
+          }
+        }
+      });
+    }
+
+    // ── Total Courses ───────────────────────────────────────────
+    const totalCourses = enrollments.length || Object.keys(window.coursesData || {}).length;
+    const completedCourses = enrollments.filter(e => (e.progress || 0) >= 90).length;
+
+    const coursesEl = document.getElementById('totalCoursesNum');
+    if (coursesEl) coursesEl.textContent = totalCourses || '0';
+
+    const coursesSub = document.getElementById('coursesSubtitle');
+    if (coursesSub && totalCourses > 0) {
+      coursesSub.textContent = completedCourses + ' completed';
+    }
+
+    // ── Hours Spent (estimated from progress) ───────────────────
+    // Each course = ~36 hrs total (12 weeks × 3hrs/week)
+    const totalProgressSum = enrollments.reduce((sum, e) => sum + (e.progress || 0), 0);
+    const avgPct = totalCourses > 0 ? totalProgressSum / totalCourses : 0;
+    const hoursEst = Math.round(totalCourses * (avgPct / 100) * 36);
+
+    const hoursEl = document.getElementById('hoursSpentNum');
+    if (hoursEl) hoursEl.textContent = hoursEst > 0 ? hoursEst + '+' : '0';
+
+    const hoursSub = document.getElementById('hoursSubtitle');
+    if (hoursSub && hoursEst > 0) {
+      hoursSub.textContent = 'across ' + totalCourses + ' course' + (totalCourses !== 1 ? 's' : '');
+    }
+
+  } catch (err) {
+    console.error('loadDashboardStats error:', err);
+
+    // Show fallback so card doesn't stay blank
+    const subtitle = document.getElementById('examGradeSubtitle');
+    if (subtitle) subtitle.textContent = 'Could not load stats';
+
+    const badge = document.getElementById('avgGradeBadge');
+    if (badge) badge.textContent = 'N/A';
   }
 }
     </script>
