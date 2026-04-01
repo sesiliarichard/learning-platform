@@ -1711,9 +1711,22 @@ function renderCourseCards() {
             `;
 
             // Use addEventListener instead of onclick
-            card.addEventListener('click', function() {
+           card.addEventListener('click', function() {
                 const courseId = this.dataset.course;
                 console.log('✅ Card clicked! courseId:', courseId);
+
+                // Switch to Cohort Courses section in sidebar
+                const navItems = document.querySelectorAll('.nav-item');
+                navItems.forEach(nav => nav.classList.remove('active'));
+                const coursesNav = document.querySelector('[data-section="courses"]');
+                if (coursesNav) coursesNav.classList.add('active');
+
+                // Show the courses section
+                document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+                const coursesSection = document.getElementById('coursesSection');
+                if (coursesSection) coursesSection.classList.add('active');
+
+                // Select the course and show its details
                 selectCourse(courseId);
             });
 
