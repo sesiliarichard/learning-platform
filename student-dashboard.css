@@ -6258,3 +6258,235 @@ body.dark-mode .ann-cream-section {
     display: block;
     margin-bottom: 10px;
 }
+/* ── Change Password Modal ── */
+#changePasswordModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 5000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+#changePasswordModal .modal-content {
+    background: white;
+    border-radius: 24px;
+    padding: 36px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode #changePasswordModal .modal-content {
+    background: #1f2937;
+}
+
+#changePasswordModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 18px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+body.dark-mode #changePasswordModal .modal-header {
+    border-bottom-color: #374151;
+}
+
+#changePasswordModal .modal-header h2 {
+    font-size: 22px;
+    font-weight: 800;
+    color: #1f2937;
+    margin: 0;
+}
+
+body.dark-mode #changePasswordModal .modal-header h2 {
+    color: #ffffff;
+}
+
+#changePasswordModal .btn-close {
+    background: #fee2e2;
+    color: #ef4444;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 13px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#changePasswordModal .btn-close:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Form groups inside modal */
+#changePasswordModal .form-group {
+    margin-bottom: 20px;
+}
+
+#changePasswordModal .form-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    color: #1f2937;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+body.dark-mode #changePasswordModal .form-group label {
+    color: #ffffff;
+}
+
+#changePasswordModal .form-group label i {
+    color: #0099ff;
+    width: 16px;
+}
+
+/* Password field wrapper */
+#changePasswordModal .password-field {
+    position: relative;
+}
+
+#changePasswordModal .password-field input {
+    width: 100%;
+    padding: 13px 48px 13px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #1f2937;
+    background: white;
+    transition: all 0.3s;
+    outline: none;
+}
+
+body.dark-mode #changePasswordModal .password-field input {
+    background: #374151;
+    border-color: #4b5563;
+    color: #ffffff;
+}
+
+#changePasswordModal .password-field input:focus {
+    border-color: #0099ff;
+    box-shadow: 0 0 0 3px rgba(0, 153, 255, 0.1);
+}
+
+#changePasswordModal .toggle-password {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 15px;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+#changePasswordModal .toggle-password:hover {
+    color: #0099ff;
+}
+
+#changePasswordModal .password-hint {
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 6px;
+    display: block;
+}
+
+/* Modal action buttons */
+#changePasswordModal .modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 2px solid #f3f4f6;
+}
+
+body.dark-mode #changePasswordModal .modal-actions {
+    border-top-color: #374151;
+}
+
+#changePasswordModal .cert-btn.primary {
+    flex: 2;
+    padding: 13px;
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 14px rgba(0, 153, 255, 0.3);
+}
+
+#changePasswordModal .cert-btn.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 153, 255, 0.4);
+}
+
+#changePasswordModal .cert-btn.secondary {
+    flex: 1;
+    padding: 13px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: all 0.2s;
+}
+
+body.dark-mode #changePasswordModal .cert-btn.secondary {
+    background: #374151;
+    border-color: #4b5563;
+    color: #d1d5db;
+}
+
+#changePasswordModal .cert-btn.secondary:hover {
+    border-color: #0099ff;
+    color: #0099ff;
+}
+/* ── Modal eyebrow label ── */
+.modal-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #9ca3af;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.modal-eyebrow i {
+    color: #0099ff;
+}
+
+.modal-title-group {
+    display: flex;
+    flex-direction: column;
+}

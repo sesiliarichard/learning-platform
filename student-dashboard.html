@@ -454,12 +454,17 @@
 <!-- NEW: Change Password Modal -->
 <div class="modal hidden" id="changePasswordModal">
     <div class="modal-content">
-        <div class="modal-header">
-            <h2>Change Password</h2>
-            <button onclick="closeChangePasswordModal()" class="btn-close" aria-label="Close">
-                <i class="fas fa-times"></i> Close
-            </button>
+<div class="modal-header">
+    <div class="modal-title-group">
+        <div class="modal-eyebrow">
+            <i class="fas fa-lock"></i> Security
         </div>
+        <h2>Change Password</h2>
+    </div>
+    <button onclick="closeChangePasswordModal()" class="btn-close" aria-label="Close">
+        <i class="fas fa-times"></i> Close
+    </button>
+</div>
        <form id="changePasswordForm" class="profile-form">
     <div class="form-group">
         <label><i class="fas fa-lock"></i> Current Password</label>
