@@ -30,7 +30,7 @@ options: {
         return {
             success: true,
             user: authData.user,
-            message: 'Account created successfully! Please check your email to confirm your account.'
+          message: 'Account created successfully! You can now log in.'
         };
 
     } catch (error) {

@@ -821,11 +821,11 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
 if (result.userId) {
     await enrollStudentInAllCourses(result.userId);
 }
-    showAlert('✅ Account created! Please check your email to confirm your account, then log in.', 'success');
-    setTimeout(() => {
-        document.querySelector('.tab-btn[data-tab="login"]').click();
-        document.getElementById('loginEmail').value = email;
-    }, 3000);
+showAlert('✅ Account created! Logging you in...', 'success');
+setTimeout(() => {
+    document.querySelector('.tab-btn[data-tab="login"]').click();
+    document.getElementById('loginEmail').value = email;
+}, 1500);
 });
 
 // ─── FORGOT PASSWORD ─────────────────────────────────────────
