@@ -6761,3 +6761,26 @@ body.dark-mode #changePasswordModal .cert-btn.secondary {
     .dash-mid-row    { grid-template-columns: 1fr; }
     .dash-results-grid { grid-template-columns: 1fr 1fr; }
 }
+body.dark-mode .dash-banner-card,
+body.dark-mode .dash-card,
+body.dark-mode .dash-result-card {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+body.dark-mode .dash-banner-value,
+body.dark-mode .dash-card-title,
+body.dark-mode .dash-todo-text,
+body.dark-mode .dash-ann-title,
+body.dark-mode .dash-prog-label,
+body.dark-mode .dash-motivate {
+    color: #f9fafb;
+}
+
+body.dark-mode .dash-streak-dot--off,
+body.dark-mode .dash-prog-bar-wrap,
+body.dark-mode .dash-todo-item,
+body.dark-mode .dash-ann-item {
+    background: #374151;
+    border-color: #4b5563;
+}

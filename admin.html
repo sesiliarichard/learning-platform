@@ -2081,7 +2081,27 @@ async function deleteChapter(chapterId) {
     if (!confirm('Are you sure you want to delete this chapter and all its topics?')) return;
     
     try {
-        // Delete topics first (foreign key constraint)
+        // Step 1: Get all topic IDs in this chapter
+        const { data: topics, error: topicsFetchError } = await db
+            .from('topics')
+            .select('id')
+            .eq('chapter_id', chapterId);
+        
+        if (topicsFetchError) throw topicsFetchError;
+        
+        // Step 2: Delete course_progress records for those topics
+        if (topics && topics.length > 0) {
+            const topicIds = topics.map(t => t.id);
+            
+            const { error: progressError } = await db
+                .from('course_progress')
+                .delete()
+                .in('topic_id', topicIds);
+            
+            if (progressError) throw progressError;
+        }
+        
+        // Step 3: Now delete the topics
         const { error: topicsError } = await db
             .from('topics')
             .delete()
@@ -2089,7 +2109,7 @@ async function deleteChapter(chapterId) {
         
         if (topicsError) throw topicsError;
         
-        // Then delete the chapter
+        // Step 4: Finally delete the chapter
         const { error: chapterError } = await db
             .from('chapters')
             .delete()

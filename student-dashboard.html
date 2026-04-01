@@ -149,34 +149,7 @@
 
             <!-- Dashboard Section -->
             <div id="dashboardSection" class="dashboard-section active">
-                <div class="section-header">
-                    <h3>Active Courses</h3>
-                    <button class="see-all-btn">See All</button>
-                </div>
-
-                <div class="courses-grid">
-                    <div class="course-card">
-                        <div class="course-thumbnail purple">
-                            <i class="fas fa-robot course-icon-large"></i>
-                        </div>
-                    </div>
-
-                    <div class="course-card">
-                        <div class="course-thumbnail orange">
-                            <i class="fas fa-database course-icon-large"></i>
-                        </div>
-                    </div>
-
-                   
-
-                    <div class="course-card">
-                        <div class="course-thumbnail green">
-                            <i class="fas fa-brain course-icon-large"></i>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ── 1. TOP BANNER ROW (Overall Progress · Deadline · Streak) ── -->
+            <!-- ── 1. TOP BANNER ROW (Overall Progress · Deadline · Streak) ── -->
 <div class="dash-banner-row">
  
   <div class="dash-banner-card">
@@ -1819,6 +1792,7 @@ async function initDashboard() {
     calculateProfileStats();
     setMemberSinceDate();
     await loadDashboardStats();
+    await loadDashboardExtras(); 
 }
 
         // Setup event listeners
