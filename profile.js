@@ -246,11 +246,21 @@ async function getStudentStats(userId = null) {
         if (enrollmentsResult.error)      console.warn('enrollments:', enrollmentsResult.error.message);
 
         // ── Course counts from real enrollments ──────────────
+        // ── Course counts from real enrollments ──────────────
         const coursesEnrolled  = enrollments.length;
 
-        // Completed = progress >= 90 (not started = 0, in progress = 1-89)
-        const coursesCompleted = enrollments.filter(e => (e.progress || 0) >= 90).length;
-        const certificatesCount = certificates.length;
+        // Completed = progress is exactly 100
+        const coursesCompleted = enrollments.filter(e => (e.progress || 0) >= 100).length;
+
+        // ── Certificates: only count published, non-revoked ones ──
+        const { data: realCerts } = await supabaseClient
+            .from('certificates')
+            .select('id')
+            .eq('student_id', userId)
+            .eq('published', true)
+            .or('revoked.is.null,revoked.eq.false');
+
+        const certificatesCount = (realCerts || []).length;
 
         // ── Sync window.coursesData with real DB progress ────
         // So dashboard cards also show correct values
@@ -261,15 +271,20 @@ async function getStudentStats(userId = null) {
                 }
             });
         }
-
-        // ── Average score ────────────────────────────────────
+// ── Average score ────────────────────────────────────
         const allScores = [];
+
         quizScores.forEach(q => {
-            if (q.score !== null) allScores.push(q.score);
+            const s = Number(q.score);
+            if (!isNaN(s) && s >= 0 && s <= 100) allScores.push(s);
         });
+
         assignmentScores.forEach(a => {
-            if (a.score !== null && a.max_score > 0) {
-                allScores.push(Math.round((a.score / a.max_score) * 100));
+            const score    = Number(a.score);
+            const maxScore = Number(a.max_score);
+            if (!isNaN(score) && maxScore > 0) {
+                const pct = Math.round((score / maxScore) * 100);
+                if (pct >= 0 && pct <= 100) allScores.push(pct);
             }
         });
 
