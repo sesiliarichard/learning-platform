@@ -873,7 +873,13 @@ document.getElementById('linkedinSignup').addEventListener('click', handleLinked
 document.addEventListener('DOMContentLoaded', async () => {
   loadAllCountries();
 
-  const { data: { session } } = await db.auth.getSession();
+  // Clear any stale/broken tokens before checking session
+  const { data: { session }, error: sessionError } = await db.auth.getSession();
+  if (sessionError) {
+    await db.auth.signOut();
+    localStorage.clear();
+    sessionStorage.clear();
+  }
   if (!session) {
     document.body.style.visibility = 'visible';
     return;

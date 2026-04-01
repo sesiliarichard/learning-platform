@@ -504,11 +504,15 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     if (event === 'TOKEN_REFRESHED') {
         if (!session) {
             console.warn('⚠️ Token refresh failed, clearing storage and redirecting');
-            // Clear the bad token completely
             localStorage.removeItem('sb-tnuztjayhzkrjhxjtgkf-auth-token');
             sessionStorage.clear();
             localStorage.removeItem('userProfileData');
-            window.location.replace('login.html');
+            // Only redirect if on a protected page
+            const publicPages = ['login.html', 'index.html', 'homepage.html'];
+            const currentPage = window.location.pathname.split('/').pop();
+            if (!publicPages.includes(currentPage)) {
+                window.location.replace('login.html');
+            }
         } else {
             console.log('🔄 Session token refreshed');
         }
