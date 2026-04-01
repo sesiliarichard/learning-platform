@@ -402,8 +402,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // Set member since
+  // Set member since
         const memberSinceEl = document.getElementById('memberSince');
         if (memberSinceEl) memberSinceEl.textContent = p.memberSince;
+
+        // Save createdAt so dashboard setMemberSinceDate() can read it
+        const saved = JSON.parse(localStorage.getItem('userProfileData') || '{}');
+        saved.createdAt = p.createdAt;
+        localStorage.setItem('userProfileData', JSON.stringify(saved));
     }
 
     // Load stats (will show 0s until courses/quizzes sections are built)

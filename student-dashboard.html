@@ -1619,6 +1619,7 @@
         };
         // Course Data - now loaded from DB
 let coursesData = {};
+window.coursesData = coursesData;
 
 async function loadCoursesFromDB() {
     const { data: courses } = await db
@@ -1660,7 +1661,9 @@ async function loadCoursesFromDB() {
             });
         }
 
-        renderCourseCards(); 
+        window.coursesData = coursesData;
+        renderCourseCards();
+        calculateProfileStats();
     }
 }
 
@@ -4064,44 +4067,22 @@ document.addEventListener('DOMContentLoaded', () => { loadResults();
 
 
 function calculateProfileStats() {
-    // Count enrolled courses
-    const enrolledCourses = Object.keys(coursesData).length;
-    document.getElementById('enrolledCoursesCount').textContent = enrolledCourses;
-    
-    // Count completed courses (progress >= 90%)
-    const completedCourses = Object.values(coursesData).filter(course => course.progress >= 90).length;
-    document.getElementById('completedCoursesCount').textContent = completedCourses;
-    
-    // Count certificates
+    const enrolledCourses  = Object.keys(coursesData).length;
+    const completedCourses = Object.values(coursesData)
+        .filter(c => (c.progress || 0) >= 90).length;
     const certificatesEarned = myCertificates.length;
-    document.getElementById('certificatesEarnedCount').textContent = certificatesEarned;
-    document.getElementById('certCount').textContent = certificatesEarned;
-    
-    // Calculate average score from all quiz and assignment results
-    let totalScores = 0;
-    let scoreCount = 0;
-    
-    // Add quiz scores
-    Object.values(quizResults).forEach(result => {
-        totalScores += result.score;
-        scoreCount++;
-    });
-    
-    // Add assignment scores
-    Object.values(assignmentFeedback).forEach(result => {
-        totalScores += result.score;
-        scoreCount++;
-    });
-    
-    const averageScore = scoreCount > 0 ? Math.round(totalScores / scoreCount) : 0;
-    document.getElementById('averageScore').textContent = averageScore + '%';
-    
-    // Calculate overall progress (average of all course progress)
-    const totalProgress = Object.values(coursesData).reduce((sum, course) => sum + course.progress, 0);
-    const overallProgress = enrolledCourses > 0 ? Math.round(totalProgress / enrolledCourses) : 0;
-    document.getElementById('overallProgress').textContent = overallProgress + '%';
-}
+    const totalProgress = Object.values(coursesData)
+        .reduce((sum, c) => sum + (c.progress || 0), 0);
+    const overallProgress = enrolledCourses > 0
+        ? Math.round(totalProgress / enrolledCourses) : 0;
 
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('enrolledCoursesCount',  enrolledCourses);
+    set('completedCoursesCount', completedCourses);
+    set('certificatesEarnedCount', certificatesEarned);
+    set('certCount',             certificatesEarned);
+    set('overallProgress',       overallProgress + '%');
+}
 // ============ PROFILE ITEM CLICK HANDLERS ============
 
 // Learning Summary Item - Navigate to Dashboard
@@ -4199,15 +4180,14 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', (e) =>
 // ============ SET MEMBER SINCE DATE ============
 
 function setMemberSinceDate() {
-    // In production, fetch from user data
-    // For demo, use a default date
-    const memberSince = new Date('2024-01-15');
-    const options = { month: 'long', year: 'numeric' };
-    const formattedDate = memberSince.toLocaleDateString('en-US', options);
-    
-    const memberSinceEl = document.getElementById('memberSince');
-    if (memberSinceEl) {
-        memberSinceEl.textContent = formattedDate;
+    // Read real date set by profile.js from Supabase
+    const saved = JSON.parse(localStorage.getItem('userProfileData') || '{}');
+    const el = document.getElementById('memberSince');
+    if (!el) return;
+    if (saved.createdAt) {
+        el.textContent = new Date(saved.createdAt).toLocaleDateString('en-US', {
+            month: 'long', year: 'numeric'
+        });
     }
 }
 
