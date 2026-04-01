@@ -176,7 +176,101 @@
                     </div>
                 </div>
 
-              <!-- Statistics Row -->
+                <!-- ── 1. TOP BANNER ROW (Overall Progress · Deadline · Streak) ── -->
+<div class="dash-banner-row">
+ 
+  <div class="dash-banner-card">
+    <div class="dash-banner-label">Overall Progress</div>
+    <div class="dash-banner-value" id="bannerProgress">—%</div>
+    <div class="dash-banner-bar">
+      <div class="dash-banner-bar-fill" id="bannerProgressFill"></div>
+    </div>
+    <div class="dash-banner-sub" id="bannerProgressSub">Across courses</div>
+  </div>
+ 
+  <div class="dash-banner-card">
+    <div class="dash-banner-label">Upcoming Deadline</div>
+    <div class="dash-banner-value dash-banner-value--md" id="bannerDeadlineTitle">—</div>
+    <div class="dash-banner-urgent" id="bannerDeadlineUrgency"></div>
+    <div class="dash-banner-sub" id="bannerDeadlineName"></div>
+  </div>
+ 
+  <div class="dash-banner-card">
+    <div class="dash-banner-label">Study Streak</div>
+    <div class="dash-banner-value" id="bannerStreak">— days</div>
+    <div class="dash-streak-dots" id="bannerStreakDots"></div>
+  </div>
+ 
+</div>
+ 
+ 
+<!-- ── 2. TODO + ANNOUNCEMENTS ROW ── -->
+<div class="dash-mid-row">
+ 
+  <!-- Today's To-Do -->
+  <div class="dash-card">
+    <div class="dash-card-head">
+      <span class="dash-card-title">Today's to-do</span>
+      <span class="dash-see-all" onclick="showSection('results')">See all</span>
+    </div>
+    <div id="todayTodoList">
+      <div class="dash-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+ 
+  <!-- Latest Announcements -->
+  <div class="dash-card">
+    <div class="dash-card-head">
+      <span class="dash-card-title">Latest announcements</span>
+      <span class="dash-see-all" onclick="showSection('announcements')">See all</span>
+    </div>
+    <div id="dashAnnouncementsList">
+      <div class="dash-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+ 
+</div>
+ 
+ 
+<!-- ── 3. COURSE PROGRESS + ACHIEVEMENTS ROW ── -->
+<div class="dash-mid-row">
+ 
+  <!-- Course Progress Bars -->
+  <div class="dash-card">
+    <div class="dash-card-head">
+      <span class="dash-card-title">Course progress</span>
+    </div>
+    <div id="dashCourseProgressList">
+      <div class="dash-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+    </div>
+  </div>
+ 
+  <!-- Achievements -->
+  <div class="dash-card">
+    <div class="dash-card-head">
+      <span class="dash-card-title">Achievements</span>
+    </div>
+    <div class="dash-motivate" id="dashMotivate">Keep going!</div>
+    <div class="dash-motivate-sub" id="dashMotivateSub"></div>
+    <div class="dash-badges" id="dashBadges"></div>
+    <div class="dash-motivate-sub" id="dashBadgeCount"></div>
+  </div>
+ 
+</div>
+ 
+ 
+<!-- ── 4. RECENT RESULTS ROW ── -->
+<div class="dash-card dash-card--full">
+  <div class="dash-card-head">
+    <span class="dash-card-title">Recent results</span>
+    <span class="dash-see-all" onclick="showSection('results')">See all</span>
+  </div>
+  <div class="dash-results-grid" id="dashRecentResults">
+    <div class="dash-loading"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+  </div>
+</div>
+
+            
 <!-- Statistics Row -->
 <div class="stats-row">
  
@@ -5153,6 +5247,306 @@ async function loadDashboardStats() {
     if (badge) badge.textContent = 'N/A';
   }
 }
+async function loadDashboardExtras() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+ 
+        const [enrollRes, assignRes, quizSubRes, annRes] = await Promise.all([
+            supabaseClient.from('enrollments')
+                .select('course_id, progress, updated_at')
+                .eq('student_id', user.id),
+            supabaseClient.from('assignments')
+                .select('id, title, due_date, course_id')
+                .order('due_date', { ascending: true }),
+            supabaseClient.from('quiz_submissions')
+                .select('score, submitted_at, quizzes(title, course_id)')
+                .eq('student_id', user.id)
+                .order('submitted_at', { ascending: false })
+                .limit(5),
+            supabaseClient.from('announcements')
+                .select('id, title, priority, created_at')
+                .order('created_at', { ascending: false })
+                .limit(3)
+        ]);
+ 
+        const enrollments  = enrollRes.data  || [];
+        const assignments  = assignRes.data  || [];
+        const quizSubs     = quizSubRes.data || [];
+        const announcements = annRes.data    || [];
+ 
+        renderBanner(enrollments, assignments);
+        renderTodo(assignments, quizSubs);
+        renderAnnouncements(announcements);
+        renderCourseProgress(enrollments);
+        renderAchievements(enrollments, quizSubs);
+        renderRecentResults(quizSubs, user.id);
+ 
+    } catch (err) {
+        console.error('loadDashboardExtras error:', err);
+    }
+}
+ 
+/* ── Banner ── */
+function renderBanner(enrollments, assignments) {
+    const total = enrollments.length;
+    const avg   = total > 0
+        ? Math.round(enrollments.reduce((s, e) => s + (e.progress || 0), 0) / total)
+        : 0;
+ 
+    const elVal  = document.getElementById('bannerProgress');
+    const elFill = document.getElementById('bannerProgressFill');
+    const elSub  = document.getElementById('bannerProgressSub');
+    if (elVal)  elVal.textContent  = avg + '%';
+    if (elFill) elFill.style.width = avg + '%';
+    if (elSub)  elSub.textContent  = 'Across ' + total + ' course' + (total !== 1 ? 's' : '');
+ 
+    // Nearest upcoming deadline
+    const now = Date.now();
+    const upcoming = assignments
+        .filter(a => a.due_date && new Date(a.due_date).getTime() > now)
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))[0];
+ 
+    const elTitle   = document.getElementById('bannerDeadlineTitle');
+    const elUrgency = document.getElementById('bannerDeadlineUrgency');
+    const elName    = document.getElementById('bannerDeadlineName');
+    if (upcoming) {
+        const daysLeft = Math.ceil((new Date(upcoming.due_date) - now) / 86400000);
+        if (elTitle)   elTitle.textContent   = 'Assignment';
+        if (elUrgency) elUrgency.textContent = daysLeft <= 1 ? 'Due today!' : 'Due in ' + daysLeft + ' days';
+        if (elName)    elName.textContent    = upcoming.title;
+        if (elUrgency) elUrgency.style.color = daysLeft <= 2 ? '#ef4444' : '#f59e0b';
+    } else {
+        if (elTitle)   elTitle.textContent   = 'No upcoming';
+        if (elUrgency) elUrgency.textContent = '';
+        if (elName)    elName.textContent    = 'All caught up!';
+    }
+ 
+    // Streak — count consecutive days with activity from enrollments updated_at
+    const dotsEl = document.getElementById('bannerStreakDots');
+    const streakEl = document.getElementById('bannerStreak');
+    const streak = calculateStreak(enrollments);
+    if (streakEl) streakEl.textContent = streak + ' days';
+    if (dotsEl) {
+        dotsEl.innerHTML = '';
+        for (let i = 6; i >= 0; i--) {
+            const d = document.createElement('div');
+            d.className = 'dash-streak-dot ' + (i < streak ? 'dash-streak-dot--on' : 'dash-streak-dot--off');
+            dotsEl.appendChild(d);
+        }
+    }
+}
+ 
+function calculateStreak(enrollments) {
+    // Simple: count how many of last 7 days had an enrollment update
+    const now = new Date();
+    let streak = 0;
+    for (let i = 0; i < 7; i++) {
+        const day = new Date(now);
+        day.setDate(now.getDate() - i);
+        const dayStr = day.toISOString().split('T')[0];
+        const active = enrollments.some(e => e.updated_at && e.updated_at.startsWith(dayStr));
+        if (active || i === 0) streak++;
+        else break;
+    }
+    return Math.min(streak, 7);
+}
+ 
+/* ── To-Do ── */
+async function renderTodo(assignments, quizSubs) {
+    const el = document.getElementById('todayTodoList');
+    if (!el) return;
+ 
+    const now = Date.now();
+    const items = [];
+ 
+    // Upcoming assignments (due within 14 days)
+    assignments.forEach(a => {
+        if (!a.due_date) return;
+        const dueMs   = new Date(a.due_date).getTime();
+        const daysLeft = Math.ceil((dueMs - now) / 86400000);
+        if (daysLeft > 0 && daysLeft <= 14) {
+            const urgent = daysLeft <= 2;
+            items.push({
+                text: a.title,
+                sub: 'Due ' + new Date(a.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                tag: urgent ? 'Urgent' : 'Assignment',
+                tagCls: urgent ? 'dash-tag--urgent' : 'dash-tag--quiz',
+                priority: daysLeft
+            });
+        }
+    });
+ 
+    if (items.length === 0) {
+        el.innerHTML = '<div class="dash-loading">Nothing urgent right now 🎉</div>';
+        return;
+    }
+ 
+    items.sort((a, b) => a.priority - b.priority);
+    el.innerHTML = items.slice(0, 4).map(item => `
+        <div class="dash-todo-item">
+            <div class="dash-todo-check"></div>
+            <div style="flex:1;">
+                <div class="dash-todo-text">${escapeHtml(item.text)}</div>
+                <div class="dash-todo-sub">${escapeHtml(item.sub)}</div>
+            </div>
+            <span class="dash-tag ${item.tagCls}">${item.tag}</span>
+        </div>
+    `).join('');
+}
+ 
+/* ── Announcements ── */
+function renderAnnouncements(announcements) {
+    const el = document.getElementById('dashAnnouncementsList');
+    if (!el) return;
+ 
+    if (!announcements.length) {
+        el.innerHTML = '<div class="dash-loading">No announcements yet</div>';
+        return;
+    }
+ 
+    el.innerHTML = announcements.map(ann => {
+        const timeAgo = getTimeAgo(new Date(ann.created_at));
+        const isUrgent = ann.priority === 'urgent';
+        return `
+            <div class="dash-ann-item">
+                <div class="dash-ann-head">
+                    <div class="dash-ann-title">${escapeHtml(ann.title)}</div>
+                    ${isUrgent ? '<span class="dash-tag dash-tag--urgent">Urgent</span>' : ''}
+                </div>
+                <div class="dash-ann-time">${timeAgo}</div>
+            </div>
+        `;
+    }).join('');
+}
+ 
+/* ── Course Progress Bars ── */
+function renderCourseProgress(enrollments) {
+    const el = document.getElementById('dashCourseProgressList');
+    if (!el) return;
+ 
+    if (!enrollments.length) {
+        el.innerHTML = '<div class="dash-loading">No courses enrolled</div>';
+        return;
+    }
+ 
+    const colors = ['#7c3aed', '#f59e0b', '#10b981', '#3b82f6', '#ec4899'];
+ 
+    el.innerHTML = enrollments.map((e, i) => {
+        const pct   = Math.round(e.progress || 0);
+        const color = colors[i % colors.length];
+        const title = window.coursesData?.[e.course_id]?.title || 'Course ' + (i + 1);
+        return `
+            <div class="dash-prog-item">
+                <div class="dash-prog-dot" style="background:${color};"></div>
+                <div class="dash-prog-label" title="${escapeHtml(title)}">${escapeHtml(title)}</div>
+                <div class="dash-prog-bar-wrap">
+                    <div class="dash-prog-bar-fill" style="width:${pct}%;background:${color};"></div>
+                </div>
+                <div class="dash-prog-pct">${pct}%</div>
+            </div>
+        `;
+    }).join('');
+}
+ 
+/* ── Achievements ── */
+function renderAchievements(enrollments, quizSubs) {
+    const completed  = enrollments.filter(e => (e.progress || 0) >= 90).length;
+    const totalCourses = enrollments.length;
+    const quizCount  = quizSubs.length;
+ 
+    // Badges: earned or locked
+    const badges = [
+        { icon: '🏆', earned: quizCount >= 1,       title: 'First quiz passed' },
+        { icon: '🔥', earned: true,                 title: '7-day streak' },
+        { icon: '🎓', earned: completed >= 1,       title: 'Completed a course' },
+        { icon: '⏱',  earned: false,               title: '500 hours studied' },
+        { icon: '🥇', earned: quizSubs.some(q => (q.score || 0) >= 90), title: 'Scored 90%+' }
+    ];
+ 
+    const earned = badges.filter(b => b.earned).length;
+ 
+    // Motivational message
+    const remaining = totalCourses - completed;
+    const motivateEl = document.getElementById('dashMotivate');
+    const motSubEl   = document.getElementById('dashMotivateSub');
+    if (motivateEl) {
+        const firstName = (window.userData?.firstName || 'there');
+        motivateEl.textContent = 'Keep going, ' + firstName + '!';
+    }
+    if (motSubEl) {
+        motSubEl.textContent = remaining > 0
+            ? 'You have ' + remaining + ' course' + (remaining > 1 ? 's' : '') + ' in progress. Keep it up!'
+            : 'Amazing — all courses completed! 🎉';
+    }
+ 
+    const badgesEl = document.getElementById('dashBadges');
+    if (badgesEl) {
+        badgesEl.innerHTML = badges.map(b => `
+            <div class="dash-badge ${b.earned ? 'dash-badge--earned' : 'dash-badge--locked'}" title="${b.title}">
+                ${b.icon}
+            </div>
+        `).join('');
+    }
+ 
+    const countEl = document.getElementById('dashBadgeCount');
+    if (countEl) countEl.textContent = earned + ' of ' + badges.length + ' badges earned';
+}
+ 
+/* ── Recent Results ── */
+async function renderRecentResults(quizSubs, userId) {
+    const el = document.getElementById('dashRecentResults');
+    if (!el) return;
+ 
+    // Also fetch latest assignment submission
+    const { data: assignSubs } = await supabaseClient
+        .from('assignment_submissions')
+        .select('score, grade, submitted_at, assignments(title, max_points)')
+        .eq('student_id', userId)
+        .order('submitted_at', { ascending: false })
+        .limit(2);
+ 
+    const cards = [];
+ 
+    // Latest quizzes
+    quizSubs.slice(0, 2).forEach(s => {
+        const score = s.score ?? null;
+        const title = s.quizzes?.title || 'Quiz';
+        cards.push({
+            label: 'Quiz · ' + title.substring(0, 18),
+            score: score !== null ? score + '%' : '—',
+            tag:   score === null ? 'Pending' : score >= 50 ? 'Passed' : 'Failed',
+            cls:   score === null ? 'score--pending' : score >= 50 ? 'score--pass' : 'score--fail',
+            tagCls: score === null ? 'dash-tag--quiz' : score >= 50 ? 'dash-tag--ok' : 'dash-tag--urgent'
+        });
+    });
+ 
+    // Latest assignment
+    (assignSubs || []).slice(0, 1).forEach(s => {
+        const title = s.assignments?.title || 'Assignment';
+        cards.push({
+            label: 'Assignment · ' + title.substring(0, 18),
+            score: s.grade || (s.score !== null ? s.score + '/' + (s.assignments?.max_points || 100) : '—'),
+            tag:   s.grade ? 'Graded' : 'Submitted',
+            cls:   s.grade ? 'score--pass' : 'score--pending',
+            tagCls: s.grade ? 'dash-tag--ok' : 'dash-tag--quiz'
+        });
+    });
+ 
+    if (!cards.length) {
+        el.innerHTML = '<div class="dash-loading" style="grid-column:1/-1;">No results yet — take your first quiz!</div>';
+        return;
+    }
+ 
+    el.innerHTML = cards.map(c => `
+        <div class="dash-result-card">
+            <div class="dash-result-label">${escapeHtml(c.label)}</div>
+            <div class="dash-result-score ${c.cls}">${c.score}</div>
+            <span class="dash-tag ${c.tagCls}" style="margin-top:6px;display:inline-block;">${c.tag}</span>
+        </div>
+    `).join('');
+}
+
     </script>
 </body>
 </html>
