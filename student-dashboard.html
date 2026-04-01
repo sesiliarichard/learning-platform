@@ -2612,7 +2612,7 @@ async function loadCourseNotes(courseId) {
                 .eq('course_id', courseId)
                 .eq('completed', true);
 
-            if (saved) {
+  if (saved) {
                 const doneIds = new Set(saved.map(r => r.topic_id));
                 currentCourseNotes.forEach(n => {
                     n.completed = doneIds.has(n.id);
@@ -2623,6 +2623,11 @@ async function loadCourseNotes(courseId) {
         if (currentCourseNotes.length > 0) displayNote(0);
         updateNotesProgress();
 
+        // ── Auto-sync progress on load so saved reading shows immediately ──
+        const courseId = window.currentCourseId || window.currentCourse;
+        if (user && courseId) {
+            await syncCourseProgressToDB(user.id, courseId);
+        }
     } catch (err) {
         console.error('loadCourseNotes error:', err.message);
         chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Error: ${err.message}</li>`;
@@ -2922,9 +2927,20 @@ async function syncCourseProgressToDB(studentId, courseId) {
         console.log(`📊 Progress ${courseId}: topics ${doneTopics}/${totalTopics} | quizzes ${doneQuizzes}/${totalQuizzes||0} | assignments ${doneAssignments}/${totalAssignments||0} → ${pct}%`);
 
         // ── SAVE ───────────────────────────────────────────────
+       // ── Never go backwards — read current saved value first ──
+        const { data: existing } = await supabaseClient
+            .from('enrollments')
+            .select('progress')
+            .eq('student_id', studentId)
+            .eq('course_id', courseId)
+            .maybeSingle();
+
+        const previousPct = existing?.progress || 0;
+        const finalPct    = Math.max(pct, previousPct);
+
         const { error: upErr } = await supabaseClient
             .from('enrollments')
-            .update({ progress: pct, updated_at: new Date().toISOString() })
+            .update({ progress: finalPct, updated_at: new Date().toISOString() })
             .eq('student_id', studentId)
             .eq('course_id', courseId);
 
@@ -2932,19 +2948,18 @@ async function syncCourseProgressToDB(studentId, courseId) {
             await supabaseClient.from('enrollments').insert({
                 student_id: studentId,
                 course_id:  courseId,
-                progress:   pct,
+                progress:   finalPct,
                 updated_at: new Date().toISOString()
             });
         }
 
-        updateCourseProgressUI(pct);
+        updateCourseProgressUI(finalPct);
 
         if (window.coursesData?.[courseId]) {
-            window.coursesData[courseId].progress = pct;
+            window.coursesData[courseId].progress = finalPct;
         }
 
-        return pct;
-
+        return finalPct;
     } catch (err) {
         console.error('syncCourseProgressToDB error:', err.message);
         return 0;

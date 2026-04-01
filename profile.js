@@ -210,45 +210,63 @@ async function getStudentStats(userId = null) {
             userId = user.id;
         }
 
- const [certificatesResult, quizScoresResult, assignmentScoresResult] = 
-await Promise.all([
+        const [certificatesResult, quizScoresResult, assignmentScoresResult, enrollmentsResult] =
+            await Promise.all([
+                supabaseClient
+                    .from('certificates')
+                    .select('id')
+                    .eq('student_id', userId),
 
-    supabaseClient
-        .from('certificates')
-        .select('id')
-        .eq('student_id', userId),    
+                supabaseClient
+                    .from('quiz_submissions')
+                    .select('score')
+                    .eq('student_id', userId),
 
-    supabaseClient
-        .from('quiz_submissions')
-        .select('score')
-        .eq('student_id', userId),    
+                supabaseClient
+                    .from('assignment_submissions')
+                    .select('score, max_score')
+                    .eq('student_id', userId)
+                    .not('score', 'is', null),
 
-    supabaseClient
-        .from('assignment_submissions')
-        .select('score, max_score')
-        .eq('student_id', userId)     
-        .not('score', 'is', null)
-]);
+                // ── Fetch real progress from enrollments table ──
+                supabaseClient
+                    .from('enrollments')
+                    .select('course_id, progress')
+                    .eq('student_id', userId)
+            ]);
 
-        // ✅ Safely handle errors - empty array if table missing
         const certificates     = certificatesResult.error     ? [] : (certificatesResult.data     || []);
         const quizScores       = quizScoresResult.error       ? [] : (quizScoresResult.data       || []);
         const assignmentScores = assignmentScoresResult.error ? [] : (assignmentScoresResult.data || []);
+        const enrollments      = enrollmentsResult.error      ? [] : (enrollmentsResult.data      || []);
 
-        // Log warnings but don't crash
         if (certificatesResult.error)     console.warn('certificates:', certificatesResult.error.message);
         if (quizScoresResult.error)       console.warn('quiz_submissions:', quizScoresResult.error.message);
         if (assignmentScoresResult.error) console.warn('assignment_submissions:', assignmentScoresResult.error.message);
+        if (enrollmentsResult.error)      console.warn('enrollments:', enrollmentsResult.error.message);
 
-        // ✅ Calculate stats from courses loaded in dashboard
-        const coursesEnrolled  = Object.keys(window.coursesData || {}).length;
-        const coursesCompleted = Object.values(window.coursesData || {})
-                                       .filter(c => (c.progress || 0) >= 90).length;
+        // ── Course counts from real enrollments ──────────────
+        const coursesEnrolled  = enrollments.length;
+
+        // Completed = progress >= 90 (not started = 0, in progress = 1-89)
+        const coursesCompleted = enrollments.filter(e => (e.progress || 0) >= 90).length;
         const certificatesCount = certificates.length;
 
-        // Average score
+        // ── Sync window.coursesData with real DB progress ────
+        // So dashboard cards also show correct values
+        if (window.coursesData) {
+            enrollments.forEach(e => {
+                if (window.coursesData[e.course_id]) {
+                    window.coursesData[e.course_id].progress = e.progress || 0;
+                }
+            });
+        }
+
+        // ── Average score ────────────────────────────────────
         const allScores = [];
-        quizScores.forEach(q => { if (q.score !== null) allScores.push(q.score); });
+        quizScores.forEach(q => {
+            if (q.score !== null) allScores.push(q.score);
+        });
         assignmentScores.forEach(a => {
             if (a.score !== null && a.max_score > 0) {
                 allScores.push(Math.round((a.score / a.max_score) * 100));
@@ -259,10 +277,11 @@ await Promise.all([
             ? Math.round(allScores.reduce((sum, s) => sum + s, 0) / allScores.length)
             : 0;
 
+        // ── Overall progress from real enrollments ───────────
+        // If not enrolled in anything yet → 0%
         const overallProgress = coursesEnrolled > 0
             ? Math.round(
-                Object.values(window.coursesData || {})
-                      .reduce((sum, c) => sum + (c.progress || 0), 0) / coursesEnrolled
+                enrollments.reduce((sum, e) => sum + (e.progress || 0), 0) / coursesEnrolled
               )
             : 0;
 
@@ -362,14 +381,14 @@ function updateStatsUI({ coursesEnrolled, coursesCompleted, certificatesCount, a
         overallProgress:       document.getElementById('overallProgress')
     };
 
-    if (els.enrolledCoursesCount)  els.enrolledCoursesCount.textContent  = coursesEnrolled;
-    if (els.completedCoursesCount) els.completedCoursesCount.textContent = coursesCompleted;
-    if (els.certificatesEarned)    els.certificatesEarned.textContent    = certificatesCount;
-    if (els.certCount)             els.certCount.textContent             = certificatesCount;
-    if (els.averageScore)          els.averageScore.textContent          = averageScore + '%';
-    if (els.overallProgress)       els.overallProgress.textContent       = overallProgress + '%';
+    // Always write a value — 0 if nothing yet, never blank
+    if (els.enrolledCoursesCount)  els.enrolledCoursesCount.textContent  = coursesEnrolled  ?? 0;
+    if (els.completedCoursesCount) els.completedCoursesCount.textContent = coursesCompleted ?? 0;
+    if (els.certificatesEarned)    els.certificatesEarned.textContent    = certificatesCount ?? 0;
+    if (els.certCount)             els.certCount.textContent             = certificatesCount ?? 0;
+    if (els.averageScore)          els.averageScore.textContent          = (averageScore ?? 0) + '%';
+    if (els.overallProgress)       els.overallProgress.textContent       = (overallProgress ?? 0) + '%';
 }
-
 // ─────────────────────────────────────────────
 // HELPER: Format "Member Since" date
 // ─────────────────────────────────────────────
@@ -387,11 +406,19 @@ function formatMemberSince(dateString) {
 // Loads profile + stats into the dashboard
 // ─────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check session before loading anything
     const { data: { session } } = await supabaseClient.auth.getSession();
-    if (!session) return; // Not logged in — skip profile loading
+    if (!session) return;
 
-    // Load profile
+    // ── Show zeros immediately so nothing is blank ───────
+    updateStatsUI({
+        coursesEnrolled:  0,
+        coursesCompleted: 0,
+        certificatesCount: 0,
+        averageScore:     0,
+        overallProgress:  0
+    });
+
+    // ── Load profile ─────────────────────────────────────
     const profileResult = await getStudentProfile();
     if (profileResult.success) {
         const p = profileResult.profile;
@@ -402,21 +429,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             avatarUrl: p.avatarUrl
         });
 
-        // Set member since
-  // Set member since
         const memberSinceEl = document.getElementById('memberSince');
         if (memberSinceEl) memberSinceEl.textContent = p.memberSince;
 
-        // Save createdAt so dashboard setMemberSinceDate() can read it
         const saved = JSON.parse(localStorage.getItem('userProfileData') || '{}');
-        saved.createdAt = p.createdAt;
+        saved.createdAt    = p.createdAt;
+        saved.firstName    = p.firstName;
+        saved.lastName     = p.lastName;
+        saved.email        = p.email;
+        if (p.avatarUrl) saved.profilePicture = p.avatarUrl;
         localStorage.setItem('userProfileData', JSON.stringify(saved));
     }
 
-    // Load stats (will show 0s until courses/quizzes sections are built)
-    await getStudentStats();
-});
+    // ── Wait for coursesData to be populated then load stats ──
+    // courses.js populates window.coursesData asynchronously,
+    // so we wait up to 3 seconds for it before loading stats
+    let waited = 0;
+    const waitForCourses = setInterval(async () => {
+        waited += 300;
+        const hasData = window.coursesData && Object.keys(window.coursesData).length > 0;
 
+        if (hasData || waited >= 3000) {
+            clearInterval(waitForCourses);
+            await getStudentStats();
+        }
+    }, 300);
+});
 // ─────────────────────────────────────────────
 // EDIT PROFILE FORM HANDLER
 // Attach this to your edit profile form/modal
