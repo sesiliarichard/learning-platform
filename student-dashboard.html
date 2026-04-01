@@ -4126,7 +4126,6 @@ function openChangePasswordModal() {
     const modal = document.getElementById('changePasswordModal');
     if (modal) {
         modal.classList.remove('hidden');
-        modal.style.display = 'flex';
     }
 }
 
@@ -4134,8 +4133,6 @@ function closeChangePasswordModal() {
     const modal = document.getElementById('changePasswordModal');
     if (modal) {
         modal.classList.add('hidden');
-        modal.style.display = 'none';
-        // Reset form
         document.getElementById('changePasswordForm').reset();
     }
 }

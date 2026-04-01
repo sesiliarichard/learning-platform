@@ -3402,6 +3402,7 @@ body.dark-mode .filter-tab {
 
 .modal.hidden {
     display: none;
+    display: none !important;
 }
 
 /* Modal Content */
