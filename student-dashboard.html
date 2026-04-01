@@ -4185,8 +4185,8 @@ function setMemberSinceDate() {
     const el = document.getElementById('memberSince');
     if (!el) return;
     if (saved.createdAt) {
-        el.textContent = new Date(saved.createdAt).toLocaleDateString('en-US', {
-            month: 'long', year: 'numeric'
+       el.textContent = new Date(saved.createdAt).toLocaleDateString('en-US', {
+            month: 'long', day: 'numeric', year: 'numeric'
         });
     }
 }
