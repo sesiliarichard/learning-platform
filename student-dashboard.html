@@ -2624,7 +2624,6 @@ async function loadCourseNotes(courseId) {
         updateNotesProgress();
 
         // ── Auto-sync progress on load so saved reading shows immediately ──
-        const courseId = window.currentCourseId || window.currentCourse;
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
         }
