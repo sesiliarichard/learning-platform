@@ -4257,3 +4257,59 @@ body.dark-mode .page-btn.active {
     margin-top: 0;
 }
 
+/* ============================================================
+   SCROLL FIX — paste at very bottom of admin.css
+   ============================================================ */
+
+/* Main content area must scroll */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding: 35px 40px;
+    background: #f8f9fa;
+    box-sizing: border-box;
+}
+
+/* All sections: take natural height, never clip content */
+.dashboard-section {
+    display: none;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    box-sizing: border-box;
+}
+
+.dashboard-section.active {
+    display: block;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    box-sizing: border-box;
+}
+
+/* Users section fix — it uses flex but must still scroll via main-content */
+#usersSection {
+    display: none;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+#usersSection.active {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto !important;
+    overflow: visible !important;
+    background: #eef4fb;
+}
+
+/* The table inside users section can scroll horizontally */
+.um-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible !important;
+    flex: 1;
+    background: #fff;
+}
