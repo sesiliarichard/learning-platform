@@ -7919,7 +7919,68 @@ async function deleteSessionRecording(id) {
     showToast('Recording deleted');
     loadRecordingsSection();
 }
+// Fix scrolling when switching sections
+function fixSectionScrolling() {
+    const mainContent = document.querySelector('.main-content');
+    if (mainContent) {
+        // Reset scroll position when switching sections
+        mainContent.scrollTop = 0;
+        
+        // Force reflow to ensure proper height calculation
+        mainContent.style.overflow = 'hidden';
+        setTimeout(() => {
+            mainContent.style.overflow = 'auto';
+        }, 10);
+    }
+}
 
+// Override the existing section switching code
+const originalNavClickHandler = null;
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.removeEventListener('click', item._listener);
+    const newListener = () => {
+        // Remove active from all nav items
+        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        item.classList.add('active');
+
+        // Hide ALL sections first
+        document.querySelectorAll('.dashboard-section').forEach(section => {
+            section.classList.remove('active');
+        });
+
+        const sectionId = item.dataset.section + 'Section';
+        const target = document.getElementById(sectionId);
+        if (target) {
+            target.classList.add('active');
+            // Fix scrolling after section becomes visible
+            setTimeout(() => {
+                const mainContent = document.querySelector('.main-content');
+                if (mainContent) {
+                    mainContent.scrollTop = 0;
+                }
+            }, 50);
+        }
+
+        // Load section-specific data
+        if (item.dataset.section === 'certificates') {
+            if (typeof loadCertificateSection === 'function') loadCertificateSection();
+        }
+        if (item.dataset.section === 'adminResources') {
+            if (typeof loadAdminResourcesSection === 'function') loadAdminResourcesSection();
+        }
+        if (item.dataset.section === 'teacherApprovals') {
+            if (typeof loadTeacherApprovals === 'function') loadTeacherApprovals();
+        }
+        if (item.dataset.section === 'analytics') {
+            if (typeof updateAnalytics === 'function') updateAnalytics();
+        }
+        if (item.dataset.section === 'recordings') {
+            if (typeof loadRecordingsSection === 'function') loadRecordingsSection();
+        }
+    };
+    item._listener = newListener;
+    item.addEventListener('click', newListener);
+});
 </script>
 
 </body>
