@@ -3195,18 +3195,15 @@ body.dark-mode .analytics-action-btn.print {
 
 #usersSection {
     display: none !important;
-
 }
 
 #usersSection.active {
-    display: flex !important;
-    flex-direction: column !important;
+    display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     background: #eef4fb !important;
     overflow: hidden !important;
 }
-
 
 
 /* ════════════════════════════════════════
