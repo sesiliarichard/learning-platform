@@ -1568,9 +1568,8 @@ if (target) {
 // FIX: Reset main-content width after switching sections
 const mc = document.querySelector('.main-content');
 if (mc) {
-
+    mc.scrollTop = 0;
 }
-mc.scrollTop = 0;
         // Load section-specific data
 if (item.dataset.section === 'certificates') {
             loadCertificateSection();
@@ -6065,16 +6064,8 @@ document.addEventListener('drop', (e) => {
         console.log('✅ Admin authenticated successfully! Showing dashboard...');
         console.log('8. Making page visible...');
   document.body.style.visibility = 'visible';
-document.body.style.height = '100%';
-document.body.style.overflow = 'hidden';
-document.documentElement.style.height = '100%';
-document.documentElement.style.overflow = 'hidden';
-const mc = document.querySelector('.main-content');
-if (mc) {
-    mc.style.height = '100vh';
-    mc.style.overflowY = 'scroll';
-}
-        // Load all dashboard data
+
+  // Load all dashboard data
         console.log('9. Initializing dashboard...');
         if (typeof init === 'function') {
             init();
@@ -7935,53 +7926,6 @@ function fixSectionScrolling() {
     }
 }
 
-// Override the existing section switching code
-const originalNavClickHandler = null;
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.removeEventListener('click', item._listener);
-    const newListener = () => {
-        // Remove active from all nav items
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-        item.classList.add('active');
-
-        // Hide ALL sections first
-        document.querySelectorAll('.dashboard-section').forEach(section => {
-            section.classList.remove('active');
-        });
-
-        const sectionId = item.dataset.section + 'Section';
-        const target = document.getElementById(sectionId);
-        if (target) {
-            target.classList.add('active');
-            // Fix scrolling after section becomes visible
-            setTimeout(() => {
-                const mainContent = document.querySelector('.main-content');
-                if (mainContent) {
-                    mainContent.scrollTop = 0;
-                }
-            }, 50);
-        }
-
-        // Load section-specific data
-        if (item.dataset.section === 'certificates') {
-            if (typeof loadCertificateSection === 'function') loadCertificateSection();
-        }
-        if (item.dataset.section === 'adminResources') {
-            if (typeof loadAdminResourcesSection === 'function') loadAdminResourcesSection();
-        }
-        if (item.dataset.section === 'teacherApprovals') {
-            if (typeof loadTeacherApprovals === 'function') loadTeacherApprovals();
-        }
-        if (item.dataset.section === 'analytics') {
-            if (typeof updateAnalytics === 'function') updateAnalytics();
-        }
-        if (item.dataset.section === 'recordings') {
-            if (typeof loadRecordingsSection === 'function') loadRecordingsSection();
-        }
-    };
-    item._listener = newListener;
-    item.addEventListener('click', newListener);
-});
 </script>
 
 </body>

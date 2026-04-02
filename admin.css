@@ -4021,17 +4021,6 @@ body.dark-mode .page-btn.active {
     margin-left: 0 !important;
     margin-right: 0 !important;
 }
-#adminResourcesSection.active {
-    display: block !important;
-    width: 100% !important;
-}
-#adminResourcesSection.active .header,
-#adminResourcesSection.active .card,
-#adminResourcesSection.active #adminResourcesGrid {
-    margin-left: 0 !important;
-    width: 100% !important;
-}
-
 
 /* ============================================================
    SESSION RECORDINGS — admin.css
@@ -4251,10 +4240,6 @@ body.dark-mode .page-btn.active {
    LAYOUT & SCROLL — SINGLE SOURCE OF TRUTH
    ============================================ */
 
-html, body {
-    height: 100%;
-    overflow: hidden;
-}
 
 .dashboard-section {
     display: none;
@@ -4268,9 +4253,7 @@ html, body {
     height: auto;
     overflow: visible;
     box-sizing: border-box;
+    padding-top: 0;
+    margin-top: 0;
 }
 
-#usersSection.active {
-    display: flex;
-    flex-direction: column;
-}
