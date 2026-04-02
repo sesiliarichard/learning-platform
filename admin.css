@@ -4346,35 +4346,3 @@ html {
     min-height: 0 !important;
     overflow: visible !important;
 }
-.container {
-    display: flex !important;
-    flex-direction: row !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    overflow: hidden !important;
-    position: relative !important;
-}
-
-.sidebar {
-    width: 280px !important;
-    min-width: 280px !important;
-    max-width: 280px !important;
-    flex-shrink: 0 !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-    position: relative !important;
-    z-index: 1 !important;
-}
-
-.main-content {
-    width: calc(100vw - 280px) !important;
-    min-width: 0 !important;
-    height: 100vh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding: 35px 40px !important;
-    box-sizing: border-box !important;
-    flex: none !important;
-    position: relative !important;
-    z-index: 0 !important;
-}
