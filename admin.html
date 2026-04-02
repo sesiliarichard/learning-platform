@@ -1567,9 +1567,9 @@ if (target) {
 // FIX: Reset main-content width after switching sections
 const mc = document.querySelector('.main-content');
 if (mc) {
-    mc.style.cssText = 'flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; overflow-x: hidden !important; overflow-y: auto !important;';
+    mc.style.cssText = 'flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; overflow-x: hidden !important; overflow-y: scroll !important; height: 100vh !important; display: block !important;';
 }
-
+mc.scrollTop = 0;
         // Load section-specific data
 if (item.dataset.section === 'certificates') {
             loadCertificateSection();
@@ -5884,6 +5884,8 @@ function switchApprovalTab(tabId) {
     event.target.classList.add('active');
     document.querySelectorAll('#teacherApprovalsSection .tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(tabId)?.classList.add('active');
+    const mc = document.querySelector('.main-content');
+    if (mc) mc.scrollTop = 0;
 }
 
 function loadAdminResourcesSection() {
@@ -5895,11 +5897,12 @@ function loadAdminResourcesSection() {
     }
     const grid = document.getElementById('adminResourcesGrid');
     if (grid) {
-        grid.style.display = 'block';
-        grid.style.width = '100%';
-        grid.style.maxWidth = '100%';
+        grid.style.cssText = 'display:block;width:100%;max-width:100%;box-sizing:border-box;overflow:visible;';
     }
+    const mc = document.querySelector('.main-content');
+    if (mc) mc.scrollTop = 0;
 }
+
 function openAdminAddResourceModal() {
     document.getElementById('adminAddResourceModal')?.classList.add('active');
     
@@ -6388,7 +6391,7 @@ function renderTable() {
 
     const tr = document.createElement('tr');
     tr.style.animationDelay = `${i * 40}ms`;
-    
+
 tr.innerHTML = `
       <td>
         <div class="user-cell">

@@ -768,11 +768,15 @@ UPDATE resources SET published = true WHERE published IS NULL;</pre>
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     _observeResourcesSection();
     _hookNavItem();
     setTimeout(function() { _tryInitResources(); }, 500);
     setTimeout(function() { _tryInitResources(); }, 1500);
+    const adminGrid = document.getElementById('adminResourcesGrid');
+    if (adminGrid) {
+        adminGrid.style.cssText = 'display:block;width:100%;max-width:100%;overflow:visible;';
+    }
   });
 
 })();
