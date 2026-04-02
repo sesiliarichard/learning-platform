@@ -6063,8 +6063,16 @@ document.addEventListener('drop', (e) => {
         // Success!
         console.log('✅ Admin authenticated successfully! Showing dashboard...');
         console.log('8. Making page visible...');
-        document.body.style.visibility = 'visible';
-        
+  document.body.style.visibility = 'visible';
+document.body.style.height = '100%';
+document.body.style.overflow = 'hidden';
+document.documentElement.style.height = '100%';
+document.documentElement.style.overflow = 'hidden';
+const mc = document.querySelector('.main-content');
+if (mc) {
+    mc.style.height = '100vh';
+    mc.style.overflowY = 'scroll';
+}
         // Load all dashboard data
         console.log('9. Initializing dashboard...');
         if (typeof init === 'function') {
