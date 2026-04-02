@@ -4346,13 +4346,13 @@ html {
     min-height: 0 !important;
     overflow: visible !important;
 }
-/* NUCLEAR WIDTH + SCROLL FIX */
 .container {
     display: flex !important;
     flex-direction: row !important;
     width: 100vw !important;
     height: 100vh !important;
     overflow: hidden !important;
+    position: relative !important;
 }
 
 .sidebar {
@@ -4362,6 +4362,8 @@ html {
     flex-shrink: 0 !important;
     height: 100vh !important;
     overflow-y: auto !important;
+    position: relative !important;
+    z-index: 1 !important;
 }
 
 .main-content {
@@ -4373,4 +4375,6 @@ html {
     padding: 35px 40px !important;
     box-sizing: border-box !important;
     flex: none !important;
+    position: relative !important;
+    z-index: 0 !important;
 }
