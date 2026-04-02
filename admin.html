@@ -11,7 +11,6 @@
       <!-- Favicon - Multiple sizes for better display -->
 <link rel="icon" type="image/png" sizes="32x32" href="images\favicon-32x32.png">
 <link rel="shortcut icon" href="images\favicon-32x32.png">
-<script src="courses.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module" src="notes.js"></script>
 <script src="supabase-config.js"></script>
@@ -19,6 +18,7 @@
     const db = window.supabaseClient;
     function getSB() { return window.supabaseClient || window.db; }
 </script>
+<script src="courses.js"></script>
 <script src="resources.js"></script>
 <script src="sessions.js"></script>
 <script src="certificates.js"></script>
@@ -1737,7 +1737,7 @@ const { data, error } = await db
 }
 
 function editCourse(courseId) {
-    showToast('Edit course functionality coming soon');
+    openEditCourseModal(courseId);
 }
 
 async function deleteCourse(courseId) {
@@ -2372,7 +2372,7 @@ function previewQuiz(quizId) {
 }
 
 function deleteQuiz(quizId) {
-    handleDeleteQuiz(quizId, '');
+    handleDeleteQuiz(quizId, quizId);
 }
 
 // Safe wrapper for enrollments queries
@@ -2409,7 +2409,7 @@ function loadAssignments() {
 }
 
 function deleteAssignment(assignmentId) {
-    handleDeleteAssignment(assignmentId, '');
+    handleDeleteAssignment(assignmentId, assignmentId);
 }
 
 // ============================================
@@ -6388,7 +6388,8 @@ function renderTable() {
 
     const tr = document.createElement('tr');
     tr.style.animationDelay = `${i * 40}ms`;
-    tr.innerHTML = `
+    
+tr.innerHTML = `
       <td>
         <div class="user-cell">
           <div class="user-avatar ${color}">
@@ -6415,9 +6416,8 @@ function renderTable() {
       <td style="color:#94a3b8;font-size:12.5px;">${u.registeredDate}</td>
       <td>
         <div class="action-group">
-          <button class="act-btn act-view"   title="View"   onclick="viewUser(${u.id})"><i class="fas fa-eye"></i></button>
-          <button class="act-btn act-edit"   title="Edit"   onclick="editUser(${u.id})"><i class="fas fa-pen"></i></button>
-          <button class="act-btn act-delete" title="Delete" onclick="deleteUser(${u.id})"><i class="fas fa-trash-alt"></i></button>
+          <button class="act-btn act-view"   title="View"   onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
+          <button class="act-btn act-delete" title="Delete" onclick="deleteUser('${u.id}')"><i class="fas fa-trash-alt"></i></button>
         </div>
       </td>
     `;
@@ -6463,13 +6463,98 @@ function renderPagination(total) {
 // ── Action stubs (wire to your existing functions) ──
 function viewUser(id) {
   const u = ALL_USERS.find(x => x.id == id);
-  if (u) alert(`👤 ${u.firstName} ${u.lastName}\n📧 ${u.email}\n📞 ${u.phone}\n🌍 ${u.country}\n🎭 ${u.role}`);
+  if (!u) return;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal active';
+  modal.style.zIndex = '4000';
+  modal.innerHTML = `
+    <div class="modal-content" style="max-width:480px;">
+      <div class="modal-header">
+        <h2><i class="fas fa-user" style="color:#0099ff;margin-right:8px;"></i>User Details</h2>
+        <button class="modal-close" onclick="this.closest('.modal').remove()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:#f0f9ff;border-radius:12px;padding:20px;display:flex;align-items:center;gap:14px;">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#0099ff,#0070cc);
+                      display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:20px;">
+            ${((u.firstName||'?')[0]+(u.lastName||'')[0]).toUpperCase()}
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:17px;color:#1f2937;">${u.firstName} ${u.lastName}</div>
+            <div style="font-size:13px;color:#6b7280;">${u.role}</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Email</div>
+            <div style="font-size:13px;color:#374151;word-break:break-all;">${u.email}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Phone</div>
+            <div style="font-size:13px;color:#374151;">${u.phone || '—'}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Country</div>
+            <div style="font-size:13px;color:#374151;">${u.country || '—'}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Status</div>
+            <div style="font-size:13px;color:#374151;">${u.status || '—'}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Registered</div>
+            <div style="font-size:13px;color:#374151;">${u.registeredDate || '—'}</div>
+          </div>
+          <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+            <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">User ID</div>
+            <div style="font-size:11px;color:#374151;word-break:break-all;">${u.id}</div>
+          </div>
+        </div>
+        <button onclick="this.closest('.modal').remove()"
+          style="padding:12px;border:2px solid #e5e7eb;border-radius:12px;background:white;
+                 color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
+          Close
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
-function editUser(id)   { alert(`Edit user #${id} — wire to your existing editUser()`); }
-function deleteUser(id) {
-  if (confirm('Delete this user?')) {
+
+function editUser(id) {
+  // Edit removed as requested
+}
+
+async function deleteUser(id) {
+  const u = ALL_USERS.find(x => x.id == id);
+  if (!u) return;
+
+  if (!confirm(`Delete user "${u.firstName} ${u.lastName}" (${u.email})?\n\nThis will permanently remove them from the database and cannot be undone.`)) return;
+
+  try {
+    const sb = window.supabaseClient || window.db;
+
+    // Delete from Supabase auth (profiles table first due to FK)
+    const { error: profileError } = await sb
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    if (profileError) {
+      showToast('Error deleting user: ' + profileError.message, 'error');
+      return;
+    }
+
+    // Remove from local list and refresh table
     ALL_USERS = ALL_USERS.filter(u => u.id != id);
     filterUsers();
+    showToast(`✅ User "${u.firstName} ${u.lastName}" deleted successfully`);
+
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
   }
 }
 
