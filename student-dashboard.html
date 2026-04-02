@@ -1769,7 +1769,8 @@ function renderCourseCards() {
 async function initDashboard() {
     await loadCoursesFromDB();   
     renderCourseCards();          
-
+     broadcastPresence();
+    
     const savedTheme = localStorage.getItem('themePreference');
     if (savedTheme === 'dark') {
         body.classList.add('dark-mode');
@@ -4277,6 +4278,27 @@ document.addEventListener('keydown', (e) => {
 });
 
 console.log('✅ Enhanced Profile features loaded successfully!');
+
+
+async function broadcastPresence() {
+    const sb = window.supabaseClient || window.db;
+    if (!sb) return;
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    const channel = sb.channel('online-users', {
+        config: { presence: { key: 'user_id' } }
+    });
+
+    await channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            await channel.track({
+                user_id:  user.id,
+                online_at: new Date().toISOString()
+            });
+        }
+    });
+}
 
 /* ============================================================
    PROJECT PHASES JAVASCRIPT

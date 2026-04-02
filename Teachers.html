@@ -70,6 +70,7 @@
         // ✅ Auth confirmed — init dashboard
         const initAndShow = async () => {
             await initTeacherDashboard();
+            broadcastPresence();
             document.body.style.visibility = 'visible';
         };
 
@@ -1152,6 +1153,25 @@ updateGreeting();
 setInterval(updateGreeting, 60000);
 
 window.loadTeacherAnnouncementsUI = async function() {
+  async function broadcastPresence() {
+    const sb = window.supabaseClient || window.db;
+    if (!sb) return;
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    const channel = sb.channel('online-users', {
+        config: { presence: { key: 'user_id' } }
+    });
+
+    await channel.subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+            await channel.track({
+                user_id:  user.id,
+                online_at: new Date().toISOString()
+            });
+        }
+    });
+}
     const container = document.getElementById('annList');
     if (!container) return;
 

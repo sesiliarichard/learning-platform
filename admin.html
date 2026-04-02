@@ -28,6 +28,7 @@
  <script src="User management.js"></script>
  <script src="ai-grader.js"></script>
 <script src="ai-grader-admin.js"></script>
+<script src="presence.js"></script>
  <style>body{visibility:hidden}</style>
 
 </head>
@@ -6310,7 +6311,7 @@ async function loadUsers() {
           role:         u.role        || 'student',
           status:       u.status      || 'active',
           registeredDate: u.created_at ? u.created_at.split('T')[0] : '—',
-          online:       Math.random() > 0.4  // demo online status
+         online: window.onlineUserIds?.has(u.id) ?? false
         }));
         renderTable();
         return;
