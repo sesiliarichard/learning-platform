@@ -7913,17 +7913,6 @@ async function deleteSessionRecording(id) {
 }
 // Fix scrolling when switching sections
 function fixSectionScrolling() {
-    const mainContent = document.querySelector('.main-content');
-    if (mainContent) {
-        // Reset scroll position when switching sections
-        mainContent.scrollTop = 0;
-        
-        // Force reflow to ensure proper height calculation
-        mainContent.style.overflow = 'hidden';
-        setTimeout(() => {
-            mainContent.style.overflow = 'auto';
-        }, 10);
-    }
 }
 
 </script>
