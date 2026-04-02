@@ -53,12 +53,12 @@
 
                 <div class="nav-item" data-section="courses">
                     <i class="fas fa-book"></i>
-                    <span>courses structure</span>
+                    <span>Modules</span>
                 </div>
 
                 <div class="nav-item" data-section="notes">
                     <i class="fas fa-sticky-note"></i>
-                    <span>Notes & Chapters</span>
+                    <span>Notes</span>
                 </div>
 
                 <div class="nav-item" data-section="quizzes">
@@ -192,7 +192,7 @@
                 <div class="header">
                     <h1>Notes & Chapters Management</h1>
                     <button class="btn-primary" onclick="openCreateChapterModal()">
-                        <i class="fas fa-book-open"></i> Create chapter
+                        <i class="fas fa-book-open"></i> Create notes
                     </button>
                 </div>
 
@@ -1125,7 +1125,7 @@
     </div>
 
     <div class="form-group">
-        <label>chapter title *</label>
+        <label>Week *</label>
         <input type="text" name="chapterTitle" required placeholder="e.g., Introduction to Machine Learning">
     </div>
 
@@ -1245,7 +1245,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="quizTimeLimit">Time Limit (minutes)</label>
+                    <label for="quizTimeLimit">Time Limit due data</label>
                     <input type="number" id="quizTimeLimit" name="timeLimit" min="1">
                 </div>
             </div>
