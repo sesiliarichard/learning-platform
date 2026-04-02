@@ -1061,9 +1061,20 @@
             </div>
 
             <div class="form-group">
-                <label for="courseDescription">Description *</label>
-                <textarea id="courseDescription" name="description" required></textarea>
-            </div>
+    <label for="courseDescription">Description *</label>
+    <div class="editor-toolbar">
+        <button type="button" class="editor-btn" onclick="document.execCommand('bold')" aria-label="Bold"><i class="fas fa-bold"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('italic')" aria-label="Italic"><i class="fas fa-italic"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('underline')" aria-label="Underline"><i class="fas fa-underline"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('formatBlock', false, '<h3>')" aria-label="Heading"><i class="fas fa-heading"></i></button>
+    </div>
+    <div class="editor-content" contenteditable="true" id="courseDescriptionEditor" style="min-height: 100px;">
+        <p>Enter course description here...</p>
+    </div>
+    <input type="hidden" id="courseDescription" name="description">
+</div>
 
             <div class="form-row">
                 <div class="form-group">
@@ -1703,6 +1714,10 @@ async function loadCourseSelects() {
 async function handleAddCourse(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
+
+   
+    document.getElementById('courseDescription').value = 
+        document.getElementById('courseDescriptionEditor').innerHTML;
 
 const { data, error } = await db
     .from('courses')
