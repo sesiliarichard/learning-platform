@@ -20,6 +20,7 @@
 <script>
     const db = supabaseClient;
 </script>
+<style>body{visibility:hidden}</style>
 <script src="auth.js"></script>
 <script src="teacher-init.js"></script>
 <script src="teacher-courses.js"></script>
@@ -33,7 +34,7 @@
 <script src="teacher-recording.js"></script>
 <script src="ai-grader.js"></script>
 <script src="ai-grader-teacher.js"></script>
-<style>body{visibility:hidden}</style>
+
 <script>
 (async function() {
     try {
@@ -1154,8 +1155,7 @@ function updateGreeting() {
 updateGreeting();
 setInterval(updateGreeting, 60000);
 
-window.loadTeacherAnnouncementsUI = async function() {
-  async function broadcastPresence() {
+window.broadcastPresence = async function() {
     const sb = window.supabaseClient || window.db;
     if (!sb) return;
     const { data: { user } } = await sb.auth.getUser();
@@ -1174,6 +1174,8 @@ window.loadTeacherAnnouncementsUI = async function() {
         }
     });
 }
+
+window.loadTeacherAnnouncementsUI = async function() {
     const container = document.getElementById('annList');
     if (!container) return;
 
