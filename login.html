@@ -818,8 +818,8 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
         return;
     }
     // Auto-enroll new student in all courses
-if (result.userId) {
-    await enrollStudentInAllCourses(result.userId);
+if (result.user?.id) {
+    await enrollStudentInAllCourses(result.user.id);
 }
 showAlert('✅ Account created! Logging you in...', 'success');
 setTimeout(() => {

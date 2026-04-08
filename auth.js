@@ -477,7 +477,7 @@ function getFriendlyError(message) {
         'Invalid login credentials':       'Incorrect email or password. Please try again.',
         'Email not confirmed':             'Please check your email and confirm your account first.',
         'User already registered':         'An account with this email already exists. Try logging in.',
-        'Password should be at least 6':   'Password must be at least 8 characters long.',
+        'Password should be at least 6':   'Password must be at least 6 characters long.',
         'Unable to validate email':        'Please enter a valid email address.',
         'Email rate limit exceeded':       'Too many attempts. Please wait a few minutes and try again.',
         'Invalid email':                   'Please enter a valid email address.',

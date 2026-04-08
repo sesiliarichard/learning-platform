@@ -379,7 +379,7 @@ async function voteOnContent(contentId, contentType, voteType) {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
-        const voteData = { user_id: user.id, vote_type: voteType };
+        const voteData = { student_id: user.id, vote_type: voteType };
         if (contentType === 'thread') { voteData.thread_id = contentId; voteData.reply_id = null; }
         else                          { voteData.reply_id  = contentId; voteData.thread_id = null; }
 
