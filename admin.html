@@ -32,6 +32,65 @@
  <style>body{visibility:hidden}</style>
 
 </head>
+<style>
+/* ── SCROLL FIX (overrides all conflicting rules) ── */
+html, body {
+    height: 100% !important;
+    overflow: hidden !important;
+}
+
+.container {
+    display: flex !important;
+    height: 100vh !important;
+    overflow: hidden !important;
+    width: 100% !important;
+}
+
+.sidebar {
+    height: 100vh !important;
+    overflow-y: auto !important;
+    flex-shrink: 0 !important;
+    width: 280px !important;
+    min-width: 280px !important;
+}
+
+.main-content {
+    flex: 1 !important;
+    height: 100vh !important;
+    overflow-y: scroll !important;
+    overflow-x: hidden !important;
+    min-width: 0 !important;
+    padding: 35px 40px !important;
+    box-sizing: border-box !important;
+}
+
+/* Every section: natural height, never clips */
+.dashboard-section,
+.dashboard-section.active,
+#usersSection,
+#usersSection.active,
+#teacherApprovalsSection,
+#analyticsSection,
+#adminResourcesSection,
+#certificatesSection {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+#usersSection.active {
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+.um-table-wrap {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    height: auto !important;
+    max-height: none !important;
+}
+</style>
 <body>
     <div class="container">
         
