@@ -3965,17 +3965,6 @@ body.dark-mode .page-btn.active {
     padding-bottom: 0;
 }
 
-#adminResourcesSection {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: hidden;
-    box-sizing: border-box;
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-    position: relative;
-    left: 0 !important;
-}
-
 #adminResourcesSection .resources-grid,
 #adminResourcesGrid {
     display: block;
@@ -3991,21 +3980,6 @@ body.dark-mode .page-btn.active {
     box-sizing: border-box;
     margin-bottom: 16px;
 }
-#adminResourcesGrid > *,
-#adminResourcesSection .resources-grid > * {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    min-width: 0;
-}
-
-#adminResourcesSection .card,
-#adminResourcesSection .resource-card {
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-}
-
 
 #adminResourcesSection .action-buttons,
 #adminResourcesSection .card-actions {
@@ -4014,16 +3988,219 @@ body.dark-mode .page-btn.active {
     gap: 8px;
     width: 100%;
 }
-#adminResourcesGrid .note-card {
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    box-sizing: border-box !important;
-    float: none !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+/* ============================================
+   RESOURCES SECTION - FIXED
+   ============================================ */
+
+#adminResourcesSection {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: auto;
 }
 
+/* Resource Filters Card */
+.resource-filters-card {
+    flex-shrink: 0;
+    margin-bottom: 24px;
+}
+
+/* Filters container */
+.filters-container {
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    min-width: 200px;
+}
+
+.filter-group.course-filter {
+    flex: 2;
+    min-width: 220px;
+}
+
+.filter-group.type-filter {
+    flex: 3;
+}
+
+.filter-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280;
+    margin-bottom: 6px;
+    display: block;
+}
+
+.filter-select {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 14px;
+    background: white;
+    cursor: pointer;
+}
+
+/* Type tabs */
+.type-tabs {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.type-tabs .tab {
+    padding: 8px 18px;
+    background: #f3f4f6;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.type-tabs .tab.active {
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    color: white;
+}
+
+/* Resources Grid */
+.resources-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 4px 0 20px 0;
+}
+
+/* Loading state */
+.loading-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px;
+    color: #9ca3af;
+}
+
+/* Resource Card */
+.resource-card,
+#adminResourcesGrid .note-card {
+    display: flex;
+    flex-direction: column;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+    width: 100%;
+    margin: 0;
+}
+
+.resource-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border-color: #d1d5db;
+}
+
+.resource-card .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.resource-card .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 6px;
+}
+
+.resource-card .resource-type {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #e0e7ff;
+    color: #4338ca;
+}
+
+.resource-card .resource-description {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 10px 0;
+    line-height: 1.5;
+}
+
+.resource-card .resource-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: #9ca3af;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.resource-card .action-buttons {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Dark mode support */
+body.dark-mode .resource-card {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+body.dark-mode .resource-card .card-title {
+    color: #ffffff;
+}
+
+body.dark-mode .filter-select {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+}
+
+body.dark-mode .type-tabs .tab {
+    background: #374151;
+    color: #9ca3af;
+}
+
+body.dark-mode .type-tabs .tab.active {
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .resources-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group {
+        width: 100%;
+    }
+    
+    .type-tabs {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 8px;
+    }
+}
 /* ============================================================
    SESSION RECORDINGS — admin.css
    Add these classes to your existing admin.css file
