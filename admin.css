@@ -4242,10 +4242,12 @@ body.dark-mode .page-btn.active {
    LAYOUT & SCROLL — SINGLE SOURCE OF TRUTH
    ============================================ */
 
-
+/* All dashboard sections use natural height inside .main-content */
 .dashboard-section {
     display: none;
     width: 100%;
+    height: auto;
+    overflow: visible;
     box-sizing: border-box;
 }
 
@@ -4255,128 +4257,30 @@ body.dark-mode .page-btn.active {
     height: auto;
     overflow: visible;
     box-sizing: border-box;
-    padding-top: 0;
-    margin-top: 0;
 }
 
-/* ============================================================
-   SCROLL FIX — paste at very bottom of admin.css
-   ============================================================ */
-
-/* Main content area must scroll */
-.main-content {
-    flex: 1;
-    min-width: 0;
-    height: 100vh;
-    overflow-y: auto !important;
-    overflow-x: hidden;
-    padding: 35px 40px;
-    background: #f8f9fa;
-    box-sizing: border-box;
-}
-
-/* All sections: take natural height, never clip content */
-.dashboard-section {
-    display: none;
-    width: 100%;
-    height: auto !important;
-    overflow: visible !important;
-    box-sizing: border-box;
-}
-
-.dashboard-section.active {
-    display: block;
-    width: 100%;
-    height: auto !important;
-    overflow: visible !important;
-    box-sizing: border-box;
-}
-
-/* Users section fix — it uses flex but must still scroll via main-content */
+/* Users section uses flex layout */
 #usersSection {
     display: none;
-    height: auto !important;
-    overflow: visible !important;
+    height: auto;
+    overflow: visible;
 }
 
 #usersSection.active {
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: auto !important;
-    overflow: visible !important;
+    height: auto;
+    overflow: visible;
     background: #eef4fb;
 }
 
 /* The table inside users section can scroll horizontally */
 .um-table-wrap {
     overflow-x: auto;
-    overflow-y: visible !important;
-    flex: 1;
+    overflow-y: visible;
+    height: auto;
     background: #fff;
-}
-/* FINAL FIX */
-* { box-sizing: border-box; }
-
-html, body { 
-    height: 100%; 
-    overflow: hidden; 
-}
-
-.container { 
-    display: flex; 
-    height: 100vh; 
-    width: 100vw;
-    overflow: hidden; 
-}
-
-.sidebar { 
-    width: 280px; 
-    min-width: 280px;
-    max-width: 280px;
-    height: 100vh; 
-    overflow-y: auto; 
-    flex-shrink: 0; 
-}
-
-.main-content { 
-    flex: 1;
-    width: 0; /* forces flex to respect min-width */
-    min-width: 0;
-    height: 100vh; 
-    overflow-y: auto !important;
-    overflow-x: hidden !important; 
-    padding: 35px 40px; 
-    box-sizing: border-box;
-    background: #f8f9fa;
-}
-
-.dashboard-section { 
-    display: none; 
-    width: 100%; 
-    height: auto !important; 
-    overflow: visible !important; 
-}
-
-.dashboard-section.active { 
-    display: block !important; 
-    height: auto !important; 
-    overflow: visible !important; 
-}
-
-#usersSection { display: none !important; }
-#usersSection.active { 
-    display: flex !important; 
-    flex-direction: column; 
-    height: auto !important; 
-    overflow: visible !important; 
-}
-
-.um-table-wrap { 
-    overflow-x: auto !important; 
-    overflow-y: visible !important; 
-    height: auto !important; 
-    flex: none !important; 
 }
 /* ══════════════════════════════════════
    MOBILE RESPONSIVE FIXES — ADMIN
