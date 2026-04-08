@@ -324,7 +324,7 @@
    </section>
 
   <section id="resourcesSection" class="sec">
-    <div class="sec-tb"><h2 class="sec-ttl">Learning Resources</h2><button class="btn bp" onclick="openM('resModal')"><i class="fas fa-upload"></i> Upload Resource</button></div>
+    <div class="sec-tb"><h2 class="sec-ttl">Learning Resources</h2></div>
     <div class="tabs"><button class="tab active" data-tab="rAll">All</button><button class="tab" data-tab="rPDFs">PDFs</button><button class="tab" data-tab="rDS">Datasets</button><button class="tab" data-tab="rCode">Code</button><button class="tab" data-tab="rLinks">Links</button></div>
     <div id="rAll" class="tp active"><div id="resGrid" class="ig"></div></div>
     <div id="rPDFs" class="tp"><div id="resPDFGrid" class="ig"></div></div>
@@ -476,10 +476,7 @@
 
 <div class="modal" id="assignModal">
   <div class="mb">
-    <div class="mh">
-      <h3>Create Assignment</h3>
-      <button onclick="closeM('assignModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
-    </div>
+  
     <form id="assignForm" onsubmit="handleCreateAssignment(event)">
       <div class="fg">
         <label class="fl" for="assignTitle">Title *</label>
@@ -513,10 +510,7 @@
           <option value="both">Both</option>
         </select>
       </div>
-      <div class="ma">
-        <button type="button" class="btn bg" onclick="closeM('assignModal')" title="Cancel" aria-label="Cancel">Cancel</button>
-        <button type="submit" class="btn bp" title="Create Assignment" aria-label="Create Assignment"><i class="fas fa-save"></i> Create</button>
-      </div>
+  
     </form>
   </div>
 </div>
@@ -601,7 +595,7 @@
 <div class="modal" id="resModal">
   <div class="mb">
     <div class="mh">
-      <h3>Upload Resource</h3>
+      
       <button onclick="closeM('resModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
     </div>
     <form id="resForm" onsubmit="handleResUpload(event)">
@@ -642,10 +636,6 @@
       <div class="fg">
         <label class="fl" for="resDescription">Description</label>
         <textarea name="description" id="resDescription" rows="2" class="fc" placeholder="Brief description…" title="Description" aria-label="Description"></textarea>
-      </div>
-      <div class="ma">
-        <button type="button" class="btn bg" onclick="closeM('resModal')" title="Cancel" aria-label="Cancel">Cancel</button>
-        <button type="submit" class="btn bp" title="Upload Resource" aria-label="Upload Resource"><i class="fas fa-upload"></i> Upload</button>
       </div>
     </form>
   </div>
