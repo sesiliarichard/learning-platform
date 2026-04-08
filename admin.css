@@ -4315,34 +4315,19 @@ body.dark-mode .page-btn.active {
     flex: 1;
     background: #fff;
 }
-/* FINAL FIX */
-body {
-    overflow: hidden !important;
-    height: 100vh !important;
-}
-
-html {
-    overflow: hidden !important;
-    height: 100vh !important;
+html, body {
+    height: auto;
+    overflow-x: hidden;
 }
 
 .container {
     display: flex;
     width: 100%;
-    height: 100vh;
-    overflow: hidden;
+    min-height: 100vh; 
 }
 
 .main-content {
     flex: 1;
-    height: 100vh;
-    overflow-y: auto !important;
-    overflow-x: hidden;
-}
-
-.dashboard-section.active {
-    display: block !important;
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
+    overflow-y: auto;
+    height: auto; 
 }
