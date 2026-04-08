@@ -2779,3 +2779,150 @@ to{
     0%, 100% { opacity: 1; transform: scale(1); }
     50% { opacity: 0.5; transform: scale(1.3); }
 }
+/* ══════════════════════════════════════
+   MOBILE RESPONSIVE FIXES — TEACHER
+   ══════════════════════════════════════ */
+
+@media (max-width: 900px) {
+
+    /* ── Sidebar overlay ── */
+    .sb-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 199;
+        backdrop-filter: blur(2px);
+    }
+    .sb-overlay.open { display: block; }
+
+    /* ── Main content full width ── */
+    .mn {
+        margin-left: 0 !important;
+        width: 100%;
+    }
+
+    /* ── Topbar padding for hamburger ── */
+    .topbar {
+        padding-left: 58px !important;
+        padding-right: 14px;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    /* ── Hide search on very small screens ── */
+    .srch { display: none; }
+
+    /* ── Section padding ── */
+    .sec { padding: 16px 14px; }
+
+    /* ── Welcome banner ── */
+    .welcome {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 18px;
+        gap: 14px;
+    }
+    .welcome h2 { font-size: 16px; }
+
+    /* ── Stats grid: 2 columns ── */
+    .stats-g { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+
+    /* ── Overview grid: single column ── */
+    .ov-g { grid-template-columns: 1fr !important; }
+    .span2 { grid-column: span 1 !important; }
+
+    /* ── Section toolbar ── */
+    .sec-tb {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .sec-tb__actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .sec-tb__actions .fc.sm,
+    .sec-tb__actions input { flex: 1; min-width: 120px; }
+
+    /* ── Courses grid: single column ── */
+    .cg2 { grid-template-columns: 1fr !important; }
+
+    /* ── Item grid: single column ── */
+    .ig { grid-template-columns: 1fr !important; }
+
+    /* ── Form rows: stack ── */
+    .fr2, .fr3 { grid-template-columns: 1fr !important; }
+    .gi { grid-template-columns: 1fr 1fr; }
+
+    /* ── Student work viewer: stack ── */
+    .sw-wrap { grid-template-columns: 1fr !important; }
+    .sw-left { max-height: 320px; }
+    .sw-list { max-height: 220px; overflow-y: auto; }
+
+    /* ── Students table: scroll ── */
+    .dt-wrap { overflow-x: auto; }
+    .dt { min-width: 600px; }
+
+    /* ── Grade center: single column ── */
+    .gc { grid-template-columns: 1fr !important; }
+
+    /* ── Notes viewer: stack ── */
+    .notes-reading-container {
+        grid-template-columns: 1fr !important;
+    }
+    .notes-sidebar {
+        margin: 10px 10px 0 10px !important;
+        height: auto !important;
+    }
+    .notes-reader { padding: 18px 14px !important; }
+    .notes-title { font-size: 18px !important; }
+
+    /* ── Tabs: scroll ── */
+    .tabs {
+        overflow-x: auto;
+        width: 100% !important;
+        flex-wrap: nowrap !important;
+    }
+    .tab { white-space: nowrap; }
+
+    /* ── Modals: full screen sheet ── */
+    .modal { padding: 10px !important; align-items: flex-end; }
+    .mb, .mbw {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 20px 16px !important;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    /* ── Session controls: wrap ── */
+    .sess-ctrls { flex-wrap: wrap; }
+
+    /* ── Recording cards ── */
+    .rec-c { flex-wrap: wrap; }
+    .rec-acts { width: 100%; justify-content: flex-end; }
+
+    /* ── Quiz/assignment submission stats ── */
+    #quizResGrid > div > div:first-child,
+    #assignSubGrid > div > div:first-child {
+        flex-wrap: wrap;
+    }
+
+    /* ── Filter row ── */
+    #quizResGrid .fc.sm,
+    #assignSubGrid .fc.sm { width: 100% !important; min-width: unset; }
+}
+
+/* Very small phones */
+@media (max-width: 480px) {
+    .stats-g { grid-template-columns: 1fr !important; }
+    .gi { grid-template-columns: 1fr !important; }
+    .sec { padding: 12px 10px; }
+    .topbar { padding-left: 52px !important; }
+    .tb-r { gap: 6px; }
+    .tb-btn { width: 32px; height: 32px; }
+    .tb-av { width: 32px; height: 32px; }
+    .sess-stats { flex-direction: column; gap: 6px; }
+}

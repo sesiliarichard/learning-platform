@@ -6784,3 +6784,202 @@ body.dark-mode .dash-ann-item {
     background: #374151;
     border-color: #4b5563;
 }
+/* ══════════════════════════════════════
+   MOBILE RESPONSIVE FIXES — STUDENT
+   ══════════════════════════════════════ */
+
+/* Overlay for mobile sidebar */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
+    backdrop-filter: blur(2px);
+}
+.sidebar-overlay.active { display: block; }
+
+@media (max-width: 768px) {
+
+    /* ── Layout ── */
+    body { overflow: hidden; }
+
+    .container {
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* ── Sidebar: hidden off-screen, slides in ── */
+    .sidebar {
+        position: fixed !important;
+        left: -280px !important;
+        top: 0;
+        width: 280px !important;
+        height: 100vh;
+        z-index: 1000;
+        transition: left 0.3s ease !important;
+        overflow-y: auto;
+    }
+
+    .sidebar.active { left: 0 !important; }
+
+    /* ── Mobile toggle button ── */
+    .mobile-sidebar-toggle {
+        display: flex !important;
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 1001;
+        width: 42px;
+        height: 42px;
+        background: linear-gradient(135deg, #0099ff, #0077cc);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 16px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,153,255,0.4);
+    }
+
+    /* ── Hide desktop sidebar toggle on mobile ── */
+    .sidebar-toggle { display: none !important; }
+
+    /* ── Main content: full width, padded for toggle button ── */
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 70px 16px 24px !important;
+        height: 100vh;
+        overflow-y: auto !important;
+    }
+
+    /* ── Header ── */
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .header-right {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .search-bar { flex: 1; }
+    .search-bar input { width: 100%; }
+
+    /* ── Dashboard banner row ── */
+    .dash-banner-row { grid-template-columns: 1fr !important; }
+
+    /* ── Mid rows ── */
+    .dash-mid-row { grid-template-columns: 1fr !important; }
+
+    /* ── Results grid ── */
+    .dash-results-grid { grid-template-columns: 1fr 1fr !important; }
+
+    /* ── Stats row ── */
+    .stats-row { grid-template-columns: 1fr !important; }
+
+    /* ── Courses grid ── */
+    .courses-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Notes reading container ── */
+    .notes-reading-container { grid-template-columns: 1fr !important; }
+    .notes-sidebar {
+        position: relative !important;
+        top: 0 !important;
+        height: auto !important;
+    }
+    .notes-reader { padding: 20px 16px !important; }
+    .notes-title  { font-size: 20px !important; }
+
+    /* ── Course navigation ── */
+    .course-nav { flex-direction: column; }
+    .course-nav-btn { width: 100%; justify-content: center; }
+
+    /* ── Course tabs ── */
+    .courses-tabs,
+    .project-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap !important;
+        padding-bottom: 6px;
+    }
+    .course-tab,
+    .project-tab { white-space: nowrap; }
+
+    /* ── Profile stats grid ── */
+    .profile-stats-grid { grid-template-columns: 1fr 1fr !important; }
+
+    /* ── Profile page ── */
+    .profile-simple-header { padding: 30px 16px 24px !important; }
+    .settings-simple-item  { padding: 16px !important; }
+
+    /* ── Phase switcher ── */
+    .phase-switcher { flex-direction: column; }
+    .phase-switch-btn { width: 100%; justify-content: center; }
+
+    /* ── Phase selector grid ── */
+    .phase-selector-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Phase form header ── */
+    .phase-form-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+    /* ── Phase tracker ── */
+    .phase-step { min-width: 70px; }
+
+    /* ── Activity input ── */
+    .activity-input-row { flex-direction: column; }
+    .activity-add-btn   { width: 100%; justify-content: center; }
+
+    /* ── Quiz/assignment grids ── */
+    .course-quiz-grid,
+    .course-assignment-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Modals: full-screen sheet ── */
+    .modal,
+    .cert-preview-modal,
+    .join-meeting-modal {
+        padding: 10px !important;
+        align-items: flex-end;
+    }
+
+    .assignment-modal-content,
+    .join-meeting-content,
+    .cert-preview-content,
+    #changePasswordModal .modal-content {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 22px 16px !important;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    /* ── Certificates grid ── */
+    .certificates-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Section header ── */
+    .section-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .section-header-actions { width: 100%; flex-wrap: wrap; }
+
+    /* ── Feedback stats grid ── */
+    .feedback-stats-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Meeting modal ── */
+    .meeting-content  { flex-direction: column; padding: 10px; }
+    .meeting-sidebar  { width: 100%; max-height: 250px; }
+    .meeting-controls { gap: 8px; padding: 14px; flex-wrap: wrap; justify-content: center; }
+    .control-button   { width: 46px; height: 46px; font-size: 16px; }
+    .control-label    { display: none; }
+
+    /* ── Announcements ── */
+    .announcements-filter { flex-wrap: wrap; gap: 6px; }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+    .dash-results-grid   { grid-template-columns: 1fr

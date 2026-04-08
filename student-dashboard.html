@@ -42,6 +42,7 @@
 </head>
 
 <body>
+     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="container">
    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle sidebar menu">
     <i class="fas fa-bars"></i>
@@ -1813,20 +1814,36 @@ if (sidebarToggle) {
     });
 }
 
-// Mobile sidebar toggle
+// Mobile sidebar toggle with overlay
 if (mobileSidebarToggle) {
     mobileSidebarToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
+        const overlay = document.getElementById('sidebarOverlay');
+        const isOpen  = sidebar.classList.contains('active');
+        sidebar.classList.toggle('active', !isOpen);
+        overlay?.classList.toggle('active', !isOpen);
+        const icon = mobileSidebarToggle.querySelector('i');
+        if (icon) icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
     });
 }
 
-// Close mobile sidebar when clicking outside
-document.addEventListener('click', (e) => {
-    if (window.innerWidth <= 768) {
-        if (!sidebar.contains(e.target) && !mobileSidebarToggle.contains(e.target)) {
+// Close sidebar when clicking overlay
+document.getElementById('sidebarOverlay')?.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+    const icon = mobileSidebarToggle?.querySelector('i');
+    if (icon) icon.className = 'fas fa-bars';
+});
+
+// Close sidebar when nav item clicked on mobile
+document.querySelectorAll('.nav-item').forEach(item => {
+    item.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
             sidebar.classList.remove('active');
+            document.getElementById('sidebarOverlay')?.classList.remove('active');
+            const icon = mobileSidebarToggle?.querySelector('i');
+            if (icon) icon.className = 'fas fa-bars';
         }
-    }
+    });
 });
 
 // Load saved sidebar state

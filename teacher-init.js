@@ -88,13 +88,24 @@ function setupNavigation() {
         });
     });
 
-    const mobBtn  = document.getElementById('mobBtn');
+const mobBtn  = document.getElementById('mobBtn');
     const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sbOverlay');
+
     if (mobBtn && sidebar) {
-        mobBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
-        document.addEventListener('click', e => {
-            if (!sidebar.contains(e.target) && !mobBtn.contains(e.target))
-                sidebar.classList.remove('open');
+        mobBtn.addEventListener('click', () => {
+            const isOpen = sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', !isOpen);
+            overlay?.classList.toggle('open', !isOpen);
+            const icon = mobBtn.querySelector('i');
+            if (icon) icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
+        });
+
+        overlay?.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+            const icon = mobBtn.querySelector('i');
+            if (icon) icon.className = 'fas fa-bars';
         });
     }
 
@@ -144,6 +155,13 @@ window.showSec = function (secId) {
     const link = document.querySelector(`.nl[data-s="${secId}"]`);
     if (sec)  sec.classList.add('active');
     if (link) link.classList.add('active');
+
+    if (window.innerWidth <= 900) {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sbOverlay')?.classList.remove('open');
+        const icon = document.querySelector('#mobBtn i');
+        if (icon) icon.className = 'fas fa-bars';
+    }
 
     const titles = {
         overview:      ['Dashboard',      'Overview'],

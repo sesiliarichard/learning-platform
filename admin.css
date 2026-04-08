@@ -4315,19 +4315,275 @@ body.dark-mode .page-btn.active {
     flex: 1;
     background: #fff;
 }
-html, body {
-    height: auto;
-    overflow-x: hidden;
+/* FINAL FIX */
+* { box-sizing: border-box; }
+
+html, body { 
+    height: 100%; 
+    overflow: hidden; 
 }
 
-.container {
-    display: flex;
-    width: 100%;
-    min-height: 100vh; /* change from height */
+.container { 
+    display: flex; 
+    height: 100vh; 
+    width: 100vw;
+    overflow: hidden; 
 }
 
-.main-content {
+.sidebar { 
+    width: 280px; 
+    min-width: 280px;
+    max-width: 280px;
+    height: 100vh; 
+    overflow-y: auto; 
+    flex-shrink: 0; 
+}
+
+.main-content { 
     flex: 1;
-    overflow-y: auto;
-    height: auto; /* change from 100vh */
+    width: 0; /* forces flex to respect min-width */
+    min-width: 0;
+    height: 100vh; 
+    overflow-y: auto !important;
+    overflow-x: hidden !important; 
+    padding: 35px 40px; 
+    box-sizing: border-box;
+    background: #f8f9fa;
+}
+
+.dashboard-section { 
+    display: none; 
+    width: 100%; 
+    height: auto !important; 
+    overflow: visible !important; 
+}
+
+.dashboard-section.active { 
+    display: block !important; 
+    height: auto !important; 
+    overflow: visible !important; 
+}
+
+#usersSection { display: none !important; }
+#usersSection.active { 
+    display: flex !important; 
+    flex-direction: column; 
+    height: auto !important; 
+    overflow: visible !important; 
+}
+
+.um-table-wrap { 
+    overflow-x: auto !important; 
+    overflow-y: visible !important; 
+    height: auto !important; 
+    flex: none !important; 
+}
+/* ══════════════════════════════════════
+   MOBILE RESPONSIVE FIXES — ADMIN
+   ══════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* ── Layout ── */
+    html, body { overflow: hidden; }
+
+    .container {
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    /* ── Sidebar: hidden by default, slides in ── */
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px !important;
+        min-width: 280px !important;
+        max-width: 280px !important;
+        height: 100vh;
+        z-index: 2000;
+        transition: left 0.3s ease;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+    }
+
+    .sidebar.active { left: 0; }
+
+    /* ── Main content: full width ── */
+    .main-content {
+        width: 100% !important;
+        padding: 70px 16px 24px !important;
+        height: 100vh;
+        overflow-y: auto !important;
+    }
+
+    /* ── Hamburger button ── */
+    #mobileMenuToggle {
+        display: flex !important;
+        position: fixed;
+        top: 14px;
+        left: 14px;
+        z-index: 2100;
+        width: 44px;
+        height: 44px;
+        background: linear-gradient(135deg, #0d47a1, #1976d2);
+        border: none;
+        border-radius: 12px;
+        color: white;
+        font-size: 18px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(21,101,192,0.4);
+    }
+
+    /* Overlay when sidebar is open */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1999;
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* ── Headers ── */
+    .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .header h1 { font-size: 20px; }
+
+    .header-actions {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .header-actions .btn-primary,
+    .header-actions .btn-secondary {
+        flex: 1;
+        justify-content: center;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+
+    /* ── Stats grids ── */
+    .analytics-stats-grid,
+    .stats-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px;
+    }
+
+    /* ── Charts ── */
+    .analytics-charts-grid,
+    .analytics-bottom-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ── User Management header ── */
+    .um-header {
+        padding: 16px !important;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .um-actions {
+        width: 100%;
+        flex-direction: column;
+    }
+
+    .um-search { width: 100% !important; }
+    .um-filter { width: 100%; }
+
+    .btn-glass {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* ── Stats row inside user management ── */
+    .um-stats-row {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    /* ── Tables: horizontal scroll ── */
+    .um-table-wrap,
+    .cert-table-card,
+    .issued-certs-table-card {
+        overflow-x: auto !important;
+    }
+
+    /* ── Modals: full screen ── */
+    .modal { padding: 10px !important; align-items: flex-end; }
+
+    .modal-content,
+    .modal-content--md,
+    .modal-content-wide {
+        max-width: 100% !important;
+        width: 100% !important;
+        border-radius: 20px 20px 0 0 !important;
+        padding: 24px 18px !important;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    /* ── Form rows: stack vertically ── */
+    .form-row { grid-template-columns: 1fr !important; }
+
+    /* ── Tabs: horizontal scroll ── */
+    .tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap !important;
+        padding-bottom: 6px;
+    }
+
+    .tab { white-space: nowrap; font-size: 13px; padding: 8px 14px; }
+
+    /* ── Cert table headers: hide on small screens ── */
+    .cert-table-header,
+    .issued-certs-table-header {
+        display: none !important;
+    }
+
+    /* ── Analytics action buttons ── */
+    .analytics-action-btn {
+        padding: 9px 14px;
+        font-size: 12px;
+    }
+
+    /* ── Recording cards ── */
+    .recording-card__top { flex-direction: column; }
+    .recording-card__actions { flex-direction: column; }
+    .recording-card__actions .btn-secondary,
+    .recording-card__actions .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* ── Teacher approvals ── */
+    .approval-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    /* ── Template grid ── */
+    .template-grid { grid-template-columns: 1fr !important; }
+
+    /* ── Cert filters ── */
+    .cert-filters { flex-direction: column; align-items: stretch; }
+    .bulk-issue-btn { margin-left: 0; width: 100%; }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+    .analytics-stats-grid,
+    .stats-grid { grid-template-columns: 1fr !important; }
+
+    .um-stats-row { grid-template-columns: 1fr !important; }
+
+    .main-content { padding: 65px 12px 20px !important; }
 }

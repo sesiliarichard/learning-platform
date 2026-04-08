@@ -1060,6 +1060,72 @@ nav:hover {
         font-size: 0.88rem;
     }
 }
+/* ── MOBILE FIXES ── */
+
+/* 1. Stack roadmap grid on tablet/mobile */
+@media (max-width: 992px) {
+    .learning-roadmap {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+}
+
+/* 2. Smaller hero image wrapper on small phones */
+@media (max-width: 480px) {
+    .image-wrapper {
+        width: 280px;
+        height: 280px;
+    }
+    .person-image-container {
+        width: 220px;
+        height: 220px;
+    }
+    .circle-bg {
+        width: 180px;
+        height: 180px;
+    }
+}
+
+/* 3. Hide floating info cards on very small screens */
+@media (max-width: 480px) {
+    .info-element {
+        display: none;
+    }
+}
+
+/* 4. Hide duplicate Dashboard button & shrink buttons on tiny screens */
+@media (max-width: 480px) {
+    .dashboard-btn {
+        display: none;
+    }
+    .auth-buttons a {
+        padding: 0.5rem 0.9rem;
+        font-size: 0.8rem;
+    }
+}
+
+/* 5. Smaller hero heading on small phones */
+@media (max-width: 480px) {
+    .hero-content h1 {
+        font-size: 2rem;
+        letter-spacing: -0.5px;
+    }
+    .hero-content p {
+        font-size: 1rem;
+    }
+}
+
+/* 6. Flexible roadmap image height on mobile */
+@media (max-width: 768px) {
+    .roadmap-image img {
+        height: 300px;
+    }
+}
+@media (max-width: 480px) {
+    .roadmap-image img {
+        height: auto;
+    }
+}
     </style>
 </head>
 <body>
