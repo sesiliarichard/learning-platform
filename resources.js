@@ -95,21 +95,32 @@
         if (storageError) throw new Error('Upload failed: ' + storageError.message);
       }
 
-      const payload = {
-        title,
-        description  : description || null,
-        type,
-        course_id    : courseId    || null,
-        course_name  : courseName  || 'All Courses',
-        file_path    : filePath,
-        file_size    : fileSize,
-        file_name    : fileName,
-        mime_type    : mimeType,
-        external_url : type === 'links' ? externalUrl : null,
-        published    : false,
-        published_at : null,
-        uploaded_by  : (await sb.auth.getUser()).data.user?.id || null
-      };
+// ✅ Generate the public URL after upload
+let publicFileUrl = null;
+if (filePath) {
+  const { data: urlData } = sb.storage
+    .from(BUCKET)
+    .getPublicUrl(filePath);
+  publicFileUrl = urlData?.publicUrl || null;
+}
+
+const payload = {
+  title,
+  description  : description || null,
+  type,
+  course_id    : courseId    || null,
+  course_name  : courseName  || 'All Courses',
+  file_path    : filePath,
+  file_url     : publicFileUrl,   // ✅ save the URL
+  file_size    : fileSize,
+  file_name    : fileName,
+  mime_type    : mimeType,
+  external_url : type === 'links' ? externalUrl : null,
+  published    : false,
+  published_at : null,
+  uploaded_by  : (await sb.auth.getUser()).data.user?.id || null
+};
+
 
       const { data, error: dbError } = await sb
         .from('resources')
