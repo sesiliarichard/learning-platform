@@ -936,45 +936,10 @@ body { visibility: hidden }
             </div>
             <div class="activity-feed" id="analyticsActivityFeed">
                 <div class="activity-item">
-                    <div class="activity-icon user"><i class="fas fa-user-plus"></i></div>
+                    <div class="activity-icon user"><i class="fas fa-spinner fa-spin"></i></div>
                     <div class="activity-content">
-                        <div class="activity-text"><strong>New student</strong> registered</div>
-                        <div class="activity-time">Just now</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon course"><i class="fas fa-book-open"></i></div>
-                    <div class="activity-content">
-                        <div class="activity-text">New chapter published to <strong>AI Foundations</strong></div>
-                        <div class="activity-time">2 minutes ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon quiz"><i class="fas fa-check-circle"></i></div>
-                    <div class="activity-content">
-                        <div class="activity-text">Quiz submitted by <strong>3 students</strong></div>
-                        <div class="activity-time">15 minutes ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon cert"><i class="fas fa-certificate"></i></div>
-                    <div class="activity-content">
-                        <div class="activity-text"><strong>Certificate issued</strong> — Data Science</div>
-                        <div class="activity-time">1 hour ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon session"><i class="fas fa-video"></i></div>
-                    <div class="activity-content">
-                        <div class="activity-text"><strong>Live session</strong> ended — 12 attendees</div>
-                        <div class="activity-time">3 hours ago</div>
-                    </div>
-                </div>
-                <div class="activity-item">
-                    <div class="activity-icon submit"><i class="fas fa-file-upload"></i></div>
-                    <div class="activity-content">
-                        <div class="activity-text">Assignment submitted — <strong>5 new</strong></div>
-                        <div class="activity-time">5 hours ago</div>
+                        <div class="activity-text">Loading activity...</div>
+                        <div class="activity-time">Please wait</div>
                     </div>
                 </div>
             </div>
@@ -1549,6 +1514,7 @@ async function init() {
     loadSessionHistory();
     setupEventListeners();
     await updateAnalytics();
+    loadRecentActivity();
     loadCertificateSection();
     
      //  initializes events + renders admin resources
@@ -7944,6 +7910,178 @@ async function handleLogout() {
 function fixSectionScrolling() {
 }
 
+async function loadRecentActivity() {
+    const feed = document.getElementById('analyticsActivityFeed');
+    if (!feed) return;
+
+    feed.innerHTML = `
+        <div class="activity-item">
+            <div class="activity-icon user"><i class="fas fa-spinner fa-spin"></i></div>
+            <div class="activity-content">
+                <div class="activity-text">Loading activity...</div>
+                <div class="activity-time">Please wait</div>
+            </div>
+        </div>`;
+
+    try {
+        const sb = window.supabaseClient || window.db;
+
+        const [
+            { data: newUsers },
+            { data: newChapters },
+            { data: quizSubs },
+            { data: newCerts },
+            { data: assignSubs },
+            { data: recordings }
+        ] = await Promise.all([
+            sb.from('profiles')
+              .select('id, first_name, last_name, role, created_at')
+              .order('created_at', { ascending: false })
+              .limit(3),
+
+            sb.from('chapters')
+              .select('id, title, created_at, courses(title)')
+              .order('created_at', { ascending: false })
+              .limit(3),
+
+            sb.from('quiz_submissions')
+              .select('id, submitted_at, score, profiles(first_name, last_name)')
+              .order('submitted_at', { ascending: false })
+              .limit(3),
+
+            sb.from('certificates')
+              .select('id, issued_at, course_name, profiles!certificates_student_id_fkey(first_name, last_name)')
+              .eq('published', true)
+              .order('issued_at', { ascending: false })
+              .limit(3),
+
+            sb.from('assignment_submissions')
+              .select('id, submitted_at, profiles(first_name, last_name), assignments(title)')
+              .order('submitted_at', { ascending: false })
+              .limit(3),
+
+            sb.from('session_recordings')
+              .select('id, title, created_at, courses(title)')
+              .order('created_at', { ascending: false })
+              .limit(2)
+        ]);
+
+        const events = [];
+
+        (newUsers || []).forEach(u => {
+            if (!u.created_at) return;
+            events.push({
+                time: new Date(u.created_at),
+                icon: 'user',
+                faIcon: 'fa-user-plus',
+                text: `<strong>${u.first_name} ${u.last_name}</strong> registered as ${u.role}`
+            });
+        });
+
+        (newChapters || []).forEach(c => {
+            if (!c.created_at) return;
+            events.push({
+                time: new Date(c.created_at),
+                icon: 'course',
+                faIcon: 'fa-book-open',
+                text: `New chapter <strong>"${c.title}"</strong> added to ${c.courses?.title || 'a course'}`
+            });
+        });
+
+        (quizSubs || []).forEach(q => {
+            if (!q.submitted_at) return;
+            const name = q.profiles
+                ? `${q.profiles.first_name} ${q.profiles.last_name}`
+                : 'A student';
+            events.push({
+                time: new Date(q.submitted_at),
+                icon: 'quiz',
+                faIcon: 'fa-check-circle',
+                text: `<strong>${name}</strong> submitted a quiz — scored <strong>${q.score}%</strong>`
+            });
+        });
+
+        (newCerts || []).forEach(c => {
+            if (!c.issued_at) return;
+            const name = c.profiles
+                ? `${c.profiles.first_name} ${c.profiles.last_name}`
+                : 'A student';
+            events.push({
+                time: new Date(c.issued_at),
+                icon: 'cert',
+                faIcon: 'fa-certificate',
+                text: `Certificate issued to <strong>${name}</strong> — ${c.course_name || 'a course'}`
+            });
+        });
+
+        (assignSubs || []).forEach(a => {
+            if (!a.submitted_at) return;
+            const name = a.profiles
+                ? `${a.profiles.first_name} ${a.profiles.last_name}`
+                : 'A student';
+            events.push({
+                time: new Date(a.submitted_at),
+                icon: 'submit',
+                faIcon: 'fa-file-upload',
+                text: `<strong>${name}</strong> submitted: <strong>${a.assignments?.title || 'an assignment'}</strong>`
+            });
+        });
+
+        (recordings || []).forEach(r => {
+            if (!r.created_at) return;
+            events.push({
+                time: new Date(r.created_at),
+                icon: 'session',
+                faIcon: 'fa-video',
+                text: `Recording uploaded: <strong>${r.title}</strong> — ${r.courses?.title || ''}`
+            });
+        });
+
+        events.sort((a, b) => b.time - a.time);
+
+        if (events.length === 0) {
+            feed.innerHTML = `
+                <div class="activity-item">
+                    <div class="activity-icon course"><i class="fas fa-inbox"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text">No recent activity yet</div>
+                        <div class="activity-time">Activity will appear here as students use the platform</div>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        feed.innerHTML = events.slice(0, 8).map((e, i) => {
+            const sec = Math.floor((new Date() - e.time) / 1000);
+            let timeAgo;
+            if (sec < 60)            timeAgo = 'Just now';
+            else if (sec < 3600)     timeAgo = `${Math.floor(sec / 60)} min ago`;
+            else if (sec < 86400)    timeAgo = `${Math.floor(sec / 3600)} hour${Math.floor(sec / 3600) > 1 ? 's' : ''} ago`;
+            else if (sec < 2592000)  timeAgo = `${Math.floor(sec / 86400)} day${Math.floor(sec / 86400) > 1 ? 's' : ''} ago`;
+            else                     timeAgo = e.time.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            return `
+                <div class="activity-item">
+                    <div class="activity-icon ${e.icon}"><i class="fas ${e.faIcon}"></i></div>
+                    <div class="activity-content">
+                        <div class="activity-text">${e.text}</div>
+                        <div class="activity-time">${timeAgo}</div>
+                    </div>
+                </div>`;
+        }).join('');
+
+    } catch (err) {
+        console.error('loadRecentActivity error:', err);
+        feed.innerHTML = `
+            <div class="activity-item">
+                <div class="activity-icon submit"><i class="fas fa-exclamation-circle"></i></div>
+                <div class="activity-content">
+                    <div class="activity-text">Failed to load activity</div>
+                    <div class="activity-time">${err.message}</div>
+                </div>
+            </div>`;
+    }
+}
 
 </script>
 
