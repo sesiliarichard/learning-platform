@@ -4583,3 +4583,47 @@ body.dark-mode .page-btn.active {
     background: rgba(239,68,68,0.18); 
     color: #ef4444; 
 }
+/* ── Video upload modal size ── */
+.modal-sm {
+    max-width: 520px;
+}
+
+/* ── Modal title icon ── */
+.modal-title-icon {
+    color: #7c3aed;
+    margin-right: 10px;
+}
+
+/* ── Cloudinary how-to banner ── */
+.upload-howto {
+    background: #f0fdf4;
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+    border: 1px solid #bbf7d0;
+    font-size: 13px;
+    color: #065f46;
+    line-height: 1.7;
+}
+
+/* ── Link inside how-to banner ── */
+.upload-howto__link {
+    color: #7c3aed;
+    font-weight: 700;
+}
+
+/* ── Checkbox label row ── */
+.cklbl {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+/* ── Small hint text below inputs ── */
+.form-hint {
+    color: #6b7280;
+    font-size: 12px;
+    margin-top: 4px;
+    display: block;
+}
