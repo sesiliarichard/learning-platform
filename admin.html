@@ -276,6 +276,7 @@ body { visibility: hidden }
     <div id="videosGrid"></div>
 </div>
 
+
 <!-- UPLOAD VIDEO MODAL -->
 <div class="modal" id="uploadVideoModal">
     <div class="modal-content modal-sm">
@@ -289,51 +290,61 @@ body { visibility: hidden }
             </button>
         </div>
 
-        <div class="upload-howto">
-            <strong>How to get a Cloudinary URL:</strong><br>
-            1. Go to <a href="https://cloudinary.com" target="_blank" class="upload-howto__link">cloudinary.com</a>
-               → Media Library → Upload<br>
-            2. Upload your video file<br>
-            3. Click the video → copy the <strong>URL</strong> → paste below
-        </div>
-
         <form id="uploadVideoForm">
             <div class="form-group">
                 <label>Video Title *</label>
                 <input type="text" id="vidTitle" required
                        placeholder="e.g. Week 3 — Introduction to Neural Networks">
             </div>
+
             <div class="form-group">
                 <label>Select Course *</label>
                 <select id="vidCourseId" required>
                     <option value="">Choose a course...</option>
                 </select>
             </div>
+
             <div class="form-group">
-                <label>Cloudinary Video URL *</label>
-                <input type="url" id="vidUrl" required
-                       placeholder="https://res.cloudinary.com/...">
-                <small class="form-hint">
-                    Paste the full Cloudinary video URL
-                </small>
+                <label>Select Video File *</label>
+                <div class="video-upload-area" id="videoDropZone"
+                     onclick="document.getElementById('vidFileInput').click()">
+                    <i class="fas fa-cloud-upload-alt video-upload-icon"></i>
+                    <div class="video-upload-title">Click to choose a video file</div>
+                    <div class="video-upload-hint">MP4, MOV, AVI — max 500MB</div>
+                </div>
+                <input type="file" id="vidFileInput" accept="video/*"
+                       style="display:none" onchange="onVideoFileSelected(this)">
+                <div class="video-selected-file" id="videoSelectedFile"></div>
             </div>
+
+            <!-- Upload progress bar (hidden until upload starts) -->
+            <div class="video-progress-wrap" id="videoProgressWrap">
+                <div class="video-progress-label">
+                    <span id="videoProgressText">Uploading to Cloudinary…</span>
+                    <span id="videoProgressPct">0%</span>
+                </div>
+                <div class="video-progress-track">
+                    <div class="video-progress-bar" id="videoProgressBar"></div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <label class="cklbl">
                     <input type="checkbox" id="vidPublish" checked>
                     Publish immediately (students can watch now)
                 </label>
             </div>
+
             <div class="modal-actions">
                 <button type="button" class="btn-secondary"
                         onclick="closeModal('uploadVideoModal')">Cancel</button>
                 <button type="submit" class="btn-primary" id="saveVidBtn">
-                    <i class="fas fa-save"></i> Save Video
+                    <i class="fas fa-upload"></i> Upload Video
                 </button>
             </div>
         </form>
     </div>
 </div>
-
             <!-- STUDENT SUBMISSIONS SECTION -->
             <div id="submissionsSection" class="dashboard-section">
                 <div class="header">
@@ -7666,6 +7677,12 @@ async function loadRecentActivity() {
 // VIDEOS SECTION
 // ============================================
 
+// ── PUT YOUR CLOUDINARY CREDENTIALS HERE ──
+const CLOUDINARY_CLOUD_NAME = 'your_cloud_name';   // e.g. 'dpadseqjb'
+const CLOUDINARY_UPLOAD_PRESET = 'asai_videos';    // your unsigned preset name
+
+let selectedVideoFile = null;
+
 async function openUploadVideoModal() {
     const sel = document.getElementById('vidCourseId');
     if (sel && sel.options.length <= 1) {
@@ -7679,8 +7696,166 @@ async function openUploadVideoModal() {
             sel.appendChild(opt);
         });
     }
+    // Reset form state
+    selectedVideoFile = null;
+    document.getElementById('videoSelectedFile').innerHTML = '';
+    document.getElementById('videoProgressWrap').classList.remove('visible');
+    document.getElementById('videoProgressBar').style.width = '0%';
+    document.getElementById('videoProgressPct').textContent = '0%';
+    document.getElementById('uploadVideoForm').reset();
+
     document.getElementById('uploadVideoModal').classList.add('active');
+
+    // Wire up drag and drop
+    const zone = document.getElementById('videoDropZone');
+    zone.ondragover = (e) => {
+        e.preventDefault();
+        zone.classList.add('drag-over');
+    };
+    zone.ondragleave = () => zone.classList.remove('drag-over');
+    zone.ondrop = (e) => {
+        e.preventDefault();
+        zone.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.startsWith('video/')) {
+            selectedVideoFile = file;
+            showSelectedVideo(file);
+        } else {
+            showToast('Please drop a valid video file', 'error');
+        }
+    };
 }
+
+function onVideoFileSelected(input) {
+    const file = input.files[0];
+    if (!file) return;
+    selectedVideoFile = file;
+    showSelectedVideo(file);
+}
+
+function showSelectedVideo(file) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    document.getElementById('videoSelectedFile').innerHTML = `
+        <i class="fas fa-file-video" style="color:#7c3aed;"></i>
+        ${file.name}
+        <span style="color:#9ca3af;font-weight:400;">(${sizeMB} MB)</span>
+    `;
+}
+
+async function uploadToCloudinary(file, onProgress) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+        formData.append('resource_type', 'video');
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                onProgress(pct);
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status === 200) {
+                const data = JSON.parse(xhr.responseText);
+                resolve(data.secure_url);
+            } else {
+                reject(new Error('Cloudinary upload failed: ' + xhr.statusText));
+            }
+        });
+
+        xhr.addEventListener('error', () => {
+            reject(new Error('Network error during upload'));
+        });
+
+        xhr.open(
+            'POST',
+            `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`
+        );
+        xhr.send(formData);
+    });
+}
+
+// ── Upload form submit handler ──
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('uploadVideoForm')
+        ?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const title    = document.getElementById('vidTitle').value.trim();
+        const courseId = document.getElementById('vidCourseId').value;
+        const publish  = document.getElementById('vidPublish').checked;
+
+        if (!title) {
+            showToast('Please enter a video title', 'error');
+            return;
+        }
+        if (!courseId) {
+            showToast('Please select a course', 'error');
+            return;
+        }
+        if (!selectedVideoFile) {
+            showToast('Please select a video file', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('saveVidBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading…';
+
+        // Show progress bar
+        const progressWrap = document.getElementById('videoProgressWrap');
+        const progressBar  = document.getElementById('videoProgressBar');
+        const progressPct  = document.getElementById('videoProgressPct');
+        const progressText = document.getElementById('videoProgressText');
+        progressWrap.classList.add('visible');
+
+        try {
+            // 1. Upload file to Cloudinary
+            progressText.textContent = 'Uploading to Cloudinary…';
+            const videoUrl = await uploadToCloudinary(
+                selectedVideoFile,
+                (pct) => {
+                    progressBar.style.width = pct + '%';
+                    progressPct.textContent = pct + '%';
+                }
+            );
+
+            // 2. Save URL to Supabase
+            progressText.textContent = 'Saving to database…';
+            progressBar.style.width = '100%';
+            progressPct.textContent = '100%';
+
+            const { data: { user } } = await db.auth.getUser();
+            const { error } = await db.from('session_recordings').insert({
+                teacher_id:     user.id,
+                course_id:      courseId,
+                title,
+                video_url:      videoUrl,
+                cloudinary_url: videoUrl,
+                published:      publish
+            });
+            if (error) throw error;
+
+            // 3. Done
+            closeModal('uploadVideoModal');
+            showToast(publish
+                ? '✅ Video uploaded! Students can watch it now.'
+                : '✅ Video saved as draft.');
+            loadVideosSection();
+
+        } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+            progressWrap.classList.remove('visible');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-upload"></i> Upload Video';
+        }
+    });
+});
 
 async function loadVideosSection() {
     const grid = document.getElementById('videosGrid');
@@ -7719,28 +7894,21 @@ async function loadVideosSection() {
                 month: 'long', day: 'numeric', year: 'numeric'
             });
             const card = document.createElement('div');
-            card.className = 'card';
-            card.style.cssText = `
-                padding:20px 24px;margin-bottom:14px;
-                border-left:4px solid ${v.published ? '#10b981' : '#f59e0b'};`;
+            card.className = 'card video-card';
             card.innerHTML = `
-                <div style="display:flex;justify-content:space-between;
-                            align-items:center;flex-wrap:wrap;gap:14px;">
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:700;font-size:16px;
-                                    color:#1f2937;margin-bottom:6px;">
-                            <i class="fas fa-play-circle"
-                               style="color:#7c3aed;margin-right:8px;"></i>
+                <div class="video-card-body">
+                    <div class="video-card-info">
+                        <div class="video-card-title">
+                            <i class="fas fa-play-circle video-card-icon"></i>
                             ${v.title}
                         </div>
-                        <div style="font-size:12px;color:#6b7280;
-                                    display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+                        <div class="video-card-meta">
                             <span>
-                                <i class="fas fa-book" style="margin-right:4px;"></i>
+                                <i class="fas fa-book"></i>
                                 ${v.courses?.title || 'No course'}
                             </span>
                             <span>
-                                <i class="fas fa-calendar" style="margin-right:4px;"></i>
+                                <i class="fas fa-calendar"></i>
                                 ${date}
                             </span>
                         </div>
@@ -7748,23 +7916,17 @@ async function loadVideosSection() {
                             ${v.published ? '✓ Visible to students' : '⏳ Draft'}
                         </span>
                     </div>
-                    <div style="display:flex;flex-direction:column;
-                                gap:8px;min-width:150px;">
+                    <div class="video-card-actions">
                         <a href="${src}" target="_blank"
-                           class="btn-secondary"
-                           style="padding:8px 14px;font-size:13px;text-decoration:none;
-                                  display:flex;align-items:center;
-                                  justify-content:center;gap:6px;">
+                           class="btn-secondary video-card-btn">
                             <i class="fas fa-play"></i> Preview
                         </a>
-                        <button class="btn-primary"
-                                style="padding:8px 14px;font-size:13px;"
+                        <button class="btn-primary video-card-btn"
                                 onclick="toggleVideoPublish('${v.id}', ${v.published})">
                             <i class="fas fa-${v.published ? 'eye-slash' : 'eye'}"></i>
                             ${v.published ? 'Unpublish' : 'Publish'}
                         </button>
-                        <button class="action-btn delete"
-                                style="width:100%;padding:8px;"
+                        <button class="action-btn delete video-card-delete"
                                 onclick="deleteVideo('${v.id}')">
                             <i class="fas fa-trash"></i> Delete
                         </button>
@@ -7789,7 +7951,7 @@ async function toggleVideoPublish(id, current) {
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
     showToast(current
         ? 'Video hidden from students.'
-        : '✅ Video published! Students can now watch it.');
+        : '✅ Video published! Students can watch it now.');
     loadVideosSection();
 }
 
@@ -7801,51 +7963,6 @@ async function deleteVideo(id) {
     showToast('Video deleted.');
     loadVideosSection();
 }
-
-// Upload form submit
-document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('uploadVideoForm')
-        ?.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const title    = document.getElementById('vidTitle').value.trim();
-        const courseId = document.getElementById('vidCourseId').value;
-        const url      = document.getElementById('vidUrl').value.trim();
-        const publish  = document.getElementById('vidPublish').checked;
-
-        if (!title || !courseId || !url) {
-            showToast('Please fill in all required fields', 'error');
-            return;
-        }
-
-        const btn = document.getElementById('saveVidBtn');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-
-        try {
-            const { data: { user } } = await db.auth.getUser();
-            const { error } = await db.from('session_recordings').insert({
-                teacher_id:     user.id,
-                course_id:      courseId,
-                title,
-                video_url:      url,
-                cloudinary_url: url,
-                published:      publish
-            });
-            if (error) throw error;
-            closeModal('uploadVideoModal');
-            document.getElementById('uploadVideoForm').reset();
-            showToast(publish
-                ? '✅ Video uploaded! Students can watch it now.'
-                : '✅ Video saved as draft.');
-            loadVideosSection();
-        } catch (err) {
-            showToast('Error: ' + err.message, 'error');
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-save"></i> Save Video';
-        }
-    });
-});
 </script>
 
 </body>

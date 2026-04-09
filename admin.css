@@ -4583,47 +4583,162 @@ body.dark-mode .page-btn.active {
     background: rgba(239,68,68,0.18); 
     color: #ef4444; 
 }
-/* ── Video upload modal size ── */
-.modal-sm {
-    max-width: 520px;
-}
 
-/* ── Modal title icon ── */
-.modal-title-icon {
-    color: #7c3aed;
-    margin-right: 10px;
-}
-
-/* ── Cloudinary how-to banner ── */
-.upload-howto {
-    background: #f0fdf4;
+/* ── Video file drop zone ── */
+.video-upload-area {
+    border: 2px dashed #d1d5db;
     border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    border: 1px solid #bbf7d0;
-    font-size: 13px;
-    color: #065f46;
-    line-height: 1.7;
+    padding: 36px 20px;
+    text-align: center;
+    cursor: pointer;
+    background: #f9fafb;
+    transition: all 0.3s;
 }
 
-/* ── Link inside how-to banner ── */
-.upload-howto__link {
+.video-upload-area:hover {
+    border-color: #7c3aed;
+    background: #faf5ff;
+}
+
+.video-upload-area.drag-over {
+    border-color: #7c3aed;
+    background: #faf5ff;
+    transform: scale(1.01);
+}
+
+.video-upload-icon {
+    font-size: 36px;
     color: #7c3aed;
-    font-weight: 700;
+    display: block;
+    margin-bottom: 10px;
 }
 
-/* ── Checkbox label row ── */
-.cklbl {
+.video-upload-title {
+    font-weight: 700;
+    color: #374151;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.video-upload-hint {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+/* ── Selected file name display ── */
+.video-selected-file {
+    margin-top: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7c3aed;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+/* ── Upload progress bar ── */
+.video-progress-wrap {
+    display: none;
+    margin-bottom: 20px;
+}
+
+.video-progress-wrap.visible {
+    display: block;
+}
+
+.video-progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 8px;
+}
+
+.video-progress-track {
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.video-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #7c3aed, #6d28d9);
+    border-radius: 20px;
+    transition: width 0.3s ease;
+}
+/* ── Video card layout ── */
+.video-card {
+    margin-bottom: 14px;
+}
+
+.video-card-body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.video-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.video-card-title {
+    font-weight: 700;
+    font-size: 16px;
+    color: #1f2937;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
     gap: 8px;
-    cursor: pointer;
 }
 
-/* ── Small hint text below inputs ── */
-.form-hint {
-    color: #6b7280;
+.video-card-icon {
+    color: #7c3aed;
+    font-size: 16px;
+}
+
+.video-card-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
     font-size: 12px;
-    margin-top: 4px;
-    display: block;
+    color: #6b7280;
+    margin-bottom: 8px;
+}
+
+.video-card-meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.video-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 150px;
+}
+
+.video-card-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.video-card-delete {
+    width: 100%;
+    padding: 8px;
+    justify-content: center;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
