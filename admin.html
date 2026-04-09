@@ -74,9 +74,9 @@ body { visibility: hidden }
                     <span>Assignments</span>
                 </div>
 
-                <div class="nav-item" data-section="recordings">
-                <i class="fas fa-film"></i>
-                  <span>Session Recordings</span>
+                <div class="nav-item" data-section="videos">
+               <i class="fas fa-play-circle"></i>
+               <span>Videos</span>
                 </div>
 
  
@@ -265,110 +265,69 @@ body { visibility: hidden }
      SESSION RECORDINGS SECTION
      Add this to admin.html
      ============================================================ -->
-
-<!-- ── SESSION RECORDINGS SECTION ── -->
-<div id="recordingsSection" class="dashboard-section">
+<!-- VIDEOS SECTION -->
+<div id="videosSection" class="dashboard-section">
     <div class="header">
-        <h1>Session Recordings</h1>
-        <button class="btn-primary" onclick="openUploadRecordingModal()">
-            <i class="fas fa-upload"></i> Upload Recording
+        <h1>Videos</h1>
+        <button class="btn-primary" onclick="openUploadVideoModal()">
+            <i class="fas fa-upload"></i> Upload Video
         </button>
     </div>
-
-    <!-- How it works banner -->
-    <div class="card">
-        <div class="info-banner info-banner--amber">
-            <i class="fas fa-info-circle"></i>
-            <strong> How it works:</strong>
-            Teacher records the session →
-            sends video to Admin →
-            Admin uploads to Cloudinary →
-            pastes the URL here →
-            Students can watch it in their course.
-        </div>
-    </div>
-
-    <!-- Recordings list -->
-    <div id="recordingsGrid" class="recordings-grid">
-        <div class="recordings-empty">
-            <i class="fas fa-film"></i>
-            <h3>No recordings yet</h3>
-            <p>Upload a recording to get started.</p>
-        </div>
-    </div>
+    <div id="videosGrid"></div>
 </div>
 
-
-<!-- ── UPLOAD RECORDING MODAL ── -->
-<div class="modal" id="uploadRecordingModal">
-    <div class="modal-content modal-content--md">
+<!-- UPLOAD VIDEO MODAL -->
+<div class="modal" id="uploadVideoModal">
+    <div class="modal-content modal-sm">
         <div class="modal-header">
             <h2>
-                <i class="fas fa-film modal-title-icon"></i>
-                Upload Session Recording
+                <i class="fas fa-video modal-title-icon"></i>
+                Upload Video
             </h2>
-            <button class="modal-close"
-                    onclick="closeModal('uploadRecordingModal')"
-                    aria-label="Close">
+            <button class="modal-close" onclick="closeModal('uploadVideoModal')">
                 <i class="fas fa-times"></i>
             </button>
         </div>
 
-        <!-- How-to steps -->
         <div class="upload-howto">
-            <div class="upload-howto__title">
-                <i class="fas fa-cloud-upload-alt"></i>
-                Steps to upload to Cloudinary:
-            </div>
-            <ol class="upload-howto__list">
-                <li>Go to <a href="https://cloudinary.com" target="_blank" rel="noopener noreferrer" class="upload-howto__link">cloudinary.com</a> and sign in</li>
-                <li>Click <strong>Media Library</strong> → <strong>Upload</strong></li>
-                <li>Upload your video file</li>
-                <li>Click the uploaded video → Copy the <strong>URL</strong></li>
-                <li>Paste the URL in the field below</li>
-            </ol>
+            <strong>How to get a Cloudinary URL:</strong><br>
+            1. Go to <a href="https://cloudinary.com" target="_blank" class="upload-howto__link">cloudinary.com</a>
+               → Media Library → Upload<br>
+            2. Upload your video file<br>
+            3. Click the video → copy the <strong>URL</strong> → paste below
         </div>
 
-        <form id="uploadRecordingForm">
+        <form id="uploadVideoForm">
             <div class="form-group">
-                <label for="recTitle">Recording Title *</label>
-                <input type="text" id="recTitle" required
-                       placeholder="e.g. Week 3 — Introduction to Neural Networks"
-                       aria-label="Recording title">
+                <label>Video Title *</label>
+                <input type="text" id="vidTitle" required
+                       placeholder="e.g. Week 3 — Introduction to Neural Networks">
             </div>
-
             <div class="form-group">
-                <label for="recCourseId">Select Course *</label>
-                <select id="recCourseId" required aria-label="Select course">
+                <label>Select Course *</label>
+                <select id="vidCourseId" required>
                     <option value="">Choose a course...</option>
                 </select>
             </div>
-
             <div class="form-group">
-                <label for="recVideoUrl">Cloudinary Video URL *</label>
-                <input type="url" id="recVideoUrl" required
-                       placeholder="https://res.cloudinary.com/dpadseqjb/video/upload/..."
-                       aria-label="Cloudinary video URL">
+                <label>Cloudinary Video URL *</label>
+                <input type="url" id="vidUrl" required
+                       placeholder="https://res.cloudinary.com/...">
                 <small class="form-hint">
-                    Paste the full Cloudinary video URL here
+                    Paste the full Cloudinary video URL
                 </small>
             </div>
-
             <div class="form-group">
                 <label class="cklbl">
-                    <input type="checkbox" id="recPublish" checked
-                           aria-label="Publish immediately">
+                    <input type="checkbox" id="vidPublish" checked>
                     Publish immediately (students can watch now)
                 </label>
             </div>
-
             <div class="modal-actions">
                 <button type="button" class="btn-secondary"
-                        onclick="closeModal('uploadRecordingModal')">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-primary" id="uploadRecBtn">
-                    <i class="fas fa-save"></i> Save Recording
+                        onclick="closeModal('uploadVideoModal')">Cancel</button>
+                <button type="submit" class="btn-primary" id="saveVidBtn">
+                    <i class="fas fa-save"></i> Save Video
                 </button>
             </div>
         </form>
@@ -1421,20 +1380,8 @@ body { visibility: hidden }
 <script src="quizzes.js"></script>
 <script src="assignments.js"></script>
 <script>
-// ============================================
-// GLOBAL VARIABLES
-// ============================================
-let adminLocalStream = null;
-let adminPeer = null;
-let currentAdminSessionId = null;
-let adminConnections = {};
-let adminParticipants = {};
-let adminScreenStream = null;
-let adminIsRecording = false;
-let adminMediaRecorder = null;
-let adminRecordedChunks = [];
-let adminDurationInterval = null;
-let adminMeetingStartTime = null;
+
+
 
 // Database Simulation
 let database = {
@@ -1509,9 +1456,6 @@ async function init() {
     loadAssignments();
     loadAnnouncements();
     loadChapters();
-    loadRecordedVideos();
-    loadActiveSessions();
-    loadSessionHistory();
     setupEventListeners();
     await updateAnalytics();
     loadRecentActivity();
@@ -1571,8 +1515,8 @@ if (item.dataset.section === 'certificates') {
         if (item.dataset.section === 'analytics') {
             updateAnalytics();
         }
-        if (item.dataset.section === 'recordings') {
-        loadRecordingsSection();
+  if (item.dataset.section === 'videos') {
+    loadVideosSection();
 }
     });
 });
@@ -2413,111 +2357,7 @@ function deleteAnnouncement(announcementId) {
     handleDeleteAnnouncement(announcementId, '');
 }
 
-// ============================================
-// LIVE SESSION MANAGEMENT
-// ============================================
 
-// Start Admin Live Session
-async function startAdminLiveSession() {
-     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        showToast(
-            'Live sessions require HTTPS. Please access admin panel over https://', 
-            'error'
-        );
-        return;
-    }
-    console.log('🎥 Starting admin live session...');
-    
-    const courseName = await showCourseSelectionForSession();
-    if (!courseName) {
-        console.log('❌ No course entered');
-        return;
-    }
-
-    console.log('✅ Course entered:', courseName);
-
-    try {
-        console.log('📹 Requesting camera/microphone access...');
-        adminLocalStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1920 }, height: { ideal: 1080 } },
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-        
-        console.log('✅ Media access granted');
-
-        currentAdminSessionId = 'admin-session-' + Date.now();
-        console.log('🆔 Session ID:', currentAdminSessionId);
-
-        console.log('🔗 Initializing PeerJS...');
-        adminPeer = new Peer(currentAdminSessionId);
-
-        adminPeer.on('open', (id) => {
-            console.log('✅ Admin peer connected! ID:', id);
-
-            const newSession = {
-                id: id,
-                courseId: null, // No specific course ID since it's typed
-                courseName: courseName, // Use the typed course name
-                startTime: new Date().toISOString(),
-                status: 'active',
-                participants: [],
-                meetingId: id
-            };
-
-            database.liveSessions.push(newSession);
-            console.log('✅ Session created:', newSession);
-
-            showAdminMeetingInterface(newSession);
-            loadActiveSessions();
-            showToast('Live session started! Meeting ID: ' + id, 'success');
-        });
-
-        adminPeer.on('call', (call) => {
-            console.log('📞 Incoming call from student:', call.peer);
-            
-            call.answer(adminLocalStream);
-
-            call.on('stream', (remoteStream) => {
-                console.log('📺 Received student stream');
-                addAdminParticipantVideo(call.peer, remoteStream);
-                
-                const session = database.liveSessions.find(s => s.id === currentAdminSessionId);
-                if (session) {
-                    session.participants.push({
-                        peerId: call.peer,
-                        joinedAt: new Date().toISOString()
-                    });
-                }
-            });
-
-            call.on('close', () => {
-                console.log('❌ Student disconnected:', call.peer);
-                removeAdminParticipant(call.peer);
-            });
-
-            adminConnections[call.peer] = call;
-        });
-
-        adminPeer.on('error', (error) => {
-            console.error('❌ Admin peer error:', error);
-            showToast('Connection error: ' + error.type, 'error');
-        });
-
-    } catch (error) {
-        console.error('❌ Error starting admin session:', error);
-        
-        let errorMsg = 'Could not start session';
-        if (error.name === 'NotAllowedError') {
-            errorMsg = 'Camera/microphone access denied. Please grant permissions.';
-        } else if (error.name === 'NotFoundError') {
-            errorMsg = 'No camera/microphone found.';
-        } else {
-            errorMsg = error.message;
-        }
-        
-        showToast(errorMsg, 'error');
-    }
-}
 
 function showCourseSelectionForSession() {
     return new Promise((resolve) => {
@@ -3225,57 +3065,6 @@ function loadSessionHistory() {
     });
 }
 
-function loadRecordedVideos() {
-    const container = document.getElementById('recordedVideosList');
-    if (!container) return;
-    
-    container.innerHTML = '';
-
-    if (database.recordedVideos.length === 0) {
-        container.innerHTML = '<p style="color: #6b7280;">No recorded sessions yet.</p>';
-        return;
-    }
-
-    database.recordedVideos.forEach(video => {
-        const card = document.createElement('div');
-        card.className = 'submission-card';
-
-        const date = new Date(video.recordedDate).toLocaleDateString();
-        const course = database.courses.find(c => c.id === video.courseId);
-        const courseName = course ? course.title : video.courseName;
-
-        card.innerHTML = `
-            <div class="submission-header">
-                <div>
-                    <div style="font-weight: 700; margin-bottom: 5px;">${video.title}</div>
-                    <div style="font-size: 13px; color: #6b7280;">
-                        ${courseName} • ${date} • ${video.duration} • ${video.participants} participants
-                    </div>
-                </div>
-                <span class="badge ${video.published ? 'active' : 'pending'}">
-                    ${video.published ? 'Published' : 'Draft'}
-                </span>
-            </div>
-            <div class="action-buttons" style="margin-top: 15px;">
-                <button class="btn-secondary" onclick="playAdminRecording(${video.id})">
-                    <i class="fas fa-play"></i> Preview
-                </button>
-                <button class="btn-secondary" onclick="downloadAdminRecording(${video.id})">
-                    <i class="fas fa-download"></i> Download
-                </button>
-                <button class="btn-primary" onclick="togglePublishRecording(${video.id})">
-                    <i class="fas fa-${video.published ? 'eye-slash' : 'eye'}"></i> 
-                    ${video.published ? 'Unpublish' : 'Publish to Students'}
-                </button>
-                <button class="action-btn delete" onclick="deleteRecording(${video.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-}
 
 function playAdminRecording(videoId) {
     const video = database.recordedVideos.find(v => v.id === videoId);
@@ -7691,217 +7480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-async function loadRecordingsSection() {
-    const grid = document.getElementById('recordingsGrid');
-    if (!grid) return;
 
-    grid.innerHTML = `
-        <div style="text-align:center;padding:50px;color:#9ca3af;">
-            <i class="fas fa-spinner fa-spin"
-               style="font-size:28px;display:block;margin-bottom:14px;"></i>
-            Loading recordings…
-        </div>`;
-
-    try {
-        const { data: recs, error } = await db
-            .from('session_recordings')
-            .select(`
-                id, title, video_url, cloudinary_url,
-                published, created_at,
-                courses ( id, title ),
-                profiles!session_recordings_teacher_id_fkey (
-                    first_name, last_name, email
-                )
-            `)
-            .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        if (!recs || recs.length === 0) {
-            grid.innerHTML = `
-                <div class="card" style="padding:60px;text-align:center;color:#9ca3af;">
-                    <i class="fas fa-film"
-                       style="font-size:52px;opacity:0.25;display:block;margin-bottom:16px;"></i>
-                    <h3 style="margin-bottom:8px;color:#6b7280;">No recordings yet</h3>
-                    <p style="font-size:13px;max-width:360px;margin:0 auto;">
-                        Teachers upload recordings after their live sessions.
-                        They will appear here for you to review and publish.
-                    </p>
-                </div>`;
-            return;
-        }
-
-        // ── Split into pending and published ──
-        const pending   = recs.filter(r => !r.published);
-        const published = recs.filter(r =>  r.published);
-
-        grid.innerHTML = '';
-
-        // ── Stats bar ──
-        const statsBar = document.createElement('div');
-        statsBar.style.cssText = `
-            display:flex;gap:14px;margin-bottom:24px;flex-wrap:wrap;`;
-        statsBar.innerHTML = `
-            <div style="flex:1;min-width:140px;background:#fff;border:1.5px solid #e5e7eb;
-                        border-radius:12px;padding:16px 20px;text-align:center;">
-                <div style="font-size:28px;font-weight:800;color:#1f2937;">
-                    ${recs.length}
-                </div>
-                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Total Recordings</div>
-            </div>
-            <div style="flex:1;min-width:140px;background:#fff;border:1.5px solid #e5e7eb;
-                        border-radius:12px;padding:16px 20px;text-align:center;">
-                <div style="font-size:28px;font-weight:800;color:#f59e0b;">
-                    ${pending.length}
-                </div>
-                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Pending Review</div>
-            </div>
-            <div style="flex:1;min-width:140px;background:#fff;border:1.5px solid #e5e7eb;
-                        border-radius:12px;padding:16px 20px;text-align:center;">
-                <div style="font-size:28px;font-weight:800;color:#10b981;">
-                    ${published.length}
-                </div>
-                <div style="font-size:12px;color:#6b7280;margin-top:4px;">Published to Students</div>
-            </div>`;
-        grid.appendChild(statsBar);
-
-        // ── Render each recording ──
-        recs.forEach(rec => {
-            const videoSrc  = rec.cloudinary_url || rec.video_url;
-            const date      = new Date(rec.created_at).toLocaleDateString('en-US', {
-                month: 'long', day: 'numeric', year: 'numeric'
-            });
-            const teacher   = rec.profiles
-                ? `${rec.profiles.first_name} ${rec.profiles.last_name}`
-                : 'Unknown Teacher';
-            const courseName = rec.courses?.title || 'Unknown Course';
-
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.style.cssText = `
-                padding:22px 24px;margin-bottom:14px;
-                border-left:4px solid ${rec.published ? '#10b981' : '#f59e0b'};`;
-
-            card.innerHTML = `
-                <div style="display:flex;justify-content:space-between;
-                            align-items:start;flex-wrap:wrap;gap:14px;">
-
-                    <!-- Left: info -->
-                    <div style="flex:1;min-width:0;">
-                        <div style="display:flex;align-items:center;
-                                    gap:10px;margin-bottom:8px;">
-                            <div style="width:40px;height:40px;border-radius:10px;
-                                        background:${rec.published ? '#d1fae5' : '#fef3c7'};
-                                        display:flex;align-items:center;justify-content:center;
-                                        flex-shrink:0;">
-                                <i class="fas fa-film"
-                                   style="color:${rec.published ? '#10b981' : '#f59e0b'};
-                                          font-size:16px;"></i>
-                            </div>
-                            <div>
-                                <div style="font-weight:700;font-size:15px;
-                                            color:#1f2937;margin-bottom:2px;">
-                                    ${rec.title}
-                                </div>
-                                <span class="badge ${rec.published ? 'active' : 'pending'}">
-                                    ${rec.published ? '✓ Published' : '⏳ Pending Review'}
-                                </span>
-                            </div>
-                        </div>
-
-                        <div style="display:flex;gap:16px;flex-wrap:wrap;
-                                    font-size:12px;color:#6b7280;margin-bottom:10px;">
-                            <span>
-                                <i class="fas fa-user-tie" style="margin-right:4px;"></i>
-                                ${teacher}
-                            </span>
-                            <span>
-                                <i class="fas fa-book" style="margin-right:4px;"></i>
-                                ${courseName}
-                            </span>
-                            <span>
-                                <i class="fas fa-calendar" style="margin-right:4px;"></i>
-                                ${date}
-                            </span>
-                        </div>
-
-                        <div style="font-size:11px;color:#9ca3af;
-                                    word-break:break-all;background:#f9fafb;
-                                    padding:8px 12px;border-radius:8px;
-                                    font-family:monospace;">
-                            <i class="fas fa-link" style="margin-right:5px;"></i>
-                            ${videoSrc}
-                        </div>
-                    </div>
-
-                    <!-- Right: actions -->
-                    <div style="display:flex;flex-direction:column;
-                                gap:8px;align-items:stretch;min-width:160px;">
-                        <a href="${videoSrc}" target="_blank"
-                           class="btn-secondary"
-                           style="padding:9px 16px;font-size:13px;text-decoration:none;
-                                  display:flex;align-items:center;
-                                  justify-content:center;gap:6px;">
-                            <i class="fas fa-play"></i> Preview
-                        </a>
-                        <button class="btn-primary"
-                                style="padding:9px 16px;font-size:13px;"
-                                onclick="toggleRecordingPublish('${rec.id}', ${rec.published})">
-                            <i class="fas fa-${rec.published ? 'eye-slash' : 'eye'}"></i>
-                            ${rec.published ? 'Unpublish' : 'Publish to Students'}
-                        </button>
-                        <button class="action-btn delete"
-                                style="width:100%;padding:8px;"
-                                onclick="deleteSessionRecording('${rec.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>`;
-
-            grid.appendChild(card);
-        });
-
-    } catch (err) {
-        console.error('loadRecordingsSection error:', err);
-        grid.innerHTML = `
-            <div class="card" style="padding:30px;text-align:center;">
-                <i class="fas fa-exclamation-circle"
-                   style="color:#ef4444;font-size:32px;display:block;margin-bottom:12px;"></i>
-                <p style="color:#ef4444;font-weight:600;margin-bottom:6px;">
-                    Failed to load recordings
-                </p>
-                <p style="color:#6b7280;font-size:13px;">${err.message}</p>
-                <button class="btn-secondary" style="margin-top:14px;"
-                        onclick="loadRecordingsSection()">
-                    <i class="fas fa-sync-alt"></i> Retry
-                </button>
-            </div>`;
-    }
-}
-
-async function toggleRecordingPublish(id, currentlyPublished) {
-    const { error } = await db
-        .from('session_recordings')
-        .update({ published: !currentlyPublished })
-        .eq('id', id);
-
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
-    showToast(currentlyPublished
-        ? 'Recording unpublished'
-        : '✅ Published! Students can now watch it.');
-    loadRecordingsSection();
-}
-
-async function deleteSessionRecording(id) {
-    if (!confirm('Delete this recording? This cannot be undone.')) return;
-    const { error } = await db
-        .from('session_recordings')
-        .delete()
-        .eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
-    showToast('Recording deleted');
-    loadRecordingsSection();
-}
 async function handleLogout() {
     await db.auth.signOut();
     window.location.replace('admin-login.html');
@@ -8083,6 +7662,190 @@ async function loadRecentActivity() {
     }
 }
 
+// ============================================
+// VIDEOS SECTION
+// ============================================
+
+async function openUploadVideoModal() {
+    const sel = document.getElementById('vidCourseId');
+    if (sel && sel.options.length <= 1) {
+        const { data: courses } = await db
+            .from('courses').select('id, title').order('title');
+        while (sel.options.length > 1) sel.remove(1);
+        (courses || []).forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.id;
+            opt.textContent = c.title;
+            sel.appendChild(opt);
+        });
+    }
+    document.getElementById('uploadVideoModal').classList.add('active');
+}
+
+async function loadVideosSection() {
+    const grid = document.getElementById('videosGrid');
+    if (!grid) return;
+
+    grid.innerHTML = `
+        <div style="padding:40px;text-align:center;color:#9ca3af;">
+            <i class="fas fa-spinner fa-spin"
+               style="font-size:28px;display:block;margin-bottom:14px;"></i>
+            Loading videos…
+        </div>`;
+
+    try {
+        const { data: vids, error } = await db
+            .from('session_recordings')
+            .select('id, title, video_url, cloudinary_url, published, created_at, courses(title)')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!vids || vids.length === 0) {
+            grid.innerHTML = `
+                <div class="card" style="padding:60px;text-align:center;color:#9ca3af;">
+                    <i class="fas fa-play-circle"
+                       style="font-size:52px;opacity:0.25;display:block;margin-bottom:16px;"></i>
+                    <h3 style="color:#6b7280;margin-bottom:8px;">No videos yet</h3>
+                    <p style="font-size:13px;">Upload a video to get started.</p>
+                </div>`;
+            return;
+        }
+
+        grid.innerHTML = '';
+        vids.forEach(v => {
+            const src  = v.cloudinary_url || v.video_url;
+            const date = new Date(v.created_at).toLocaleDateString('en-US', {
+                month: 'long', day: 'numeric', year: 'numeric'
+            });
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.style.cssText = `
+                padding:20px 24px;margin-bottom:14px;
+                border-left:4px solid ${v.published ? '#10b981' : '#f59e0b'};`;
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;
+                            align-items:center;flex-wrap:wrap;gap:14px;">
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;font-size:16px;
+                                    color:#1f2937;margin-bottom:6px;">
+                            <i class="fas fa-play-circle"
+                               style="color:#7c3aed;margin-right:8px;"></i>
+                            ${v.title}
+                        </div>
+                        <div style="font-size:12px;color:#6b7280;
+                                    display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+                            <span>
+                                <i class="fas fa-book" style="margin-right:4px;"></i>
+                                ${v.courses?.title || 'No course'}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar" style="margin-right:4px;"></i>
+                                ${date}
+                            </span>
+                        </div>
+                        <span class="badge ${v.published ? 'active' : 'pending'}">
+                            ${v.published ? '✓ Visible to students' : '⏳ Draft'}
+                        </span>
+                    </div>
+                    <div style="display:flex;flex-direction:column;
+                                gap:8px;min-width:150px;">
+                        <a href="${src}" target="_blank"
+                           class="btn-secondary"
+                           style="padding:8px 14px;font-size:13px;text-decoration:none;
+                                  display:flex;align-items:center;
+                                  justify-content:center;gap:6px;">
+                            <i class="fas fa-play"></i> Preview
+                        </a>
+                        <button class="btn-primary"
+                                style="padding:8px 14px;font-size:13px;"
+                                onclick="toggleVideoPublish('${v.id}', ${v.published})">
+                            <i class="fas fa-${v.published ? 'eye-slash' : 'eye'}"></i>
+                            ${v.published ? 'Unpublish' : 'Publish'}
+                        </button>
+                        <button class="action-btn delete"
+                                style="width:100%;padding:8px;"
+                                onclick="deleteVideo('${v.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>`;
+            grid.appendChild(card);
+        });
+
+    } catch (err) {
+        grid.innerHTML = `
+            <div class="card" style="padding:30px;color:#ef4444;">
+                Error: ${err.message}
+            </div>`;
+    }
+}
+
+async function toggleVideoPublish(id, current) {
+    const { error } = await db
+        .from('session_recordings')
+        .update({ published: !current })
+        .eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    showToast(current
+        ? 'Video hidden from students.'
+        : '✅ Video published! Students can now watch it.');
+    loadVideosSection();
+}
+
+async function deleteVideo(id) {
+    if (!confirm('Delete this video? This cannot be undone.')) return;
+    const { error } = await db
+        .from('session_recordings').delete().eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    showToast('Video deleted.');
+    loadVideosSection();
+}
+
+// Upload form submit
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('uploadVideoForm')
+        ?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const title    = document.getElementById('vidTitle').value.trim();
+        const courseId = document.getElementById('vidCourseId').value;
+        const url      = document.getElementById('vidUrl').value.trim();
+        const publish  = document.getElementById('vidPublish').checked;
+
+        if (!title || !courseId || !url) {
+            showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        const btn = document.getElementById('saveVidBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+        try {
+            const { data: { user } } = await db.auth.getUser();
+            const { error } = await db.from('session_recordings').insert({
+                teacher_id:     user.id,
+                course_id:      courseId,
+                title,
+                video_url:      url,
+                cloudinary_url: url,
+                published:      publish
+            });
+            if (error) throw error;
+            closeModal('uploadVideoModal');
+            document.getElementById('uploadVideoForm').reset();
+            showToast(publish
+                ? '✅ Video uploaded! Students can watch it now.'
+                : '✅ Video saved as draft.');
+            loadVideosSection();
+        } catch (err) {
+            showToast('Error: ' + err.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Video';
+        }
+    });
+});
 </script>
 
 </body>
