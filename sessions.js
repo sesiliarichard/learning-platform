@@ -416,7 +416,7 @@ async function joinSession(sessionId) {
             .from('session_participants')
             .insert({
                 session_id: sessionId,
-                user_id: user.id
+                student_id: user.id
             })
             .select()
             .maybeSingle();
@@ -452,7 +452,7 @@ async function leaveSession(sessionId) {
             .eq('student_id', user.id)
             .maybeSingle();
 
-        if (!participant || !participant.id) return;
+        if (!participant) return;
 
         const joinTime     = new Date(participant.joined_at);
         const leaveTime    = new Date();
@@ -509,7 +509,7 @@ async function trackRecordingView(recordingId, watchDurationMins, completed = fa
                 .from('recording_views')
                 .insert({
                     recording_id:        recordingId,
-                    user_id:          user.id,
+                    student_id:          user.id,
                     watch_duration_mins: watchDurationMins,
                     completed:           completed
                 });

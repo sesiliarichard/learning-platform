@@ -6795,6 +6795,7 @@ body.dark-mode .dash-ann-item {
     inset: 0;
     background: rgba(0,0,0,0.5);
     z-index: 999;
+    -webkit-backdrop-filter: blur(2px);
     backdrop-filter: blur(2px);
 }
 .sidebar-overlay.active { display: block; }
@@ -6982,4 +6983,34 @@ body.dark-mode .dash-ann-item {
 
 /* Very small phones */
 @media (max-width: 400px) {
-    .dash-results-grid   { grid-template-columns: 1fr
+    .dash-results-grid   { grid-template-columns: 1fr; }
+    
+    }
+.quiz-detail-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.quiz-detail-body {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px 0;
+}
+
+.phase-project-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+    color: #1f2937;
+}
+
+.phase-project-input:focus {
+    border-color: #7c3aed;
+}

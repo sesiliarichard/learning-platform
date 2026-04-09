@@ -1,432 +1,529 @@
-// ============================================
-// discussions.js — Forum/Discussions Backend
-// FIXED: getDiscussionById now joins profiles
-//        so reply.profiles.role is available
-//        for correct bubble styling on both
-//        student and teacher dashboards.
-// ============================================
 
 // ─────────────────────────────────────────────
-// 1. GET ALL DISCUSSIONS
+// 1. POST /api/sessions/start
+// Admin/Instructor starts a new live session
+// Returns meeting ID for PeerJS/Jitsi
 // ─────────────────────────────────────────────
-async function getAllDiscussions(filters = {}) {
+async function startSession({ courseId, title, description, scheduledAt, maxParticipants = 100 }) {
     try {
-        let query = supabaseClient
-            .from('discussion_threads')
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        // Generate unique meeting ID
+        const meetingId = `asai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Get instructor name from profiles
+        const { data: profile } = await supabaseClient
+            .from('profiles')
+            .select('first_name, last_name')
+            .eq('id', user.id)
+             .maybeSingle();
+
+        const instructorName = profile 
+            ? `${profile.first_name} ${profile.last_name}` 
+            : 'ASAI Instructor';
+
+        const { data, error } = await supabaseClient
+            .from('sessions')
+            .insert({
+                course_id:        courseId,
+                meeting_id:       meetingId,
+                title:            title.trim(),
+                description:      description?.trim() || '',
+                instructor_id:    user.id,
+                instructor_name:  instructorName,
+                status:           'live',
+                scheduled_at:     scheduledAt || new Date().toISOString(),
+                started_at:       new Date().toISOString(),
+                max_participants: maxParticipants,
+                join_url:         `https://your-domain.com/join/${meetingId}` // customize this
+            })
+            .select()
+            .maybeSingle();
+
+        if (error) throw error;
+
+        return {
+            success:    true,
+            session:    data,
+            meetingId:  meetingId,
+            message:    'Live session started! 🎥'
+        };
+
+    } catch (error) {
+        console.error('❌ startSession error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// ─────────────────────────────────────────────
+// 2. POST /api/sessions/:id/end
+// End a live session, calculate duration
+// ─────────────────────────────────────────────
+async function endSession(sessionId) {
+    try {
+        // Get the session to calculate duration
+        const { data: session } = await supabaseClient
+            .from('sessions')
+            .select('started_at')
+            .eq('id', sessionId)
+            .maybeSingle();
+
+        if (!session) throw new Error('Session not found');
+
+        // Calculate duration in minutes
+        const startTime  = new Date(session.started_at);
+        const endTime    = new Date();
+        const durationMs = endTime - startTime;
+        const durationMins = Math.round(durationMs / 1000 / 60);
+
+        const { data, error } = await supabaseClient
+            .from('sessions')
+            .update({
+                status:        'ended',
+                ended_at:      endTime.toISOString(),
+                duration_mins: durationMins,
+                updated_at:    endTime.toISOString()
+            })
+            .eq('id', sessionId)
+            .select()
+            .maybeSingle();
+
+        if (error) throw error;
+
+        // Also update all participants' leave time if not set
+        await supabaseClient
+            .from('session_participants')
+            .update({ 
+                left_at: endTime.toISOString(),
+                duration_mins: durationMins
+            })
+            .eq('session_id', sessionId)
+            .is('left_at', null);
+
+        return {
+            success:      true,
+            session:      data,
+            durationMins: durationMins,
+            message:      `Session ended. Duration: ${durationMins} minutes`
+        };
+
+    } catch (error) {
+        console.error('❌ endSession error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// ─────────────────────────────────────────────
+// 3. GET /api/sessions/active
+// List all currently LIVE sessions
+// ─────────────────────────────────────────────
+async function getActiveSessions() {
+    try {
+        const { data, error } = await supabaseClient
+            .from('sessions')
             .select(`
                 id,
                 course_id,
-                author_id,
-                author_name,
+                meeting_id,
                 title,
-                content,
-                category,
-                is_solved,
-                is_pinned,
-                views_count,
-                replies_count,
-                last_reply_at,
-                created_at,
+                description,
+                instructor_name,
+                started_at,
+                max_participants,
+                join_url,
                 courses (
                     title,
                     thumbnail_color,
                     icon
                 )
             `)
-            .order('is_pinned', { ascending: false })
-            .order('created_at', { ascending: false });
+            .eq('status', 'live')
+            .order('started_at', { ascending: false });
 
-        if (filters.courseId)              query = query.eq('course_id', filters.courseId);
-        if (filters.category)             query = query.eq('category', filters.category);
-        if (filters.isSolved !== undefined) query = query.eq('is_solved', filters.isSolved);
-        if (filters.authorId)             query = query.eq('author_id', filters.authorId);
-        if (filters.search) {
-            query = query.or(`title.ilike.%${filters.search}%,content.ilike.%${filters.search}%`);
-        }
-
-        const { data, error } = await query;
         if (error) throw error;
 
-        return { success: true, threads: data || [], count: data?.length || 0 };
+        // Count participants for each session
+        const sessionsWithCounts = await Promise.all(
+            (data || []).map(async (session) => {
+                const { count } = await supabaseClient
+                    .from('session_participants')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('session_id', session.id)
+                    .is('left_at', null);
 
-    } catch (error) {
-        console.error('❌ getAllDiscussions error:', error.message);
-        return { success: false, error: error.message, threads: [] };
-    }
-}
-
-// ─────────────────────────────────────────────
-// 2. CREATE DISCUSSION THREAD
-// ─────────────────────────────────────────────
-async function createDiscussion({ courseId, title, content, category = 'general' }) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('Not authenticated');
-
-        if (!title?.trim())   throw new Error('Title is required');
-        if (!content?.trim()) throw new Error('Content is required');
-
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('first_name, last_name')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        const authorName = profile
-            ? `${profile.first_name} ${profile.last_name}`.trim()
-            : user.email.split('@')[0];
-
-        const { data, error } = await supabaseClient
-            .from('discussion_threads')
-            .insert({
-                course_id:   courseId,
-                author_id:   user.id,
-                author_name: authorName,
-                title:       title.trim(),
-                content:     content.trim(),
-                category:    category || 'general'
+                return {
+                    ...session,
+                    currentParticipants: count || 0
+                };
             })
-            .select()
-            .maybeSingle();
+        );
 
-        if (error) throw error;
-
-        return { success: true, thread: data, message: 'Discussion thread created! 💬' };
+        return { success: true, sessions: sessionsWithCounts };
 
     } catch (error) {
-        console.error('❌ createDiscussion error:', error.message);
-        return { success: false, error: error.message };
+        console.error('❌ getActiveSessions error:', error.message);
+        return { success: false, error: error.message, sessions: [] };
     }
 }
 
 // ─────────────────────────────────────────────
-// 3. GET SINGLE THREAD WITH REPLIES
-//
-// FIXED: replies now join `profiles` so that
-//   reply.profiles.role  → 'teacher' | 'student'
-//   reply.profiles.first_name / last_name
-//   reply.profiles.avatar_url
-// are all available for correct bubble rendering.
+// 4. GET /api/sessions/history
+// List past (ended) sessions
 // ─────────────────────────────────────────────
-async function getDiscussionById(threadId) {
+async function getSessionHistory(courseId = null) {
     try {
-        // Fetch the thread
-        const { data: thread, error: threadError } = await supabaseClient
-            .from('discussion_threads')
+        let query = supabaseClient
+            .from('sessions')
             .select(`
                 id,
                 course_id,
-                author_id,
-                author_name,
                 title,
-                content,
-                category,
-                is_solved,
-                is_pinned,
-                views_count,
-                replies_count,
-                created_at,
-                updated_at,
+                description,
+                instructor_name,
+                started_at,
+                ended_at,
+                duration_mins,
                 courses (
-                    title,
-                    thumbnail_color
+                    title
                 )
             `)
-            .eq('id', threadId)
-            .maybeSingle();
+            .eq('status', 'ended')
+            .order('ended_at', { ascending: false });
 
-        if (threadError) throw threadError;
-        if (!thread)     throw new Error('Thread not found');
+        if (courseId) query = query.eq('course_id', courseId);
 
-        // ── FIXED: join profiles so role + name + avatar are available ──
-const { data: replies, error: repliesError } = await supabaseClient
-    .from('discussion_replies')
-    .select(`
-        id,
-        content,
-        created_at,
-        author_id,
-        author_name,
-        profiles:author_id (
-            first_name,
-            last_name,
-            role,
-            avatar_url
-        )
-    `)
-    .eq('thread_id', threadId)
-    .order('created_at', { ascending: true });
+        const { data, error } = await query;
 
-        if (repliesError) throw repliesError;
+        if (error) throw error;
 
-        // Increment view count (fire and forget)
-        supabaseClient
-            .from('discussion_threads')
-            .update({ views_count: (thread.views_count || 0) + 1, updated_at: new Date().toISOString() })
-            .eq('id', threadId)
-            .then(() => {});
+        // Get participant count for each session
+        const sessionsWithCounts = await Promise.all(
+            (data || []).map(async (session) => {
+                const { count } = await supabaseClient
+                    .from('session_participants')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('session_id', session.id);
 
-        return {
-            success: true,
-            thread:  { ...thread, replies: replies || [] }
-        };
+                return {
+                    ...session,
+                    totalParticipants: count || 0
+                };
+            })
+        );
+
+        return { success: true, sessions: sessionsWithCounts };
 
     } catch (error) {
-        console.error('❌ getDiscussionById error:', error.message);
-        return { success: false, error: error.message };
+        console.error('❌ getSessionHistory error:', error.message);
+        return { success: false, error: error.message, sessions: [] };
     }
 }
 
 // ─────────────────────────────────────────────
-// 4. REPLY TO DISCUSSION
+// 5. POST /api/sessions/schedule
+// Admin schedules a future session
 // ─────────────────────────────────────────────
-async function replyToDiscussion(threadId, content) {
+async function scheduleSession({ courseId, title, description, scheduledAt, maxParticipants = 100 }) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
-        if (!content?.trim()) throw new Error('Reply content is required');
+        // Generate meeting ID in advance
+        const meetingId = `asai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
         const { data: profile } = await supabaseClient
             .from('profiles')
             .select('first_name, last_name')
             .eq('id', user.id)
-            .maybeSingle();
+             .maybeSingle();
 
-        const authorName = profile
-            ? `${profile.first_name} ${profile.last_name}`.trim()
-            : user.email.split('@')[0];
+        const instructorName = profile 
+            ? `${profile.first_name} ${profile.last_name}` 
+            : 'ASAI Instructor';
 
         const { data, error } = await supabaseClient
-            .from('discussion_replies')
+            .from('sessions')
             .insert({
-                thread_id:   threadId,
-                author_id:   user.id,
-                author_name: authorName,
-                content:     content.trim()
+                course_id:        courseId,
+                meeting_id:       meetingId,
+                title:            title.trim(),
+                description:      description?.trim() || '',
+                instructor_id:    user.id,
+                instructor_name:  instructorName,
+                status:           'scheduled',
+                scheduled_at:     scheduledAt,
+                max_participants: maxParticipants,
+                join_url:         `https://your-domain.com/join/${meetingId}`
             })
             .select()
             .maybeSingle();
 
         if (error) throw error;
 
-        return { success: true, reply: data, message: 'Reply posted! 💬' };
+        return {
+            success:   true,
+            session:   data,
+            message:   'Session scheduled successfully! 📅'
+        };
 
     } catch (error) {
-        console.error('❌ replyToDiscussion error:', error.message);
+        console.error('❌ scheduleSession error:', error.message);
         return { success: false, error: error.message };
     }
 }
 
 // ─────────────────────────────────────────────
-// 5. MARK THREAD SOLVED / UNSOLVED
+// 6. POST /api/recordings
+// Upload a new recording (after session ends)
 // ─────────────────────────────────────────────
-async function markThreadSolved(threadId, isSolved = true) {
+async function saveRecording({ courseId, sessionId = null, title, description, videoUrl, thumbnailUrl, durationMins, fileSizeMb }) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
-        const { data: thread } = await supabaseClient
-            .from('discussion_threads')
-            .select('author_id')
-            .eq('id', threadId)
-            .maybeSingle();
-
-        if (!thread) throw new Error('Thread not found');
-
-        const { data: profile } = await supabaseClient
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        const isAdmin  = profile?.role === 'admin';
-        const isTeacher = profile?.role === 'teacher' || profile?.role === 'instructor';
-        const isAuthor = String(thread.author_id) === String(user.id);
-
-        // Teachers and admins can mark any thread solved
-        if (!isAdmin && !isTeacher && !isAuthor) {
-            throw new Error('Only the thread author or teacher can mark as solved');
-        }
-
         const { data, error } = await supabaseClient
-            .from('discussion_threads')
-            .update({ is_solved: isSolved, updated_at: new Date().toISOString() })
-            .eq('id', threadId)
+            .from('recordings')
+            .insert({
+                course_id:     courseId,
+                session_id:    sessionId,
+                title:         title.trim(),
+                description:   description?.trim() || '',
+                video_url:     videoUrl,
+                thumbnail_url: thumbnailUrl || null,
+                duration_mins: durationMins || 0,
+                file_size_mb:  fileSizeMb || 0,
+                is_published:  false, // unpublished by default
+                uploaded_by:   user.id
+            })
             .select()
             .maybeSingle();
 
         if (error) throw error;
 
         return {
-            success: true,
-            thread:  data,
-            message: isSolved ? 'Thread marked as solved! ✅' : 'Thread marked as unsolved'
+            success:   true,
+            recording: data,
+            message:   'Recording saved! 🎬 (Unpublished)'
         };
 
     } catch (error) {
-        console.error('❌ markThreadSolved error:', error.message);
+        console.error('❌ saveRecording error:', error.message);
         return { success: false, error: error.message };
     }
 }
 
 // ─────────────────────────────────────────────
-// BONUS: PIN THREAD
+// 7. PUT /api/recordings/:id/publish
+// Admin publishes a recording (makes visible to students)
 // ─────────────────────────────────────────────
-async function pinThread(threadId, isPinned = true) {
+async function publishRecording(recordingId) {
     try {
         const { data, error } = await supabaseClient
-            .from('discussion_threads')
-            .update({ is_pinned: isPinned, updated_at: new Date().toISOString() })
-            .eq('id', threadId)
-            .select()
-            .maybeSingle();
-
-        if (error) throw error;
-        return { success: true, thread: data, message: isPinned ? 'Thread pinned! 📌' : 'Thread unpinned' };
-
-    } catch (error) {
-        console.error('❌ pinThread error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-// ─────────────────────────────────────────────
-// BONUS: DELETE THREAD
-// ─────────────────────────────────────────────
-async function _tDeleteThread(threadId) {
-    if (!confirm('Delete this discussion? This cannot be undone.')) return;
-
-    const db = window.supabaseClient;
-    try {
-        await db.from('discussion_replies').delete().eq('thread_id', threadId);
-        const { error } = await db.from('discussion_threads').delete().eq('id', threadId);
-        if (error) throw error;
-
-        _tDiscUI.active = null;
-
-        // Remove from cache
-     if (typeof discussionsCache !== 'undefined') {
-    const idx = discussionsCache.findIndex(d => String(d.id) === String(threadId));
-    if (idx > -1) discussionsCache.splice(idx, 1);
-      }
-        _tRenderList();
-
-        // Hide chat panel, show empty state
-        document.getElementById('_tdChatInner').style.display = 'none';
-        document.getElementById('_tdEmpty').style.display     = 'flex';
-
-        // Re-render list immediately
-        _tRenderList();
-
-        // Also reload from DB to stay in sync
-        
-        _tToast('Discussion deleted', 'success');
-
-    } catch (err) {
-        _tToast('Failed to delete: ' + err.message, 'error');
-    }
-}
-
-// ─────────────────────────────────────────────
-// BONUS: DELETE REPLY
-// ─────────────────────────────────────────────
-async function deleteReply(replyId) {
-    try {
-        const { error } = await supabaseClient.from('discussion_replies').delete().eq('id', replyId);
-        if (error) throw error;
-        return { success: true, message: 'Reply deleted successfully' };
-    } catch (error) {
-        console.error('❌ deleteReply error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
-// ─────────────────────────────────────────────
-// BONUS: MARK REPLY AS SOLUTION
-// ─────────────────────────────────────────────
-async function markReplyAsSolution(replyId, threadId) {
-    try {
-        await supabaseClient
-            .from('discussion_replies')
-            .update({ is_solution: false })
-            .eq('thread_id', threadId);
-
-        const { data, error } = await supabaseClient
-            .from('discussion_replies')
-            .update({ is_solution: true, updated_at: new Date().toISOString() })
-            .eq('id', replyId)
+            .from('recordings')
+            .update({
+                is_published: true,
+                published_at: new Date().toISOString(),
+                updated_at:   new Date().toISOString()
+            })
+            .eq('id', recordingId)
             .select()
             .maybeSingle();
 
         if (error) throw error;
 
-        await markThreadSolved(threadId, true);
-
-        return { success: true, reply: data, message: 'Marked as solution! ✅' };
+        return {
+            success:   true,
+            recording: data,
+            message:   'Recording published! ✅ Students can now watch it.'
+        };
 
     } catch (error) {
-        console.error('❌ markReplyAsSolution error:', error.message);
+        console.error('❌ publishRecording error:', error.message);
         return { success: false, error: error.message };
     }
 }
 
 // ─────────────────────────────────────────────
-// BONUS: VOTE ON CONTENT
+// 8. GET /api/courses/:id/recordings
+// Students fetch all PUBLISHED recordings for a course
 // ─────────────────────────────────────────────
-async function voteOnContent(contentId, contentType, voteType) {
+async function getCourseRecordings(courseId) {
+    try {
+        const { data, error } = await supabaseClient
+            .from('recordings')
+            .select('*')
+            .eq('course_id', courseId)
+            .eq('is_published', true)
+            .order('uploaded_at', { ascending: false });
+
+        if (error) throw error;
+
+        return { success: true, recordings: data || [] };
+
+    } catch (error) {
+        console.error('❌ getCourseRecordings error:', error.message);
+        return { success: false, error: error.message, recordings: [] };
+    }
+}
+
+// ─────────────────────────────────────────────
+// 9. DELETE /api/recordings/:id
+// Admin deletes a recording permanently
+// ─────────────────────────────────────────────
+async function deleteRecording(recordingId) {
+    try {
+        const { error } = await supabaseClient
+            .from('recordings')
+            .delete()
+            .eq('id', recordingId);
+
+        if (error) throw error;
+
+        return {
+            success: true,
+            message: 'Recording deleted successfully'
+        };
+
+    } catch (error) {
+        console.error('❌ deleteRecording error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// ─────────────────────────────────────────────
+// BONUS: JOIN SESSION (student joins a live session)
+// Creates a participant record
+// ─────────────────────────────────────────────
+async function joinSession(sessionId) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
-        const voteData = { user_id: user.id, vote_type: voteType };
-        if (contentType === 'thread') { voteData.thread_id = contentId; voteData.reply_id = null; }
-        else                          { voteData.reply_id  = contentId; voteData.thread_id = null; }
-
+        // Check if already joined
         const { data: existing } = await supabaseClient
-            .from('discussion_votes')
-            .select('id, vote_type')
+            .from('session_participants')
+            .select('id')
+            .eq('session_id', sessionId)
             .eq('student_id', user.id)
-            .eq(contentType === 'thread' ? 'thread_id' : 'reply_id', contentId)
             .maybeSingle();
 
-        if (existing) {
-            if (existing.vote_type === voteType) {
-                await supabaseClient.from('discussion_votes').delete().eq('id', existing.id);
-                return { success: true, action: 'unvoted' };
-            } else {
-                await supabaseClient.from('discussion_votes').update({ vote_type: voteType }).eq('id', existing.id);
-                return { success: true, action: 'changed' };
-            }
-        } else {
-            await supabaseClient.from('discussion_votes').insert(voteData);
-            return { success: true, action: 'voted' };
+        if (existing && existing.id) {
+            return { success: true, alreadyJoined: true };
         }
 
+        const { data, error } = await supabaseClient
+            .from('session_participants')
+            .insert({
+                session_id: sessionId,
+                student_id: user.id
+            })
+            .select()
+            .maybeSingle();
+
+        if (error) throw error;
+
+        return {
+            success:     true,
+            participant: data,
+            message:     'Joined session! 🎥'
+        };
+
     } catch (error) {
-        console.error('❌ voteOnContent error:', error.message);
+        console.error('❌ joinSession error:', error.message);
         return { success: false, error: error.message };
     }
 }
 
 // ─────────────────────────────────────────────
-// BONUS: GET VOTE COUNTS
+// BONUS: LEAVE SESSION
+// Records when student leaves
 // ─────────────────────────────────────────────
-async function getVoteCounts(contentId, contentType) {
+async function leaveSession(sessionId) {
     try {
-        const field = contentType === 'thread' ? 'thread_id' : 'reply_id';
-        const { data, error } = await supabaseClient
-            .from('discussion_votes').select('vote_type').eq(field, contentId);
-        if (error) throw error;
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
 
-        const upvotes   = (data || []).filter(v => v.vote_type === 'upvote').length;
-        const downvotes = (data || []).filter(v => v.vote_type === 'downvote').length;
-        return { success: true, upvotes, downvotes, score: upvotes - downvotes };
+        // Get join time to calculate duration
+        const { data: participant } = await supabaseClient
+            .from('session_participants')
+            .select('joined_at')
+            .eq('session_id', sessionId)
+            .eq('student_id', user.id)
+            .maybeSingle();
+
+        if (!participant) return;
+
+        const joinTime     = new Date(participant.joined_at);
+        const leaveTime    = new Date();
+        const durationMs   = leaveTime - joinTime;
+        const durationMins = Math.round(durationMs / 1000 / 60);
+
+        await supabaseClient
+            .from('session_participants')
+            .update({
+                left_at:       leaveTime.toISOString(),
+                duration_mins: durationMins
+            })
+            .eq('session_id', sessionId)
+            .eq('student_id', user.id);
+
+        return { success: true };
 
     } catch (error) {
-        console.error('❌ getVoteCounts error:', error.message);
-        return { success: false, upvotes: 0, downvotes: 0, score: 0 };
+        console.error('❌ leaveSession error:', error.message);
+        return { success: false };
     }
 }
 
-console.log('✅ discussions.js loaded');
+// ─────────────────────────────────────────────
+// BONUS: TRACK RECORDING VIEW
+// Student watches a recording
+// ─────────────────────────────────────────────
+async function trackRecordingView(recordingId, watchDurationMins, completed = false) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
+        // Check if already has a view record
+        const { data: existing } = await supabaseClient
+            .from('recording_views')
+            .select('id')
+            .eq('recording_id', recordingId)
+            .eq('student_id', user.id)
+            .maybeSingle();
+
+        if (existing && existing.id) {
+            // Update existing view
+            await supabaseClient
+                .from('recording_views')
+                .update({
+                    watch_duration_mins: watchDurationMins,
+                    completed:           completed,
+                    watched_at:          new Date().toISOString()
+                })
+                .eq('id', existing.id);
+        } else {
+            // Create new view record
+            await supabaseClient
+                .from('recording_views')
+                .insert({
+                    recording_id:        recordingId,
+                    student_id:          user.id,
+                    watch_duration_mins: watchDurationMins,
+                    completed:           completed
+                });
+        }
+
+        // Increment views count on recording
+        await supabaseClient.rpc('increment_views', { recording_id: recordingId });
+
+        return { success: true };
+
+    } catch (error) {
+        console.error('❌ trackRecordingView error:', error.message);
+        return { success: false };
+    }
+}
+
+console.log('✅ Sessions.js loaded');

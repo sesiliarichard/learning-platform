@@ -638,7 +638,6 @@ body { visibility: hidden }
         </div>
     </div>
     </div>  
-</div>  
 
 <!-- RESOURCES SECTION -->
             <div id="adminResourcesSection" class="dashboard-section">
@@ -985,6 +984,8 @@ body { visibility: hidden }
     </div>
 </div>
 
+        </div> <!-- /.main-content -->
+
     <!-- ADD USER MODAL -->
    <div class="modal" id="addUserModal">
     <div class="modal-content">
@@ -1074,9 +1075,9 @@ body { visibility: hidden }
         <button type="button" class="editor-btn" onclick="document.execCommand('insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('formatBlock', false, '<h3>')" aria-label="Heading"><i class="fas fa-heading"></i></button>
     </div>
-    <div class="editor-content" contenteditable="true" id="courseDescriptionEditor" style="min-height: 100px;">
-        <p>Enter course description here...</p>
-    </div>
+    <div class="editor-content" contenteditable="true" id="courseDescriptionEditor">
+    <p>Enter course description here...</p>
+</div>
     <input type="hidden" id="courseDescription" name="description">
 </div>
 
