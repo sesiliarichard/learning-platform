@@ -4523,3 +4523,63 @@ body.dark-mode .page-btn.active {
 #courseDescriptionEditor {
     min-height: 100px;
 }
+
+.sb-foot {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    margin-top: auto;
+}
+.sb-av {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #22d3ee, #3b82f6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    flex-shrink: 0;
+}
+.sb-info { 
+    flex: 1; 
+    min-width: 0; 
+}
+.sb-uname { 
+    display: block; 
+    font-size: 12px; 
+    font-weight: 600; 
+    color: white; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+.sb-stat  { 
+    display: block; 
+    font-size: 10px; 
+    color: #22c55e; 
+    margin-top: 1px; 
+}
+.lo-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: transparent;
+    color: rgba(255,255,255,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.lo-btn:hover { 
+    background: rgba(239,68,68,0.18); 
+    color: #ef4444; 
+}

@@ -102,10 +102,21 @@ body { visibility: hidden }
         <i class="fas fa-user-check"></i>
        <span>Teacher Approvals</span>
          </div>
-                <div class="nav-item" data-section="analytics">
+<div class="nav-item" data-section="analytics">
                     <i class="fas fa-chart-bar"></i>
                     <span>Analytics</span>
                 </div>
+            </div>
+
+            <div class="sb-foot">
+                <div class="sb-av" id="sbAv">AD</div>
+                <div class="sb-info">
+                    <span class="sb-uname" id="sbName">Admin User</span>
+                    <span class="sb-stat">● Online</span>
+                </div>
+                <button class="lo-btn" onclick="handleLogout()" aria-label="Logout">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
         </div>
 
@@ -6072,7 +6083,12 @@ document.addEventListener('drop', (e) => {
         // Success!
         console.log('✅ Admin authenticated successfully! Showing dashboard...');
         console.log('8. Making page visible...');
-  document.body.style.visibility = 'visible';
+       document.body.style.visibility = 'visible';
+       const adminName = (profile.first_name || '') + ' ' + (profile.last_name || '');
+       const nameEl = document.getElementById('sbName');
+       const avEl   = document.getElementById('sbAv');
+       if (nameEl) nameEl.textContent = adminName.trim() || 'Admin';
+       if (avEl)   avEl.textContent   = adminName.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() || 'AD';
 
   // Load all dashboard data
         console.log('9. Initializing dashboard...');
@@ -7920,9 +7936,14 @@ async function deleteSessionRecording(id) {
     showToast('Recording deleted');
     loadRecordingsSection();
 }
+async function handleLogout() {
+    await db.auth.signOut();
+    window.location.replace('admin-login.html');
+}
 // Fix scrolling when switching sections
 function fixSectionScrolling() {
 }
+
 
 </script>
 
