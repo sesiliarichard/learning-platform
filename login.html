@@ -873,12 +873,16 @@ document.getElementById('linkedinSignup').addEventListener('click', handleLinked
 document.addEventListener('DOMContentLoaded', async () => {
   loadAllCountries();
 
-  // Clear any stale/broken tokens before checking session
+  // Safety net: always show page after 3 seconds no matter what
+  setTimeout(() => { document.body.style.visibility = 'visible'; }, 3000);
+
   const { data: { session }, error: sessionError } = await db.auth.getSession();
   if (sessionError) {
     await db.auth.signOut();
     localStorage.clear();
     sessionStorage.clear();
+    document.body.style.visibility = 'visible';
+    return;
   }
   if (!session) {
     document.body.style.visibility = 'visible';
