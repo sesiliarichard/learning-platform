@@ -68,17 +68,12 @@ function renderAssignmentList() {
   if (!g) return;
 
   if (!teacherState.assignments.length) {
-    g.innerHTML = `
+g.innerHTML = `
       <div class="empty">
         <i class="fas fa-file-alt"></i>
         <p>No assignments found for your courses.</p>
-        <button class="btn bp" style="margin-top:12px"
-                onclick="openM('assignModal')">
-          <i class="fas fa-plus"></i> Create Assignment
-        </button>
       </div>`;
-    return;
-  }
+      }
 
   g.innerHTML = '';
   teacherState.assignments.forEach(a => {
