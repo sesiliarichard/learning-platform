@@ -108,7 +108,7 @@
       <a href="#" class="nl" data-s="content"><i class="fas fa-pen-nib"></i><span>Content Studio</span></a>
       <a href="#" class="nl" data-s="quizzes"><i class="fas fa-clipboard-list"></i><span>Quizzes</span></a>
       <a href="#" class="nl" data-s="assignments"><i class="fas fa-file-alt"></i><span>Assignments</span></a>
-      <a href="#" class="nl" data-s="sessions"><i class="fas fa-broadcast-tower"></i><span>Live Sessions</span><span class="nb nb-live">Live</span></a>
+      
     </div>
     <div class="grp">
       <span class="grp-lbl">Students</span>
@@ -153,9 +153,7 @@
       <h2><span id="timeGreeting">Good morning</span>, <span id="welcomeN">Dr. Amina</span> 👋</h2>
       <p>Here's what's happening with your courses today.</p>
     </div>
-    <button class="btn bp pulse" onclick="showSec('sessions')">
-      <i class="fas fa-video"></i> Start Live Session
-    </button>
+
   </div>
 
   <div class="stats-g">
@@ -214,32 +212,6 @@
     <div id="assList" class="tp active"><div id="assignGrid" class="ig"></div></div>
     <div id="assSubs" class="tp"><div id="assignSubGrid" class="ig"></div></div>
   </section>
-
-  <section id="sessionsSection" class="sec">
-  <div class="sec-tb">
-    <h2 class="sec-ttl">Live Sessions</h2>
-    <button class="btn bp pulse" onclick="startSession()"><i class="fas fa-video"></i> Start Now</button>
-  </div>
-  <div class="tabs">
-    <button class="tab active" data-tab="sActive">Active</button>
-    <button class="tab" data-tab="sScheduled">Scheduled</button>
-    <button class="tab" data-tab="sRecs" onclick="loadSavedRecordings()">Recordings <span class="nb nb-grn" id="recBadge" class="hidden">0</span></button>
-  </div>
-  <div id="sActive" class="tp active">
-    <div id="activeSessionArea"><div class="empty"><i class="fas fa-broadcast-tower"></i><p>No active session. Click "Start Now" to begin.</p></div></div>
-  </div>
-  <div id="sScheduled" class="tp">
-    <button class="btn bs mb-12" onclick="openM('schedModal')"><i class="fas fa-calendar-plus"></i> Schedule Session</button>
-    <div id="scheduledList"><div class="empty"><i class="fas fa-calendar"></i><p>No scheduled sessions.</p></div></div>
-  </div>
-  <div id="sRecs" class="tp">
-    <div class="recs-hd">
-      <p class="recs-info"><i class="fas fa-info-circle"></i> All session recordings are saved here.</p>
-      <button class="btn bg" onclick="downloadAllRecs()"><i class="fas fa-download"></i> Download All</button>
-    </div>
-    <div id="recList"><div class="empty"><i class="fas fa-film"></i><p>Recordings appear here after sessions end.</p></div></div>
-  </div>
-</section>
 
 <section id="studentWorkSection" class="sec">
   <div class="sec-tb">
@@ -641,45 +613,6 @@
   </div>
 </div>
 
-<div class="modal" id="schedModal">
-  <div class="mb">
-    <div class="mh">
-      <h3>Schedule a Session</h3>
-      <button onclick="closeM('schedModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
-    </div>
-    <form id="schedForm" onsubmit="handleSchedule(event)">
-      <div class="fg">
-        <label class="fl" for="schedCouSel">Course *</label>
-        <select name="courseId" required id="schedCouSel" class="fc" title="Select Course" aria-label="Select Course">
-          <option value="">Select course…</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label class="fl" for="schedTitle">Session Title *</label>
-        <input type="text" name="title" id="schedTitle" required class="fc" placeholder="e.g. Week 4 Live Review" title="Session Title" aria-label="Session Title"/>
-      </div>
-      <div class="fr2">
-        <div class="fg">
-          <label class="fl" for="schedDate">Date *</label>
-          <input type="date" name="date" id="schedDate" required class="fc" title="Session Date" aria-label="Session Date"/>
-        </div>
-        <div class="fg">
-          <label class="fl" for="schedTime">Time *</label>
-          <input type="time" name="time" id="schedTime" required class="fc" title="Session Time" aria-label="Session Time"/>
-        </div>
-      </div>
-      <div class="fg">
-        <label class="cklbl">
-          <input type="checkbox" name="notify" checked aria-label="Notify students"/> Notify students
-        </label>
-      </div>
-      <div class="ma">
-        <button type="button" class="btn bg" onclick="closeM('schedModal')" title="Cancel" aria-label="Cancel">Cancel</button>
-        <button type="submit" class="btn bp" title="Schedule Session" aria-label="Schedule Session"><i class="fas fa-calendar-check"></i> Schedule</button>
-      </div>
-    </form>
-  </div>
-</div>
 
 <div class="modal" id="stuModal">
   <div class="mb">
@@ -694,26 +627,9 @@
   </div>
 </div>
 
-<div class="modal" id="playRecModal">
-  <div class="mb mbw">
-    <div class="mh">
-      <h3 id="playRecTitle">Recording Playback</h3>
-      <button onclick="closeM('playRecModal');stopPlay()" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
-    </div>
-    <video id="playRecVideo" controls class="rec-video" aria-label="Recording Playback Video"></video>
-    <div id="playRecActions" class="rec-actions"></div>
-  </div>
-</div>
+
 
 <script>
-function handleSchedule(e){
-  e.preventDefault(); const fd=new FormData(e.target); const c=courses.find(x=>x.id==fd.get('courseId'));
-  const list=document.getElementById('scheduledList');
-  const card=document.createElement('div'); card.className='rec-c';
-  card.innerHTML=`<div class="rec-th"><i class="fas fa-calendar-alt" style="color:var(--acc)"></i></div><div class="rec-info"><div class="rec-ttl">${fd.get('title')}</div><div class="rec-meta"><span>${c?.title}</span><span>${fd.get('date')} at ${fd.get('time')}</span></div></div><button class="btn bp" onclick="startSession()"><i class="fas fa-video"></i> Start</button>`;
-  if(list.querySelector('.empty')) list.innerHTML=''; list.prepend(card);
-  closeM('schedModal'); e.target.reset(); toast('Session scheduled!');
-}
 
 // ═══════════════════════════════════════════════════════════════
 // QUIZ RESULTS TAB — fixed layout + improved design

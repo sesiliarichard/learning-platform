@@ -591,9 +591,6 @@
 
                     <!-- Course Navigation -->
                     <div class="course-nav" id="courseNav">
-                         <button class="course-nav-btn btn-live-session" onclick="startLiveSession()">
-                          <i class="fas fa-video"></i> Join Live Session
-                         </button>
                         <button class="course-nav-btn active" data-content="notes">
                             <i class="fas fa-sticky-note"></i> Notes & Materials
                         </button>
@@ -1553,36 +1550,8 @@
         </div>
     </div>
 </div>
-<!-- Join Meeting Modal -->
-<div class="join-meeting-modal" id="joinMeetingModal">
-    <div class="join-meeting-content">
-        <h2>Join Live Session</h2>
-        <p>Enter your details to join the live class</p>
-        
-        <div class="join-form-group">
-            <label>Your Name</label>
-            <input type="text" id="joinName" placeholder="Enter your full name">
-        </div>
-        
-        <div class="join-form-group">
-           <label>Meeting URL (from your instructor)</label>
-            <input type="text" id="joinMeetingId" placeholder="https://yourschool.daily.co/room-name">
-        </div>
-        
-        <div class="join-preview" id="joinPreview">
-            <video id="previewVideo" autoplay muted></video>
-        </div>
-        
-        <div class="join-actions">
-            <button class="join-btn secondary" onclick="closeJoinModal()">Cancel</button>
-            <button class="join-btn primary" onclick="joinMeeting()">Join Session</button>
-        </div>
-    </div>
-</div>
 
-<!-- Video Meeting Modal -->
-<div class="meeting-modal" id="meetingModal">
-</div>
+
     <script>
         // DOM Elements
         const dashboardSections = document.querySelectorAll('.dashboard-section');
@@ -2869,9 +2838,6 @@ window.addEventListener('beforeunload', () => {
 // ============================================
 
 
-let callFrame = null;
-let currentUserName = 'User';
-
 async function syncCourseProgressToDB(studentId, courseId) {
     try {
         // ── NOTES ──────────────────────────────────────────────
@@ -3022,73 +2988,6 @@ function updateCourseProgressUI(pct) {
     if (progressEl)   progressEl.textContent   = pct + '%';
     if (progressText) progressText.textContent  = pct + '% Complete';
     if (progressFill) progressFill.style.width  = pct + '%';
-}
-
-// Show Join Modal
-function showJoinModal() {
-    document.getElementById('joinMeetingModal').classList.add('active');
-}
-
-// Close Join Modal
-function closeJoinModal() {
-    document.getElementById('joinMeetingModal').classList.remove('active');
-}
-
-function startLiveSession() {
-    const name = `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'Student';
-    document.getElementById('joinName').value = name;
-    document.getElementById('joinMeetingId').value = '';
-    showJoinModal();
-}
-
-// Join Meeting
-async function joinMeeting() {
-    const name    = document.getElementById('joinName').value.trim();
-    const roomUrl = document.getElementById('joinMeetingId').value.trim();
-
-    if (!name)    { showToast('Please enter your name', 'warning'); return; }
-    if (!roomUrl) { showToast('Please enter the meeting URL', 'warning'); return; }
-
-    // Safely extract just the room name
-    let roomName = roomUrl.trim();
-    try {
-        const parsed = new URL(roomUrl);
-        roomName = parsed.pathname.replace(/^\//, '').split('?')[0].split('#')[0];
-    } catch (e) {
-        // not a full URL, strip protocol manually if present
-        roomName = roomUrl.replace(/^https?:\/\/[^\/]+\//, '').split('?')[0].split('#')[0];
-    }
-
-    if (!roomName) { showToast('Invalid meeting URL', 'warning'); return; }
-
-    closeJoinModal();
-
-    const wrapper = document.getElementById('meetingModal');
-    wrapper.classList.add('active');
-    wrapper.innerHTML = `
-        <div style="width:100%;height:100%;position:relative;">
-            <button onclick="endMeeting()"
-                style="position:absolute;top:16px;right:16px;z-index:9999;
-                       background:#ef4444;border:none;color:white;padding:10px 20px;
-                       border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;">
-                <i class="fas fa-phone-slash"></i> Leave
-            </button>
-            <iframe 
-                src="https://jitsi.riot.im/${roomName}#userInfo.displayName=${encodeURIComponent(JSON.stringify(name))}&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.prejoinPageEnabled=false"
-                style="width:100%;height:100%;border:none;"
-               allow="camera; microphone; fullscreen; display-capture; autoplay">
-            </iframe>
-        </div>`;
-
-    showToast('Joined session! 🎉', 'success');
-}
-
-
-function endMeeting() {
-    const wrapper = document.getElementById('meetingModal');
-    wrapper.classList.remove('active');
-    wrapper.innerHTML = '';
-    showToast('You left the session', 'success');
 }
 
 // Certificate Data (simulated - in production, fetch from server)
