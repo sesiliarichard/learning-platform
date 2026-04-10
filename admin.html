@@ -7464,14 +7464,15 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const { data: { user } } = await db.auth.getUser();
 
-           const { error } = await db.from('session_recordings').insert({
-               teacher_id:    user.id,
-               course_id:     courseId,
-               title:         title,
-               video_url:     videoUrl,        
-               cloudinary_url: videoUrl,       
-               published:     publish
-          });
+const { error } = await db.from('session_recordings').insert({
+    teacher_id:     user.id,
+    course_id:      courseId,
+    title,
+    video_url:      videoUrl,
+    cloudinary_url: videoUrl,
+    youtube_url:    videoUrl,  
+    published:      publish
+});
 
             if (error) throw error;
 
