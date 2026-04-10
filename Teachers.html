@@ -446,46 +446,7 @@
   </div>
 </div>
 
-<div class="modal" id="assignModal">
-  <div class="mb">
-  
-    <form id="assignForm" onsubmit="handleCreateAssignment(event)">
-      <div class="fg">
-        <label class="fl" for="assignTitle">Title *</label>
-        <input type="text" name="title" id="assignTitle" required class="fc" placeholder="Assignment title" title="Assignment Title" aria-label="Assignment Title"/>
-      </div>
-      <div class="fg">
-        <label class="fl" for="assgnCouSel">Course *</label>
-        <select name="courseId" required id="assgnCouSel" class="fc" title="Select Course" aria-label="Select Course">
-          <option value="">Select course…</option>
-        </select>
-      </div>
-      <div class="fg">
-        <label class="fl" for="assignInstructions">Instructions *</label>
-        <textarea name="instructions" id="assignInstructions" rows="4" required class="fc" placeholder="Describe what students need to do…" title="Instructions" aria-label="Instructions"></textarea>
-      </div>
-      <div class="fr2">
-        <div class="fg">
-          <label class="fl" for="assignDueDate">Due Date *</label>
-          <input type="date" name="dueDate" id="assignDueDate" required class="fc" title="Due Date" aria-label="Due Date"/>
-        </div>
-        <div class="fg">
-          <label class="fl" for="assignMaxPoints">Max Points</label>
-          <input type="number" name="maxPoints" id="assignMaxPoints" value="100" min="1" class="fc" title="Max Points" aria-label="Max Points"/>
-        </div>
-      </div>
-      <div class="fg">
-        <label class="fl" for="assignSubType">Submission Type</label>
-        <select name="subType" id="assignSubType" class="fc" title="Submission Type" aria-label="Submission Type">
-          <option value="file">File Upload</option>
-          <option value="text">Text Response</option>
-          <option value="both">Both</option>
-        </select>
-      </div>
-  
-    </form>
-  </div>
-</div>
+
 
 <div class="modal" id="gradeModal">
   <div class="mb">
