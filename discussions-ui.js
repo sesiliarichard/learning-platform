@@ -1020,8 +1020,86 @@ function _injectDiscStyles() {
 ._disc-msubmit:disabled{opacity:.6;transform:none}
 
 /* ──────────────────────── Responsive ── */
-@media(max-width:640px){._disc-sb{width:220px}}
-@media(max-width:480px){._disc-root{flex-direction:column;height:auto}._disc-sb{width:100%;height:200px;border-right:none;border-bottom:1.5px solid #ede9fe}._disc-chat{min-height:380px}}
+@media(max-width:768px){
+  ._disc-root{
+    height:calc(100vh - 160px);
+    border-radius:12px;
+  }
+  ._disc-sb{width:200px}
+  ._disc-msgs{padding:10px 10px 6px}
+  ._disc-input-area{padding:8px 10px;padding-bottom:max(8px,env(safe-area-inset-bottom))}
+  ._disc-ta{font-size:16px}
+  ._disc-bubble{font-size:12px;padding:8px 11px}
+}
+
+@media(max-width:540px){
+  ._disc-root{
+    flex-direction:column;
+    height:calc(100vh - 160px);
+    border-radius:12px;
+  }
+  ._disc-sb{
+    width:100%;
+    height:auto;
+    max-height:180px;
+    border-right:none;
+    border-bottom:1.5px solid #ede9fe;
+    flex-shrink:0;
+  }
+  ._disc-sb-hdr{padding:10px 10px 8px}
+  ._disc-tabs{gap:3px}
+  ._disc-tab{font-size:9px;padding:4px 2px}
+  ._disc-tlist{max-height:90px;overflow-y:auto}
+  ._disc-ti{padding:7px}
+  ._disc-ti-ttl{font-size:11px}
+
+  ._disc-chat{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    overflow:hidden;
+  }
+  ._disc-chat-inner{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    overflow:hidden;
+  }
+  ._disc-msgs{
+    flex:1;
+    min-height:0;
+    overflow-y:auto;
+    padding:10px 10px 6px;
+  }
+  ._disc-input-area{
+    flex-shrink:0;
+    padding:8px 10px;
+    padding-bottom:max(8px,env(safe-area-inset-bottom));
+  }
+  ._disc-input-wrap{
+    border-radius:24px;
+    padding:6px 8px 6px 12px;
+  }
+  ._disc-ta{
+    font-size:16px;
+    min-height:22px;
+  }
+  ._disc-sendbtn{
+    width:38px;
+    height:38px;
+    font-size:15px;
+  }
+  ._disc-bubble{
+    font-size:13px;
+    padding:8px 11px;
+  }
+  ._disc-mcontent{max-width:82%}
+  ._disc-chat-hdr{padding:9px 12px}
+  ._disc-hd-ttl{font-size:13px}
+  ._disc-hdbtn{padding:5px 10px;font-size:10px}
+}
 `;
     document.head.appendChild(style);
 }
