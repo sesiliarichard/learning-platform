@@ -70,12 +70,13 @@ async function _fetchAndRender(filters={}) {
     const el = document.getElementById('_discThreadList');
     if (el) el.innerHTML = '<div class="_disc-loading"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
 
-    const result = await getAllDiscussions(filters);
-    if (!result.success) {
-        if (el) el.innerHTML = `<div class="_disc-err"><i class="fas fa-exclamation-circle"></i> ${_safe(result.error)} <button onclick="_fetchAndRender()">Retry</button></div>`;
+    if (typeof getAllDiscussions === 'undefined') {
+        console.error('❌ getAllDiscussions is not defined. Make sure discussions.js is loaded before discussions-ui.js');
+        if (el) el.innerHTML = '<div class="_disc-err"><i class="fas fa-exclamation-circle"></i> Could not load discussions. Please refresh.</div>';
         return;
     }
 
+    const result = await getAllDiscussions(filters);
     // ── FIX: deduplicate by id to prevent double threads ──
     const seen = new Set();
     _discUI.threads = (result.threads || []).filter(t => {
