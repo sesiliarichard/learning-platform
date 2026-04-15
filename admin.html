@@ -1737,12 +1737,12 @@ async function deleteCourse(courseId) {
 // ============================================
 function addNewTopic() {
     const container = document.getElementById('topicsContainer');
-    const idx = topicCounter; // capture BEFORE incrementing
-    topicCounter++;            // increment AFTER capturing
+    const idx = topicCounter;
+    topicCounter++;
 
     const topicDiv = document.createElement('div');
     topicDiv.className = 'topic-editor';
-    topicDiv.setAttribute('data-topic-index', idx); // uses idx
+    topicDiv.setAttribute('data-topic-index', idx);
 
     topicDiv.innerHTML = `
         <div class="card" style="margin-bottom: 20px;">
