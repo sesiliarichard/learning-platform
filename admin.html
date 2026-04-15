@@ -998,7 +998,7 @@ body { visibility: hidden }
 <div class="modal" id="addCourseModal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Create New Course</h2>
+            <h2>Create New Module</h2>
             <button class="modal-close" onclick="closeModal('addCourseModal')" 
                     aria-label="Close modal">
                 <i class="fas fa-times"></i>
@@ -1007,7 +1007,7 @@ body { visibility: hidden }
 
         <form id="addCourseForm" onsubmit="handleAddCourse(event)">
             <div class="form-group">
-                <label for="courseTitle">Course Title *</label>
+                <label for="courseTitle">Module Title *</label>
                 <input type="text" id="courseTitle" name="title" required>
             </div>
 
@@ -1016,12 +1016,13 @@ body { visibility: hidden }
     <div class="editor-toolbar">
         <button type="button" class="editor-btn" onclick="document.execCommand('bold')" aria-label="Bold"><i class="fas fa-bold"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('italic')" aria-label="Italic"><i class="fas fa-italic"></i></button>
+        <button type="button" class="editor-btn" onclick="document.execCommand('andika')" aria-label="andika"><i class="fas fa-andika"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('underline')" aria-label="Underline"><i class="fas fa-underline"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('formatBlock', false, '<h3>')" aria-label="Heading"><i class="fas fa-heading"></i></button>
     </div>
-    <div class="editor-content" contenteditable="true" id="courseDescriptionEditor">
+    <div class="editor-content" contenteditable="true" id="editor-0" data-name="topics[0][content]"></div>
     <p>Enter course description here...</p>
 </div>
     <input type="hidden" id="courseDescription" name="description">
@@ -1047,7 +1048,7 @@ body { visibility: hidden }
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('addCourseModal')">Cancel</button>
                 <button type="submit" class="btn-primary">
-                    <i class="fas fa-plus"></i> Create Course
+                    <i class="fas fa-plus"></i> Create Module
                 </button>
             </div>
         </form>
@@ -1133,9 +1134,9 @@ body { visibility: hidden }
         </button>
     </div>
 </div>
-                                <div class="editor-content" contenteditable="true" id="editor-0" data-name="topics[0][content]">
-                                    <p>Enter your content here...</p>
-                                </div>
+                                <div class="editor-content" contenteditable="true" id="editor-${idx}"
+                                data-name="topics[${idx}][content]"
+                                     data-placeholder="Enter your content here..."></div>
                             </div>
 
                             <div class="form-row">
@@ -1808,6 +1809,10 @@ async function handleCreateChapter(event) {
         const durationInput = editor.querySelector(`input[name="topics[${idx}][duration]"]`);
         const categorySelect = editor.querySelector(`select[name="topics[${idx}][category]"]`);
 
+        const rawContent = contentEditor.innerHTML;
+     const content = rawContent === '<p>Enter your content here...</p>' 
+    ? '' 
+    : rawContent;
         if (titleInput && contentEditor && titleInput.value.trim()) {
             topics.push({
                 title: titleInput.value.trim(),
@@ -5157,6 +5162,15 @@ function initMobileMenu() {
         btn.onclick = toggleSidebar;
         document.body.appendChild(btn);
     }
+    // Inside initMobileMenu(), after creating the hamburger btn:
+if (window.innerWidth <= 768 && !document.getElementById('mobileLogoutBtn')) {
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'mobileLogoutBtn';
+    logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i>';
+    logoutBtn.setAttribute('aria-label', 'Logout');
+    logoutBtn.onclick = handleLogout;
+    document.body.appendChild(logoutBtn);
+}
 }
 
 function toggleSidebar() {

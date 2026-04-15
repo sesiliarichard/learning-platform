@@ -4742,3 +4742,83 @@ body.dark-mode .page-btn.active {
     align-items: center;
     gap: 6px;
 }
+.editor-content:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+}
+/* ══════════════════════════════════════
+   MOBILE SIDEBAR FOOTER FIX
+   ══════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+    /* Make sidebar use flex column so footer sticks to bottom */
+    .sidebar {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+        overflow: hidden !important;
+    }
+
+    /* Nav menu scrolls, footer stays put */
+    .nav-menu {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Footer always visible at bottom of sidebar */
+    .sb-foot {
+        flex-shrink: 0 !important;
+        position: sticky !important;
+        bottom: 0 !important;
+        background: rgba(0, 0, 0, 0.25) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        backdrop-filter: blur(8px) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+        padding: 12px 14px !important;
+        z-index: 10;
+    }
+
+    /* Make logout button more tappable on mobile */
+    .lo-btn {
+        width: 38px !important;
+        height: 38px !important;
+        border-radius: 10px !important;
+        background: rgba(239, 68, 68, 0.15) !important;
+        border: 1px solid rgba(239, 68, 68, 0.4) !important;
+        color: #ef4444 !important;
+        font-size: 15px !important;
+    }
+
+    .lo-btn:hover,
+    .lo-btn:active {
+        background: rgba(239, 68, 68, 0.3) !important;
+    }
+
+    /* Floating logout button in top bar as backup */
+    #mobileLogoutBtn {
+        display: flex !important;
+        position: fixed;
+        top: 14px;
+        right: 14px;
+        z-index: 2200;
+        width: 44px;
+        height: 44px;
+        background: #fee2e2;
+        border: 1.5px solid #fca5a5;
+        border-radius: 12px;
+        color: #dc2626;
+        font-size: 17px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(220, 38, 38, 0.2);
+    }
+}
+
+/* Hide floating button on desktop */
+#mobileLogoutBtn {
+    display: none;
+}
