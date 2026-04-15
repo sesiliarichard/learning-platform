@@ -4822,3 +4822,152 @@ body.dark-mode .page-btn.active {
 #mobileLogoutBtn {
     display: none;
 }
+/* ============================================
+   MODULES/COURSES SECTION FIXES
+   ============================================ */
+
+/* Courses List Container - Grid layout for cards */
+#coursesList {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    padding: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Individual Course Card in Modules section */
+#coursesList .card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 20px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#coursesList .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    border-color: #d1d5db;
+}
+
+/* Card Header inside modules */
+#coursesList .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#coursesList .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1f2937;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+/* Course description */
+#coursesList .card p {
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    flex: 1;
+}
+
+/* Course meta info row */
+#coursesList .card > div:last-child {
+    display: flex;
+    gap: 20px;
+    font-size: 13px;
+    color: #6b7280;
+    padding-top: 12px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: auto;
+    flex-wrap: wrap;
+}
+
+/* Action buttons inside course card */
+#coursesList .action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Empty state for courses */
+#coursesList .card:only-child {
+    grid-column: 1 / -1;
+    text-align: center;
+    background: #f9fafb;
+}
+
+/* Dark mode support */
+body.dark-mode #coursesList .card {
+    background: #1f2937;
+    border-color: #374151;
+}
+
+body.dark-mode #coursesList .card-title {
+    color: #ffffff;
+}
+
+body.dark-mode #coursesList .card p {
+    color: #9ca3af;
+}
+
+body.dark-mode #coursesList .card > div:last-child {
+    border-top-color: #374151;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #coursesList {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    
+    #coursesList .card {
+        padding: 16px;
+    }
+    
+    #coursesList .card-title {
+        font-size: 16px;
+    }
+}
+
+@media (max-width: 480px) {
+    #coursesList .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    #coursesList .action-buttons {
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
+/* Fix for the main content overflow */
+.main-content {
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+}
+
+/* Ensure courses section doesn't have display issues */
+#coursesSection {
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+#coursesSection.active {
+    display: block;
+    width: 100%;
+}
