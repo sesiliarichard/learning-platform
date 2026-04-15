@@ -1389,6 +1389,41 @@ body { visibility: hidden }
     </div>
 </div>
 
+<!-- EDIT CHAPTER MODAL -->
+<div class="modal" id="editChapterModal">
+    <div class="modal-content modal-content-wide">
+        <div class="modal-header">
+            <h2>Edit Chapter</h2>
+            <button class="modal-close" onclick="closeModal('editChapterModal')">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <form id="editChapterForm" onsubmit="handleEditChapter(event)">
+            <input type="hidden" id="editChapterId">
+            <div class="form-group">
+                <label>Week / Chapter Title *</label>
+                <input type="text" id="editChapterTitle" required placeholder="e.g., Introduction to Machine Learning">
+            </div>
+            <div class="form-group">
+                <label>Chapter Description</label>
+                <textarea id="editChapterDescription" rows="3"></textarea>
+            </div>
+            <hr class="form-divider">
+            <h3 class="topics-heading">Topics</h3>
+            <div id="editTopicsContainer"></div>
+            <button type="button" class="btn-secondary add-topic-btn" onclick="addEditTopic()">
+                <i class="fas fa-plus"></i> Add Another Topic
+            </button>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" onclick="closeModal('editChapterModal')">Cancel</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script src="quizzes.js"></script>
 <script src="assignments.js"></script>
 <script>
@@ -1940,15 +1975,18 @@ async function loadChapters() {
                     </span>
                 </div>
                 <div class="action-buttons">
-                    <button class="btn-primary" style="padding:8px 16px;font-size:12px;"
-                        onclick="togglePublishChapter('${chapter.id}', ${chapter.published})">
-                        <i class="fas fa-${chapter.published ? 'eye-slash' : 'eye'}"></i>
-                        ${chapter.published ? 'Unpublish' : 'Publish to Students'}
-                    </button>
-                    <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+    <button class="btn-primary" style="padding:8px 16px;font-size:12px;"
+        onclick="togglePublishChapter('${chapter.id}', ${chapter.published})">
+        <i class="fas fa-${chapter.published ? 'eye-slash' : 'eye'}"></i>
+        ${chapter.published ? 'Unpublish' : 'Publish to Students'}
+    </button>
+    <button class="action-btn edit" onclick="openEditChapterModal('${chapter.id}')" title="Edit chapter">
+        <i class="fas fa-edit"></i>
+    </button>
+    <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
+        <i class="fas fa-trash"></i>
+    </button>
+</div>
             </div>
             <div class="topic-list">
                 <div style="font-weight:600;margin-bottom:10px;color:#1f2937;">
@@ -2148,6 +2186,240 @@ async function forceDeleteChapter(chapterId) {
         
     } catch (err) {
         showToast(`Failed to delete: ${err.message}`, 'error');
+    }
+}
+// ============================================
+// EDIT CHAPTER / NOTES
+// ============================================
+let editTopicCounter = 0;
+
+async function openEditChapterModal(chapterId) {
+    // Load chapter + topics from Supabase
+    const { data: chapter, error: cErr } = await db
+        .from('chapters')
+        .select('id, title, description')
+        .eq('id', chapterId)
+        .maybeSingle();
+
+    if (cErr || !chapter) {
+        showToast('Could not load chapter', 'error');
+        return;
+    }
+
+    const { data: topics, error: tErr } = await db
+        .from('topics')
+        .select('id, title, content, duration, category, order_num')
+        .eq('chapter_id', chapterId)
+        .order('order_num', { ascending: true });
+
+    if (tErr) {
+        showToast('Could not load topics', 'error');
+        return;
+    }
+
+    // Populate form
+    document.getElementById('editChapterId').value = chapterId;
+    document.getElementById('editChapterTitle').value = chapter.title || '';
+    document.getElementById('editChapterDescription').value = chapter.description || '';
+
+    // Build topics
+    const container = document.getElementById('editTopicsContainer');
+    container.innerHTML = '';
+    editTopicCounter = 0;
+
+    (topics || []).forEach(topic => {
+        addEditTopic(topic);
+    });
+
+    // If no topics, add one blank
+    if (!topics || topics.length === 0) addEditTopic();
+
+    document.getElementById('editChapterModal').classList.add('active');
+}
+
+function addEditTopic(existingTopic = null) {
+    const idx = editTopicCounter++;
+    const container = document.getElementById('editTopicsContainer');
+
+    const div = document.createElement('div');
+    div.className = 'topic-editor';
+    div.setAttribute('data-edit-index', idx);
+    if (existingTopic?.id) div.setAttribute('data-topic-id', existingTopic.id);
+
+    div.innerHTML = `
+        <div class="card" style="margin-bottom:20px;">
+            <div class="card-header">
+                <div class="card-title">Topic ${idx + 1}</div>
+                <button type="button" class="action-btn delete" onclick="removeEditTopic(${idx})"
+                        aria-label="Remove topic">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+            <div class="form-group">
+                <label>Topic Title *</label>
+                <input type="text" id="editTopicTitle_${idx}" required
+                       value="${existingTopic?.title?.replace(/"/g,'&quot;') || ''}"
+                       placeholder="e.g., What is Machine Learning?">
+            </div>
+            <div class="form-group">
+                <label>Topic Content *</label>
+                <div class="editor-toolbar">
+                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'bold')" aria-label="Bold"><i class="fas fa-bold"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'italic')" aria-label="Italic"><i class="fas fa-italic"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'underline')" aria-label="Underline"><i class="fas fa-underline"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertEditHeading(${idx})" aria-label="Heading"><i class="fas fa-heading"></i></button>
+                </div>
+                <div class="editor-content" contenteditable="true"
+                     id="editEditor_${idx}"
+                     style="min-height:120px;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;line-height:1.6;outline:none;">
+                    ${existingTopic?.content || '<p>Enter your content here...</p>'}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Reading Time (minutes)</label>
+                    <input type="number" id="editTopicDuration_${idx}" min="1"
+                           value="${existingTopic?.duration || 15}" placeholder="15">
+                </div>
+                <div class="form-group">
+                    <label>Topic Category</label>
+                    <select id="editTopicCategory_${idx}">
+                        <option value="basics"        ${existingTopic?.category==='basics'?'selected':''}>Basics</option>
+                        <option value="intermediate"  ${existingTopic?.category==='intermediate'?'selected':''}>Intermediate</option>
+                        <option value="advanced"      ${existingTopic?.category==='advanced'?'selected':''}>Advanced</option>
+                        <option value="practical"     ${existingTopic?.category==='practical'?'selected':''}>Practical</option>
+                    </select>
+                </div>
+            </div>
+        </div>`;
+
+    container.appendChild(div);
+}
+
+function removeEditTopic(idx) {
+    const el = document.querySelector(`[data-edit-index="${idx}"]`);
+    if (el) el.remove();
+}
+
+function formatEditText(idx, cmd) {
+    const editor = document.getElementById(`editEditor_${idx}`);
+    if (editor) { editor.focus(); document.execCommand(cmd, false, null); }
+}
+
+function insertEditHeading(idx) {
+    const editor = document.getElementById(`editEditor_${idx}`);
+    if (editor) { editor.focus(); document.execCommand('formatBlock', false, '<h3>'); }
+}
+
+async function handleEditChapter(event) {
+    event.preventDefault();
+
+    const chapterId = document.getElementById('editChapterId').value;
+    const title     = document.getElementById('editChapterTitle').value.trim();
+    const desc      = document.getElementById('editChapterDescription').value.trim();
+
+    if (!title) { showToast('Chapter title is required', 'error'); return; }
+
+    // Collect topic editors
+    const editors = document.querySelectorAll('#editTopicsContainer .topic-editor');
+    const topics  = [];
+
+    editors.forEach((el, i) => {
+        const idx      = el.getAttribute('data-edit-index');
+        const topicId  = el.getAttribute('data-topic-id') || null;
+        const titleEl  = document.getElementById(`editTopicTitle_${idx}`);
+        const contentEl = document.getElementById(`editEditor_${idx}`);
+        const durEl    = document.getElementById(`editTopicDuration_${idx}`);
+        const catEl    = document.getElementById(`editTopicCategory_${idx}`);
+
+        if (titleEl?.value?.trim()) {
+            topics.push({
+                id:        topicId,
+                title:     titleEl.value.trim(),
+                content:   contentEl?.innerHTML || '',
+                duration:  durEl?.value || '15',
+                category:  catEl?.value || 'basics',
+                order_num: i
+            });
+        }
+    });
+
+    if (topics.length === 0) {
+        showToast('Please add at least one topic', 'error');
+        return;
+    }
+
+    try {
+        // 1. Update chapter
+        const { error: chErr } = await db
+            .from('chapters')
+            .update({ title, description: desc })
+            .eq('id', chapterId);
+        if (chErr) throw chErr;
+
+        // 2. Get existing topic IDs to figure out what to upsert vs insert
+        const { data: existingTopics } = await db
+            .from('topics')
+            .select('id')
+            .eq('chapter_id', chapterId);
+
+        const existingIds  = new Set((existingTopics || []).map(t => t.id));
+        const incomingIds  = new Set(topics.filter(t => t.id).map(t => t.id));
+
+        // Delete topics that were removed
+        const toDelete = [...existingIds].filter(id => !incomingIds.has(id));
+        if (toDelete.length > 0) {
+            await db.from('course_progress').delete().in('topic_id', toDelete);
+            await db.from('topics').delete().in('id', toDelete);
+        }
+
+        // Upsert topics
+        for (const t of topics) {
+            if (t.id && existingIds.has(t.id)) {
+                // Update existing
+                const { error } = await db
+                    .from('topics')
+                    .update({
+                        title:     t.title,
+                        content:   t.content,
+                        duration:  t.duration,
+                        category:  t.category,
+                        order_num: t.order_num
+                    })
+                    .eq('id', t.id);
+                if (error) throw error;
+            } else {
+                // Insert new
+                const { data: chapterData } = await db
+                    .from('chapters')
+                    .select('course_id')
+                    .eq('id', chapterId)
+                    .maybeSingle();
+
+                const { error } = await db
+                    .from('topics')
+                    .insert({
+                        chapter_id: chapterId,
+                        course_id:  chapterData?.course_id || null,
+                        title:      t.title,
+                        content:    t.content,
+                        duration:   t.duration,
+                        category:   t.category,
+                        order_num:  t.order_num
+                    });
+                if (error) throw error;
+            }
+        }
+
+        showToast('✅ Chapter updated successfully!');
+        closeModal('editChapterModal');
+        loadChapters();
+
+    } catch (err) {
+        console.error('Edit chapter error:', err);
+        showToast('Failed to save: ' + err.message, 'error');
     }
 }
 // ============================================
