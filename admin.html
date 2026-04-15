@@ -1022,8 +1022,9 @@ body { visibility: hidden }
         <button type="button" class="editor-btn" onclick="document.execCommand('insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
         <button type="button" class="editor-btn" onclick="document.execCommand('formatBlock', false, '<h3>')" aria-label="Heading"><i class="fas fa-heading"></i></button>
     </div>
-    <div class="editor-content" contenteditable="true" id="editor-0" data-name="topics[0][content]"></div>
-    <p>Enter course description here...</p>
+  <div class="editor-content" contenteditable="true" id="courseDescriptionEditor" 
+     data-name="description" 
+     data-placeholder="Enter course description here..."></div>
 </div>
     <input type="hidden" id="courseDescription" name="description">
 </div>
@@ -1134,10 +1135,10 @@ body { visibility: hidden }
         </button>
     </div>
 </div>
-                                <div class="editor-content" contenteditable="true" id="editor-${idx}"
-                                data-name="topics[${idx}][content]"
-                                     data-placeholder="Enter your content here..."></div>
-                            </div>
+                               <div class="editor-content" contenteditable="true" id="editor-0"
+                                          data-name="topics[0][content]"
+                                         data-placeholder="Start writing your topic content here..."></div>
+                            
 
                             <div class="form-row">
                                 <div class="form-group">
@@ -1781,9 +1782,8 @@ function addNewTopic() {
                 </div>
                 <div class="editor-content" contenteditable="true"
                      id="editor-${idx}"
-                     data-name="topics[${idx}][content]">
-                    <p>Enter your content here...</p>
-                </div>
+                     data-name="topics[${idx}][content]"
+                     data-placeholder="Start writing your topic content here..."></div>
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -1844,10 +1844,12 @@ async function handleCreateChapter(event) {
         const durationInput = editor.querySelector(`input[name="topics[${idx}][duration]"]`);
         const categorySelect = editor.querySelector(`select[name="topics[${idx}][category]"]`);
 
-        const rawContent = contentEditor.innerHTML;
-     const content = rawContent === '<p>Enter your content here...</p>' 
-    ? '' 
-    : rawContent;
+          let rawContent = contentEditor.innerHTML;
+          let content = rawContent.trim();
+           // Check if content is empty or just has empty paragraph tags
+           if (content === '' || content === '<p><br></p>' || content === '<p> </p>' || content === '<p></p>' || content === '<br>') {
+           content = '';
+       }
         if (titleInput && contentEditor && titleInput.value.trim()) {
             topics.push({
                 title: titleInput.value.trim(),
@@ -4354,11 +4356,17 @@ function openAddCourseModal() {
 }
 
 function openCreateChapterModal() {
-    topicCounter = 1;
-    document.getElementById('topicsContainer').innerHTML = '';
-    topicCounter = 0; 
+    // Reset the container
+    const container = document.getElementById('topicsContainer');
+    if (container) {
+        container.innerHTML = '';
+    }
+    // Reset topic counter
+    topicCounter = 0;
+    // Add first empty topic (without default text)
+    addNewTopic();
+    // Open the modal
     document.getElementById('createChapterModal')?.classList.add('active');
-    addNewTopic(); 
 }
 
 function openCreateQuizModal() {
