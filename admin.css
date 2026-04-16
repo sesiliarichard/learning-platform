@@ -5631,3 +5631,16 @@ body.dark-mode .topic-list .empty-topics {
     background: #1f2937;
     color: #6b7280;
 }
+/* Ensure flag emojis display properly */
+.country-cell .flag {
+    font-size: 18px;
+    display: inline-block;
+    font-family: 'Segoe UI Emoji', 'Apple Color Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiOne Color', 'Twemoji Mozilla', sans-serif;
+    line-height: 1;
+}
+
+.country-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

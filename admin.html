@@ -6660,10 +6660,49 @@ const countryMap = {
     'nz': { name: 'New Zealand', flag: '🇳🇿' }
 };
 
-let countryValue = (u.country || 'other').toString().toLowerCase().trim();
+// Get country value and handle empty/null values
+let countryValue = (u.country && u.country !== 'null' && u.country !== 'undefined') 
+    ? u.country.toString().toLowerCase().trim() 
+    : 'other';
+
+// Special handling for common variations
+if (countryValue === 'south africa' || countryValue === 'south-africa' || countryValue === 'south_africa') {
+    countryValue = 'south-africa';
+}
+if (countryValue === 'united states' || countryValue === 'usa' || countryValue === 'us') {
+    countryValue = 'us';
+}
+if (countryValue === 'united kingdom' || countryValue === 'uk' || countryValue === 'gb') {
+    countryValue = 'uk';
+}
+
 let countryInfo = countryMap[countryValue] || { name: u.country || 'Other', flag: '🌍' };
 let flag = countryInfo.flag;
 let countryLabel = countryInfo.name;
+
+// If country name is empty or "other", try to extract from email domain or set as "Not specified"
+if (!countryLabel || countryLabel === 'Other' || countryLabel === 'other') {
+    // Try to guess from email domain (optional)
+    if (u.email && u.email.includes('.tz')) {
+        countryLabel = 'Tanzania';
+        flag = '🇹🇿';
+    } else if (u.email && u.email.includes('.ke')) {
+        countryLabel = 'Kenya';
+        flag = '🇰🇪';
+    } else if (u.email && u.email.includes('.ng')) {
+        countryLabel = 'Nigeria';
+        flag = '🇳🇬';
+    } else if (u.email && u.email.includes('.gh')) {
+        countryLabel = 'Ghana';
+        flag = '🇬🇭';
+    } else if (u.email && u.email.includes('.za')) {
+        countryLabel = 'South Africa';
+        flag = '🇿🇦';
+    } else {
+        countryLabel = 'Not specified';
+        flag = '📍';
+    }
+}
 
     const roleClass = {
       student:'role-student', teacher:'role-teacher',
