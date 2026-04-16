@@ -1790,11 +1790,11 @@ function addNewTopic() {
     const container = document.getElementById('topicsContainer');
     const idx = topicCounter;
     topicCounter++;
-
+ 
     const topicDiv = document.createElement('div');
     topicDiv.className = 'topic-editor';
     topicDiv.setAttribute('data-topic-index', idx);
-
+ 
     topicDiv.innerHTML = `
         <div class="card" style="margin-bottom: 20px;">
             <div class="card-header">
@@ -1811,25 +1811,51 @@ function addNewTopic() {
             <div class="form-group">
                 <label>Topic Content *</label>
                 <div class="editor-toolbar">
-                    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')" aria-label="Bold">
-                        <i class="fas fa-bold"></i>
-                    </button>
-                    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" aria-label="Italic">
-                        <i class="fas fa-italic"></i>
-                    </button>
-                    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'underline')" aria-label="Underline">
-                        <i class="fas fa-underline"></i>
-                    </button>
-                    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'insertUnorderedList')" aria-label="Bullet list">
-                        <i class="fas fa-list-ul"></i>
-                    </button>
-                    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'insertOrderedList')" aria-label="Numbered list">
-                        <i class="fas fa-list-ol"></i>
-                    </button>
-                    <button type="button" class="editor-btn" onclick="insertHeading(${idx})" aria-label="Heading">
-                        <i class="fas fa-heading"></i>
-                    </button>
-                </div>
+    <select class="editor-select" onchange="setEditorFontFamily(0, this)" title="Font">
+        <option value="inherit">Font</option>
+        <option value="Arial">Arial</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Trebuchet MS">Trebuchet</option>
+        <option value="Impact">Impact</option>
+    </select>
+    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size" style="width:58px;">
+        <option value="1">8</option>
+        <option value="2">10</option>
+        <option value="3" selected>12</option>
+        <option value="4">14</option>
+        <option value="5">18</option>
+        <option value="6">24</option>
+        <option value="7">36</option>
+    </select>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'bold')" aria-label="Bold"><b>B</b></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'italic')" aria-label="Italic"><i>I</i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'underline')" aria-label="Underline"><u>U</u></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'strikeThrough')" aria-label="Strikethrough"><s>S</s></button>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
+    <button type="button" class="editor-btn" onclick="insertHeading(0)" aria-label="Heading"><i class="fas fa-heading"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyLeft')" aria-label="Align left"><i class="fas fa-align-left"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyCenter')" aria-label="Align center"><i class="fas fa-align-center"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyRight')" aria-label="Align right"><i class="fas fa-align-right"></i></button>
+    <div class="editor-sep"></div>
+    <label class="editor-color-btn" title="Text color">
+        <i class="fas fa-font"></i>
+        <div class="editor-color-bar" id="colorBar_0" style="background:#e24b4a;"></div>
+        <input type="color" value="#e24b4a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorColor(0, this)" oninput="setEditorColor(0, this)">
+    </label>
+    <label class="editor-color-btn" title="Highlight color">
+        <i class="fas fa-highlighter"></i>
+        <div class="editor-color-bar" id="hlBar_0" style="background:#fef08a;"></div>
+        <input type="color" value="#fef08a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorHighlight(0, this)" oninput="setEditorHighlight(0, this)">
+    </label>
+</div>
                 <div class="editor-content" contenteditable="true"
                      id="editor-${idx}"
                      data-name="topics[${idx}][content]"
@@ -1852,9 +1878,10 @@ function addNewTopic() {
             </div>
         </div>
     `;
-
+ 
     container.appendChild(topicDiv);
 }
+ 
 function removeTopic(index) {
     const topicDiv = document.querySelector(`[data-topic-index="${index}"]`);
     if (topicDiv) {
