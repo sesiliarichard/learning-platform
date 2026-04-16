@@ -1688,18 +1688,31 @@ async function loadCourseSelects() {
 async function handleAddCourse(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
+    
+    // FIX: Check if editor is empty
+    const editorContent = document.getElementById('courseDescriptionEditor').innerHTML;
+    let description = editorContent;
+    
+    // Check if content is just empty HTML tags
+    if (!editorContent || 
+        editorContent === '<p><br></p>' || 
+        editorContent === '<p> </p>' || 
+        editorContent === '<p></p>' || 
+        editorContent === '<br>' ||
+        editorContent === '<div><br></div>' ||
+        editorContent.trim() === '') {
+        description = ''; // Set to empty string instead of HTML tags
+    }
+    
+    document.getElementById('courseDescription').value = description;
 
-   
-    document.getElementById('courseDescription').value = 
-        document.getElementById('courseDescriptionEditor').innerHTML;
-
-const { data, error } = await db
-    .from('courses')
-    .insert({
-        title:       formData.get('title'),
-        description: formData.get('description'),
-        teacher_id:  formData.get('teacherId') || null,
-    })
+    const { data, error } = await db
+        .from('courses')
+        .insert({
+            title:       formData.get('title'),
+            description: description, // Use the cleaned description
+            teacher_id:  formData.get('teacherId') || null,
+        })
         .select();
 
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
@@ -4352,6 +4365,11 @@ function openAddUserModal() {
 }
 
 function openAddCourseModal() {
+    // Clear the editor content
+    const editor = document.getElementById('courseDescriptionEditor');
+    if (editor) {
+        editor.innerHTML = ''; // Clear completely
+    }
     document.getElementById('addCourseModal')?.classList.add('active');
 }
 
@@ -4513,9 +4531,14 @@ document.addEventListener('DOMContentLoaded', function() {
         s.style.maxHeight = 'none';
     });
 
+    // 🔧 FIX: Clear the course description editor on page load
+    const editor = document.getElementById('courseDescriptionEditor');
+    if (editor) {
+        editor.innerHTML = '';
+    }
+
     init();
 });
-
 // ============================================
 // CERTIFICATE PROVISION
 // ============================================
