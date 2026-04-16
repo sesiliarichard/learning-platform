@@ -1014,14 +1014,51 @@ body { visibility: hidden }
             <div class="form-group">
     <label for="courseDescription">Description *</label>
     <div class="editor-toolbar">
-        <button type="button" class="editor-btn" onclick="document.execCommand('bold')" aria-label="Bold"><i class="fas fa-bold"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('italic')" aria-label="Italic"><i class="fas fa-italic"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('andika')" aria-label="andika"><i class="fas fa-andika"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('underline')" aria-label="Underline"><i class="fas fa-underline"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
-        <button type="button" class="editor-btn" onclick="document.execCommand('formatBlock', false, '<h3>')" aria-label="Heading"><i class="fas fa-heading"></i></button>
-    </div>
+    <select class="editor-select" onchange="setEditorFontFamily(0, this)" title="Font">
+        <option value="inherit">Font</option>
+        <option value="Arial">Arial</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Trebuchet MS">Trebuchet</option>
+        <option value="Impact">Impact</option>
+    </select>
+    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size" style="width:58px;">
+        <option value="1">8</option>
+        <option value="2">10</option>
+        <option value="3" selected>12</option>
+        <option value="4">14</option>
+        <option value="5">18</option>
+        <option value="6">24</option>
+        <option value="7">36</option>
+    </select>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'bold')"><b>B</b></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'italic')"><i>I</i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'underline')"><u>U</u></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'strikeThrough')"><s>S</s></button>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+    <button type="button" class="editor-btn" onclick="insertHeading(0)"><i class="fas fa-heading"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyLeft')"><i class="fas fa-align-left"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyCenter')"><i class="fas fa-align-center"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(0, 'justifyRight')"><i class="fas fa-align-right"></i></button>
+    <div class="editor-sep"></div>
+    <label class="editor-color-btn" title="Text color">
+        <i class="fas fa-font"></i>
+        <div class="editor-color-bar" id="colorBar_0" style="background:#e24b4a;"></div>
+        <input type="color" value="#e24b4a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorColor(0, this)" oninput="setEditorColor(0, this)">
+    </label>
+    <label class="editor-color-btn" title="Highlight color">
+        <i class="fas fa-highlighter"></i>
+        <div class="editor-color-bar" id="hlBar_0" style="background:#fef08a;"></div>
+        <input type="color" value="#fef08a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorHighlight(0, this)" oninput="setEditorHighlight(0, this)">
+    </label>
+</div>
   <div class="editor-content" contenteditable="true" id="courseDescriptionEditor" 
      data-name="description" 
      data-placeholder="Enter course description here..."></div>
@@ -1825,11 +1862,11 @@ function removeTopic(index) {
     }
 }
 
-function formatText(editorIndex, command) {
+function formatText(editorIndex, command, value = null) {
     const editor = document.getElementById(`editor-${editorIndex}`);
     if (editor) {
         editor.focus();
-        document.execCommand(command, false, null);
+        document.execCommand(command, false, value);
     }
 }
 
@@ -1838,6 +1875,43 @@ function insertHeading(editorIndex) {
     if (editor) {
         editor.focus();
         document.execCommand('formatBlock', false, '<h3>');
+    }
+}
+
+function setEditorFontFamily(editorIndex, select) {
+    const editor = document.getElementById(`editor-${editorIndex}`);
+    if (editor) {
+        editor.focus();
+        document.execCommand('fontName', false, select.value);
+    }
+}
+
+function setEditorFontSize(editorIndex, select) {
+    const editor = document.getElementById(`editor-${editorIndex}`);
+    if (editor) {
+        editor.focus();
+        document.execCommand('fontSize', false, select.value);
+    }
+}
+
+function setEditorColor(editorIndex, input) {
+    const editor = document.getElementById(`editor-${editorIndex}`);
+    if (editor) {
+        editor.focus();
+        document.execCommand('foreColor', false, input.value);
+        // Update the color bar indicator
+        const bar = document.getElementById(`colorBar_${editorIndex}`);
+        if (bar) bar.style.background = input.value;
+    }
+}
+
+function setEditorHighlight(editorIndex, input) {
+    const editor = document.getElementById(`editor-${editorIndex}`);
+    if (editor) {
+        editor.focus();
+        document.execCommand('hiliteColor', false, input.value);
+        const bar = document.getElementById(`hlBar_${editorIndex}`);
+        if (bar) bar.style.background = input.value;
     }
 }
 async function handleCreateChapter(event) {
@@ -2278,14 +2352,52 @@ function addEditTopic(existingTopic = null) {
             </div>
             <div class="form-group">
                 <label>Topic Content *</label>
-                <div class="editor-toolbar">
-                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'bold')" aria-label="Bold"><i class="fas fa-bold"></i></button>
-                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'italic')" aria-label="Italic"><i class="fas fa-italic"></i></button>
-                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'underline')" aria-label="Underline"><i class="fas fa-underline"></i></button>
-                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'insertUnorderedList')" aria-label="Bullet list"><i class="fas fa-list-ul"></i></button>
-                    <button type="button" class="editor-btn" onclick="formatEditText(${idx},'insertOrderedList')" aria-label="Numbered list"><i class="fas fa-list-ol"></i></button>
-                    <button type="button" class="editor-btn" onclick="insertEditHeading(${idx})" aria-label="Heading"><i class="fas fa-heading"></i></button>
-                </div>
+              <div class="editor-toolbar">
+    <select class="editor-select" onchange="setEditorFontFamily(${idx}, this)" title="Font">
+        <option value="inherit">Font</option>
+        <option value="Arial">Arial</option>
+        <option value="Times New Roman">Times New Roman</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Courier New">Courier New</option>
+        <option value="Verdana">Verdana</option>
+        <option value="Trebuchet MS">Trebuchet</option>
+        <option value="Impact">Impact</option>
+    </select>
+    <select class="editor-select" onchange="setEditorFontSize(${idx}, this)" title="Size" style="width:58px;">
+        <option value="1">8</option>
+        <option value="2">10</option>
+        <option value="3" selected>12</option>
+        <option value="4">14</option>
+        <option value="5">18</option>
+        <option value="6">24</option>
+        <option value="7">36</option>
+    </select>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')" title="Bold"><b>B</b></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" title="Italic"><i>I</i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'underline')" title="Underline"><u>U</u></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'strikeThrough')" title="Strikethrough"><s>S</s></button>
+    <div class="editor-sep"></div>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'insertUnorderedList')" title="Bullet list"><i class="fas fa-list-ul"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'insertOrderedList')" title="Numbered list"><i class="fas fa-list-ol"></i></button>
+    <button type="button" class="editor-btn" onclick="insertHeading(${idx})" title="Heading"><i class="fas fa-heading"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'justifyLeft')" title="Align left"><i class="fas fa-align-left"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'justifyCenter')" title="Align center"><i class="fas fa-align-center"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'justifyRight')" title="Align right"><i class="fas fa-align-right"></i></button>
+    <div class="editor-sep"></div>
+    <label class="editor-color-btn" title="Text color">
+        <i class="fas fa-font"></i>
+        <div class="editor-color-bar" id="colorBar_${idx}" style="background:#e24b4a;"></div>
+        <input type="color" value="#e24b4a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorColor(${idx}, this)" oninput="setEditorColor(${idx}, this)">
+    </label>
+    <label class="editor-color-btn" title="Highlight color">
+        <i class="fas fa-highlighter"></i>
+        <div class="editor-color-bar" id="hlBar_${idx}" style="background:#fef08a;"></div>
+        <input type="color" value="#fef08a" style="position:absolute;opacity:0;width:0;height:0;"
+               onchange="setEditorHighlight(${idx}, this)" oninput="setEditorHighlight(${idx}, this)">
+    </label>
+</div>
                 <div class="editor-content" contenteditable="true"
                      id="editEditor_${idx}"
                      style="min-height:120px;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;line-height:1.6;outline:none;">

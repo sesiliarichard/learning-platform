@@ -5644,3 +5644,91 @@ body.dark-mode .topic-list .empty-topics {
     align-items: center;
     gap: 8px;
 }
+/* Rich text editor enhancements */
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px;
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+    align-items: center;
+}
+.editor-btn {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #374151;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.editor-btn:hover { background: #ede9fe; border-color: #7c3aed; color: #7c3aed; }
+.editor-select {
+    height: 30px;
+    padding: 0 6px;
+    font-size: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    font-family: inherit;
+}
+.editor-select:hover { border-color: #7c3aed; }
+.editor-sep {
+    width: 1px;
+    height: 22px;
+    background: #e5e7eb;
+    margin: 0 2px;
+}
+.editor-color-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+.editor-color-btn {
+    width: 28px;
+    height: 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    padding: 2px;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+}
+.editor-color-btn:hover { border-color: #7c3aed; }
+.editor-color-btn i { font-size: 11px; color: #374151; }
+.editor-color-bar {
+    width: 16px;
+    height: 4px;
+    border-radius: 2px;
+}
+.editor-content {
+    min-height: 150px;
+    padding: 12px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 0 0 10px 10px;
+    font-size: 14px;
+    line-height: 1.7;
+    outline: none;
+    color: #1f2937;
+    background: white;
+}
+.editor-content:focus { border-color: #7c3aed; }
+.editor-content:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+}
