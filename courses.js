@@ -502,14 +502,14 @@ async function openEditCourseModal(courseId) {
     }
     document.getElementById('courseDescription').value = course.description || '';
     
-    // Change modal title to "Edit Module"
+    // ✅ CHANGE MODAL TITLE
     const modalTitle = document.querySelector('#addCourseModal .modal-header h2');
     if (modalTitle) {
         modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Module';
     }
     
-    // Change submit button text
-    const submitBtn = document.querySelector('#addCourseModal .btn-primary[type="submit"]');
+    // ✅ CHANGE SUBMIT BUTTON TEXT
+    const submitBtn = document.querySelector('#addCourseModal .btn-primary');
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
     }
@@ -556,14 +556,56 @@ async function openEditCourseModal(courseId) {
         form.onsubmit = handleAddCourseDB;
         window.editingCourseId = null;
         
-        // Reset modal title and button
+        // ✅ RESET MODAL TITLE AND BUTTON BACK TO CREATE MODE
         if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus"></i> Create New Module';
         if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Module';
         
         await loadAdminCourses();
     };
 
-    openAddCourseModal();
+    // Open the modal
+    document.getElementById('addCourseModal')?.classList.add('active');
+}
+function openAddCourseModal() {
+    // Reset form for new course
+    const editor = document.getElementById('courseDescriptionEditor');
+    if (editor) {
+        editor.innerHTML = '';
+    }
+    
+    // Reset hidden input
+    const hiddenDesc = document.getElementById('courseDescription');
+    if (hiddenDesc) {
+        hiddenDesc.value = '';
+    }
+    
+    // Reset form fields
+    const form = document.getElementById('addCourseForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Make sure we're not in edit mode
+    window.editingCourseId = null;
+    
+    // ✅ RESET MODAL TITLE AND BUTTON
+    const modalTitle = document.querySelector('#addCourseModal .modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-plus"></i> Create New Module';
+    }
+    
+    const submitBtn = document.querySelector('#addCourseModal .btn-primary');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Module';
+    }
+    
+    // Make sure form handler is for create
+    const addForm = document.getElementById('addCourseForm');
+    if (addForm) {
+        addForm.onsubmit = handleAddCourseDB;
+    }
+    
+    document.getElementById('addCourseModal')?.classList.add('active');
 }
 // ─────────────────────────────────────────────
 // AUTO-INIT
