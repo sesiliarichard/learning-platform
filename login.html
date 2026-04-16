@@ -786,13 +786,22 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
     const lastName        = document.getElementById('lastName').value.trim();
     const code  = document.getElementById('phoneCode').value.trim();
     const phone = (code + ' ' + document.getElementById('phoneNumber').value.trim()).trim();
-    const country         = document.getElementById('country').value;
+    const countryCode     = document.getElementById('country').value;
     const email           = document.getElementById('signupEmail').value.trim();
     const password        = document.getElementById('signupPassword').value;
     const confirmPassword = document.getElementById('confirmPassword').value;
     const termsAccepted   = document.getElementById('acceptTerms').checked;
 
-    if (!firstName || !lastName || !email || !phone || !country || !password) {
+    // Get full country name from selected option instead of code
+    const countrySelect = document.getElementById('country');
+    const selectedOption = countrySelect.options[countrySelect.selectedIndex];
+    let countryName = countryCode;
+    if (selectedOption && selectedOption.textContent && countryCode) {
+        let fullText = selectedOption.textContent;
+        countryName = fullText.split('(')[0].trim();
+    }
+
+    if (!firstName || !lastName || !email || !phone || !countryCode || !password) {
         showAlert('Please fill in all required fields.');
         return;
     }
@@ -810,7 +819,8 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
     }
 
     setLoading('signupSubmit', 'signupBtnText', 'signupSpinner', true);
-    const result = await registerUser({ firstName, lastName, email, phone, country, password });
+    // Pass the full country name instead of code
+    const result = await registerUser({ firstName, lastName, email, phone, country: countryName, password });
     setLoading('signupSubmit', 'signupBtnText', 'signupSpinner', false);
 
     if (!result.success) {
@@ -818,14 +828,14 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
         return;
     }
     // Auto-enroll new student in all courses
-if (result.user?.id) {
-    await enrollStudentInAllCourses(result.user.id);
-}
-showAlert('✅ Account created! Logging you in...', 'success');
-setTimeout(() => {
-    document.querySelector('.tab-btn[data-tab="login"]').click();
-    document.getElementById('loginEmail').value = email;
-}, 1500);
+    if (result.user?.id) {
+        await enrollStudentInAllCourses(result.user.id);
+    }
+    showAlert('✅ Account created! Logging you in...', 'success');
+    setTimeout(() => {
+        document.querySelector('.tab-btn[data-tab="login"]').click();
+        document.getElementById('loginEmail').value = email;
+    }, 1500);
 });
 
 // ─── FORGOT PASSWORD ─────────────────────────────────────────
