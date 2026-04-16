@@ -6859,12 +6859,23 @@ async function deleteUser(id) {
   const u = ALL_USERS.find(x => x.id == id);
   if (!u) return;
 
-  if (!confirm(`Delete user "${u.firstName} ${u.lastName}" (${u.email})?\n\nThis will permanently remove them from the database and cannot be undone.`)) return;
+  if (!confirm(`Delete user "${u.firstName} ${u.lastName}" (${u.email})?\n\nThis will permanently remove them from the database.`)) return;
 
   try {
     const sb = window.supabaseClient || window.db;
 
-    // Delete from Supabase auth (profiles table first due to FK)
+    // Step 1: Clear announcements foreign key
+    const { error: annErr } = await sb
+      .from('announcements')
+      .update({ created_by: null })
+      .eq('created_by', id);
+
+    if (annErr) {
+      showToast('Error clearing announcements: ' + annErr.message, 'error');
+      return;
+    }
+
+    // Step 2: Now safe to delete profile
     const { error: profileError } = await sb
       .from('profiles')
       .delete()
@@ -6875,7 +6886,6 @@ async function deleteUser(id) {
       return;
     }
 
-    // Remove from local list and refresh table
     ALL_USERS = ALL_USERS.filter(u => u.id != id);
     filterUsers();
     showToast(`✅ User "${u.firstName} ${u.lastName}" deleted successfully`);
