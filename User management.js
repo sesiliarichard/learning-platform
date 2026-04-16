@@ -402,6 +402,18 @@ async function deleteUser(userId) {
         `Their login account must be deleted separately in Supabase Auth if needed.`
     )) return;
 
+    // ✅ Step 1: Delete related records in announcements first
+    const { error: announcementsError } = await db
+        .from('announcements')
+        .delete()
+        .eq('created_by', userId);
+
+    if (announcementsError) {
+        showToast('Error removing user announcements: ' + announcementsError.message, 'error');
+        return;
+    }
+
+    // ✅ Step 2: Now safe to delete the profile
     const { error } = await db.from('profiles').delete().eq('id', userId);
 
     if (error) {
