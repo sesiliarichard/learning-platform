@@ -61,13 +61,32 @@ async function createCourse({ title, description, durationWeeks, instructor, thu
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
         if (!title?.trim()) throw new Error('Course title is required');
-        if (!description?.trim()) throw new Error('Course description is required');
-
+        
+        // FIX: Clean the description by removing empty HTML tags
+        let cleanDescription = description || '';
+        
+        // Check if description is empty or just contains empty HTML
+        const isEmpty = !cleanDescription || 
+                        cleanDescription === '<p><br></p>' || 
+                        cleanDescription === '<p> </p>' || 
+                        cleanDescription === '<p></p>' || 
+                        cleanDescription === '<br>' ||
+                        cleanDescription === '<div><br></div>' ||
+                        cleanDescription.trim() === '' ||
+                        cleanDescription === '&nbsp;' ||
+                        cleanDescription === '<p>&nbsp;</p>';
+        
+        // If empty, set to empty string instead of HTML tags
+        if (isEmpty) {
+            cleanDescription = '';
+        }
+        
+        
         const { data, error } = await supabaseClient
             .from('courses')
             .insert({
                 title:           title.trim(),
-                description:     description.trim(),
+                description:     cleanDescription, // Use the cleaned description
                 duration_weeks:  durationWeeks || 12,
                 instructor:      instructor?.trim() || '',
                 thumbnail_color: thumbnailColor || 'purple',
@@ -424,9 +443,23 @@ async function handleAddCourseDB(event) {
     const submitBtn  = event.target.querySelector('[type="submit"]');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Creating...'; }
 
+    // Get the description and clean it
+    let rawDescription = formData.get('description') || '';
+    
+    // Clean empty HTML tags
+    const isEmpty = !rawDescription || 
+                    rawDescription === '<p><br></p>' || 
+                    rawDescription === '<p> </p>' || 
+                    rawDescription === '<p></p>' || 
+                    rawDescription === '<br>' ||
+                    rawDescription === '<div><br></div>' ||
+                    rawDescription.trim() === '';
+    
+    const cleanDescription = isEmpty ? '' : rawDescription;
+
     const result = await createCourse({
         title:         formData.get('title'),
-        description:   formData.get('description'),
+        description:   cleanDescription, // Use cleaned description
         durationWeeks: parseInt(formData.get('duration')) || 12,
         instructor:    formData.get('instructor'),
         thumbnailColor:'purple',

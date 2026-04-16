@@ -4365,10 +4365,18 @@ function openAddUserModal() {
 }
 
 function openAddCourseModal() {
-    // Clear the editor content
+    // Clear the editor content completely
     const editor = document.getElementById('courseDescriptionEditor');
     if (editor) {
-        editor.innerHTML = ''; // Clear completely
+        editor.innerHTML = '';
+        // Also remove any default text that might appear
+        editor.innerText = '';
+        editor.textContent = '';
+    }
+    // Also clear the hidden input field
+    const hiddenDesc = document.getElementById('courseDescription');
+    if (hiddenDesc) {
+        hiddenDesc.value = '';
     }
     document.getElementById('addCourseModal')?.classList.add('active');
 }
@@ -4408,8 +4416,19 @@ function openCreateAnnouncementModal() {
 
 function closeModal(modalId) {
     document.getElementById(modalId)?.classList.remove('active');
+    
+    // If closing the add course modal, clear the editor again
+    if (modalId === 'addCourseModal') {
+        const editor = document.getElementById('courseDescriptionEditor');
+        if (editor) {
+            editor.innerHTML = '';
+        }
+        const hiddenDesc = document.getElementById('courseDescription');
+        if (hiddenDesc) {
+            hiddenDesc.value = '';
+        }
+    }
 }
-
 // ============================================
 // TOAST NOTIFICATIONS
 // ============================================
