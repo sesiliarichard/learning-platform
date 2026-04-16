@@ -14,23 +14,69 @@ async function registerUser({ firstName, lastName, email, phone, country, passwo
         const { data: authData, error: authError } = await supabaseClient.auth.signUp({
             email: email.trim().toLowerCase(),
             password: password,
-options: {
-    data: {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        full_name: `${firstName.trim()} ${lastName.trim()}`,
-        phone: phone.trim(),
-        country: country
-    }
-}
+            options: {
+                data: {
+                    first_name: firstName.trim(),
+                    last_name: lastName.trim(),
+                    full_name: `${firstName.trim()} ${lastName.trim()}`,
+                    phone: phone.trim(),
+                    country: country || 'Other', // Ensure country is never empty
+                    role: 'student'
+                }
+            }
         });
 
         if (authError) throw authError;
 
+        // Step 2: Manually create/update profile in profiles table
+        if (authData.user) {
+            // Wait a moment for the trigger to run, then update if needed
+            setTimeout(async () => {
+                try {
+                    // Check if profile exists
+                    const { data: existingProfile } = await supabaseClient
+                        .from('profiles')
+                        .select('id')
+                        .eq('id', authData.user.id)
+                        .maybeSingle();
+                    
+                    if (!existingProfile) {
+                        // Create profile if not exists
+                        await supabaseClient
+                            .from('profiles')
+                            .insert({
+                                id: authData.user.id,
+                                email: email.trim().toLowerCase(),
+                                first_name: firstName.trim(),
+                                last_name: lastName.trim(),
+                                phone: phone.trim(),
+                                country: country || 'Other',
+                                role: 'student',
+                                status: 'active'
+                            });
+                    } else {
+                        // Update existing profile
+                        await supabaseClient
+                            .from('profiles')
+                            .update({
+                                first_name: firstName.trim(),
+                                last_name: lastName.trim(),
+                                phone: phone.trim(),
+                                country: country || 'Other'
+                            })
+                            .eq('id', authData.user.id);
+                    }
+                    console.log('✅ Profile created/updated with country:', country);
+                } catch (profileError) {
+                    console.error('Profile update error:', profileError);
+                }
+            }, 1000);
+        }
+
         return {
             success: true,
             user: authData.user,
-          message: 'Account created successfully! You can now log in.'
+            message: 'Account created successfully! You can now log in.'
         };
 
     } catch (error) {
@@ -41,7 +87,6 @@ options: {
         };
     }
 }
-
 // ─────────────────────────────────────────────
 // 2. LOGIN USER
 // Called when student submits the Login form
