@@ -4365,19 +4365,44 @@ function openAddUserModal() {
 }
 
 function openAddCourseModal() {
-    // Clear the editor content completely
+    // Reset form for new course
     const editor = document.getElementById('courseDescriptionEditor');
     if (editor) {
         editor.innerHTML = '';
-        // Also remove any default text that might appear
-        editor.innerText = '';
-        editor.textContent = '';
     }
-    // Also clear the hidden input field
+    
+    // Reset hidden input
     const hiddenDesc = document.getElementById('courseDescription');
     if (hiddenDesc) {
         hiddenDesc.value = '';
     }
+    
+    // Reset form fields
+    const form = document.getElementById('addCourseForm');
+    if (form) {
+        form.reset();
+    }
+    
+    // Make sure we're not in edit mode
+    window.editingCourseId = null;
+    
+    // Reset modal title and button (in case it was changed by edit)
+    const modalTitle = document.querySelector('#addCourseModal .modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-plus"></i> Create New Module';
+    }
+    
+    const submitBtn = document.querySelector('#addCourseModal .btn-primary[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Module';
+    }
+    
+    // Make sure form handler is for create
+    const addForm = document.getElementById('addCourseForm');
+    if (addForm) {
+        addForm.onsubmit = handleAddCourseDB;
+    }
+    
     document.getElementById('addCourseModal')?.classList.add('active');
 }
 

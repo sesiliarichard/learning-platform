@@ -489,32 +489,82 @@ async function openEditCourseModal(courseId) {
     if (!result.success) { showToast('Could not load course', 'error'); return; }
 
     const course = result.course;
-    document.getElementById('courseTitle').value       = course.title;
-    document.getElementById('courseDescription').value = course.description;
-    document.getElementById('courseDuration').value    = course.duration_weeks;
-    document.getElementById('courseInstructor').value  = course.instructor || '';
-
+    
+    // Populate form fields
+    document.getElementById('courseTitle').value = course.title || '';
+    document.getElementById('courseDuration').value = course.duration_weeks || '';
+    document.getElementById('courseInstructor').value = course.instructor || '';
+    
+    // Clear and set description in editor
+    const editor = document.getElementById('courseDescriptionEditor');
+    if (editor) {
+        editor.innerHTML = course.description || '';
+    }
+    document.getElementById('courseDescription').value = course.description || '';
+    
+    // Change modal title to "Edit Module"
+    const modalTitle = document.querySelector('#addCourseModal .modal-header h2');
+    if (modalTitle) {
+        modalTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Module';
+    }
+    
+    // Change submit button text
+    const submitBtn = document.querySelector('#addCourseModal .btn-primary[type="submit"]');
+    if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+    }
+    
+    // Store the course ID for update
+    window.editingCourseId = courseId;
+    
+    // Change form handler for update
     const form = document.getElementById('addCourseForm');
     form.onsubmit = async (e) => {
         e.preventDefault();
+        
+        // Get editor content
+        let editorContent = document.getElementById('courseDescriptionEditor').innerHTML;
+        const isEmpty = !editorContent || 
+                        editorContent === '<p><br></p>' || 
+                        editorContent === '<p> </p>' || 
+                        editorContent === '<p></p>' || 
+                        editorContent === '<br>' ||
+                        editorContent.trim() === '';
+        
+        const description = isEmpty ? '' : editorContent;
+        document.getElementById('courseDescription').value = description;
+        
         const fd = new FormData(e.target);
-        const r  = await updateCourse(courseId, {
+        const r = await updateCourse(window.editingCourseId, {
             title:         fd.get('title'),
-            description:   fd.get('description'),
-            durationWeeks: parseInt(fd.get('duration')),
+            description:   description,
+            durationWeeks: parseInt(fd.get('duration')) || 12,
             instructor:    fd.get('instructor')
         });
-        if (!r.success) { showToast('Error: ' + r.error, 'error'); return; }
-        showToast('Course updated! ✅');
+        
+        if (!r.success) { 
+            showToast('Error: ' + r.error, 'error'); 
+            return; 
+        }
+        
+        showToast('Course updated successfully! ✅');
         closeModal('addCourseModal');
+        
+        // Reset form for next use
         e.target.reset();
+        if (editor) editor.innerHTML = '';
         form.onsubmit = handleAddCourseDB;
+        window.editingCourseId = null;
+        
+        // Reset modal title and button
+        if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-plus"></i> Create New Module';
+        if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Create Module';
+        
         await loadAdminCourses();
     };
 
     openAddCourseModal();
 }
-
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────
