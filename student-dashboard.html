@@ -4408,7 +4408,6 @@ if (typeof showToast === 'undefined') {
         setTimeout(() => toast.classList.remove('show'), 3500);
     }
 }
-
 (async () => {
     try {
         await new Promise(resolve => setTimeout(resolve, 1500));
@@ -4422,10 +4421,13 @@ if (typeof showToast === 'undefined') {
 
         console.log('Session check:', data?.session ? 'Found ✅' : 'Not found ❌');
 
-        if (error || !data?.session) {
+        let session = data?.session;
+
+        if (error || !session) {
             await new Promise(resolve => setTimeout(resolve, 1000));
             const retry = await supabaseClient.auth.getSession();
-            if (!retry.data?.session) {
+            session = retry.data?.session;
+            if (!session) {
                 sessionStorage.clear();
                 localStorage.removeItem('userProfileData');
                 window.location.replace('login.html');
@@ -4433,14 +4435,21 @@ if (typeof showToast === 'undefined') {
             }
         }
 
+        const userId = session?.user?.id;
+
+        if (!userId) {
+            window.location.replace('login.html');
+            return;
+        }
+
         const { data: profile } = await db
             .from('profiles')
             .select('role')
-            .eq('id', data.session.user.id)
+            .eq('id', userId)
             .maybeSingle();
 
         if (!profile || profile.role !== 'student') {
-            await db.auth.signOut();
+            await supabaseClient.auth.signOut();
             window.location.replace('login.html');
             return;
         }
@@ -4448,9 +4457,8 @@ if (typeof showToast === 'undefined') {
         document.body.style.visibility = 'visible';
 
     } catch (e) {
-        sessionStorage.clear();
-        localStorage.removeItem('userProfileData');
-        window.location.replace('login.html');
+        console.error('Auth error:', e);
+        document.body.style.visibility = 'visible';
     }
 })();
 // Direct Supabase fallback if external JS functions fail
