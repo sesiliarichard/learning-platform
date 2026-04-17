@@ -528,17 +528,17 @@ const finalDone    = !!finalSub;
 
 const totalPct = Math.round(
     (proposalDone          ? 10 : 0) +
-    (phase1Pct / 100 * 25)           +
-    (phase2Pct / 100 * 25)           +
-    (phase3Pct / 100 * 25)           +
+    (phase1Pct / 100 * 10)           +
+    (phase2Pct / 100 * 10)           +
+    (phase3Pct / 100 * 10)           +
     (finalDone             ? 15 : 0)
 );
 
-        const steps = [
+const steps = [
     { label: 'Proposal', weight: 10,  done: proposalDone,  icon: 'fa-file-alt',      active: true,             pct: proposalDone ? 100 : 0 },
-    { label: 'Phase 1',  weight: 25,  done: phase1Done,    icon: 'fa-seedling',      active: proposalDone,     pct: phase1Pct },
-    { label: 'Phase 2',  weight: 25,  done: phase2Done,    icon: 'fa-cog',           active: !!phase1Record,   pct: phase2Pct },
-    { label: 'Phase 3',  weight: 25,  done: phase3Done,    icon: 'fa-vial',          active: !!phase2Record,   pct: phase3Pct },
+    { label: 'Phase 1',  weight: 10,  done: phase1Done,    icon: 'fa-seedling',      active: proposalDone,     pct: phase1Pct },
+    { label: 'Phase 2',  weight: 10,  done: phase2Done,    icon: 'fa-cog',           active: !!phase1Record,   pct: phase2Pct },
+    { label: 'Phase 3',  weight: 10,  done: phase3Done,    icon: 'fa-vial',          active: !!phase2Record,   pct: phase3Pct },
     { label: 'Final',    weight: 15,  done: finalDone,     icon: 'fa-flag-checkered',active: !!phase3Record,   pct: finalDone ? 100 : 0 }
 ];
 
