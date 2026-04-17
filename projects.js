@@ -200,6 +200,12 @@ if (!profile || profile.role !== 'student') {
             updatePhaseTracker(phaseNum);
 
             showMsg(`Phase ${phaseNum} submitted! Admin will review your work.`, 'success');
+// Refresh the progress tracker
+      if (typeof ProjectsAPI !== 'undefined' && ProjectsAPI.loadProjectProgress) {
+    ProjectsAPI.loadProjectProgress();
+      } else {
+    loadProjectProgress();
+}
 
         } catch (err) {
             showMsg('Error: ' + err.message, 'error');
@@ -434,7 +440,124 @@ if (!profile || profile.role !== 'student') {
             </div>`;
         }
     }
+async function loadProjectProgress() {
+    const container = document.getElementById('projectProgressTracker');
+    if (!container) return;
 
+    try {
+        const { data: { user } } = await getCurrentUser();
+        if (!user) return;
+
+        const [proposalRes, phasesRes, finalRes] = await Promise.all([
+            supabaseClient
+                .from('project_proposals')
+                .select('id, status')
+                .eq('student_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle(),
+            supabaseClient
+                .from('project_phases')
+                .select('phase_number, status, completion_percentage')
+                .eq('student_id', user.id),
+            supabaseClient
+                .from('project_final_submissions')
+                .select('id, status')
+                .eq('student_id', user.id)
+                .maybeSingle()
+        ]);
+
+        const proposal   = proposalRes.data;
+        const phases     = phasesRes.data  || [];
+        const finalSub   = finalRes.data;
+
+        // Weighted scoring
+        const proposalDone = proposal?.status === 'approved' || proposal?.status === 'pending';
+        const phase1Done   = phases.find(p => p.phase_number === 1 && p.status === 'submitted');
+        const phase2Done   = phases.find(p => p.phase_number === 2 && p.status === 'submitted');
+        const phase3Done   = phases.find(p => p.phase_number === 3 && p.status === 'submitted');
+        const finalDone    = !!finalSub;
+
+   // Use phase completion_percentage for partial credit within each phase
+const phase1Pct = phase1Done ? 100 : (phases.find(p => p.phase_number === 1)?.completion_percentage || 0);
+const phase2Pct = phase2Done ? 100 : (phases.find(p => p.phase_number === 2)?.completion_percentage || 0);
+const phase3Pct = phase3Done ? 100 : (phases.find(p => p.phase_number === 3)?.completion_percentage || 0);
+
+const totalPct = Math.round(
+    (proposalDone   ? 10 : 0) +
+    (phase1Pct / 100 * 25) +
+    (phase2Pct / 100 * 25) +
+    (phase3Pct / 100 * 25) +
+    (finalDone      ? 15 : 0)
+);
+
+        const steps = [
+            { label: 'Proposal',  weight: 10,  done: proposalDone, icon: 'fa-file-alt',       active: true },
+            { label: 'Phase 1',   weight: 25,  done: !!phase1Done, icon: 'fa-seedling',        active: proposalDone },
+            { label: 'Phase 2',   weight: 25,  done: !!phase2Done, icon: 'fa-cog',             active: !!phase1Done },
+            { label: 'Phase 3',   weight: 25,  done: !!phase3Done, icon: 'fa-vial',            active: !!phase2Done },
+            { label: 'Final',     weight: 15,  done: finalDone,    icon: 'fa-flag-checkered',  active: !!phase3Done }
+        ];
+
+        const colorDone   = '#0F6E56';
+        const colorActive = '#534AB7';
+        const colorLocked = '#9ca3af';
+
+        container.innerHTML = `
+            <div style="background:var(--color-background-secondary);border:1.5px solid var(--color-border-tertiary);
+                        border-radius:16px;padding:22px 24px;margin-bottom:24px;">
+
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                    <div style="font-weight:500;color:var(--color-text-primary);font-size:15px;">
+                        <i class="fas fa-tasks" style="color:#534AB7;margin-right:8px;"></i>
+                        Project overall progress
+                    </div>
+                    <div style="font-size:24px;font-weight:500;color:${totalPct === 100 ? colorDone : colorActive};">
+                        ${totalPct}%
+                    </div>
+                </div>
+
+                <div style="height:10px;background:var(--color-border-tertiary);border-radius:8px;overflow:hidden;margin-bottom:20px;">
+                    <div style="height:100%;width:${totalPct}%;
+                                background:linear-gradient(90deg,#534AB7,#0F6E56);
+                                border-radius:8px;transition:width .6s ease;"></div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+                    ${steps.map(s => {
+                        const c = s.done ? colorDone : s.active ? colorActive : colorLocked;
+                        const bg = s.done ? '#E1F5EE' : s.active ? '#EEEDFE' : 'var(--color-background-primary)';
+                        const border = s.done ? '#5DCAA5' : s.active ? '#AFA9EC' : 'var(--color-border-tertiary)';
+                        const icon = s.done ? 'fa-check-circle' : s.active ? s.icon : 'fa-lock';
+                        const badge = s.done ? 'Submitted' : s.active ? 'In progress' : 'Locked';
+                        const badgeBg = s.done ? '#9FE1CB' : s.active ? '#CECBF6' : 'var(--color-border-tertiary)';
+                        const badgeColor = s.done ? colorDone : s.active ? colorActive : colorLocked;
+                        return `
+                        <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;
+                                    padding:14px 10px;text-align:center;">
+                            <i class="fas ${icon}" style="font-size:20px;color:${c};display:block;margin-bottom:8px;"></i>
+                            <div style="font-weight:500;color:var(--color-text-primary);font-size:13px;margin-bottom:2px;">${s.label}</div>
+                            <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;">${s.weight}% weight</div>
+                            <span style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
+                                         border-radius:20px;font-size:11px;font-weight:500;display:inline-block;">
+                                ${badge}
+                            </span>
+                        </div>`;
+                    }).join('')}
+                </div>
+
+                ${totalPct === 100 ? `
+                <div style="margin-top:16px;padding:12px;background:#E1F5EE;border-radius:10px;
+                            text-align:center;color:#085041;font-weight:500;font-size:14px;">
+                    <i class="fas fa-star" style="margin-right:8px;"></i>
+                    All stages complete — well done!
+                </div>` : ''}
+            </div>`;
+
+    } catch (err) {
+        console.error('loadProjectProgress error:', err);
+    }
+}
     // ── UI helper: update phase tracker ──────────────────────
     function updatePhaseTracker(phaseNum) {
         const current = document.getElementById('trackerPhase' + phaseNum);
@@ -513,6 +636,19 @@ function init() {
     document.querySelector('[data-project="myprojects"]')
         ?.addEventListener('click', loadMyProjects);
 
+ // Call on page load to show current state
+loadProjectProgress();
+
+// Re-call whenever ANY project tab is clicked (so it always stays visible)
+document.querySelectorAll('.project-tab').forEach(tab => {
+    tab.addEventListener('click', loadProjectProgress);
+});
+
+// Re-call whenever the Projects nav item is clicked
+document.querySelector('.nav-item[data-section="projects"]')
+    ?.addEventListener('click', () => {
+        setTimeout(loadProjectProgress, 100);
+    });
     // ── wire file inputs DIRECTLY ─────────────────────────
     function wireUpload(area, input) {
         if (!area || !input) return;
@@ -567,6 +703,6 @@ if (document.readyState === 'loading') {
     init();
 }
 
-return { loadMyProjects, submitPhase };
-
+window.loadProjectProgress = loadProjectProgress;
+return { loadMyProjects, submitPhase, loadProjectProgress };
 })();

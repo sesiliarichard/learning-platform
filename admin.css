@@ -5732,3 +5732,22 @@ body.dark-mode .topic-list .empty-topics {
     color: #9ca3af;
     pointer-events: none;
 }
+.editor-select {
+    width: 58px;
+}
+.editor-color-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#colorBar_0 {
+    background: #e24b4a;
+}
+
+#hlBar_0 {
+    background: #fef08a;
+}
+#projectProgressTracker {
+    margin-bottom: 0;
+}

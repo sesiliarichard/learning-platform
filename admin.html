@@ -1024,15 +1024,16 @@ body { visibility: hidden }
         <option value="Trebuchet MS">Trebuchet</option>
         <option value="Impact">Impact</option>
     </select>
-    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size" style="width:58px;">
-        <option value="1">8</option>
-        <option value="2">10</option>
-        <option value="3" selected>12</option>
-        <option value="4">14</option>
-        <option value="5">18</option>
-        <option value="6">24</option>
-        <option value="7">36</option>
-    </select>
+    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size">
+    <option value="1">8</option>
+    <option value="2">10</option>
+    <option value="3" selected>12</option>
+    <option value="4">14</option>
+    <option value="5">18</option>
+    <option value="6">24</option>
+    <option value="7">36</option>
+</select>
+
     <div class="editor-sep"></div>
     <button type="button" class="editor-btn" onclick="formatText(0, 'bold')"><b>B</b></button>
     <button type="button" class="editor-btn" onclick="formatText(0, 'italic')"><i>I</i></button>
@@ -1046,19 +1047,19 @@ body { visibility: hidden }
     <button type="button" class="editor-btn" onclick="formatText(0, 'justifyCenter')"><i class="fas fa-align-center"></i></button>
     <button type="button" class="editor-btn" onclick="formatText(0, 'justifyRight')"><i class="fas fa-align-right"></i></button>
     <div class="editor-sep"></div>
-    <label class="editor-color-btn" title="Text color">
-        <i class="fas fa-font"></i>
-        <div class="editor-color-bar" id="colorBar_0" style="background:#e24b4a;"></div>
-        <input type="color" value="#e24b4a" style="position:absolute;opacity:0;width:0;height:0;"
-               onchange="setEditorColor(0, this)" oninput="setEditorColor(0, this)">
-    </label>
-    <label class="editor-color-btn" title="Highlight color">
-        <i class="fas fa-highlighter"></i>
-        <div class="editor-color-bar" id="hlBar_0" style="background:#fef08a;"></div>
-        <input type="color" value="#fef08a" style="position:absolute;opacity:0;width:0;height:0;"
-               onchange="setEditorHighlight(0, this)" oninput="setEditorHighlight(0, this)">
-    </label>
-</div>
+<label class="editor-color-btn" title="Text color">
+    <i class="fas fa-font"></i>
+    <div class="editor-color-bar" id="colorBar_0"></div>
+    <input type="color" value="#e24b4a" class="editor-color-input"
+           onchange="setEditorColor(0, this)" oninput="setEditorColor(0, this)">
+</label>
+<label class="editor-color-btn" title="Highlight color">
+    <i class="fas fa-highlighter"></i>
+    <div class="editor-color-bar" id="hlBar_0"></div>
+    <input type="color" value="#fef08a" class="editor-color-input"
+           onchange="setEditorHighlight(0, this)" oninput="setEditorHighlight(0, this)">
+</label>
+
   <div class="editor-content" contenteditable="true" id="courseDescriptionEditor" 
      data-name="description" 
      data-placeholder="Enter course description here..."></div>
