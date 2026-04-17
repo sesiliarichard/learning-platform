@@ -524,9 +524,7 @@ const phase3Pct = phase3Done ? 100 : (phase3Record?.completion_percentage || 0);
 const finalDone    = !!finalSub;
 
    // Use phase completion_percentage for partial credit within each phase
-const phase1Pct = phase1Done ? 100 : (phases.find(p => p.phase_number === 1)?.completion_percentage || 0);
-const phase2Pct = phase2Done ? 100 : (phases.find(p => p.phase_number === 2)?.completion_percentage || 0);
-const phase3Pct = phase3Done ? 100 : (phases.find(p => p.phase_number === 3)?.completion_percentage || 0);
+
 
 const totalPct = Math.round(
     (proposalDone          ? 10 : 0) +
