@@ -580,7 +580,7 @@ async function loadProjectProgress() {
                                 border-radius:8px;transition:width .6s ease;"></div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
                     ${steps.slice(0,4).map(s => buildStepCard(s, colorDone, colorActive, colorLocked)).join('')}
                 </div>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;">
@@ -605,18 +605,17 @@ function buildStepCard(s, colorDone, colorActive, colorLocked) {
     const bg       = s.done ? '#E1F5EE'   : s.active ? '#EEEDFE'   : 'var(--color-background-primary)';
     const border   = s.done ? '#5DCAA5'   : s.active ? '#AFA9EC'   : 'var(--color-border-tertiary)';
     const icon     = s.done ? 'fa-check-circle' : s.active ? s.icon : 'fa-lock';
-    const badge    = s.done ? 'Submitted' : s.active ? 'In progress' : 'Locked';
+    const badge    = s.done ? '✓'         : s.active ? '→' : '🔒';
     const badgeBg  = s.done ? '#9FE1CB'   : s.active ? '#CECBF6'   : 'var(--color-border-tertiary)';
     const badgeColor = s.done ? colorDone : s.active ? colorActive : colorLocked;
 
     return `
-        <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;
-                    padding:14px 10px;text-align:center;">
-            <i class="fas ${icon}" style="font-size:20px;color:${c};display:block;margin-bottom:8px;"></i>
-            <div style="font-weight:500;color:var(--color-text-primary);font-size:13px;margin-bottom:2px;">${s.label}</div>
-            <div style="margin-bottom:8px;"></div>
-            <span style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
-                         border-radius:20px;font-size:11px;font-weight:500;display:inline-block;">
+        <div style="background:${bg};border:1px solid ${border};border-radius:8px;
+                    padding:6px 4px;text-align:center;">
+            <i class="fas ${icon}" style="font-size:12px;color:${c};display:block;margin-bottom:2px;"></i>
+            <div style="font-weight:600;color:var(--color-text-primary);font-size:10px;margin-bottom:1px;">${s.label}</div>
+            <span style="background:${badgeBg};color:${badgeColor};padding:1px 5px;
+                         border-radius:12px;font-size:8px;font-weight:600;display:inline-block;">
                 ${badge}
             </span>
         </div>`;
