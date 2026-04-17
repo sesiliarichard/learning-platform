@@ -1959,16 +1959,63 @@ function logout() {
     }, 1500);
 }
 
-        // Show section
-        function showSection(sectionId) {
-            dashboardSections.forEach(section => section.classList.remove('active'));
-            const section = document.getElementById(`${sectionId}Section`);
-            if (section) {
-                section.classList.add('active');
-            }
-        }
+   function showSection(sectionId) {
+    dashboardSections.forEach(section => section.classList.remove('active'));
+    const section = document.getElementById(`${sectionId}Section`);
+    if (section) {
+        section.classList.add('active');
+    }
 
-       
+    // Trigger data loading for each section when navigated to
+    switch(sectionId) {
+        case 'announcements':
+            if (typeof loadStudentAnnouncementsUI === 'function') {
+                loadStudentAnnouncementsUI();
+            }
+            break;
+        case 'results':
+            if (typeof loadResults === 'function') {
+                loadResults();
+            }
+            break;
+        case 'certificates':
+            if (typeof loadCertificates === 'function') {
+                loadCertificates();
+            }
+            break;
+        case 'resources':
+            if (typeof ResourcesAPI !== 'undefined' && ResourcesAPI.renderStudent) {
+                ResourcesAPI.renderStudent();
+            }
+            break;
+        case 'discussions':
+            if (typeof loadDiscussions === 'function') {
+                loadDiscussions();
+            }
+            break;
+        case 'profile':
+            if (typeof updateUserProfile === 'function') {
+                updateUserProfile();
+            }
+            if (typeof calculateProfileStats === 'function') {
+                calculateProfileStats();
+            }
+            if (typeof setMemberSinceDate === 'function') {
+                setMemberSinceDate();
+            }
+            break;
+        case 'projects':
+            if (typeof loadProjectProgress === 'function') {
+                setTimeout(loadProjectProgress, 100);
+            }
+            break;
+        case 'dashboard':
+            if (typeof loadDashboardExtras === 'function') {
+                loadDashboardExtras();
+            }
+            break;
+    }
+}
      
   // Select a course
         async function selectCourse(courseId) {
