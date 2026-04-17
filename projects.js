@@ -483,7 +483,7 @@ async function loadProjectProgress() {
         const { data: { user } } = await getCurrentUser();
         if (!user) return;
 
-        const [proposalRes, phasesRes, finalRes] = await Promise.all([
+        const [proposalRes, phasesRes, finalRes, progressRes] = await Promise.all([
             supabaseClient
                 .from('project_proposals')
                 .select('id, status')
@@ -499,48 +499,62 @@ async function loadProjectProgress() {
                 .from('project_final_submissions')
                 .select('id, status')
                 .eq('student_id', user.id)
-                .maybeSingle()
+                .maybeSingle(),
+            supabaseClient
+                .from('project_progress_reports')
+                .select('phase_number, submitted_at')
+                .eq('student_id', user.id)
         ]);
 
-        const proposal   = proposalRes.data;
-        const phases     = phasesRes.data  || [];
-        const finalSub   = finalRes.data;
+        const proposal  = proposalRes.data;
+        const phases    = phasesRes.data  || [];
+        const finalSub  = finalRes.data;
+        const progressReports = progressRes.data || [];
 
-        // Weighted scoring
+        // ── Phase submission records ──
+        const phase1Record = phases.find(p => p.phase_number === 1);
+        const phase2Record = phases.find(p => p.phase_number === 2);
+        const phase3Record = phases.find(p => p.phase_number === 3);
+
+        const phase1Done = phase1Record?.status === 'submitted';
+        const phase2Done = phase2Record?.status === 'submitted';
+        const phase3Done = phase3Record?.status === 'submitted';
+
+        const phase1Pct = phase1Done ? 100 : (phase1Record?.completion_percentage || 0);
+        const phase2Pct = phase2Done ? 100 : (phase2Record?.completion_percentage || 0);
+        const phase3Pct = phase3Done ? 100 : (phase3Record?.completion_percentage || 0);
+
+        // ── Progress report records ──
+        const progress1Done = progressReports.some(r => r.phase_number === 1);
+        const progress2Done = progressReports.some(r => r.phase_number === 2);
+        const progress3Done = progressReports.some(r => r.phase_number === 3);
+
+        // ── Other flags ──
         const proposalDone = proposal?.status === 'approved' || proposal?.status === 'pending';
-        // Count any saved phase (submitted OR in-progress) as "done" for tracker display
-const phase1Record = phases.find(p => p.phase_number === 1);
-const phase2Record = phases.find(p => p.phase_number === 2);
-const phase3Record = phases.find(p => p.phase_number === 3);
+        const finalDone    = !!finalSub;
 
-const phase1Done = phase1Record?.status === 'submitted';
-const phase2Done = phase2Record?.status === 'submitted';
-const phase3Done = phase3Record?.status === 'submitted';
+        // ── Total: 10+10+10+10+15+15+15+15 = 100% ──
+        const totalPct = Math.round(
+            (proposalDone   ? 10 : 0) +
+            (phase1Pct / 100 * 10)    +
+            (phase2Pct / 100 * 10)    +
+            (phase3Pct / 100 * 10)    +
+            (progress1Done  ? 15 : 0) +
+            (progress2Done  ? 15 : 0) +
+            (progress3Done  ? 15 : 0) +
+            (finalDone      ? 15 : 0)
+        );
 
-// Use saved completion_percentage for partial progress within each phase
-const phase1Pct = phase1Done ? 100 : (phase1Record?.completion_percentage || 0);
-const phase2Pct = phase2Done ? 100 : (phase2Record?.completion_percentage || 0);
-const phase3Pct = phase3Done ? 100 : (phase3Record?.completion_percentage || 0);
-const finalDone    = !!finalSub;
-
-   // Use phase completion_percentage for partial credit within each phase
-
-
-const totalPct = Math.round(
-    (proposalDone          ? 10 : 0) +
-    (phase1Pct / 100 * 10)           +
-    (phase2Pct / 100 * 10)           +
-    (phase3Pct / 100 * 10)           +
-    (finalDone             ? 15 : 0)
-);
-
-const steps = [
-    { label: 'Proposal', weight: 10,  done: proposalDone,  icon: 'fa-file-alt',      active: true,             pct: proposalDone ? 100 : 0 },
-    { label: 'Phase 1',  weight: 10,  done: phase1Done,    icon: 'fa-seedling',      active: proposalDone,     pct: phase1Pct },
-    { label: 'Phase 2',  weight: 10,  done: phase2Done,    icon: 'fa-cog',           active: !!phase1Record,   pct: phase2Pct },
-    { label: 'Phase 3',  weight: 10,  done: phase3Done,    icon: 'fa-vial',          active: !!phase2Record,   pct: phase3Pct },
-    { label: 'Final',    weight: 15,  done: finalDone,     icon: 'fa-flag-checkered',active: !!phase3Record,   pct: finalDone ? 100 : 0 }
-];
+        const steps = [
+            { label: 'Proposal',    weight: 10, done: proposalDone,  icon: 'fa-file-alt',       active: true,              pct: proposalDone  ? 100 : 0 },
+            { label: 'Phase 1',     weight: 10, done: phase1Done,    icon: 'fa-seedling',       active: proposalDone,      pct: phase1Pct },
+            { label: 'Phase 2',     weight: 10, done: phase2Done,    icon: 'fa-cog',            active: !!phase1Record,    pct: phase2Pct },
+            { label: 'Phase 3',     weight: 10, done: phase3Done,    icon: 'fa-vial',           active: !!phase2Record,    pct: phase3Pct },
+            { label: 'Progress 1',  weight: 15, done: progress1Done, icon: 'fa-chart-line',     active: phase1Done,        pct: progress1Done ? 100 : 0 },
+            { label: 'Progress 2',  weight: 15, done: progress2Done, icon: 'fa-chart-line',     active: phase2Done,        pct: progress2Done ? 100 : 0 },
+            { label: 'Progress 3',  weight: 15, done: progress3Done, icon: 'fa-chart-line',     active: phase3Done,        pct: progress3Done ? 100 : 0 },
+            { label: 'Final',       weight: 15, done: finalDone,     icon: 'fa-flag-checkered', active: !!phase3Record,    pct: finalDone     ? 100 : 0 }
+        ];
 
         const colorDone   = '#0F6E56';
         const colorActive = '#534AB7';
@@ -566,27 +580,11 @@ const steps = [
                                 border-radius:8px;transition:width .6s ease;"></div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
-                    ${steps.map(s => {
-                        const c = s.done ? colorDone : s.active ? colorActive : colorLocked;
-                        const bg = s.done ? '#E1F5EE' : s.active ? '#EEEDFE' : 'var(--color-background-primary)';
-                        const border = s.done ? '#5DCAA5' : s.active ? '#AFA9EC' : 'var(--color-border-tertiary)';
-                        const icon = s.done ? 'fa-check-circle' : s.active ? s.icon : 'fa-lock';
-                        const badge = s.done ? 'Submitted' : s.active ? 'In progress' : 'Locked';
-                        const badgeBg = s.done ? '#9FE1CB' : s.active ? '#CECBF6' : 'var(--color-border-tertiary)';
-                        const badgeColor = s.done ? colorDone : s.active ? colorActive : colorLocked;
-                        return `
-                        <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;
-                                    padding:14px 10px;text-align:center;">
-                            <i class="fas ${icon}" style="font-size:20px;color:${c};display:block;margin-bottom:8px;"></i>
-                            <div style="font-weight:500;color:var(--color-text-primary);font-size:13px;margin-bottom:2px;">${s.label}</div>
-                            <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;">${s.weight}% weight</div>
-                            <span style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
-                                         border-radius:20px;font-size:11px;font-weight:500;display:inline-block;">
-                                ${badge}
-                            </span>
-                        </div>`;
-                    }).join('')}
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                    ${steps.slice(0,4).map(s => buildStepCard(s, colorDone, colorActive, colorLocked)).join('')}
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;">
+                    ${steps.slice(4).map(s => buildStepCard(s, colorDone, colorActive, colorLocked)).join('')}
                 </div>
 
                 ${totalPct === 100 ? `
@@ -600,6 +598,28 @@ const steps = [
     } catch (err) {
         console.error('loadProjectProgress error:', err);
     }
+}
+
+function buildStepCard(s, colorDone, colorActive, colorLocked) {
+    const c        = s.done ? colorDone   : s.active ? colorActive : colorLocked;
+    const bg       = s.done ? '#E1F5EE'   : s.active ? '#EEEDFE'   : 'var(--color-background-primary)';
+    const border   = s.done ? '#5DCAA5'   : s.active ? '#AFA9EC'   : 'var(--color-border-tertiary)';
+    const icon     = s.done ? 'fa-check-circle' : s.active ? s.icon : 'fa-lock';
+    const badge    = s.done ? 'Submitted' : s.active ? 'In progress' : 'Locked';
+    const badgeBg  = s.done ? '#9FE1CB'   : s.active ? '#CECBF6'   : 'var(--color-border-tertiary)';
+    const badgeColor = s.done ? colorDone : s.active ? colorActive : colorLocked;
+
+    return `
+        <div style="background:${bg};border:1.5px solid ${border};border-radius:12px;
+                    padding:14px 10px;text-align:center;">
+            <i class="fas ${icon}" style="font-size:20px;color:${c};display:block;margin-bottom:8px;"></i>
+            <div style="font-weight:500;color:var(--color-text-primary);font-size:13px;margin-bottom:2px;">${s.label}</div>
+            <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;">${s.weight}% weight</div>
+            <span style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
+                         border-radius:20px;font-size:11px;font-weight:500;display:inline-block;">
+                ${badge}
+            </span>
+        </div>`;
 }
     // ── UI helper: update phase tracker ──────────────────────
     function updatePhaseTracker(phaseNum) {
