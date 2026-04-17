@@ -614,7 +614,7 @@ function buildStepCard(s, colorDone, colorActive, colorLocked) {
                     padding:14px 10px;text-align:center;">
             <i class="fas ${icon}" style="font-size:20px;color:${c};display:block;margin-bottom:8px;"></i>
             <div style="font-weight:500;color:var(--color-text-primary);font-size:13px;margin-bottom:2px;">${s.label}</div>
-            <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:8px;">${s.weight}% weight</div>
+            <div style="margin-bottom:8px;"></div>
             <span style="background:${badgeBg};color:${badgeColor};padding:3px 8px;
                          border-radius:20px;font-size:11px;font-weight:500;display:inline-block;">
                 ${badge}
