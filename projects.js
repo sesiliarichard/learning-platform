@@ -176,24 +176,59 @@ if (!profile || profile.role !== 'student') {
                 .maybeSingle();
 
             // Upsert phase record
-            const { error } = await supabaseClient
-                .from('project_phases')
-                .upsert({
-                    student_id:   user.id,
-                    proposal_id:  proposal?.id || null,
-                    phase_number: phaseNum,
-                    plan,
-                    work_description: work,
-                    challenges,
-                    next_steps:   nextSteps,
-                    results,
-                    activities:   JSON.stringify(activities),
-                    completion_percentage: parseInt(percentage),
-                    file_url:     fileUrl,
-                    status:       'submitted',
-                    submitted_at: new Date().toISOString()
-                }, { onConflict: 'student_id,phase_number' });
+ // Check if a record already exists for this student + phase
+const { data: existingPhase } = await supabaseClient
+    .from('project_phases')
+    .select('id')
+    .eq('student_id', user.id)
+    .eq('phase_number', phaseNum)
+    .maybeSingle();
 
+let phaseError;
+
+if (existingPhase) {
+    // UPDATE existing record
+    const { error } = await supabaseClient
+        .from('project_phases')
+        .update({
+            proposal_id:  proposal?.id || null,
+            plan,
+            work_description: work,
+            challenges,
+            next_steps:   nextSteps,
+            results,
+            activities:   JSON.stringify(activities),
+            completion_percentage: parseInt(percentage),
+            file_url:     fileUrl || existingPhase.file_url,
+            status:       'submitted',
+            submitted_at: new Date().toISOString()
+        })
+        .eq('student_id', user.id)
+        .eq('phase_number', phaseNum);
+    phaseError = error;
+} else {
+    // INSERT new record
+    const { error } = await supabaseClient
+        .from('project_phases')
+        .insert({
+            student_id:   user.id,
+            proposal_id:  proposal?.id || null,
+            phase_number: phaseNum,
+            plan,
+            work_description: work,
+            challenges,
+            next_steps:   nextSteps,
+            results,
+            activities:   JSON.stringify(activities),
+            completion_percentage: parseInt(percentage),
+            file_url:     fileUrl,
+            status:       'submitted',
+            submitted_at: new Date().toISOString()
+        });
+    phaseError = error;
+}
+
+const error = phaseError;
             if (error) throw error;
 
             // Update tracker UI
@@ -309,7 +344,7 @@ if (!profile || profile.role !== 'student') {
 }
             
 
-            const projectTitle  = document.getElementById('finalProject')?.value;
+            const projectTitle  = document.getElementById('finalProject')?.value.trim();
             const report        = document.getElementById('finalReport')?.value.trim();
             const codeFile      = document.getElementById('codeFile');
             const presentFile   = document.getElementById('presentationFile');
@@ -473,10 +508,20 @@ async function loadProjectProgress() {
 
         // Weighted scoring
         const proposalDone = proposal?.status === 'approved' || proposal?.status === 'pending';
-        const phase1Done   = phases.find(p => p.phase_number === 1 && p.status === 'submitted');
-        const phase2Done   = phases.find(p => p.phase_number === 2 && p.status === 'submitted');
-        const phase3Done   = phases.find(p => p.phase_number === 3 && p.status === 'submitted');
-        const finalDone    = !!finalSub;
+        // Count any saved phase (submitted OR in-progress) as "done" for tracker display
+const phase1Record = phases.find(p => p.phase_number === 1);
+const phase2Record = phases.find(p => p.phase_number === 2);
+const phase3Record = phases.find(p => p.phase_number === 3);
+
+const phase1Done = phase1Record?.status === 'submitted';
+const phase2Done = phase2Record?.status === 'submitted';
+const phase3Done = phase3Record?.status === 'submitted';
+
+// Use saved completion_percentage for partial progress within each phase
+const phase1Pct = phase1Done ? 100 : (phase1Record?.completion_percentage || 0);
+const phase2Pct = phase2Done ? 100 : (phase2Record?.completion_percentage || 0);
+const phase3Pct = phase3Done ? 100 : (phase3Record?.completion_percentage || 0);
+const finalDone    = !!finalSub;
 
    // Use phase completion_percentage for partial credit within each phase
 const phase1Pct = phase1Done ? 100 : (phases.find(p => p.phase_number === 1)?.completion_percentage || 0);
@@ -484,20 +529,20 @@ const phase2Pct = phase2Done ? 100 : (phases.find(p => p.phase_number === 2)?.co
 const phase3Pct = phase3Done ? 100 : (phases.find(p => p.phase_number === 3)?.completion_percentage || 0);
 
 const totalPct = Math.round(
-    (proposalDone   ? 10 : 0) +
-    (phase1Pct / 100 * 25) +
-    (phase2Pct / 100 * 25) +
-    (phase3Pct / 100 * 25) +
-    (finalDone      ? 15 : 0)
+    (proposalDone          ? 10 : 0) +
+    (phase1Pct / 100 * 25)           +
+    (phase2Pct / 100 * 25)           +
+    (phase3Pct / 100 * 25)           +
+    (finalDone             ? 15 : 0)
 );
 
         const steps = [
-            { label: 'Proposal',  weight: 10,  done: proposalDone, icon: 'fa-file-alt',       active: true },
-            { label: 'Phase 1',   weight: 25,  done: !!phase1Done, icon: 'fa-seedling',        active: proposalDone },
-            { label: 'Phase 2',   weight: 25,  done: !!phase2Done, icon: 'fa-cog',             active: !!phase1Done },
-            { label: 'Phase 3',   weight: 25,  done: !!phase3Done, icon: 'fa-vial',            active: !!phase2Done },
-            { label: 'Final',     weight: 15,  done: finalDone,    icon: 'fa-flag-checkered',  active: !!phase3Done }
-        ];
+    { label: 'Proposal', weight: 10,  done: proposalDone,  icon: 'fa-file-alt',      active: true,             pct: proposalDone ? 100 : 0 },
+    { label: 'Phase 1',  weight: 25,  done: phase1Done,    icon: 'fa-seedling',      active: proposalDone,     pct: phase1Pct },
+    { label: 'Phase 2',  weight: 25,  done: phase2Done,    icon: 'fa-cog',           active: !!phase1Record,   pct: phase2Pct },
+    { label: 'Phase 3',  weight: 25,  done: phase3Done,    icon: 'fa-vial',          active: !!phase2Record,   pct: phase3Pct },
+    { label: 'Final',    weight: 15,  done: finalDone,     icon: 'fa-flag-checkered',active: !!phase3Record,   pct: finalDone ? 100 : 0 }
+];
 
         const colorDone   = '#0F6E56';
         const colorActive = '#534AB7';
