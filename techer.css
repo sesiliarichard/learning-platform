@@ -2927,3 +2927,28 @@ to{
     .tb-av { width: 32px; height: 32px; }
     .sess-stats { flex-direction: column; gap: 6px; }
 }
+/* ── Fix logout section on mobile ── */
+.sb-foot {
+  padding: 12px 10px;
+  border-top: 1px solid rgba(255,255,255,0.2);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: rgba(255,255,255,0.08);
+}
+
+.sb-foot .sb-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sb-foot .lo-btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
