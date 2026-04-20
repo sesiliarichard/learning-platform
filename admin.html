@@ -6523,6 +6523,7 @@ document.addEventListener('drop', (e) => {
         }
 
         // Success!
+  // Success!
         console.log('✅ Admin authenticated successfully! Showing dashboard...');
         console.log('8. Making page visible...');
        document.body.style.visibility = 'visible';
@@ -6532,13 +6533,8 @@ document.addEventListener('drop', (e) => {
        if (nameEl) nameEl.textContent = adminName.trim() || 'Admin';
        if (avEl)   avEl.textContent   = adminName.trim().split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() || 'AD';
 
-  // Load all dashboard data
-        console.log('9. Initializing dashboard...');
-        if (typeof init === 'function') {
-            init();
-        } else {
-            console.log('⚠️ init function not found');
-        }
+        // init() is already called by DOMContentLoaded — do NOT call it again here
+        console.log('9. Dashboard ready — init handled by DOMContentLoaded');
         
     } catch (error) {
         console.error('❌ Unexpected error in auth check:', error);
