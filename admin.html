@@ -1955,10 +1955,17 @@ async function handleCreateChapter(event) {
     const courseId = formData.get('courseId');
     if (!courseId) { showToast('Please select a course', 'error'); return; }
 
-    const topicEditors = document.querySelectorAll('.topic-editor');
-    const topics = [];
+   // Prevent double submission
+        const submitBtn = document.querySelector('#createChapterForm button[type="submit"]');
+        if (submitBtn) {
+            if (submitBtn.dataset.saving === 'true') return;
+            submitBtn.dataset.saving = 'true';
+        }
 
-    topicEditors.forEach((editor) => {
+        const topicEditors = document.querySelectorAll('#topicsContainer .topic-editor');
+        const topics = [];
+
+        topicEditors.forEach((editor) => {
         const idx = editor.getAttribute('data-topic-index');
         const titleInput = editor.querySelector(`input[name="topics[${idx}][title]"]`);
         const contentEditor = editor.querySelector(`#editor-${idx}`);
@@ -2032,12 +2039,17 @@ async function handleCreateChapter(event) {
         event.target.dataset.submitting = 'false';
         topicCounter = 0;
         document.getElementById('topicsContainer').innerHTML = '';
+        // Reset submit button
+        const btn = document.querySelector('#createChapterForm button[type="submit"]');
+        if (btn) btn.dataset.saving = 'false';
         loadAdminChapters(courseId);
 
-    } catch (err) {
+   } catch (err) {
         console.error('Save chapter error:', err.message);
         showToast('Failed to save: ' + err.message, 'error');
         event.target.dataset.submitting = 'false';
+        const btn = document.querySelector('#createChapterForm button[type="submit"]');
+        if (btn) btn.dataset.saving = 'false';
     }
 }
 
