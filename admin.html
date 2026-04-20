@@ -1106,7 +1106,7 @@ body { visibility: hidden }
             </div>
 
 
-            <form id="createChapterForm" onsubmit="handleCreateChapter(event)">
+            <form id="createChapterForm">
     <div class="form-group">
         <label for="chapterCourseSelect">Select Course *</label>
         <select name="courseId" required id="chapterCourseSelect">
@@ -1944,7 +1944,13 @@ function setEditorHighlight(editorIndex, input) {
 }
 async function handleCreateChapter(event) {
     event.preventDefault();
-    const formData = new FormData(event.target);
+
+    // Prevent double submission
+    const form = event.target;
+    if (form.dataset.submitting === 'true') return;
+    form.dataset.submitting = 'true';
+
+    const formData = new FormData(form);
 
     const courseId = formData.get('courseId');
     if (!courseId) { showToast('Please select a course', 'error'); return; }
@@ -2023,6 +2029,7 @@ async function handleCreateChapter(event) {
         showToast('Chapter saved! You can now publish it to students.');
         closeModal('createChapterModal');
         event.target.reset();
+        event.target.dataset.submitting = 'false';
         topicCounter = 0;
         document.getElementById('topicsContainer').innerHTML = '';
         loadAdminChapters(courseId);
@@ -2030,6 +2037,7 @@ async function handleCreateChapter(event) {
     } catch (err) {
         console.error('Save chapter error:', err.message);
         showToast('Failed to save: ' + err.message, 'error');
+        event.target.dataset.submitting = 'false';
     }
 }
 
@@ -4708,16 +4716,22 @@ function openAddCourseModal() {
 }
 
 function openCreateChapterModal() {
-    // Reset the container
-    const container = document.getElementById('topicsContainer');
-    if (container) {
-        container.innerHTML = '';
-    }
-    // Reset topic counter
     topicCounter = 0;
-    // Add first empty topic (without default text)
+    const container = document.getElementById('topicsContainer');
+    if (container) container.innerHTML = '';
+
+    const form = document.getElementById('createChapterForm');
+    if (form) {
+        form.reset();
+        form.dataset.submitting = 'false';
+        // Remove any old listeners and add fresh one
+        const newForm = form.cloneNode(true);
+        form.parentNode.replaceChild(newForm, form);
+        document.getElementById('createChapterForm')
+            .addEventListener('submit', handleCreateChapter);
+    }
+
     addNewTopic();
-    // Open the modal
     document.getElementById('createChapterModal')?.classList.add('active');
 }
 
