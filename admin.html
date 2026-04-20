@@ -3937,61 +3937,222 @@ function renderProgressTable(rows) {
         return;
     }
 
-    const rows_html = rows.map(r => {
-        const name  = r.profiles ? `${r.profiles.first_name ?? ''} ${r.profiles.last_name ?? ''}`.trim() : 'Unknown';
-        const email = r.profiles?.email || '—';
-        const date  = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
-        const progress = r.progress_percentage ?? r.completion_percentage ?? null;
-        const notes    = (r.notes || r.update_notes || r.content || '—').substring(0, 100);
-        const fileUrl  = r.file_url || r.attachment || '';
+    // ── Group by student_id ──────────────────────────────────
+    const studentMap = {};
+    rows.forEach(r => {
+        const sid = r.student_id;
+        if (!studentMap[sid]) {
+            studentMap[sid] = { student: r.profiles, studentId: sid, phases: {} };
+        }
+        const phaseNum = r.phase_number || 1;
+        if (!studentMap[sid].phases[phaseNum]) {
+            studentMap[sid].phases[phaseNum] = [];
+        }
+        studentMap[sid].phases[phaseNum].push(r);
+    });
+
+    const students = Object.values(studentMap);
+
+    const phaseColors = {
+        1: { bg: '#ede9fe', border: '#7c3aed', color: '#5b21b6', label: 'Phase 1', sub: 'Planning & Research' },
+        2: { bg: '#dbeafe', border: '#2563eb', color: '#1d4ed8', label: 'Phase 2', sub: 'Development' },
+        3: { bg: '#d1fae5', border: '#10b981', color: '#065f46', label: 'Phase 3', sub: 'Testing & Wrap-Up' }
+    };
+
+    const cards = students.map((s, idx) => {
+        const name  = s.student ? `${s.student.first_name ?? ''} ${s.student.last_name ?? ''}`.trim() : 'Unknown';
+        const email = s.student?.email || '—';
+        const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+
+        // Phase summary pills
+        const pills = [1, 2, 3].map(n => {
+            const pc = phaseColors[n];
+            const reports = s.phases[n];
+            if (!reports || reports.length === 0) {
+                return `<span style="background:#f3f4f6;color:#9ca3af;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">${pc.label}: No report</span>`;
+            }
+            const latest = reports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+            const pct = latest.progress_percentage ?? latest.completion_percentage ?? '—';
+            return `<span style="background:${pc.bg};color:${pc.color};padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid ${pc.border};">
+                        ${pc.label}: ${pct !== '—' ? pct + '%' : 'Submitted'}
+                    </span>`;
+        }).join('');
+
+        // Phase tab buttons
+        const phaseTabs = [1, 2, 3].map(n => {
+            const pc = phaseColors[n];
+            const hasData = !!(s.phases[n] && s.phases[n].length > 0);
+            return `<button onclick="showProgressPhaseDetail('${s.studentId}', ${n}, '${idx}')"
+                        id="progTabBtn_${idx}_${n}"
+                        style="padding:8px 14px;border:2px solid ${hasData ? pc.border : '#e5e7eb'};
+                               border-radius:8px;background:${hasData ? pc.bg : '#f9fafb'};
+                               color:${hasData ? pc.color : '#9ca3af'};font-size:12px;font-weight:700;
+                               cursor:${hasData ? 'pointer' : 'default'};font-family:inherit;">
+                        <i class="fas fa-${n===1?'seedling':n===2?'cog':'vial'}"></i>
+                        ${pc.label} <span style="font-size:10px;font-weight:400;">(${(s.phases[n]||[]).length} report${(s.phases[n]||[]).length!==1?'s':''})</span>
+                    </button>`;
+        }).join('');
+
+        return `
+        <div style="background:white;border:1.5px solid #e5e7eb;border-radius:16px;margin-bottom:16px;
+                    overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);" id="progCard_${idx}">
+
+            <!-- Student header -->
+            <div style="padding:16px 20px;display:flex;align-items:center;gap:14px;
+                        background:linear-gradient(135deg,#f8faff,#f0f4ff);border-bottom:1px solid #e5e7eb;">
+                <div style="width:44px;height:44px;min-width:44px;border-radius:50%;
+                            background:linear-gradient(135deg,#10b981,#047857);
+                            display:flex;align-items:center;justify-content:center;
+                            color:white;font-weight:800;font-size:15px;">
+                    ${initials}
+                </div>
+                <div style="flex:1;">
+                    <div style="font-weight:700;color:#1f2937;font-size:15px;">${name}</div>
+                    <div style="font-size:12px;color:#6b7280;margin-top:2px;">${email}</div>
+                </div>
+                <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+                    ${pills}
+                </div>
+            </div>
+
+            <!-- Phase tab buttons -->
+            <div style="padding:14px 20px;border-bottom:1px solid #f3f4f6;
+                        display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <span style="font-size:12px;font-weight:700;color:#6b7280;margin-right:4px;">View Phase:</span>
+                ${phaseTabs}
+            </div>
+
+            <!-- Phase detail panel -->
+            <div id="progDetail_${idx}" style="display:none;padding:20px;background:#fafafa;"></div>
+        </div>`;
+    }).join('');
+
+    // Store data globally
+    window._adminProgressData = studentMap;
+
+    container.innerHTML = `
+        <div style="margin-bottom:14px;font-size:13px;color:#6b7280;">
+            <strong>${students.length}</strong> student${students.length!==1?'s':''} submitted progress reports
+            &nbsp;•&nbsp; <strong>${rows.length}</strong> total report${rows.length!==1?'s':''}
+        </div>
+        ${cards}`;
+}
+
+function showProgressPhaseDetail(studentId, phaseNum, cardIdx) {
+    const detailPanel = document.getElementById(`progDetail_${cardIdx}`);
+    if (!detailPanel) return;
+
+    const phaseColors = {
+        1: { label: 'Phase 1', sub: 'Planning & Research',          color: '#7c3aed', bg: '#f5f3ff' },
+        2: { label: 'Phase 2', sub: 'Development & Implementation',  color: '#2563eb', bg: '#eff6ff' },
+        3: { label: 'Phase 3', sub: 'Testing & Wrap-Up',            color: '#10b981', bg: '#f0fdf4' }
+    };
+    const pc = phaseColors[phaseNum];
+
+    // Highlight active tab
+    [1, 2, 3].forEach(n => {
+        const btn = document.getElementById(`progTabBtn_${cardIdx}_${n}`);
+        if (!btn) return;
+        const c = phaseColors[n];
+        const hasData = window._adminProgressData?.[studentId]?.phases?.[n]?.length > 0;
+        btn.style.boxShadow = n === phaseNum ? `0 0 0 3px ${c.border}40` : 'none';
+        btn.style.background = hasData ? c.bg : '#f9fafb';
+        btn.style.borderColor = (n === phaseNum && hasData) ? c.border : (hasData ? c.border : '#e5e7eb');
+    });
+
+    const reports = window._adminProgressData?.[studentId]?.phases?.[phaseNum];
+
+    if (!reports || reports.length === 0) {
+        detailPanel.style.display = 'block';
+        detailPanel.innerHTML = `
+            <div style="padding:30px;text-align:center;color:#9ca3af;">
+                <i class="fas fa-inbox" style="font-size:32px;opacity:0.3;display:block;margin-bottom:10px;"></i>
+                No progress report submitted for ${pc.label} yet.
+            </div>`;
+        return;
+    }
+
+    // Sort reports newest first
+    const sorted = [...reports].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    const reportsHTML = sorted.map((r, i) => {
+        const pct     = r.progress_percentage ?? r.completion_percentage ?? 0;
+        const notes   = r.notes || r.update_notes || r.progress_update || r.content || '';
+        const challenges = r.challenges || '';
+        const date    = r.created_at
+            ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            : '—';
+        const progressColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+        const fileUrl = r.file_url || r.attachment || '';
         const fileName = fileUrl ? fileUrl.split('/').pop() : '';
 
         return `
-        <tr style="border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
-            <td style="padding:14px 16px;vertical-align:top;">
-                <div style="font-weight:700;color:#111827;">${name}</div>
-                <div style="font-size:12px;color:#6b7280;">${email}</div>
-            </td>
-            <td style="padding:14px 16px;vertical-align:top;font-weight:600;color:#374151;">${r.title || r.report_title || '—'}</td>
-            <td style="padding:14px 16px;vertical-align:top;color:#6b7280;max-width:220px;">${notes}${notes.length===100?'…':''}</td>
-            <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-                ${progress !== null ? `
-                <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
-                    <div style="width:80px;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
-                        <div style="width:${Math.min(100,progress)}%;height:100%;background:#6d28d9;border-radius:4px;"></div>
+        <div style="background:white;border:1.5px solid ${pc.color}20;border-radius:12px;padding:18px;
+                    margin-bottom:12px;${i === 0 ? 'border-left:4px solid ' + pc.color + ';' : ''}">
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+                <div>
+                    <span style="font-size:12px;font-weight:700;color:${pc.color};">
+                        Report ${sorted.length - i} ${i === 0 ? '(Latest)' : ''}
+                    </span>
+                    <div style="font-size:11px;color:#6b7280;margin-top:2px;">
+                        <i class="fas fa-calendar"></i> ${date}
                     </div>
-                    <span style="font-weight:700;color:#6d28d9;font-size:13px;">${progress}%</span>
-                </div>` : '<span style="color:#d1d5db;">—</span>'}
-            </td>
-            <td style="padding:14px 16px;vertical-align:top;color:#6b7280;white-space:nowrap;">${date}</td>
-            <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-                ${fileUrl ? `<button onclick="downloadFile('${fileUrl}','${fileName}')" style="background:#ede9fe;color:#6d28d9;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;"><i class="fas fa-download"></i> Download</button>` : '<span style="color:#d1d5db;font-size:12px;">No file</span>'}
-            </td>
-            <td style="padding:14px 16px;text-align:center;">
-                <button onclick="deleteProgressReport('${r.id}')" style="background:#fee2e2;color:#991b1b;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;"><i class="fas fa-trash"></i> Delete</button>
-            </td>
-        </tr>`;
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+                    <div style="font-size:13px;font-weight:700;color:${progressColor};">
+                        Completion: ${pct}%
+                    </div>
+                    <div style="width:140px;height:8px;background:#e5e7eb;border-radius:6px;overflow:hidden;">
+                        <div style="height:100%;width:${Math.min(pct,100)}%;background:${progressColor};border-radius:6px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                ${notes ? `
+                <div style="background:#f9fafb;border-radius:8px;padding:12px;border:1px solid ${pc.color}15;">
+                    <div style="font-size:10px;font-weight:700;color:${pc.color};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+                        <i class="fas fa-pencil-alt"></i> Progress Update
+                    </div>
+                    <div style="font-size:13px;color:#374151;line-height:1.6;">${notes}</div>
+                </div>` : ''}
+                ${challenges ? `
+                <div style="background:#fff7ed;border-radius:8px;padding:12px;border:1px solid #fbbf2420;">
+                    <div style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+                        <i class="fas fa-exclamation-triangle"></i> Challenges
+                    </div>
+                    <div style="font-size:13px;color:#374151;line-height:1.6;">${challenges}</div>
+                </div>` : ''}
+            </div>
+
+            ${fileUrl ? `
+            <button onclick="downloadFile('${fileUrl}','${fileName}')"
+                style="background:${pc.color};color:white;border:none;padding:8px 16px;
+                       border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;
+                       display:inline-flex;align-items:center;gap:6px;">
+                <i class="fas fa-download"></i> Download Report File
+            </button>` : ''}
+
+            <button onclick="deleteProgressReport('${r.id}')"
+                style="background:#fee2e2;color:#dc2626;border:none;padding:8px 14px;
+                       border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;
+                       font-family:inherit;margin-left:8px;">
+                <i class="fas fa-trash"></i> Delete
+            </button>
+        </div>`;
     }).join('');
 
-    container.innerHTML = `
-        <div style="overflow-x:auto;">
-            <table style="width:100%;border-collapse:collapse;font-size:14px;">
-                <thead>
-                    <tr style="background:#f0fdf4;border-bottom:2px solid #bbf7d0;">
-                        <th style="padding:12px 16px;text-align:left;font-weight:700;color:#374151;">Student</th>
-                        <th style="padding:12px 16px;text-align:left;font-weight:700;color:#374151;">Report Title</th>
-                        <th style="padding:12px 16px;text-align:left;font-weight:700;color:#374151;">Notes</th>
-                        <th style="padding:12px 16px;text-align:center;font-weight:700;color:#374151;">Progress</th>
-                        <th style="padding:12px 16px;text-align:left;font-weight:700;color:#374151;">Submitted</th>
-                        <th style="padding:12px 16px;text-align:center;font-weight:700;color:#374151;">File</th>
-                        <th style="padding:12px 16px;text-align:center;font-weight:700;color:#374151;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>${rows_html}</tbody>
-            </table>
-        </div>
-        <div style="padding:12px 16px;background:#f0fdf4;border-top:1px solid #bbf7d0;font-size:13px;color:#6b7280;">
-            Total: <strong>${rows.length}</strong> progress report${rows.length!==1?'s':''}
+    detailPanel.style.display = 'block';
+    detailPanel.innerHTML = `
+        <div style="background:${pc.bg};border:1.5px solid ${pc.color}30;border-radius:14px;padding:20px;">
+            <div style="font-size:16px;font-weight:800;color:${pc.color};margin-bottom:16px;">
+                <i class="fas fa-chart-line"></i> ${pc.label}: ${pc.sub}
+                <span style="font-size:12px;font-weight:400;color:#6b7280;margin-left:8px;">
+                    (${sorted.length} report${sorted.length!==1?'s':''} submitted)
+                </span>
+            </div>
+            ${reportsHTML}
         </div>`;
 }
 
