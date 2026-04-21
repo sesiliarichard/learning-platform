@@ -1586,35 +1586,43 @@ async function deleteQuizQuestion(questionId, quizId) {
 
 async function handleDeleteQuiz(quizId, quizTitle) {
     if (!confirm(`Delete quiz "${quizTitle}"?`)) return;
-    const result = await deleteQuizFromDB(quizId);
-    if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
-    // Auto reset progress for all students who took this quiz
-if (quizData?.course_id) {
-    const { data: submissions } = await db
+
+    // Get course_id BEFORE deleting
+    const { data: quizData } = await supabaseClient
+        .from('quizzes')
+        .select('course_id')
+        .eq('id', quizId)
+        .maybeSingle();
+
+    // Get students who submitted BEFORE deleting
+    const { data: submissions } = await supabaseClient
         .from('quiz_submissions')
         .select('student_id')
         .eq('quiz_id', quizId);
 
-    if (submissions && submissions.length > 0) {
+    const result = await deleteQuizFromDB(quizId);
+    if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
+
+    // Reset progress for affected students
+    if (quizData?.course_id && submissions?.length > 0) {
         for (const sub of submissions) {
-            await db
+            await supabaseClient
                 .from('course_progress')
                 .delete()
                 .eq('student_id', sub.student_id)
                 .eq('course_id', quizData.course_id);
 
-            await db
+            await supabaseClient
                 .from('enrollments')
                 .update({ progress: 0, updated_at: new Date().toISOString() })
                 .eq('student_id', sub.student_id)
                 .eq('course_id', quizData.course_id);
         }
     }
-}
-showToast('Quiz deleted and student progress reset');
+
+    showToast('Quiz deleted and student progress reset');
     loadAdminQuizzes();
 }
-
 async function handleCreateQuizDB(event) {
     event.preventDefault();
     const questions = window.currentQuizQuestions || [];
