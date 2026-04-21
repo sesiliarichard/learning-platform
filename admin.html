@@ -7212,8 +7212,11 @@ function viewUser(id) {
         </div>
       </div>
     </div>`;
-  document.body.appendChild(modal);
+ document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  
+  // Load progress AFTER modal is in DOM
+  loadUserProgressList(u.id);
 }
 
 async function loadUserProgressList(userId) {
