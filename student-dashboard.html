@@ -3785,12 +3785,17 @@ async function loadResults() {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) { showResultsError(grid, 'You must be logged in.'); return; }
 
-        const { data: quizSubs } = await supabaseClient
-            .from('quiz_submissions')
-            .select(`id, score, correct_answers, total_questions, submitted_at, time_spent,
-            quizzes ( id, title, passing_score, course_id )`)
-            .eq('student_id', user.id)
-            .order('submitted_at', { ascending: false });
+      // Only show results for PUBLISHED quizzes
+const { data: quizSubs } = await supabaseClient
+    .from('quiz_submissions')
+    .select(`
+        id, score, submitted_at, time_spent, course_id, student_id,
+        quizzes!inner ( title, course_id, published, courses ( title ) )
+    `)
+    .eq('quizzes.published', true)
+    .eq('student_id', user.id)
+    .eq('quizzes.published', true)
+    .order('submitted_at', { ascending: false });
 
         const { data: assignSubs } = await supabaseClient
             .from('assignment_submissions')
