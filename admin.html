@@ -4671,10 +4671,13 @@ async function viewProjectProposal(proposalId) {
         </div>`;
    document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-
+  
   // Load student's course progress
   loadUserProgressList(u.id);
- }
+}
+
+
+
 
 // ── Approve / Reject proposal ─────────────────────────────────
 async function updateProposalStatus(proposalId, status) {
