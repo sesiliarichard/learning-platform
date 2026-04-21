@@ -367,7 +367,7 @@ if (!profile || profile.role !== 'student') {
                 if (up.success) presentationUrl = up.fileUrl;
             }
 
-            const { error } = await supabaseClient
+           const { error } = await supabaseClient
                 .from('project_final_submissions')
                 .upsert({
                     student_id:       user.id,
@@ -375,6 +375,7 @@ if (!profile || profile.role !== 'student') {
                     final_report:     report,
                     code_url:         codeUrl,
                     presentation_url: presentationUrl,
+                    file_url:         codeUrl || presentationUrl,
                     status:           'submitted',
                     submitted_at:     new Date().toISOString()
                 }, { onConflict: 'student_id' });
