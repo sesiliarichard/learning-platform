@@ -4197,7 +4197,7 @@ function renderFinalTable(rows) {
         const email = r.profiles?.email || '—';
         const date  = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
         const summary  = (r.summary || r.abstract || r.description || '—').substring(0, 100);
-        const fileUrl  = r.file_url || r.final_file_url || r.attachment || '';
+        const fileUrl  = r.file_url || r.code_url || r.presentation_url || r.final_file_url || r.attachment || '';
         const fileName = fileUrl ? fileUrl.split('/').pop() : '';
         const repoUrl  = r.github_url || r.repo_url || r.demo_url || '';
 
