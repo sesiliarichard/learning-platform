@@ -1588,7 +1588,30 @@ async function handleDeleteQuiz(quizId, quizTitle) {
     if (!confirm(`Delete quiz "${quizTitle}"?`)) return;
     const result = await deleteQuizFromDB(quizId);
     if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
-    showToast('Quiz deleted successfully');
+    // Auto reset progress for all students who took this quiz
+if (quizData?.course_id) {
+    const { data: submissions } = await db
+        .from('quiz_submissions')
+        .select('student_id')
+        .eq('quiz_id', quizId);
+
+    if (submissions && submissions.length > 0) {
+        for (const sub of submissions) {
+            await db
+                .from('course_progress')
+                .delete()
+                .eq('student_id', sub.student_id)
+                .eq('course_id', quizData.course_id);
+
+            await db
+                .from('enrollments')
+                .update({ progress: 0, updated_at: new Date().toISOString() })
+                .eq('student_id', sub.student_id)
+                .eq('course_id', quizData.course_id);
+        }
+    }
+}
+showToast('Quiz deleted and student progress reset');
     loadAdminQuizzes();
 }
 
