@@ -2252,17 +2252,44 @@ async function deleteChapter(chapterId) {
             console.log(`✅ Deleted ${topics.length} topics`);
         }
         
-        // Step 4: Finally delete the chapter
+     // Step 4: Finally delete the chapter
         const { error: chapterError } = await db
             .from('chapters')
             .delete()
             .eq('id', chapterId);
         
         if (chapterError) throw chapterError;
+
+        // Step 5: Auto reset ALL students' progress for this course
+        if (topics && topics.length > 0) {
+            // Get the course_id from the chapter
+            const { data: chapterInfo } = await db
+                .from('chapters')
+                .select('course_id')
+                .eq('id', chapterId)
+                .maybeSingle();
+
+            // Find all students enrolled in this course
+            const courseIdToReset = chapterInfo?.course_id || topics[0]?.course_id;
+            if (courseIdToReset) {
+                const { data: enrolledStudents } = await db
+                    .from('enrollments')
+                    .select('student_id')
+                    .eq('course_id', courseIdToReset);
+
+                if (enrolledStudents && enrolledStudents.length > 0) {
+                    // Reset progress for every enrolled student
+                    await db
+                        .from('enrollments')
+                        .update({ progress: 0, updated_at: new Date().toISOString() })
+                        .eq('course_id', courseIdToReset);
+                }
+            }
+        }
         
         // Close any open toasts and show success
         if (loadingToast) loadingToast();
-        showToast('✅ Chapter and all related data deleted successfully!', 'success');
+        showToast('✅ Chapter deleted and all student progress reset!', 'success');
         
         // Refresh the view
         await loadChapters();
@@ -7451,33 +7478,92 @@ async function submitGrade(submissionId, maxPoints) {
     loadAssignmentSubmissionsView();
 }
 async function deleteQuizSubmission(submissionId) {
-    if (!confirm('Delete this quiz submission? This cannot be undone.')) return;
+    if (!confirm('Delete this quiz submission? This will also reset the student\'s course progress. This cannot be undone.')) return;
 
-    const { error } = await supabaseClient
-        .from('quiz_submissions')
-        .delete()
-        .eq('id', submissionId);
+    try {
+        // 1. Get the submission details first
+        const { data: sub, error: fetchErr } = await db
+            .from('quiz_submissions')
+            .select('student_id, course_id')
+            .eq('id', submissionId)
+            .maybeSingle();
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        if (fetchErr) throw fetchErr;
 
-    showToast('✅ Quiz submission deleted');
-    loadQuizSubmissionsView();
+        // 2. Delete the quiz submission
+        const { error: delErr } = await db
+            .from('quiz_submissions')
+            .delete()
+            .eq('id', submissionId);
+
+        if (delErr) throw delErr;
+
+        // 3. Auto reset course progress if we have student + course
+        if (sub?.student_id && sub?.course_id) {
+            await db
+                .from('course_progress')
+                .delete()
+                .eq('student_id', sub.student_id)
+                .eq('course_id', sub.course_id);
+
+            await db
+                .from('enrollments')
+                .update({ progress: 0, updated_at: new Date().toISOString() })
+                .eq('student_id', sub.student_id)
+                .eq('course_id', sub.course_id);
+        }
+
+        showToast('✅ Quiz submission deleted and progress reset');
+        loadQuizSubmissionsView();
+
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
 }
 
 async function deleteAssignmentSubmission(submissionId) {
-    if (!confirm('Delete this assignment submission? This cannot be undone.')) return;
+    if (!confirm('Delete this assignment submission? This will also reset the student\'s course progress. This cannot be undone.')) return;
 
-    const { error } = await supabaseClient
-        .from('assignment_submissions')
-        .delete()
-        .eq('id', submissionId);
+    try {
+        // 1. Get submission details first
+        const { data: sub, error: fetchErr } = await db
+            .from('assignment_submissions')
+            .select('student_id, course_id')
+            .eq('id', submissionId)
+            .maybeSingle();
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+        if (fetchErr) throw fetchErr;
 
-    showToast('✅ Assignment submission deleted');
-    loadAssignmentSubmissionsView();
+        // 2. Delete the assignment submission
+        const { error: delErr } = await db
+            .from('assignment_submissions')
+            .delete()
+            .eq('id', submissionId);
+
+        if (delErr) throw delErr;
+
+        // 3. Auto reset course progress
+        if (sub?.student_id && sub?.course_id) {
+            await db
+                .from('course_progress')
+                .delete()
+                .eq('student_id', sub.student_id)
+                .eq('course_id', sub.course_id);
+
+            await db
+                .from('enrollments')
+                .update({ progress: 0, updated_at: new Date().toISOString() })
+                .eq('student_id', sub.student_id)
+                .eq('course_id', sub.course_id);
+        }
+
+        showToast('✅ Assignment submission deleted and progress reset');
+        loadAssignmentSubmissionsView();
+
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
 }
-
 
 // SUBMISSIONS COURSE FILTER PATCH
 
