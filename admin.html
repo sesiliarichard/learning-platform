@@ -368,8 +368,8 @@ body { visibility: hidden }
                         <!-- Assignment submissions will be loaded here -->
                     </div>
                 </div>
-
-                <div id="projectSubmissionsView" class="tab-content">
+          <div id="projectSubmissionsView" class="tab-content active">
+                    <div id="projectProgressTracker"></div>
                     <div id="projectSubmissionsViewList">
                         <!-- Project submissions will be loaded here -->
                     </div>
@@ -7571,7 +7571,10 @@ function onSubmissionCourseChange() {
     const tabId = activeTab.id;
     if (tabId === 'quizSubmissionsView')       loadQuizSubmissionsView();
     if (tabId === 'assignmentSubmissionsView') loadAssignmentSubmissionsView();
-    if (tabId === 'projectSubmissionsView')    loadProjectSubmissionsView();
+   if (tabId === 'projectSubmissionsView') {
+    loadProjectSubmissionsView();
+    if (typeof loadProjectProgress === 'function') loadProjectProgress();
+}
 }
 
 // ── Step 3: React to course change ──in admin do you see the certificate section
@@ -7583,7 +7586,10 @@ function switchSubmissionTab(tabId) {
 
     if (tabId === 'quizSubmissionsView')       loadQuizSubmissionsView();
     if (tabId === 'assignmentSubmissionsView') loadAssignmentSubmissionsView();
-    if (tabId === 'projectSubmissionsView')    loadProjectSubmissionsView();
+   if (tabId === 'projectSubmissionsView') {
+    loadProjectSubmissionsView();
+    if (typeof loadProjectProgress === 'function') loadProjectProgress();
+}
 }
 
 // ── Step 4: Override loadQuizSubmissionsView with course filtering ──
