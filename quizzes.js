@@ -113,10 +113,13 @@ async function getCourseQuizzes(courseId) {
         }
 
         // ── Step 3: fetch student submissions separately ──
+       const publishedQuizIds = (data || []).map(q => q.id);
+
         const { data: mySubmissions, error: subError } = await supabaseClient
             .from('quiz_submissions')
             .select('quiz_id, score, correct_answers, total_questions')
-            .eq('student_id', userId);  // ← now guaranteed not undefined
+            .eq('student_id', userId)
+            .in('quiz_id', publishedQuizIds.length > 0 ? publishedQuizIds : ['00000000-0000-0000-0000-000000000000']);
 
         if (subError) {
             console.warn('Could not fetch submissions:', subError.message);
@@ -730,17 +733,53 @@ const email      = profile.email      || '—';
 // ─────────────────────────────────────────────
 async function deleteQuizFromDB(quizId) {
     try {
+        // Get course_id before deleting
+        const { data: quizData } = await supabaseClient
+            .from('quizzes')
+            .select('course_id')
+            .eq('id', quizId)
+            .maybeSingle();
+
+        const courseId = quizData?.course_id;
+
+        // Get all student IDs who submitted this quiz
+        const { data: subs } = await supabaseClient
+            .from('quiz_submissions')
+            .select('student_id')
+            .eq('quiz_id', quizId);
+
+        const studentIds = [...new Set((subs || []).map(s => s.student_id))];
+
+        // Delete questions
         const { error: questionsError } = await supabaseClient
             .from('quiz_questions').delete().eq('quiz_id', quizId);
         if (questionsError) throw questionsError;
 
+        // Delete submissions
         const { error: submissionsError } = await supabaseClient
             .from('quiz_submissions').delete().eq('quiz_id', quizId);
         if (submissionsError) throw submissionsError;
 
+        // Delete quiz
         const { error: quizError } = await supabaseClient
             .from('quizzes').delete().eq('id', quizId);
         if (quizError) throw quizError;
+
+        // Recalculate and update progress for affected students
+        if (courseId && studentIds.length > 0) {
+            for (const studentId of studentIds) {
+                if (typeof syncCourseProgressToDB === 'function') {
+                    await syncCourseProgressToDB(studentId, courseId);
+                } else {
+                    // Fallback: delete progress records for this course
+                    await supabaseClient
+                        .from('course_progress')
+                        .delete()
+                        .eq('student_id', studentId)
+                        .eq('course_id', courseId);
+                }
+            }
+        }
 
         return { success: true, message: 'Quiz deleted successfully!' };
 
@@ -749,7 +788,6 @@ async function deleteQuizFromDB(quizId) {
         return { success: false, error: error.message };
     }
 }
-
 // ─────────────────────────────────────────────
 // QUIZ DETAIL MODAL (View Questions preview)
 // ─────────────────────────────────────────────
