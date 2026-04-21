@@ -188,6 +188,8 @@
 
       var sb = window.supabaseClient || window.db;
 
+const { data: { user } } = await sb.auth.getUser();
+
       var result = await sb.from('assignments').insert({
         course_id:       courseId,
         title:           title,
@@ -196,7 +198,8 @@
         max_points:      maxPoints,
         submission_type: subType,
         grading_rubric:  rubricJson,
-        status:          'active'
+        created_by:      user.id,
+        created_at:      new Date().toISOString()
       });
 
       if (result.error) {
