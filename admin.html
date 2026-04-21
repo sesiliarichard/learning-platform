@@ -2293,7 +2293,7 @@ async function deleteChapter(chapterId) {
         
         // Refresh the view
         await loadChapters();
-        
+
     } catch (err) {
         console.error('Delete chapter error:', err);
         if (loadingToast) loadingToast();
@@ -4669,9 +4669,12 @@ async function viewProjectProposal(proposalId) {
                 </div>
             </div>
         </div>`;
-    document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-}
+   document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+  // Load student's course progress
+  loadUserProgressList(u.id);
+ }
 
 // ── Approve / Reject proposal ─────────────────────────────────
 async function updateProposalStatus(proposalId, status) {
@@ -7195,16 +7198,124 @@ function viewUser(id) {
                  color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
           Close
         </button>
+        <div id="userProgressList_${u.id}" style="margin-top:16px;">
+            <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:10px;">
+                <i class="fas fa-chart-bar" style="color:#7c3aed;margin-right:6px;"></i>
+                Course Progress
+            </div>
+            <div id="progressListInner_${u.id}">
+                <i class="fas fa-spinner fa-spin"></i> Loading...
+            </div>
+        </div>
       </div>
     </div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
+async function loadUserProgressList(userId) {
+    const container = document.getElementById(`progressListInner_${userId}`);
+    if (!container) return;
+
+    try {
+        const { data: enrollments, error } = await db
+            .from('enrollments')
+            .select('course_id, progress, courses(title)')
+            .eq('student_id', userId)
+            .order('progress', { ascending: false });
+
+        if (error) throw error;
+
+        if (!enrollments || enrollments.length === 0) {
+            container.innerHTML = `
+                <div style="color:#9ca3af;font-size:13px;text-align:center;padding:10px;">
+                    No courses enrolled
+                </div>`;
+            return;
+        }
+
+        container.innerHTML = enrollments.map(e => {
+            const pct   = e.progress || 0;
+            const color = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
+            const title = e.courses?.title || 'Unknown Course';
+
+            return `
+            <div style="background:#f9fafb;border-radius:10px;padding:12px;
+                        margin-bottom:8px;border:1px solid #e5e7eb;">
+                <div style="display:flex;justify-content:space-between;
+                            align-items:center;margin-bottom:8px;">
+                    <div style="font-size:13px;font-weight:600;color:#374151;">
+                        ${title}
+                    </div>
+                    <div style="font-size:14px;font-weight:800;color:${color};">
+                        ${pct}%
+                    </div>
+                </div>
+                <div style="height:6px;background:#e5e7eb;border-radius:4px;
+                            overflow:hidden;margin-bottom:10px;">
+                    <div style="height:100%;width:${pct}%;
+                                background:${color};border-radius:4px;">
+                    </div>
+                </div>
+                ${pct > 0 ? `
+                <button 
+                    onclick="resetStudentCourseProgress(
+                        '${userId}',
+                        '${e.course_id}',
+                        'this student',
+                        '${title.replace(/'/g, "\\'")}'
+                    ).then(() => loadUserProgressList('${userId}'))"
+                    style="width:100%;padding:8px;background:#fee2e2;color:#dc2626;
+                           border:none;border-radius:8px;font-size:12px;
+                           font-weight:700;cursor:pointer;font-family:inherit;">
+                    <i class="fas fa-redo"></i> Reset Progress to 0%
+                </button>` : `
+                <div style="text-align:center;font-size:12px;color:#9ca3af;">
+                    Progress already at 0%
+                </div>`}
+            </div>`;
+        }).join('');
+
+    } catch (err) {
+        container.innerHTML = `
+            <div style="color:#ef4444;font-size:13px;">
+                Error: ${err.message}
+            </div>`;
+    }
+}
 function editUser(id) {
   // Edit removed as requested
 }
+async function resetStudentCourseProgress(studentId, courseId, studentName, courseName) {
+    if (!confirm(`Reset progress for ${studentName} in ${courseName}?\n\nThis will:\n• Delete all topic reading records\n• Set course progress back to 0%\n\nThis cannot be undone.`)) return;
 
+    try {
+        // Exactly what the SQL command does
+        const { error: e1 } = await db
+            .from('course_progress')
+            .delete()
+            .eq('student_id', studentId)
+            .eq('course_id', courseId);
+
+        if (e1) throw e1;
+
+        const { error: e2 } = await db
+            .from('enrollments')
+            .update({ 
+                progress: 0, 
+                updated_at: new Date().toISOString() 
+            })
+            .eq('student_id', studentId)
+            .eq('course_id', courseId);
+
+        if (e2) throw e2;
+
+        showToast(`✅ Progress reset for ${studentName} in ${courseName}!`);
+
+    } catch (err) {
+        showToast('Error: ' + err.message, 'error');
+    }
+}
 async function deleteUser(id) {
   const u = ALL_USERS.find(x => x.id == id);
   if (!u) return;
