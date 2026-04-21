@@ -7221,11 +7221,23 @@ async function loadUserProgressList(userId) {
     if (!container) return;
 
     try {
-        const { data: enrollments, error } = await db
+        const sb = window.supabaseClient || window.db;
+        
+        // Try student_id first, fallback to user_id
+        let { data: enrollments, error } = await sb
             .from('enrollments')
             .select('course_id, progress, courses(title)')
-            .eq('student_id', userId)
-            .order('progress', { ascending: false });
+            .eq('student_id', userId);
+
+        // Fallback: try user_id column
+        if (error || !enrollments) {
+            const result = await sb
+                .from('enrollments')
+                .select('course_id, progress, courses(title)')
+                .eq('user_id', userId);
+            enrollments = result.data;
+            error = result.error;
+        }
 
         if (error) throw error;
 
@@ -7261,13 +7273,12 @@ async function loadUserProgressList(userId) {
                     </div>
                 </div>
                 ${pct > 0 ? `
-                <button 
-                    onclick="resetStudentCourseProgress(
+                <button onclick="resetStudentCourseProgress(
                         '${userId}',
                         '${e.course_id}',
                         'this student',
-                        '${title.replace(/'/g, "\\'")}'
-                    ).then(() => loadUserProgressList('${userId}'))"
+                        '${(e.courses?.title || '').replace(/'/g, "\\'")}')
+                    .then(() => loadUserProgressList('${userId}'))"
                     style="width:100%;padding:8px;background:#fee2e2;color:#dc2626;
                            border:none;border-radius:8px;font-size:12px;
                            font-weight:700;cursor:pointer;font-family:inherit;">
@@ -7281,8 +7292,11 @@ async function loadUserProgressList(userId) {
 
     } catch (err) {
         container.innerHTML = `
-            <div style="color:#ef4444;font-size:13px;">
-                Error: ${err.message}
+            <div style="color:#ef4444;font-size:13px;padding:10px;">
+                <i class="fas fa-exclamation-circle"></i> ${err.message}
+                <br><span style="color:#9ca3af;font-size:12px;">
+                    Check if enrollments table exists
+                </span>
             </div>`;
     }
 }
