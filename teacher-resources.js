@@ -45,23 +45,24 @@ async function loadResourcesFromDB() {
     const courseIds = teacherState.courses.map(c => c.id);
 
     // Build the filter: teacher's courses OR course_id is null (shared resources)
-    let query = supabaseClient
-      .from('resources')
-      .select(`
-        id,
-        title,
-        type,
-        description,
-        file_url,
-        external_url,
-        file_size,
-        download_count,
-        course_id,
-        created_at,
-        courses ( id, title, color )
-      `)
-      .order('created_at', { ascending: false });
-
+let query = supabaseClient
+  .from('resources')
+  .select(`
+    id,
+    title,
+    type,
+    description,
+    file_url,
+    external_url,
+    file_size,
+    download_count,
+    course_id,
+    created_at,
+    courses ( id, title, color )
+  `)
+  .eq('published', true)          
+  
+  .order('created_at', { ascending: false });
     if (courseIds.length) {
       query = query.or(`course_id.in.(${courseIds.join(',')}),course_id.is.null`);
     } else {
