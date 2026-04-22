@@ -296,8 +296,21 @@ function renderOverview() {
             </div>`;
         }).join('') || '<p style="color:var(--mut);font-size:12px;padding:10px">All caught up! 🎉</p>';
     }
-}
 
+    // Update notification badge with real announcement count
+    (async () => {
+        const { data } = await supabaseClient
+            .from('announcements')
+            .select('id', { count: 'exact', head: true })
+            .eq('published', true);
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+            const count = data?.length || 0;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? '' : 'none';
+        }
+    })();
+} 
 
 
 // ── 12. UTILITY ───────────────────────────────────────────────
