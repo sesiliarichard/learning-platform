@@ -3790,7 +3790,7 @@ const { data: quizSubs } = await supabaseClient
     .from('quiz_submissions')
     .select(`
         id, score, submitted_at, time_spent, course_id, student_id,
-        quizzes!inner ( title, course_id, published, courses ( title ) )
+        quizzes!inner ( id, title, course_id, published, courses ( title ) )
     `)
     .eq('quizzes.published', true)
     .eq('student_id', user.id)
