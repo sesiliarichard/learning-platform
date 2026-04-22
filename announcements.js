@@ -717,12 +717,28 @@ function renderStudentAnnouncements(announcements) {
     const container = document.getElementById('announcementsList');
     if (!container) return;
 
-    const unreadCount = announcements.filter(a => !a.isRead).length;
-    const badge = document.getElementById('announcementsBadge');
-    if (badge) {
-        badge.textContent = unreadCount;
-        badge.style.display = unreadCount > 0 ? 'flex' : 'none';
-    }
+  const unreadCount = announcements.filter(a => !a.isRead).length;
+
+// sidebar badge
+const badge = document.getElementById('announcementsBadge');
+if (badge) {
+    badge.textContent = unreadCount > 0 ? unreadCount : '';
+    badge.style.display = unreadCount > 0 ? 'flex' : 'none';
+}
+
+// filter tab badge
+const filterBadge = document.getElementById('filterUnreadCount');
+if (filterBadge) {
+    filterBadge.textContent = unreadCount;
+    filterBadge.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+}
+
+// header bell badge
+const headerBadge = document.getElementById('headerNotifBadge');
+if (headerBadge) {
+    headerBadge.textContent = unreadCount > 0 ? unreadCount : '0';
+    headerBadge.style.display = unreadCount > 0 ? 'flex' : 'none';
+}
 
     if (announcements.length === 0) {
         container.innerHTML = `
