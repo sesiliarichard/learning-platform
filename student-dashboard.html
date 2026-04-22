@@ -3246,64 +3246,6 @@ let announcements = [
 
 let currentAnnouncementFilter = 'all';
 
-// Load Announcements
-async function loadStudentAnnouncementsUI() {
-    const container = document.getElementById('announcementsContainer') ||
-                      document.getElementById('announcementsList');
-    if (!container) return;
-
-    container.innerHTML = `
-        <div class="ann-cream-section">
-            <div class="ann-corner-dot tl"></div>
-            <div class="ann-corner-dot tr"></div>
-            <div class="ann-corner-dot bl"></div>
-            <div class="ann-corner-dot br"></div>
-            <div class="announcements-list" id="annListInner">
-                <div style="text-align:center;padding:40px 20px;color:rgba(26,42,108,0.5);">
-                    <i class="fas fa-spinner fa-spin" style="font-size:28px;display:block;margin-bottom:12px;"></i>
-                    Loading announcements...
-                </div>
-            </div>
-        </div>`;
-
-    try {
-        const { data, error } = await db
-            .from('announcements')
-            .select('*')
-            .order('created_at', { ascending: false });
-
-        const inner = document.getElementById('annListInner');
-        if (!inner) return;
-
-        if (error || !data || data.length === 0) {
-            // Show sample data so UI always looks good
-            const sample = [
-                { id: 's1', title: 'Welcome to ASAI!', message: 'Welcome to the African School of AI. Check your course materials and get started on your learning journey!', priority: 'normal', type: 'admin', created_at: new Date().toISOString(), read: false },
-                { id: 's2', title: 'Exam Schedule Update', message: 'Final exams will be held in the last week of the semester. Please prepare early and review all course materials.', priority: 'urgent', type: 'admin', created_at: new Date(Date.now() - 86400000).toISOString(), read: false }
-            ];
-            inner.innerHTML = sample.map(ann => buildAnnouncementItem(ann, getTimeAgo(new Date(ann.created_at)))).join('');
-            updateUnreadBadge();
-            return;
-        }
-
-        inner.innerHTML = data.map(ann =>
-            buildAnnouncementItem(ann, getTimeAgo(new Date(ann.created_at)))
-        ).join('');
-        updateUnreadBadge();
-
-    } catch (err) {
-        console.error('Error loading announcements:', err);
-        const inner = document.getElementById('annListInner');
-        if (inner) {
-            inner.innerHTML = buildAnnouncementItem({
-                id: 0, title: 'Welcome to ASAI',
-                message: 'Your announcements will appear here once the admin posts them.',
-                priority: 'normal', type: 'admin',
-                created_at: new Date().toISOString(), read: false
-            }, 'Just now');
-        }
-    }
-}
 
 // Filter Announcements
 function filterAnnouncements(btn, type) {
