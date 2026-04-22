@@ -60,11 +60,11 @@ async function loadStudentsFromDB() {
   const profileMap = {};
   (profiles || []).forEach(p => { profileMap[p.id] = p; });
 
-  const seen = new Map();
+ const seen = new Map();
   enrollments.forEach(e => {
-    // ✅ FIX: resolve the actual ID used
     const resolvedId = e.user_id || e.student_id;
-    if (!resolvedId || seen.has(resolvedId)) return;
+    const rowKey = `${resolvedId}__${e.course_id}`;
+    if (!resolvedId || seen.has(rowKey)) return;
 
     const p = profileMap[resolvedId] || {};
 
@@ -74,7 +74,7 @@ async function loadStudentsFromDB() {
       || p.email
       || 'Unknown Student';
 
-    seen.set(resolvedId, {
+   seen.set(rowKey, {
       id:          resolvedId,
       name,
       email:       p.email      || '—',
