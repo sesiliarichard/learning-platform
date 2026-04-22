@@ -29,8 +29,9 @@ const ProjectsAPI = (() => {
         const { data: { user } } = await getCurrentUser();
         if (!user) return { success: false, error: 'Not authenticated' };
 
-        const ext      = file.name.split('.').pop();
-        const fileName = `${user.id}/${folder}/${Date.now()}.${ext}`;
+        const ext           = file.name.split('.').pop();
+        const safeName      = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const fileName      = `${user.id}/${folder}/${Date.now()}_${safeName}`;;
 
         const { data, error } = await supabaseClient.storage
             .from('project-files')
@@ -42,7 +43,7 @@ const ProjectsAPI = (() => {
             .from('project-files')
             .getPublicUrl(fileName);
 
-        return { success: true, fileUrl: urlData.publicUrl, path: fileName };
+        return { success: true, fileUrl: urlData.publicUrl, path: fileName, originalName: file.name };
     }
 
     // ════════════════════════════════════════════════════════
@@ -82,26 +83,29 @@ if (!profile || profile.role !== 'student') {
             }
 
             // Upload file if provided
-            let fileUrl = null;
-            if (fileInput?.files?.[0]) {
-                showMsg('Uploading proposal document...', 'success');
-                const up = await uploadFile(fileInput.files[0], 'proposals');
-                if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
-                fileUrl = up.fileUrl;
-            }
+           let fileUrl      = null;
+let fileOrigName = null;
+if (fileInput?.files?.[0]) {
+    showMsg('Uploading proposal document...', 'success');
+    const up = await uploadFile(fileInput.files[0], 'proposals');
+    if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
+    fileUrl      = up.fileUrl;
+    fileOrigName = up.originalName;
+}
 
-            // Save to Supabase
-            const { error } = await supabaseClient
-                .from('project_proposals')
-                .insert({
-                    student_id:  user.id,
-                    title,
-                    description,
-                    objectives,
-                    timeline_weeks: parseInt(timeline) || null,
-                    file_url:    fileUrl,
-                    status:      'pending'
-                });
+// Save to Supabase
+const { error } = await supabaseClient
+    .from('project_proposals')
+    .insert({
+        student_id:     user.id,
+        title,
+        description,
+        objectives,
+        timeline_weeks: parseInt(timeline) || null,
+        file_url:       fileUrl,
+        file_name:      fileOrigName,
+        status:         'pending'
+    });
 
             if (error) throw error;
 
@@ -158,13 +162,15 @@ if (!profile || profile.role !== 'student') {
             const activities = Array.from(activityItems).map(el => el.textContent.trim());
 
             // Upload file if provided
-            let fileUrl = null;
-            if (fileInput?.files?.[0]) {
-                showMsg('Uploading file...', 'success');
-                const up = await uploadFile(fileInput.files[0], 'phase' + phaseNum);
-                if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
-                fileUrl = up.fileUrl;
-            }
+            let fileUrl      = null;
+let fileOrigName = null;
+if (fileInput?.files?.[0]) {
+    showMsg('Uploading file...', 'success');
+    const up = await uploadFile(fileInput.files[0], 'phase' + phaseNum);
+    if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
+    fileUrl      = up.fileUrl;
+    fileOrigName = up.originalName;
+}
 
             // Get project_proposal_id (latest approved proposal for this student)
             const { data: proposal } = await supabaseClient
@@ -200,6 +206,7 @@ if (existingPhase) {
             activities:   JSON.stringify(activities),
             completion_percentage: parseInt(percentage),
             file_url:     fileUrl || existingPhase.file_url,
+            file_name:    fileOrigName || existingPhase.file_name,
             status:       'submitted',
             submitted_at: new Date().toISOString()
         })
@@ -222,6 +229,7 @@ if (existingPhase) {
             activities:   JSON.stringify(activities),
             completion_percentage: parseInt(percentage),
             file_url:     fileUrl,
+            file_name:    fileOrigName,
             status:       'submitted',
             submitted_at: new Date().toISOString()
         });
@@ -285,25 +293,28 @@ if (!profile || profile.role !== 'student') {
 
             if (!update) { showMsg('Please describe your progress', 'warning'); return; }
 
-            let fileUrl = null;
-            if (fileInput?.files?.[0]) {
-                showMsg('Uploading document...', 'success');
-                const up = await uploadFile(fileInput.files[0], 'progress');
-                if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
-                fileUrl = up.fileUrl;
-            }
+          let fileUrl      = null;
+let fileOrigName = null;
+if (fileInput?.files?.[0]) {
+    showMsg('Uploading document...', 'success');
+    const up = await uploadFile(fileInput.files[0], 'progress');
+    if (!up.success) { showMsg('File upload failed: ' + up.error, 'error'); return; }
+    fileUrl      = up.fileUrl;
+    fileOrigName = up.originalName;
+}
 
-            const { error } = await supabaseClient
-                .from('project_progress_reports')
-                .insert({
-                    student_id:            user.id,
-                    phase_number:          parseInt(phase),
-                    progress_update:       update,
-                    challenges,
-                    completion_percentage: parseInt(percentage),
-                    file_url:              fileUrl,
-                    submitted_at:          new Date().toISOString()
-                });
+const { error } = await supabaseClient
+    .from('project_progress_reports')
+    .insert({
+        student_id:            user.id,
+        phase_number:          parseInt(phase),
+        progress_update:       update,
+        challenges,
+        completion_percentage: parseInt(percentage),
+        file_url:              fileUrl,
+        file_name:             fileOrigName,
+        submitted_at:          new Date().toISOString()
+    });
 
             if (error) throw error;
 
@@ -352,20 +363,22 @@ if (!profile || profile.role !== 'student') {
             if (!projectTitle) { showMsg('Please select a project', 'warning'); return; }
             if (!report)       { showMsg('Please write your final report', 'warning'); return; }
 
-            let codeUrl         = null;
-            let presentationUrl = null;
+           let codeUrl              = null;
+let presentationUrl      = null;
+let codeFileName         = null;
+let presentationFileName = null;
 
-            if (codeFile?.files?.[0]) {
-                showMsg('Uploading source code...', 'success');
-                const up = await uploadFile(codeFile.files[0], 'final/code');
-                if (up.success) codeUrl = up.fileUrl;
-            }
+if (codeFile?.files?.[0]) {
+    showMsg('Uploading source code...', 'success');
+    const up = await uploadFile(codeFile.files[0], 'final/code');
+    if (up.success) { codeUrl = up.fileUrl; codeFileName = up.originalName; }
+}
 
-            if (presentFile?.files?.[0]) {
-                showMsg('Uploading presentation...', 'success');
-                const up = await uploadFile(presentFile.files[0], 'final/presentation');
-                if (up.success) presentationUrl = up.fileUrl;
-            }
+if (presentFile?.files?.[0]) {
+    showMsg('Uploading presentation...', 'success');
+    const up = await uploadFile(presentFile.files[0], 'final/presentation');
+    if (up.success) { presentationUrl = up.fileUrl; presentationFileName = up.originalName; }
+}
 
            // Check if student already has a final submission
 const { data: existing } = await supabaseClient
@@ -378,32 +391,36 @@ let error;
 
 if (existing) {
     // UPDATE existing record
-    const { error: updateError } = await supabaseClient
+ const { error: updateError } = await supabaseClient
         .from('project_final_submissions')
         .update({
-            project_title:    projectTitle,
-            final_report:     report,
-            code_url:         codeUrl,
-            presentation_url: presentationUrl,
-            file_url:         codeUrl || presentationUrl,
-            status:           'submitted',
-            submitted_at:     new Date().toISOString()
+            project_title:          projectTitle,
+            final_report:           report,
+            code_url:               codeUrl,
+            presentation_url:       presentationUrl,
+            file_url:               codeUrl || presentationUrl,
+            code_file_name:         codeFileName,
+            presentation_file_name: presentationFileName,
+            status:                 'submitted',
+            submitted_at:           new Date().toISOString()
         })
         .eq('student_id', user.id);
     error = updateError;
 } else {
     // INSERT new record
-    const { error: insertError } = await supabaseClient
+ const { error: insertError } = await supabaseClient
         .from('project_final_submissions')
         .insert({
-            student_id:       user.id,
-            project_title:    projectTitle,
-            final_report:     report,
-            code_url:         codeUrl,
-            presentation_url: presentationUrl,
-            file_url:         codeUrl || presentationUrl,
-            status:           'submitted',
-            submitted_at:     new Date().toISOString()
+            student_id:             user.id,
+            project_title:          projectTitle,
+            final_report:           report,
+            code_url:               codeUrl,
+            presentation_url:       presentationUrl,
+            file_url:               codeUrl || presentationUrl,
+            code_file_name:         codeFileName,
+            presentation_file_name: presentationFileName,
+            status:                 'submitted',
+            submitted_at:           new Date().toISOString()
         });
     error = insertError;
 }

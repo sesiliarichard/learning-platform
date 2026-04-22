@@ -3916,7 +3916,7 @@ function renderProposalsTable(rows) {
         const statusStyles = { pending:'background:#fef3c7;color:#92400e;', approved:'background:#d1fae5;color:#065f46;', rejected:'background:#fee2e2;color:#991b1b;' };
         const desc = (r.description || r.project_description || '—').substring(0, 100);
         const fileUrl  = r.file_url || r.proposal_file_url || r.attachment || '';
-        const fileName = fileUrl ? fileUrl.split('/').pop() : '';
+        const fileName = r.file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
 
         return `
         <tr style="border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
@@ -4130,8 +4130,8 @@ function showProgressPhaseDetail(studentId, phaseNum, cardIdx) {
             ? new Date(r.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
             : '—';
         const progressColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
-        const fileUrl = r.file_url || r.attachment || '';
-        const fileName = fileUrl ? fileUrl.split('/').pop() : '';
+       const fileUrl = r.file_url || r.attachment || '';
+       const fileName = r.file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
 
         return `
         <div style="background:white;border:1.5px solid ${pc.color}20;border-radius:12px;padding:18px;
@@ -4225,7 +4225,7 @@ function renderFinalTable(rows) {
         const date  = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
         const summary  = (r.summary || r.abstract || r.description || '—').substring(0, 100);
         const fileUrl  = r.file_url || r.code_url || r.presentation_url || r.final_file_url || r.attachment || '';
-        const fileName = fileUrl ? fileUrl.split('/').pop() : '';
+        const fileName = r.file_name || r.code_file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
         const repoUrl  = r.github_url || r.repo_url || r.demo_url || '';
 
         return `
@@ -4446,8 +4446,8 @@ function showPhaseDetail(studentId, phaseNum, cardIdx) {
     const activities = phaseData.activities || phaseData.activity_list || [];
     const challenges = phaseData.challenges || '';
     const nextSteps  = phaseData.next_steps || '';
-    const fileUrl    = phaseData.file_url || phaseData.attachment || '';
-    const fileName   = fileUrl ? fileUrl.split('/').pop() : '';
+   const fileUrl    = phaseData.file_url || phaseData.attachment || '';
+   const fileName   = phaseData.file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
     const submittedDate = phaseData.created_at
         ? new Date(phaseData.created_at).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
         : '—';
@@ -8490,7 +8490,9 @@ function downloadFile(url, filename) {
     if (!url) { alert('No file attached.'); return; }
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename || url.split('/').pop().replace(/^\d+_/, '');
+    // Strip timestamp prefix like "1776855637977_" from storage filenames
+    const cleanName = (filename || url.split('/').pop()).replace(/^\d+_/, '');
+    a.download = cleanName;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
