@@ -4238,9 +4238,10 @@ function renderFinalTable(rows) {
             <td style="padding:14px 16px;vertical-align:top;color:#6b7280;max-width:220px;">${summary}${summary.length===100?'…':''}</td>
             <td style="padding:14px 16px;vertical-align:top;color:#6b7280;white-space:nowrap;">${date}</td>
             <td style="padding:14px 16px;vertical-align:top;text-align:center;">
-                <div style="display:flex;flex-direction:column;gap:5px;align-items:center;">
-                    ${fileUrl ? `<button onclick="downloadFile('${fileUrl}','${fileName}')" style="background:#ede9fe;color:#6d28d9;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;width:100%;"><i class="fas fa-download"></i> Download</button>` : '<span style="color:#d1d5db;font-size:12px;">No file</span>'}
-                    ${repoUrl ? `<a href="${repoUrl}" target="_blank" style="background:#f0f9ff;color:#0369a1;padding:6px 12px;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none;display:block;text-align:center;"><i class="fas fa-external-link-alt"></i> View Link</a>` : ''}
+                <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+                    ${r.code_url ? `<button onclick="downloadFile('${r.code_url}','source-code-${(r.title||r.project_title||'project').replace(/[^a-z0-9]/gi,'_')}.zip')" style="background:#ede9fe;color:#6d28d9;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;width:100%;display:flex;align-items:center;gap:6px;"><i class="fas fa-code"></i> Source Code</button>` : ''}
+                    ${r.presentation_url ? `<button onclick="downloadFile('${r.presentation_url}','presentation-${(r.title||r.project_title||'project').replace(/[^a-z0-9]/gi,'_')}.pdf')" style="background:#dbeafe;color:#1d4ed8;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;width:100%;display:flex;align-items:center;gap:6px;"><i class="fas fa-file-powerpoint"></i> Presentation</button>` : ''}
+                    ${!r.code_url && !r.presentation_url ? '<span style="color:#d1d5db;font-size:12px;">No files</span>' : ''}
                 </div>
             </td>
             <td style="padding:14px 16px;text-align:center;">
@@ -8486,10 +8487,10 @@ function renderEligibleStudentsFixed(rows) {
 }
 // ── HELPER: Download a file from a Supabase storage URL ──────
 function downloadFile(url, filename) {
-    if (!url) { alert('No file attached to this submission.'); return; }
+    if (!url) { alert('No file attached.'); return; }
     const a = document.createElement('a');
     a.href = url;
-    a.download = filename || 'download';
+    a.download = filename || url.split('/').pop().replace(/^\d+_/, '');
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
