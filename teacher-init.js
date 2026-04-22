@@ -259,8 +259,9 @@ function renderOverview() {
     if (el('stPnd'))     el('stPnd').textContent     = pending;
     if (el('pendBadge')) el('pendBadge').textContent = pending || '';
 
-    const scores = teacher.students.filter(s => s.avg_score != null).map(s => s.avg_score);
-    const avg    = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+  const uniqueStudents = [...new Map(teacher.students.map(s => [s.id, s])).values()];
+  const scores = uniqueStudents.filter(s => s.avg_score != null).map(s => s.avg_score);
+  const avg    = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
     if (el('stAvg')) el('stAvg').textContent = avg + '%';
 
     const ovCou = el('ovCou');
@@ -448,7 +449,7 @@ window.loadTeacherAnnouncementsUI = async function() {
                 </div>
 
                 <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:14px;">
-                    ASAI · info@asai.ac.tz
+                    ASAI · info@ksgen.or.tz
                 </div>
 
                 <div style="display:flex;align-items:center;
