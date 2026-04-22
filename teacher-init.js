@@ -249,7 +249,10 @@ function populateCourseDropdowns() {
 function renderOverview() {
     const el = id => document.getElementById(id);
 
-    if (el('stStu')) el('stStu').textContent = teacher.students.length;
+    if (el('stStu')) {
+    const uniqueIds = new Set(teacher.students.map(s => s.id));
+    el('stStu').textContent = uniqueIds.size;
+}
     if (el('stCou')) el('stCou').textContent = teacher.courses.length;
 
     const pending = teacher.assignments.reduce((s, a) => s + (a.pending_count || 0), 0);
