@@ -297,19 +297,18 @@ function renderOverview() {
         }).join('') || '<p style="color:var(--mut);font-size:12px;padding:10px">All caught up! 🎉</p>';
     }
 
-    // Update notification badge with real announcement count
     (async () => {
-        const { data } = await supabaseClient
-            .from('announcements')
-            .select('id', { count: 'exact', head: true })
-            .eq('published', true);
-        const badge = document.getElementById('notifBadge');
-        if (badge) {
-            const count = data?.length || 0;
-            badge.textContent = count;
-            badge.style.display = count > 0 ? '' : 'none';
-        }
-    })();
+    const { count } = await supabaseClient
+        .from('announcements')
+        .select('*', { count: 'exact', head: true })
+        .eq('published', true);
+    const badge = document.getElementById('notifBadge');
+    if (badge) {
+        const total = count || 0;
+        badge.textContent = total;
+        badge.style.display = total > 0 ? '' : 'none';
+    }
+})();
 } 
 
 
