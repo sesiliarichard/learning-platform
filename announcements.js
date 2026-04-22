@@ -117,7 +117,8 @@ async function togglePublishAnnouncementDB(announcementId, currentlyPublished) {
 // ─────────────────────────────────────────────
 async function getAnnouncements() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data: enrollments } = await supabaseClient
@@ -183,7 +184,8 @@ try {
 // ─────────────────────────────────────────────
 async function markAnnouncementAsRead(announcementId) {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const { data: existing } = await supabaseClient
@@ -218,7 +220,8 @@ async function markAnnouncementAsRead(announcementId) {
 // ─────────────────────────────────────────────
 async function markAllAnnouncementsAsRead() {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const user = session?.user;
         if (!user) throw new Error('Not authenticated');
 
         const announcementsResult = await getAnnouncements();
