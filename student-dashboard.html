@@ -132,13 +132,13 @@
                     <div class="search-bar">
                         <input type="text" placeholder="Search courses, exam here...">
                     </div>
-                    <button class="icon-btn" aria-label="Browse files">
-                      <i class="fas fa-folder"></i>
-                   </button>
-                   <button class="icon-btn" id="notificationBtn" aria-label="Notifications (3 unread)">
-                     <i class="fas fa-bell"></i>
-                      <span class="notification-badge">3</span>
-                   </button>
+                    <button class="icon-btn" aria-label="Browse files" onclick="goToResources()">
+                  <i class="fas fa-folder"></i>
+                  </button>
+                 <button class="icon-btn" id="notificationBtn" aria-label="Notifications">
+                 <i class="fas fa-bell"></i>
+                  <span class="notification-badge" id="headerNotifBadge">0</span>
+                    </button>
                 </div>
             </div>
 
@@ -2828,11 +2828,19 @@ function loadCourseContent(course) {
         courseAssignmentsGrid.innerHTML = createEmptyState('assignments');
     }
 }
-        // Other functions
-        function showNotifications() {
-            showToast('You have 3 new notifications');
-        }
+function showNotifications() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const annNav = document.querySelector('.nav-item[data-section="announcements"]');
+    if (annNav) annNav.classList.add('active');
+    showSection('announcements');
+}
 
+     function goToResources() {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const resNav = document.querySelector('.nav-item[data-section="resources"]');
+    if (resNav) resNav.classList.add('active');
+    showSection('resources');
+     }
         // Show toast
         function showToast(message, type = 'success') {
             toastMessage.textContent = message;
@@ -3471,16 +3479,21 @@ function markOneRead(id, btn) {
 
 function updateUnreadBadge() {
     const count = document.querySelectorAll('.ann-hang-wrap.is-unread').length;
+
     document.querySelectorAll('.announcements-filter .unread-count').forEach(b => {
         b.textContent = count;
         b.style.display = count > 0 ? 'inline-flex' : 'none';
     });
     const nb = document.getElementById('announcementsBadge');
     if (nb) nb.textContent = count > 0 ? count : '';
-    const bell = document.querySelector('#notificationBtn .notification-badge');
-    if (bell) bell.textContent = count > 0 ? count : '0';
-}
 
+    // ✅ Update header bell badge
+    const headerBadge = document.getElementById('headerNotifBadge');
+    if (headerBadge) {
+        headerBadge.textContent = count > 0 ? count : '0';
+        headerBadge.style.display = count > 0 ? 'flex' : 'none';
+    }
+}
 
 // Get Time Ago
 function getTimeAgo(date) {
