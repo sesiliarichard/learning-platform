@@ -5108,63 +5108,134 @@ function renderBanner(enrollments, assignments) {
     // Streak — count consecutive days with activity from enrollments updated_at
     const dotsEl = document.getElementById('bannerStreakDots');
     const streakEl = document.getElementById('bannerStreak');
-    const streak = calculateStreak(enrollments);
-    if (streakEl) streakEl.textContent = streak + ' days';
-    if (dotsEl) {
-        dotsEl.innerHTML = '';
-        for (let i = 6; i >= 0; i--) {
-            const d = document.createElement('div');
-            d.className = 'dash-streak-dot ' + (i < streak ? 'dash-streak-dot--on' : 'dash-streak-dot--off');
-            dotsEl.appendChild(d);
+ // Fetch real streak
+    calculateStreak().then(streak => {
+        if (streakEl) streakEl.textContent = streak + ' days';
+        if (dotsEl) {
+            dotsEl.innerHTML = '';
+            for (let i = 0; i < 7; i++) {
+                const d = document.createElement('div');
+                d.className = 'dash-streak-dot ' + (i < streak ? 'dash-streak-dot--on' : 'dash-streak-dot--off');
+                dotsEl.appendChild(d);
+            }
         }
-    }
+    });
 }
  
-function calculateStreak(enrollments) {
-    // Simple: count how many of last 7 days had an enrollment update
-    const now = new Date();
-    let streak = 0;
-    for (let i = 0; i < 7; i++) {
-        const day = new Date(now);
-        day.setDate(now.getDate() - i);
-        const dayStr = day.toISOString().split('T')[0];
-        const active = enrollments.some(e => e.updated_at && e.updated_at.startsWith(dayStr));
-        if (active || i === 0) streak++;
-        else break;
+async function calculateStreak() {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return 0;
+
+        // Fetch last 7 days of activity from quiz submissions AND assignment submissions
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const [quizRes, assignRes] = await Promise.all([
+            supabaseClient
+                .from('quiz_submissions')
+                .select('submitted_at')
+                .eq('student_id', user.id)
+                .gte('submitted_at', sevenDaysAgo.toISOString()),
+            supabaseClient
+                .from('assignment_submissions')
+                .select('submitted_at')
+                .eq('student_id', user.id)
+                .gte('submitted_at', sevenDaysAgo.toISOString())
+        ]);
+
+        // Collect all active days
+        const activeDays = new Set();
+        (quizRes.data || []).forEach(s => {
+            activeDays.add(new Date(s.submitted_at).toISOString().split('T')[0]);
+        });
+        (assignRes.data || []).forEach(s => {
+            activeDays.add(new Date(s.submitted_at).toISOString().split('T')[0]);
+        });
+
+        // Count consecutive days going back from today
+        const now = new Date();
+        let streak = 0;
+        for (let i = 0; i < 7; i++) {
+            const day = new Date(now);
+            day.setDate(now.getDate() - i);
+            const dayStr = day.toISOString().split('T')[0];
+            if (activeDays.has(dayStr)) {
+                streak++;
+            } else if (i === 0) {
+                // today has no activity yet, still continue checking yesterday
+                continue;
+            } else {
+                break;
+            }
+        }
+        return Math.min(streak, 7);
+    } catch (err) {
+        console.error('calculateStreak error:', err);
+        return 0;
     }
-    return Math.min(streak, 7);
 }
- 
 /* ── To-Do ── */
 async function renderTodo(assignments, quizSubs) {
     const el = document.getElementById('todayTodoList');
     if (!el) return;
- 
+
     const now = Date.now();
     const items = [];
- 
+
     // Upcoming assignments (due within 14 days)
     assignments.forEach(a => {
         if (!a.due_date) return;
-        const dueMs   = new Date(a.due_date).getTime();
+        const dueMs    = new Date(a.due_date).getTime();
         const daysLeft = Math.ceil((dueMs - now) / 86400000);
         if (daysLeft > 0 && daysLeft <= 14) {
             const urgent = daysLeft <= 2;
             items.push({
-                text: a.title,
-                sub: 'Due ' + new Date(a.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                tag: urgent ? 'Urgent' : 'Assignment',
-                tagCls: urgent ? 'dash-tag--urgent' : 'dash-tag--quiz',
+                text:     a.title,
+                sub:      'Due ' + new Date(a.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                tag:      urgent ? 'Urgent' : 'Assignment',
+                tagCls:   urgent ? 'dash-tag--urgent' : 'dash-tag--quiz',
                 priority: daysLeft
             });
         }
     });
- 
+
+    // Fetch pending quizzes (published but not yet submitted)
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            // Get all published quizzes
+            const { data: allQuizzes } = await supabaseClient
+                .from('quizzes')
+                .select('id, title, course_id')
+                .eq('published', true);
+
+            // Get submitted quiz IDs
+            const submittedIds = new Set((quizSubs || []).map(s => s.quiz_id).filter(Boolean));
+
+            // Find unsubmitted quizzes
+            (allQuizzes || []).forEach(q => {
+                if (!submittedIds.has(q.id)) {
+                    const courseName = window.coursesData?.[q.course_id]?.title || 'Course';
+                    items.push({
+                        text:     q.title,
+                        sub:      courseName + ' · Not attempted yet',
+                        tag:      'Quiz',
+                        tagCls:   'dash-tag--quiz',
+                        priority: 7  // lower priority than urgent assignments
+                    });
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('Could not fetch pending quizzes:', e);
+    }
+
     if (items.length === 0) {
-        el.innerHTML = '<div class="dash-loading">Nothing urgent right now 🎉</div>';
+        el.innerHTML = '<div class="dash-loading">Nothing pending right now 🎉</div>';
         return;
     }
- 
+
     items.sort((a, b) => a.priority - b.priority);
     el.innerHTML = items.slice(0, 4).map(item => `
         <div class="dash-todo-item">
@@ -5177,7 +5248,6 @@ async function renderTodo(assignments, quizSubs) {
         </div>
     `).join('');
 }
- 
 /* ── Announcements ── */
 function renderAnnouncements(announcements) {
     const el = document.getElementById('dashAnnouncementsList');
@@ -5239,12 +5309,15 @@ function renderAchievements(enrollments, quizSubs) {
     const quizCount  = quizSubs.length;
  
     // Badges: earned or locked
+  // Badges: all based on real data
+    const highScore = quizSubs.some(q => (q.score || 0) >= 90);
+    const perfectScore = quizSubs.some(q => (q.score || 0) === 100);
     const badges = [
-        { icon: '🏆', earned: quizCount >= 1,       title: 'First quiz passed' },
-        { icon: '🔥', earned: true,                 title: '7-day streak' },
-        { icon: '🎓', earned: completed >= 1,       title: 'Completed a course' },
-        { icon: '⏱',  earned: false,               title: '500 hours studied' },
-        { icon: '🥇', earned: quizSubs.some(q => (q.score || 0) >= 90), title: 'Scored 90%+' }
+        { icon: '🏆', earned: quizCount >= 1,     title: 'First quiz taken' },
+        { icon: '🎓', earned: completed >= 1,     title: 'Completed a course' },
+        { icon: '🥇', earned: highScore,           title: 'Scored 90%+' },
+        { icon: '💯', earned: perfectScore,        title: 'Perfect score 100%' },
+        { icon: '📚', earned: quizCount >= 5,      title: 'Completed 5 quizzes' }
     ];
  
     const earned = badges.filter(b => b.earned).length;
