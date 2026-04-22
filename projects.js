@@ -367,18 +367,46 @@ if (!profile || profile.role !== 'student') {
                 if (up.success) presentationUrl = up.fileUrl;
             }
 
-           const { error } = await supabaseClient
-                .from('project_final_submissions')
-                .upsert({
-                    student_id:       user.id,
-                    project_title:    projectTitle,
-                    final_report:     report,
-                    code_url:         codeUrl,
-                    presentation_url: presentationUrl,
-                    file_url:         codeUrl || presentationUrl,
-                    status:           'submitted',
-                    submitted_at:     new Date().toISOString()
-                }, { onConflict: 'student_id' });
+           // Check if student already has a final submission
+const { data: existing } = await supabaseClient
+    .from('project_final_submissions')
+    .select('id')
+    .eq('student_id', user.id)
+    .maybeSingle();
+
+let error;
+
+if (existing) {
+    // UPDATE existing record
+    const { error: updateError } = await supabaseClient
+        .from('project_final_submissions')
+        .update({
+            project_title:    projectTitle,
+            final_report:     report,
+            code_url:         codeUrl,
+            presentation_url: presentationUrl,
+            file_url:         codeUrl || presentationUrl,
+            status:           'submitted',
+            submitted_at:     new Date().toISOString()
+        })
+        .eq('student_id', user.id);
+    error = updateError;
+} else {
+    // INSERT new record
+    const { error: insertError } = await supabaseClient
+        .from('project_final_submissions')
+        .insert({
+            student_id:       user.id,
+            project_title:    projectTitle,
+            final_report:     report,
+            code_url:         codeUrl,
+            presentation_url: presentationUrl,
+            file_url:         codeUrl || presentationUrl,
+            status:           'submitted',
+            submitted_at:     new Date().toISOString()
+        });
+    error = insertError;
+}
 
             if (error) throw error;
 
