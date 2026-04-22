@@ -146,17 +146,7 @@ async function getAnnouncements() {
             return false;
         });
 
-       let readIds = new Set();
-try {
-    const { data: readStatuses } = await supabaseClient
-        .from('announcement_reads')
-        .select('announcement_id')
-        .eq('student_id', user.id);
-    readIds = new Set(readStatuses?.map(r => r.announcement_id) || []);
-} catch (e) {
-    // announcement_reads table may not exist yet — treat all as unread
-    console.warn('announcement_reads table not available, treating all as unread');
-}
+ const readIds = new Set();
 
         const formattedAnnouncements = announcements.map(ann => ({
             id:         ann.id,
