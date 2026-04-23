@@ -8496,17 +8496,41 @@ function getCleanFileName(fileNameField, fileUrl) {
     } catch(e) { return 'download'; }
 }
 
-function downloadFile(url, filename) {
+async function downloadFile(url, filename) {
     if (!url) { alert('No file attached.'); return; }
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = getCleanFileName(filename, url);
-    a.target = '_blank';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
 
+    const cleanName = getCleanFileName(filename, url);
+
+    showToast('Preparing download...', 'info');
+
+    try {
+        // Fetch the file as a blob — this bypasses the cross-origin
+        // restriction that prevents a.download from working on Supabase URLs
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Could not fetch file');
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        // Release the blob URL after a short delay
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+
+        showToast('Download started: ' + cleanName);
+
+    } catch (err) {
+        console.error('Download error:', err);
+        // Fallback: just open in new tab
+        window.open(url, '_blank');
+        showToast('Opened in new tab — use browser Save As to save the file', 'info');
+    }
+}
 
 // ── DELETE: Proposal ──────────────────────────────────────────
 async function deleteProposal(id) {
