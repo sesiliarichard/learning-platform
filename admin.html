@@ -8490,9 +8490,8 @@ function downloadFile(url, filename) {
     if (!url) { alert('No file attached.'); return; }
     const a = document.createElement('a');
     a.href = url;
-    // Strip timestamp prefix like "1776855637977_" from storage filenames
-    const cleanName = (filename || url.split('/').pop()).replace(/^\d+_/, '');
-    a.download = cleanName;
+    const rawName = filename || url.split('/').pop();
+    a.download = rawName.replace(/^\d+_/, '');
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
