@@ -3916,7 +3916,9 @@ function renderProposalsTable(rows) {
         const statusStyles = { pending:'background:#fef3c7;color:#92400e;', approved:'background:#d1fae5;color:#065f46;', rejected:'background:#fee2e2;color:#991b1b;' };
         const desc = (r.description || r.project_description || '—').substring(0, 100);
         const fileUrl  = r.file_url || r.proposal_file_url || r.attachment || '';
-        const fileName = r.file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
+        const fileName = r.file_name 
+    ? r.file_name 
+    : (fileUrl ? fileUrl.split('/').pop().split('?')[0].replace(/^\d{10,15}_/, '') : '');
 
         return `
         <tr style="border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
@@ -4131,8 +4133,9 @@ function showProgressPhaseDetail(studentId, phaseNum, cardIdx) {
             : '—';
         const progressColor = pct >= 80 ? '#10b981' : pct >= 50 ? '#f59e0b' : '#ef4444';
        const fileUrl = r.file_url || r.attachment || '';
-       const fileName = r.file_name || (fileUrl ? fileUrl.split('/').pop().replace(/^\d+_/, '') : '');
-
+       const fileName = r.file_name 
+    ? r.file_name 
+    : (fileUrl ? fileUrl.split('/').pop().split('?')[0].replace(/^\d{10,15}_/, '') : '');
         return `
         <div style="background:white;border:1.5px solid ${pc.color}20;border-radius:12px;padding:18px;
                     margin-bottom:12px;${i === 0 ? 'border-left:4px solid ' + pc.color + ';' : ''}">
