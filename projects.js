@@ -454,10 +454,10 @@ if (existing) {
             if (!user) return;
 
             const { data: proposals, error } = await supabaseClient
-                .from('project_proposals')
-                .select('*, project_phases(*)')
-                .eq('student_id', user.id)
-                .order('created_at', { ascending: false });
+           .from('project_proposals')
+            .select('*, project_phases(*), file_name, file_url')
+            .eq('student_id', user.id)
+           .order('created_at', { ascending: false });
 
             if (error) throw error;
 
@@ -508,9 +508,9 @@ if (existing) {
                         <button class="project-action-btn" onclick="switchToPhases()">
                             <i class="fas fa-layer-group"></i> View Phases
                         </button>
-                        ${p.file_url ? `<a class="project-action-btn" href="${p.file_url}" target="_blank">
-                            <i class="fas fa-download"></i> Download Proposal
-                        </a>` : ''}
+                        ${p.file_url ? `<button class="project-action-btn" onclick="downloadFile('${p.file_url}', '${(p.file_name || '').replace(/'/g, "\\'")}')">
+                          <i class="fas fa-download"></i> Download Proposal
+                        </button>` : ''}
                     </div>
                 </div>`;
             }).join('');
