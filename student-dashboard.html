@@ -5361,39 +5361,44 @@ async function renderRecentResults(quizSubs, userId) {
 async function downloadFile(url, filename) {
     if (!url) { alert('No file attached.'); return; }
 
-    // Get clean filename
-    let cleanName = filename && filename.trim() && !filename.startsWith('http')
-        ? filename.trim()
-        : (() => {
-            try {
-                let raw = decodeURIComponent(url.split('/').pop().split('?')[0]);
-                return raw.replace(/^(\d{10,15}_)+/, '') || 'download';
-            } catch(e) { return 'download'; }
-        })();
+    // Clean filename — prefer stored name, fallback to URL parsing
+    let cleanName = 'download';
+    
+    if (filename && filename.trim() && !filename.startsWith('http')) {
+        cleanName = filename.trim();
+    } else {
+        try {
+            // Decode URI first, then strip ALL timestamp prefixes
+            const urlPath = url.split('?')[0];
+            const parts   = urlPath.split('/');
+            let   raw     = decodeURIComponent(parts[parts.length - 1]);
+            // Strip one or more leading 13-digit timestamps e.g. 1776929522201_
+            cleanName = raw.replace(/^\d{13}_/, '').replace(/^\d{13}_/, '') || 'download';
+        } catch(e) { cleanName = 'download'; }
+    }
 
-    showToast('Preparing download...', 'success');
+    showToast('Preparing download: ' + cleanName, 'success');
 
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Could not fetch file');
+        if (!response.ok) throw new Error('HTTP ' + response.status);
 
-        const blob = await response.blob();
+        const blob   = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
         const a = document.createElement('a');
-        a.href = blobUrl;
+        a.href     = blobUrl;
         a.download = cleanName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-
         setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
-        showToast('Downloaded: ' + cleanName);
 
+        showToast('Downloaded: ' + cleanName);
     } catch (err) {
-        // Fallback
+        console.error('downloadFile error:', err);
         window.open(url, '_blank');
-        showToast('Opened in new tab — use Save As to save', 'info');
+        showToast('Opened in new tab — use Save As to download', 'info');
     }
 }
     </script>
