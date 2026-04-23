@@ -8490,9 +8490,11 @@ function downloadFile(url, filename) {
     if (!url) { alert('No file attached.'); return; }
     const a = document.createElement('a');
     a.href = url;
-    // Always get just the filename part, then strip any leading timestamp
-    const rawName = (filename || url).split('/').pop().split('?')[0];
-    a.download = rawName.replace(/^\d{10,}_/, '');
+    // Use stored file_name if provided, else extract from URL
+    let cleanName = filename || url.split('/').pop().split('?')[0];
+    // Strip 10-15 digit timestamp prefix (e.g. 1776923130255_)
+    cleanName = cleanName.replace(/^\d{10,15}_/, '');
+    a.download = cleanName;
     a.target = '_blank';
     document.body.appendChild(a);
     a.click();
