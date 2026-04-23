@@ -3790,13 +3790,14 @@ function buildAssignmentResultCard(r) {
                     <i class="fas fa-${r.isGraded ? 'comment-dots' : 'eye'}"></i>
                     ${r.isGraded ? 'View Full Feedback' : 'View Submission'}
                 </button>
-                ${r.fileUrl ? `
-                <a href="${r.fileUrl}" target="_blank"
-                   style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;
-                          padding:9px;border:2px solid #e5e7eb;border-radius:12px;color:#6b7280;
-                          font-size:13px;font-weight:700;text-decoration:none;">
-                    <i class="fas fa-download"></i> Download My Submission
-                </a>` : ''}
+               ${r.fileUrl ? `
+<button onclick="downloadFile('${r.fileUrl}', '')"
+   style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;
+          padding:9px;border:2px solid #e5e7eb;border-radius:12px;color:#6b7280;
+          font-size:13px;font-weight:700;background:white;cursor:pointer;width:100%;
+          font-family:'Plus Jakarta Sans',sans-serif;">
+    <i class="fas fa-download"></i> Download My Submission
+</button>` : ''}
             </div>
         </div>`;
 }
@@ -5357,7 +5358,44 @@ async function renderRecentResults(quizSubs, userId) {
         </div>
     `).join('');
 }
+async function downloadFile(url, filename) {
+    if (!url) { alert('No file attached.'); return; }
 
+    // Get clean filename
+    let cleanName = filename && filename.trim() && !filename.startsWith('http')
+        ? filename.trim()
+        : (() => {
+            try {
+                let raw = decodeURIComponent(url.split('/').pop().split('?')[0]);
+                return raw.replace(/^(\d{10,15}_)+/, '') || 'download';
+            } catch(e) { return 'download'; }
+        })();
+
+    showToast('Preparing download...', 'success');
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Could not fetch file');
+
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = cleanName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+        showToast('Downloaded: ' + cleanName);
+
+    } catch (err) {
+        // Fallback
+        window.open(url, '_blank');
+        showToast('Opened in new tab — use Save As to save', 'info');
+    }
+}
     </script>
 </body>
 </html>
