@@ -260,18 +260,8 @@
         </div>
         <div class="form-group">
           <label>Country <span class="required">*</span></label>
-          <select id="country" title="Country" aria-label="Country">
+          <select id="country" title="Country" aria-label="Country" required>
             <option value="">Select your country</option>
-            <option>Tanzania</option>
-            <option>Kenya</option>
-            <option>Uganda</option>
-            <option>Rwanda</option>
-            <option>Ethiopia</option>
-            <option>Nigeria</option>
-            <option>Ghana</option>
-            <option>South Africa</option>
-            <option>Egypt</option>
-            <option>Other</option>
           </select>
         </div>
       </div>
@@ -298,12 +288,10 @@
       <div class="form-group">
         <label>Years of Experience <span class="required">*</span></label>
         <select id="experience" title="Experience" aria-label="Experience">
-          <option value="">Select range</option>
-          <option>Less than 1 year</option>
-          <option>1 – 2 years</option>
-          <option>3 – 5 years</option>
-          <option>6 – 10 years</option>
-          <option>10+ years</option>
+          <option value="">Select level</option>
+          <option value="beginner">Beginner (0 – 2 years)</option>
+          <option value="intermediate">Intermediate (2 – 5 years)</option>
+          <option value="advanced">Advanced (5+ years)</option>
         </select>
       </div>
 
@@ -337,6 +325,46 @@
   </div>
 
   <script>
+    // Load countries from API (same as login page)
+    let COUNTRIES = [];
+
+    async function loadAllCountries() {
+      const sel = document.getElementById('country');
+      try {
+        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
+        const data = await response.json();
+        COUNTRIES = data
+          .map(c => {
+            const root   = c.idd?.root || '';
+            const suffix = c.idd?.suffixes?.[0] || '';
+            const phone  = root + suffix;
+            return { name: c.name.common, code: c.cca2, phone: phone || '' };
+          })
+          .filter(c => c.phone)
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        sel.innerHTML = '<option value="">Select your country</option>';
+        COUNTRIES.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.code;
+          opt.textContent = `${c.name} (${c.phone})`;
+          sel.appendChild(opt);
+        });
+      } catch (err) {
+        sel.innerHTML = `
+          <option value="">Could not load countries</option>
+          <option value="TZ">Tanzania (+255)</option>
+          <option value="KE">Kenya (+254)</option>
+          <option value="NG">Nigeria (+234)</option>
+          <option value="GH">Ghana (+233)</option>
+          <option value="ZA">South Africa (+27)</option>
+          <option value="US">United States (+1)</option>
+          <option value="GB">United Kingdom (+44)</option>
+        `;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', loadAllCountries);
     function submitTalent() {
       const name = document.getElementById('fullname').value;
       const email = document.getElementById('email').value;
@@ -354,6 +382,7 @@
       document.getElementById('successMsg').style.display = 'block';
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
+    
   </script>
 
 </body>
