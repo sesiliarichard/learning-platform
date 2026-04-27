@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Join the Hub – Women in AI Talent Hub</title>
+   <!-- ===== FAVICON — place these files in your images/ folder ===== -->
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+  <!-- Generate your favicon free at: https://favicon.io -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f0f4ff;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* NAVBAR */
+    nav {
+      background: rgba(255,255,255,0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 4rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-bottom: 1px solid rgba(0,153,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0077cc;
+    }
+    .logo span { color: #00bbff; }
+    .back-btn {
+      background: white;
+      color: #0099ff;
+      border: 2px solid #0099ff;
+      padding: 0.5rem 1.4rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .back-btn:hover { background: #0099ff; color: white; }
+
+    /* PAGE HEADER */
+    .page-header {
+      background: #0077cc;
+      padding: 3rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute;
+      top: -50px; right: -50px;
+      width: 250px; height: 250px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+    .page-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p {
+      color: rgba(255,255,255,0.75);
+      font-size: 0.95rem;
+    }
+
+    /* FORM CONTAINER */
+    .form-container {
+      max-width: 700px;
+      margin: 3rem auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .form-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #1a1a2e;
+      margin-bottom: 0.5rem;
+    }
+
+    label span.required {
+      color: #e53e3e;
+      margin-left: 2px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid #e0e4f0;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #1a1a2e;
+      background: #f8faff;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #0099ff;
+      box-shadow: 0 0 0 3px rgba(0,153,255,0.1);
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 110px;
+    }
+
+    /* File upload */
+    .upload-box {
+      border: 2px dashed #b0c4e8;
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      background: #f0f6ff;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+    .upload-box:hover {
+      border-color: #0099ff;
+      background: #e8f4ff;
+    }
+    .upload-box input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+    .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .upload-box p {
+      font-size: 0.85rem;
+      color: #5a6170;
+    }
+    .upload-box strong {
+      color: #0099ff;
+    }
+
+    /* Two columns */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+
+    /* Submit button */
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #0099ff, #0077cc);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(0,153,255,0.3);
+      margin-top: 0.5rem;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,153,255,0.4);
+    }
+
+    /* Success message */
+    .success-msg {
+      display: none;
+      background: #e8fff4;
+      border: 1.5px solid #38a169;
+      color: #276749;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1.5px solid #eef0f8;
+      margin: 2rem 0;
+    }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #0099ff;
+      margin-bottom: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav>
+    <div class="logo">Women in <span>AI Talent Hub</span></div>
+    <a href="career-support.html" class="back-btn">← Back to Home</a>
+  </nav>
+
+  <!-- HEADER -->
+  <div class="page-header">
+    <h1>Join the Talent Hub</h1>
+    <p>Create your profile and get discovered by top companies across Africa and beyond.</p>
+  </div>
+
+  <!-- FORM -->
+  <div class="form-container">
+    <div class="form-card">
+
+      <p class="section-label">Personal Information</p>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label>Full Name <span class="required">*</span></label>
+          <input type="text" placeholder="e.g. Amina Hassan" id="fullname"/>
+        </div>
+        <div class="form-group">
+          <label>Country <span class="required">*</span></label>
+          <select id="country" title="Country" aria-label="Country">
+            <option value="">Select your country</option>
+            <option>Tanzania</option>
+            <option>Kenya</option>
+            <option>Uganda</option>
+            <option>Rwanda</option>
+            <option>Ethiopia</option>
+            <option>Nigeria</option>
+            <option>Ghana</option>
+            <option>South Africa</option>
+            <option>Egypt</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" placeholder="you@example.com" id="email"/>
+        </div>
+        <div class="form-group">
+          <label>Role / Job Title <span class="required">*</span></label>
+          <input type="text" placeholder="e.g. AI Engineer, Data Scientist" id="role"/>
+        </div>
+      </div>
+
+      <hr class="section-divider"/>
+      <p class="section-label">Professional Background</p>
+
+      <div class="form-group">
+        <label>Expertise / Short Bio <span class="required">*</span></label>
+        <textarea placeholder="Briefly describe your skills, background, and what you bring to the table..." id="bio"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Years of Experience <span class="required">*</span></label>
+        <select id="experience" title="Experience" aria-label="Experience">
+          <option value="">Select range</option>
+          <option>Less than 1 year</option>
+          <option>1 – 2 years</option>
+          <option>3 – 5 years</option>
+          <option>6 – 10 years</option>
+          <option>10+ years</option>
+        </select>
+      </div>
+
+      <hr class="section-divider"/>
+      <p class="section-label">Uploads</p>
+
+      <div class="form-group">
+        <label>Research / Project (optional)</label>
+        <div class="upload-box">
+          <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" id="project" title="Project" aria-label="Project"/>
+          <div class="upload-icon">📄</div>
+          <p><strong>Click to upload</strong> or drag and drop</p>
+          <p>PDF, DOC, PPT supported</p>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Headshot Photo <span class="required">*</span></label>
+        <div class="upload-box">
+          <input type="file" accept="image/*" id="headshot" title="Headshot" aria-label="Headshot"/>
+          <div class="upload-icon">📷</div>
+          <p><strong>Click to upload</strong> your photo</p>
+          <p>JPG, PNG supported</p>
+        </div>
+      </div>
+
+      <button class="submit-btn" onclick="submitTalent()">Submit My Profile</button>
+      <div class="success-msg" id="successMsg">✅ Profile submitted! We'll review and be in touch soon.</div>
+
+    </div>
+  </div>
+
+  <script>
+    function submitTalent() {
+      const name = document.getElementById('fullname').value;
+      const email = document.getElementById('email').value;
+      const country = document.getElementById('country').value;
+      const role = document.getElementById('role').value;
+      const bio = document.getElementById('bio').value;
+      const experience = document.getElementById('experience').value;
+      const headshot = document.getElementById('headshot').files.length;
+
+      if (!name || !email || !country || !role || !bio || !experience || !headshot) {
+        alert('Please fill in all required fields and upload your headshot.');
+        return;
+      }
+
+      document.getElementById('successMsg').style.display = 'block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Hire Talent – Women in AI Talent Hub</title>
+   <!-- ===== FAVICON — place these files in your images/ folder ===== -->
+  <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
+  <!-- Generate your favicon free at: https://favicon.io -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f0f4ff;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    nav {
+      background: rgba(255,255,255,0.95);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      padding: 1rem 4rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-bottom: 1px solid rgba(0,153,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    .logo {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: #0077cc;
+    }
+    .logo span { color: #00bbff; }
+    .back-btn {
+      background: white;
+      color: #0099ff;
+      border: 2px solid #0099ff;
+      padding: 0.5rem 1.4rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      text-decoration: none;
+      transition: all 0.3s;
+    }
+    .back-btn:hover { background: #0099ff; color: white; }
+
+    .page-header {
+      background: #0a1a4a;
+      padding: 3rem 4rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-header::before {
+      content: '';
+      position: absolute;
+      bottom: -60px; left: -60px;
+      width: 250px; height: 250px;
+      background: rgba(0,153,255,0.08);
+      border-radius: 50%;
+    }
+    .page-header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    .page-header p { color: rgba(255,255,255,0.7); font-size: 0.95rem; }
+
+    .form-container {
+      max-width: 600px;
+      margin: 3rem auto;
+      padding: 0 1.5rem 4rem;
+    }
+
+    .form-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 2.5rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+    }
+
+    .form-group { margin-bottom: 1.5rem; }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.88rem;
+      color: #1a1a2e;
+      margin-bottom: 0.5rem;
+    }
+
+    label span.required { color: #e53e3e; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.8rem 1rem;
+      border: 1.5px solid #e0e4f0;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      color: #1a1a2e;
+      background: #f8faff;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      outline: none;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      border-color: #0099ff;
+      box-shadow: 0 0 0 3px rgba(0,153,255,0.1);
+      background: #fff;
+    }
+
+    textarea { resize: vertical; min-height: 100px; }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      background: linear-gradient(135deg, #0a1a4a, #0077cc);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(0,119,204,0.3);
+      margin-top: 0.5rem;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,119,204,0.4);
+    }
+
+    .success-msg {
+      display: none;
+      background: #e8fff4;
+      border: 1.5px solid #38a169;
+      color: #276749;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      text-align: center;
+      margin-top: 1rem;
+    }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #0099ff;
+      margin-bottom: 1.2rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1.5px solid #eef0f8;
+      margin: 2rem 0;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <div class="logo">Women in <span>AI Talent Hub</span></div>
+    <a href="career-support.html" class="back-btn">← Back to Home</a>
+  </nav>
+
+  <div class="page-header">
+    <h1>Hire AI Talent</h1>
+    <p>Tell us about your company and we'll connect you with the right candidates.</p>
+  </div>
+
+  <div class="form-container">
+    <div class="form-card">
+
+      <p class="section-label">Contact Details</p>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label>First Name <span class="required">*</span></label>
+          <input type="text" placeholder="First name" id="firstname"/>
+        </div>
+        <div class="form-group">
+          <label>Last Name <span class="required">*</span></label>
+          <input type="text" placeholder="Last name" id="lastname"/>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" placeholder="you@company.com" id="email"/>
+        </div>
+        <div class="form-group">
+          <label>Phone / Contact <span class="required">*</span></label>
+          <input type="tel" placeholder="+255 700 000 000" id="contact"/>
+        </div>
+      </div>
+
+      <hr class="section-divider"/>
+      <p class="section-label">Company Details</p>
+
+      <div class="form-group">
+        <label>Company Name <span class="required">*</span></label>
+        <input type="text" placeholder="e.g. TechCorp Africa" id="company"/>
+      </div>
+
+      <div class="two-col">
+        <div class="form-group">
+          <label>Industry</label>
+          <select id="industry" title="Industry" aria-label="Industry">
+            <option value="">Select industry</option>
+            <option>Technology</option>
+            <option>Finance</option>
+            <option>Healthcare</option>
+            <option>Education</option>
+            <option>Agriculture</option>
+            <option>Government</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Country</label>
+          <select id="country" title="Country" aria-label="Country">
+            <option value="">Select country</option>
+            <option>Tanzania</option>
+            <option>Kenya</option>
+            <option>Uganda</option>
+            <option>Rwanda</option>
+            <option>Ethiopia</option>
+            <option>Nigeria</option>
+            <option>Ghana</option>
+            <option>South Africa</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>What kind of talent are you looking for?</label>
+        <textarea placeholder="Describe the roles, skills, or expertise you need..." id="needs"></textarea>
+      </div>
+
+      <button class="submit-btn" onclick="submitHire()">Submit Request</button>
+      <div class="success-msg" id="successMsg">✅ Request received! Our team will contact you within 24 hours.</div>
+
+    </div>
+  </div>
+
+  <script>
+    function submitHire() {
+      const firstname = document.getElementById('firstname').value;
+      const lastname = document.getElementById('lastname').value;
+      const email = document.getElementById('email').value;
+      const contact = document.getElementById('contact').value;
+      const company = document.getElementById('company').value;
+
+      if (!firstname || !lastname || !email || !contact || !company) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+
+      document.getElementById('successMsg').style.display = 'block';
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+  </script>
+
+</body>
+</html>
