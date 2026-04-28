@@ -13,6 +13,9 @@
   <!-- Generate your favicon free at: https://favicon.io -->
  
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+   <!-- supabase.config.js already sets up the client (window._sbClient) -->
+  <script src="supabase-config.js"></script>
+  <script src="talent-hub.js"></script>
   <style>
   /* ===== RESET & BASE ===== */
   * {
@@ -659,9 +662,7 @@
     </div>
   </div>
 
-  <!-- supabase.config.js already sets up the client (window._sbClient) -->
-  <script src="supabase.config.js"></script>
-  <script src="talent-hub.js"></script>
+ 
   <script>
     // ── File name display ──────────────────────────────────────
     document.getElementById('project').addEventListener('change', function () {
