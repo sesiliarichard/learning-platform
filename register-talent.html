@@ -788,8 +788,13 @@
       }
 
       document.getElementById('formContainer').style.display = 'none';
-      document.getElementById('profilePreview').style.display  = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+document.getElementById('profilePreview').style.display  = 'block';
+window.scrollTo({ top: 0, behavior: 'smooth' });
+
+// Redirect to talent discovery after 3 seconds
+setTimeout(() => {
+  window.location.href = 'talent-discovery.html';
+}, 3000);
     }
 
     function editProfile() {
