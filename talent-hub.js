@@ -1,8 +1,6 @@
-/**
- * talent-hub.js
- * ─────────────────────────────────────────────────────────────
 
-const _supabase = window._sbClient;
+
+const _supabase = window.supabaseClient;
 
 // ─────────────────────────────────────────────────────────────
 // TALENT PROFILES
