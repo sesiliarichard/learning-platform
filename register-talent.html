@@ -4,276 +4,183 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Join the Hub – Women in AI Talent Hub</title>
-   <!-- ===== FAVICON — place these files in your images/ folder ===== -->
   <link rel="icon" type="image/x-icon" href="images/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
-  <!-- Generate your favicon free at: https://favicon.io -->
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: #f0f4ff;
-      color: #1a1a2e;
-      min-height: 100vh;
-    }
+    body { font-family: 'DM Sans', sans-serif; background: #f0f4ff; color: #1a1a2e; min-height: 100vh; }
 
-    /* NAVBAR */
     nav {
       background: rgba(255,255,255,0.95);
-      -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       padding: 1rem 4rem;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       border-bottom: 1px solid rgba(0,153,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1000;
     }
-    .logo {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: #0077cc;
-    }
+    .logo { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; color: #0077cc; }
     .logo span { color: #00bbff; }
     .back-btn {
-      background: white;
-      color: #0099ff;
-      border: 2px solid #0099ff;
-      padding: 0.5rem 1.4rem;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.88rem;
-      text-decoration: none;
-      transition: all 0.3s;
+      background: white; color: #0099ff; border: 2px solid #0099ff;
+      padding: 0.5rem 1.4rem; border-radius: 10px; font-weight: 600;
+      font-size: 0.88rem; text-decoration: none; transition: all 0.3s;
     }
     .back-btn:hover { background: #0099ff; color: white; }
 
-    /* PAGE HEADER */
     .page-header {
-      background: #0077cc;
-      padding: 3rem 4rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
+      background: #0077cc; padding: 3rem 4rem; text-align: center;
+      position: relative; overflow: hidden;
     }
     .page-header::before {
-      content: '';
-      position: absolute;
-      top: -50px; right: -50px;
-      width: 250px; height: 250px;
-      background: rgba(255,255,255,0.06);
-      border-radius: 50%;
+      content: ''; position: absolute; top: -50px; right: -50px;
+      width: 250px; height: 250px; background: rgba(255,255,255,0.06); border-radius: 50%;
     }
-    .page-header h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 0.5rem;
-    }
-    .page-header p {
-      color: rgba(255,255,255,0.75);
-      font-size: 0.95rem;
-    }
+    .page-header h1 { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; }
+    .page-header p { color: rgba(255,255,255,0.75); font-size: 0.95rem; }
 
-    /* FORM CONTAINER */
-    .form-container {
-      max-width: 700px;
-      margin: 3rem auto;
-      padding: 0 1.5rem 4rem;
-    }
+    .form-container { max-width: 700px; margin: 3rem auto; padding: 0 1.5rem 4rem; }
+    .form-card { background: #fff; border-radius: 20px; padding: 2.5rem; box-shadow: 0 8px 40px rgba(0,0,0,0.08); }
+    .form-group { margin-bottom: 1.5rem; }
 
-    .form-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 2.5rem;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
-    label {
-      display: block;
-      font-weight: 600;
-      font-size: 0.88rem;
-      color: #1a1a2e;
-      margin-bottom: 0.5rem;
-    }
-
-    label span.required {
-      color: #e53e3e;
-      margin-left: 2px;
-    }
+    label { display: block; font-weight: 600; font-size: 0.88rem; color: #1a1a2e; margin-bottom: 0.5rem; }
+    label span.required { color: #e53e3e; margin-left: 2px; }
 
     input[type="text"],
     input[type="email"],
-    input[type="number"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.8rem 1rem;
-      border: 1.5px solid #e0e4f0;
-      border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      color: #1a1a2e;
-      background: #f8faff;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      outline: none;
+    select, textarea {
+      width: 100%; padding: 0.8rem 1rem; border: 1.5px solid #e0e4f0; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: #1a1a2e;
+      background: #f8faff; transition: border-color 0.3s, box-shadow 0.3s; outline: none;
     }
-
     input:focus, select:focus, textarea:focus {
-      border-color: #0099ff;
-      box-shadow: 0 0 0 3px rgba(0,153,255,0.1);
-      background: #fff;
+      border-color: #0099ff; box-shadow: 0 0 0 3px rgba(0,153,255,0.1); background: #fff;
     }
+    textarea { resize: vertical; min-height: 110px; }
 
-    textarea {
-      resize: vertical;
-      min-height: 110px;
-    }
-
-    /* File upload */
     .upload-box {
-      border: 2px dashed #b0c4e8;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-      background: #f0f6ff;
-      cursor: pointer;
-      transition: all 0.3s;
-      position: relative;
+      border: 2px dashed #b0c4e8; border-radius: 12px; padding: 1.5rem;
+      text-align: center; background: #f0f6ff; cursor: pointer;
+      transition: all 0.3s; position: relative;
     }
-    .upload-box:hover {
-      border-color: #0099ff;
-      background: #e8f4ff;
-    }
-    .upload-box input[type="file"] {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      cursor: pointer;
-      width: 100%;
-      height: 100%;
-    }
+    .upload-box:hover { border-color: #0099ff; background: #e8f4ff; }
+    .upload-box input[type="file"] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
     .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .upload-box p {
-      font-size: 0.85rem;
-      color: #5a6170;
-    }
-    .upload-box strong {
-      color: #0099ff;
-    }
+    .upload-box p { font-size: 0.85rem; color: #5a6170; }
+    .upload-box strong { color: #0099ff; }
+    .upload-filename { margin-top: 8px; font-size: 0.8rem; color: #0077cc; font-weight: 600; display: none; }
 
-    /* Two columns */
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.2rem;
-    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 
-    /* Submit button */
+    /* ── Submit button states ── */
     .submit-btn {
-      width: 100%;
-      padding: 1rem;
+      width: 100%; padding: 1rem;
       background: linear-gradient(135deg, #0099ff, #0077cc);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-family: 'Syne', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 6px 20px rgba(0,153,255,0.3);
-      margin-top: 0.5rem;
+      color: white; border: none; border-radius: 12px;
+      font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(0,153,255,0.3); margin-top: 0.5rem;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0,153,255,0.4);
-    }
+    .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,153,255,0.4); }
+    .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
 
-    /* Success message */
-    .success-msg {
+    /* Spinner */
+    .spinner {
+      width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.4);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: none;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .submit-btn.loading .spinner { display: block; }
+    .submit-btn.loading .btn-label { opacity: 0.7; }
+
+    /* Error / success alerts */
+    .alert {
+      border-radius: 10px; padding: 0.85rem 1.2rem;
+      font-size: 0.88rem; font-weight: 600; margin-bottom: 1rem;
       display: none;
-      background: #e8fff4;
-      border: 1.5px solid #38a169;
-      color: #276749;
-      border-radius: 12px;
-      padding: 1rem 1.5rem;
-      font-weight: 600;
-      text-align: center;
-      margin-top: 1rem;
     }
+    .alert.error   { background: #fff0f0; border: 1.5px solid #fc8181; color: #c53030; }
+    .alert.success { background: #e8fff4; border: 1.5px solid #38a169; color: #276749; }
+    .alert.show    { display: block; }
 
-    .section-divider {
-      border: none;
-      border-top: 1.5px solid #eef0f8;
-      margin: 2rem 0;
-    }
-
+    .section-divider { border: none; border-top: 1.5px solid #eef0f8; margin: 2rem 0; }
     .section-label {
-      font-family: 'Syne', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #0099ff;
-      margin-bottom: 1.2rem;
+      font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase; color: #0099ff; margin-bottom: 1.2rem;
     }
-    /* ===== RESPONSIVE / MOBILE ===== */
-@media (max-width: 768px) {
-  nav {
-    padding: 0.8rem 1.2rem;
-  }
-  .page-header {
-    padding: 2rem 1.5rem;
-  }
-  .page-header h1 {
-    font-size: 1.7rem;
-  }
-  .form-container {
-    margin: 1.5rem auto;
-    padding: 0 1rem 3rem;
-  }
-  .form-card {
-    padding: 1.5rem;
-    border-radius: 14px;
-  }
-  .two-col {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-}
+
+    /* ── Profile preview (same as before) ── */
+    #profilePreview {
+      display: none; max-width: 700px; margin: 0 auto 4rem;
+      padding: 0 1.5rem; animation: fadeSlideUp 0.5s ease both;
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .preview-header {
+      background: linear-gradient(135deg, #0077cc, #00aaff);
+      border-radius: 20px 20px 0 0; padding: 2rem 2rem 1rem;
+      display: flex; align-items: center; gap: 1.5rem;
+    }
+    .preview-avatar {
+      width: 80px; height: 80px; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,0.5); object-fit: cover;
+      background: rgba(255,255,255,0.2); display: flex;
+      align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif; font-size: 2rem; font-weight: 800;
+      color: white; flex-shrink: 0; overflow: hidden;
+    }
+    .preview-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .preview-name  { font-family: 'Syne', sans-serif; font-size: 1.5rem; font-weight: 800; color: white; }
+    .preview-role  { color: rgba(255,255,255,0.85); font-size: 0.95rem; margin-top: 2px; }
+    .preview-location { color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-top: 4px; }
+
+    .preview-body { background: white; border-radius: 0 0 20px 20px; padding: 1.8rem 2rem; box-shadow: 0 8px 40px rgba(0,0,0,0.08); }
+    .preview-section { margin-bottom: 1.4rem; }
+    .preview-section-title { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #0099ff; margin-bottom: 0.5rem; }
+    .preview-value { font-size: 0.93rem; color: #1a1a2e; line-height: 1.6; }
+    .preview-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.4rem; }
+    .exp-chip { display: inline-block; background: #e8f4ff; color: #0077cc; border-radius: 99px; font-size: 0.82rem; font-weight: 700; padding: 4px 14px; }
+    .file-chip { display: inline-flex; align-items: center; gap: 6px; background: #f0f6ff; border: 1.5px solid #b0d4f1; border-radius: 8px; padding: 5px 12px; font-size: 0.82rem; color: #0077cc; font-weight: 600; }
+    .success-banner { background: linear-gradient(135deg, #e8fff4, #d0fae8); border: 1.5px solid #38a169; color: #276749; border-radius: 12px; padding: 0.9rem 1.4rem; font-weight: 600; text-align: center; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    .edit-btn { width: 100%; padding: 0.75rem; background: white; color: #0099ff; border: 2px solid #0099ff; border-radius: 12px; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.3s; margin-top: 0.5rem; }
+    .edit-btn:hover { background: #0099ff; color: white; }
+
+    @media (max-width: 768px) {
+      nav { padding: 0.8rem 1.2rem; }
+      .page-header { padding: 2rem 1.5rem; }
+      .page-header h1 { font-size: 1.7rem; }
+      .form-container { margin: 1.5rem auto; padding: 0 1rem 3rem; }
+      .form-card { padding: 1.5rem; border-radius: 14px; }
+      .two-col, .preview-row { grid-template-columns: 1fr; gap: 0; }
+      .preview-header { flex-direction: column; text-align: center; }
+      #profilePreview { padding: 0 1rem; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- NAVBAR -->
   <nav>
     <div class="logo">Women in <span>AI Talent Hub</span></div>
     <a href="career-support.html" class="back-btn">← Back to Home</a>
   </nav>
 
-  <!-- HEADER -->
   <div class="page-header">
     <h1>Join the Talent Hub</h1>
     <p>Create your profile and get discovered by top companies across Africa and beyond.</p>
   </div>
 
   <!-- FORM -->
-  <div class="form-container">
+  <div class="form-container" id="formContainer">
     <div class="form-card">
+
+      <!-- Alert area -->
+      <div class="alert error"   id="alertError"></div>
+      <div class="alert success" id="alertSuccess"></div>
 
       <p class="section-label">Personal Information</p>
 
@@ -284,9 +191,7 @@
         </div>
         <div class="form-group">
           <label>Country <span class="required">*</span></label>
-          <select id="country" title="Country" aria-label="Country" required>
-            <option value="">Select your country</option>
-          </select>
+          <select id="country" aria-label="Country"></select>
         </div>
       </div>
 
@@ -311,7 +216,7 @@
 
       <div class="form-group">
         <label>Years of Experience <span class="required">*</span></label>
-        <select id="experience" title="Experience" aria-label="Experience">
+        <select id="experience" aria-label="Experience">
           <option value="">Select level</option>
           <option value="beginner">Beginner (0 – 2 years)</option>
           <option value="intermediate">Intermediate (2 – 5 years)</option>
@@ -325,88 +230,210 @@
       <div class="form-group">
         <label>Research / Project (optional)</label>
         <div class="upload-box">
-          <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" id="project" title="Project" aria-label="Project"/>
+          <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" id="project" aria-label="Project file"/>
           <div class="upload-icon">📄</div>
           <p><strong>Click to upload</strong> or drag and drop</p>
           <p>PDF, DOC, PPT supported</p>
+          <div class="upload-filename" id="projectName"></div>
         </div>
       </div>
 
       <div class="form-group">
         <label>Headshot Photo <span class="required">*</span></label>
         <div class="upload-box">
-          <input type="file" accept="image/*" id="headshot" title="Headshot" aria-label="Headshot"/>
+          <input type="file" accept="image/*" id="headshot" aria-label="Headshot photo"/>
           <div class="upload-icon">📷</div>
           <p><strong>Click to upload</strong> your photo</p>
           <p>JPG, PNG supported</p>
+          <div class="upload-filename" id="headshotName"></div>
         </div>
       </div>
 
-      <button class="submit-btn" onclick="submitTalent()">Submit My Profile</button>
-      <div class="success-msg" id="successMsg">✅ Profile submitted! We'll review and be in touch soon.</div>
+      <button class="submit-btn" id="submitBtn" onclick="submitTalent()">
+        <div class="spinner"></div>
+        <span class="btn-label">Submit My Profile →</span>
+      </button>
 
     </div>
   </div>
 
-  <script>
-    // Load countries from API (same as login page)
-    let COUNTRIES = [];
+  <!-- Profile Preview (shown after submit) -->
+  <div id="profilePreview">
+    <div class="success-banner">✅ Profile submitted! We'll review and be in touch soon.</div>
+    <div class="preview-header">
+      <div class="preview-avatar" id="previewAvatar">?</div>
+      <div>
+        <div class="preview-name"     id="previewName">—</div>
+        <div class="preview-role"     id="previewRole">—</div>
+        <div class="preview-location" id="previewLocation">—</div>
+      </div>
+    </div>
+    <div class="preview-body">
+      <div class="preview-row">
+        <div class="preview-section">
+          <div class="preview-section-title">Email</div>
+          <div class="preview-value" id="previewEmail">—</div>
+        </div>
+        <div class="preview-section">
+          <div class="preview-section-title">Experience Level</div>
+          <div class="preview-value"><span class="exp-chip" id="previewExp">—</span></div>
+        </div>
+      </div>
+      <div class="preview-section">
+        <div class="preview-section-title">Bio / Expertise</div>
+        <div class="preview-value" id="previewBio">—</div>
+      </div>
+      <div class="preview-row">
+        <div class="preview-section" id="projectSection" style="display:none">
+          <div class="preview-section-title">Project / Research</div>
+          <div class="preview-value"><span class="file-chip">📄 <span id="previewProject">—</span></span></div>
+        </div>
+        <div class="preview-section">
+          <div class="preview-section-title">Headshot</div>
+          <div class="preview-value"><span class="file-chip">📷 <span id="previewHeadshot">—</span></span></div>
+        </div>
+      </div>
+      <button class="edit-btn" onclick="editProfile()">✏️ Edit My Profile</button>
+    </div>
+  </div>
 
+  <!-- supabase.config.js already sets up the client (window._sbClient) -->
+  <script src="supabase.config.js"></script>
+  <script src="talent-hub.js"></script>
+  <script>
+    // ── File name display ──────────────────────────────────────
+    document.getElementById('project').addEventListener('change', function () {
+      const el = document.getElementById('projectName');
+      if (this.files[0]) { el.textContent = '✔ ' + this.files[0].name; el.style.display = 'block'; }
+    });
+    document.getElementById('headshot').addEventListener('change', function () {
+      const el = document.getElementById('headshotName');
+      if (this.files[0]) { el.textContent = '✔ ' + this.files[0].name; el.style.display = 'block'; }
+      // Live avatar preview
+      const reader = new FileReader();
+      reader.onload = e => {
+        const av = document.getElementById('previewAvatar');
+        av.innerHTML = `<img src="${e.target.result}" alt="headshot"/>`;
+      };
+      reader.readAsDataURL(this.files[0]);
+    });
+
+    // ── Country dropdown ──────────────────────────────────────
     async function loadAllCountries() {
       const sel = document.getElementById('country');
       try {
-        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
-        const data = await response.json();
-        COUNTRIES = data
-          .map(c => {
-            const root   = c.idd?.root || '';
-            const suffix = c.idd?.suffixes?.[0] || '';
-            const phone  = root + suffix;
-            return { name: c.name.common, code: c.cca2, phone: phone || '' };
-          })
+        const res  = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
+        const data = await res.json();
+        const countries = data
+          .map(c => ({ name: c.name.common, code: c.cca2, phone: (c.idd?.root || '') + (c.idd?.suffixes?.[0] || '') }))
           .filter(c => c.phone)
           .sort((a, b) => a.name.localeCompare(b.name));
-
         sel.innerHTML = '<option value="">Select your country</option>';
-        COUNTRIES.forEach(c => {
+        countries.forEach(c => {
           const opt = document.createElement('option');
           opt.value = c.code;
+          opt.dataset.name = c.name;
           opt.textContent = `${c.name} (${c.phone})`;
           sel.appendChild(opt);
         });
-      } catch (err) {
+      } catch {
         sel.innerHTML = `
-          <option value="">Could not load countries</option>
-          <option value="TZ">Tanzania (+255)</option>
-          <option value="KE">Kenya (+254)</option>
-          <option value="NG">Nigeria (+234)</option>
-          <option value="GH">Ghana (+233)</option>
-          <option value="ZA">South Africa (+27)</option>
-          <option value="US">United States (+1)</option>
-          <option value="GB">United Kingdom (+44)</option>
-        `;
+          <option value="">Select your country</option>
+          <option value="TZ" data-name="Tanzania">Tanzania (+255)</option>
+          <option value="KE" data-name="Kenya">Kenya (+254)</option>
+          <option value="NG" data-name="Nigeria">Nigeria (+234)</option>
+          <option value="GH" data-name="Ghana">Ghana (+233)</option>
+          <option value="ZA" data-name="South Africa">South Africa (+27)</option>
+          <option value="US" data-name="United States">United States (+1)</option>`;
       }
     }
-
     document.addEventListener('DOMContentLoaded', loadAllCountries);
-    function submitTalent() {
-      const name = document.getElementById('fullname').value;
-      const email = document.getElementById('email').value;
-      const country = document.getElementById('country').value;
-      const role = document.getElementById('role').value;
-      const bio = document.getElementById('bio').value;
-      const experience = document.getElementById('experience').value;
-      const headshot = document.getElementById('headshot').files.length;
 
-      if (!name || !email || !country || !role || !bio || !experience || !headshot) {
-        alert('Please fill in all required fields and upload your headshot.');
+    // ── Helpers ───────────────────────────────────────────────
+    function showAlert(type, msg) {
+      const el = document.getElementById(type === 'error' ? 'alertError' : 'alertSuccess');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 6000);
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = on;
+      btn.classList.toggle('loading', on);
+    }
+
+    // ── Submit ────────────────────────────────────────────────
+    async function submitTalent() {
+      const name         = document.getElementById('fullname').value.trim();
+      const email        = document.getElementById('email').value.trim();
+      const countryEl    = document.getElementById('country');
+      const countryCode  = countryEl.value;
+      const countryName  = countryEl.selectedOptions[0]?.dataset.name || '';
+      const role         = document.getElementById('role').value.trim();
+      const bio          = document.getElementById('bio').value.trim();
+      const expEl        = document.getElementById('experience');
+      const experience   = expEl.value;
+      const expText      = expEl.selectedOptions[0]?.text || '';
+      const headshotFile = document.getElementById('headshot').files[0];
+      const projectFile  = document.getElementById('project').files[0];
+
+      if (!name || !email || !countryCode || !role || !bio || !experience || !headshotFile) {
+        showAlert('error', 'Please fill in all required fields and upload your headshot.');
         return;
       }
 
-      document.getElementById('successMsg').style.display = 'block';
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      setLoading(true);
+
+      // ── Call Supabase via talent-hub.js ───────────────────
+      const { data, error } = await TalentHub.submitTalentProfile({
+        full_name:    name,
+        email,
+        country_code: countryCode,
+        country_name: countryName,
+        role,
+        bio,
+        experience,
+        headshot_file: headshotFile,
+        project_file:  projectFile || null,
+      });
+
+      setLoading(false);
+
+      if (error) {
+        console.error(error);
+        showAlert('error', '⚠️ Submission failed: ' + (error.message || 'Please try again.'));
+        return;
+      }
+
+      // ── Populate & show the preview card ─────────────────
+      document.getElementById('previewName').textContent     = name;
+      document.getElementById('previewRole').textContent     = role;
+      document.getElementById('previewLocation').textContent = '📍 ' + countryName;
+      document.getElementById('previewEmail').textContent    = email;
+      document.getElementById('previewExp').textContent      = expText;
+      document.getElementById('previewBio').textContent      = bio;
+      document.getElementById('previewHeadshot').textContent = headshotFile.name;
+
+      const initials = name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      const avatarEl = document.getElementById('previewAvatar');
+      if (!avatarEl.querySelector('img')) avatarEl.textContent = initials;
+
+      if (projectFile) {
+        document.getElementById('previewProject').textContent = projectFile.name;
+        document.getElementById('projectSection').style.display = 'block';
+      }
+
+      document.getElementById('formContainer').style.display = 'none';
+      document.getElementById('profilePreview').style.display  = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
+
+    function editProfile() {
+      document.getElementById('profilePreview').style.display = 'none';
+      document.getElementById('formContainer').style.display  = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   </script>
 
 </body>

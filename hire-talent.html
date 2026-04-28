@@ -4,208 +4,115 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hire Talent – Women in AI Talent Hub</title>
-   <!-- ===== FAVICON — place these files in your images/ folder ===== -->
   <link rel="icon" type="image/x-icon" href="images/favicon.ico">
-  <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="48x48" href="images/favicon-48x48.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
-  <!-- Generate your favicon free at: https://favicon.io -->
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: #f0f4ff;
-      color: #1a1a2e;
-      min-height: 100vh;
-    }
+    body { font-family: 'DM Sans', sans-serif; background: #f0f4ff; color: #1a1a2e; min-height: 100vh; }
 
     nav {
       background: rgba(255,255,255,0.95);
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-      padding: 1rem 4rem;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      padding: 1rem 4rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
       border-bottom: 1px solid rgba(0,153,255,0.1);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 1000;
     }
-    .logo {
-      font-family: 'Syne', sans-serif;
-      font-size: 1.2rem;
-      font-weight: 800;
-      color: #0077cc;
-    }
+    .logo { font-family: 'Syne', sans-serif; font-size: 1.2rem; font-weight: 800; color: #0077cc; }
     .logo span { color: #00bbff; }
-    .back-btn {
-      background: white;
-      color: #0099ff;
-      border: 2px solid #0099ff;
-      padding: 0.5rem 1.4rem;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 0.88rem;
-      text-decoration: none;
-      transition: all 0.3s;
-    }
+    .back-btn { background: white; color: #0099ff; border: 2px solid #0099ff; padding: 0.5rem 1.4rem; border-radius: 10px; font-weight: 600; font-size: 0.88rem; text-decoration: none; transition: all 0.3s; }
     .back-btn:hover { background: #0099ff; color: white; }
 
-    .page-header {
-      background: #0a1a4a;
-      padding: 3rem 4rem;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .page-header::before {
-      content: '';
-      position: absolute;
-      bottom: -60px; left: -60px;
-      width: 250px; height: 250px;
-      background: rgba(0,153,255,0.08);
-      border-radius: 50%;
-    }
-    .page-header h1 {
-      font-family: 'Syne', sans-serif;
-      font-size: 2.2rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 0.5rem;
-    }
-    .page-header p { color: rgba(255,255,255,0.7); font-size: 0.95rem; }
+    .page-header { background: #0a1a4a; padding: 3rem 4rem; text-align: center; position: relative; overflow: hidden; }
+    .page-header::before { content: ''; position: absolute; bottom: -60px; left: -60px; width: 250px; height: 250px; background: rgba(0,153,255,0.08); border-radius: 50%; }
+    .page-header::after  { content: ''; position: absolute; top: -40px; right: -40px; width: 180px; height: 180px; background: rgba(0,187,255,0.06); border-radius: 50%; }
+    .page-header h1 { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; position: relative; z-index: 1; }
+    .page-header p  { color: rgba(255,255,255,0.7); font-size: 0.95rem; position: relative; z-index: 1; }
 
-    .form-container {
-      max-width: 600px;
-      margin: 3rem auto;
-      padding: 0 1.5rem 4rem;
-    }
-
-    .form-card {
-      background: #fff;
-      border-radius: 20px;
-      padding: 2.5rem;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.08);
-    }
-
+    .form-container { max-width: 600px; margin: 3rem auto; padding: 0 1.5rem 4rem; }
+    .form-card { background: #fff; border-radius: 20px; padding: 2.5rem; box-shadow: 0 8px 40px rgba(0,0,0,0.08); }
     .form-group { margin-bottom: 1.5rem; }
 
-    label {
-      display: block;
-      font-weight: 600;
-      font-size: 0.88rem;
-      color: #1a1a2e;
-      margin-bottom: 0.5rem;
-    }
-
+    label { display: block; font-weight: 600; font-size: 0.88rem; color: #1a1a2e; margin-bottom: 0.5rem; }
     label span.required { color: #e53e3e; margin-left: 2px; }
 
     input[type="text"],
     input[type="email"],
     input[type="tel"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 0.8rem 1rem;
-      border: 1.5px solid #e0e4f0;
-      border-radius: 10px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      color: #1a1a2e;
-      background: #f8faff;
-      transition: border-color 0.3s, box-shadow 0.3s;
-      outline: none;
+    select, textarea {
+      width: 100%; padding: 0.8rem 1rem; border: 1.5px solid #e0e4f0; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: #1a1a2e;
+      background: #f8faff; transition: border-color 0.3s, box-shadow 0.3s; outline: none;
     }
-
-    input:focus, select:focus, textarea:focus {
-      border-color: #0099ff;
-      box-shadow: 0 0 0 3px rgba(0,153,255,0.1);
-      background: #fff;
-    }
-
+    input:focus, select:focus, textarea:focus { border-color: #0099ff; box-shadow: 0 0 0 3px rgba(0,153,255,0.1); background: #fff; }
     textarea { resize: vertical; min-height: 100px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
 
-    .two-col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.2rem;
-    }
+    /* Alert */
+    .alert { border-radius: 10px; padding: 0.85rem 1.2rem; font-size: 0.88rem; font-weight: 600; margin-bottom: 1rem; display: none; }
+    .alert.error   { background: #fff0f0; border: 1.5px solid #fc8181; color: #c53030; }
+    .alert.success { background: #e8fff4; border: 1.5px solid #38a169; color: #276749; }
+    .alert.show    { display: block; }
 
+    /* Submit button */
     .submit-btn {
-      width: 100%;
-      padding: 1rem;
+      width: 100%; padding: 1rem;
       background: linear-gradient(135deg, #0a1a4a, #0077cc);
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-family: 'Syne', sans-serif;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s;
-      box-shadow: 0 6px 20px rgba(0,119,204,0.3);
-      margin-top: 0.5rem;
+      color: white; border: none; border-radius: 12px;
+      font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.3s;
+      box-shadow: 0 6px 20px rgba(0,119,204,0.3); margin-top: 0.5rem;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
     }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0,119,204,0.4);
-    }
+    .submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,119,204,0.4); }
+    .submit-btn:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+    .spinner { width: 18px; height: 18px; border: 3px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .submit-btn.loading .spinner { display: block; }
+    .submit-btn.loading .btn-label { opacity: 0.7; }
 
-    .success-msg {
-      display: none;
-      background: #e8fff4;
-      border: 1.5px solid #38a169;
-      color: #276749;
-      border-radius: 12px;
-      padding: 1rem 1.5rem;
-      font-weight: 600;
-      text-align: center;
-      margin-top: 1rem;
-    }
+    .section-label { font-family: 'Syne', sans-serif; font-size: 0.78rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #0099ff; margin-bottom: 1.2rem; }
+    .section-divider { border: none; border-top: 1.5px solid #eef0f8; margin: 2rem 0; }
 
-    .section-label {
-      font-family: 'Syne', sans-serif;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      color: #0099ff;
-      margin-bottom: 1.2rem;
-    }
+    /* Preview */
+    #previewSection { display: none; max-width: 600px; margin: 0 auto 4rem; padding: 0 1.5rem; animation: fadeSlideUp 0.5s ease both; }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .success-banner { background: linear-gradient(135deg, #e8fff4, #d0fae8); border: 1.5px solid #38a169; color: #276749; border-radius: 12px; padding: 0.9rem 1.4rem; font-weight: 600; text-align: center; margin-bottom: 1.5rem; font-size: 0.95rem; }
+    .preview-header { background: linear-gradient(135deg, #0a1a4a, #0077cc); border-radius: 20px 20px 0 0; padding: 2rem 2rem 1.5rem; display: flex; align-items: center; gap: 1.4rem; position: relative; overflow: hidden; }
+    .preview-header::before { content: ''; position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; background: rgba(255,255,255,0.05); border-radius: 50%; }
+    .company-logo-circle { width: 70px; height: 70px; border-radius: 16px; background: rgba(255,255,255,0.15); border: 2px solid rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-family: 'Syne', sans-serif; font-size: 1.6rem; font-weight: 800; color: white; flex-shrink: 0; }
+    .preview-company-name { font-family: 'Syne', sans-serif; font-size: 1.4rem; font-weight: 800; color: white; margin-bottom: 3px; }
+    .preview-contact-name { color: rgba(255,255,255,0.8); font-size: 0.9rem; }
+    .preview-industry-badge { display: inline-block; background: rgba(0,187,255,0.2); border: 1px solid rgba(0,187,255,0.4); color: #7dd8ff; border-radius: 99px; font-size: 0.75rem; font-weight: 700; padding: 3px 12px; margin-top: 5px; }
+    .preview-body { background: white; border-radius: 0 0 20px 20px; padding: 1.8rem 2rem; box-shadow: 0 8px 40px rgba(0,0,0,0.08); }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.4rem; }
+    .info-item-label { font-family: 'Syne', sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #0099ff; margin-bottom: 4px; }
+    .info-item-value { font-size: 0.9rem; color: #1a1a2e; font-weight: 500; }
+    .needs-section { margin-bottom: 1.4rem; }
+    .needs-text { font-size: 0.9rem; color: #374151; line-height: 1.65; background: #f0f6ff; border-left: 3px solid #0099ff; border-radius: 0 8px 8px 0; padding: 10px 14px; }
+    .status-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.4rem; }
+    .status-dot { width: 10px; height: 10px; background: #22c55e; border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.3); } }
+    .status-text { font-size: 0.85rem; color: #374151; font-weight: 500; }
+    .status-text strong { color: #22c55e; }
+    .action-row { display: flex; gap: 10px; }
+    .ref-chip { display: inline-flex; align-items: center; gap: 6px; background: #f0f6ff; border: 1.5px solid #b0d4f1; border-radius: 8px; padding: 5px 12px; font-size: 0.8rem; color: #0077cc; font-weight: 700; margin-bottom: 1.4rem; }
+    .btn-edit { flex: 1; padding: 0.75rem; background: white; color: #0099ff; border: 2px solid #0099ff; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.3s; }
+    .btn-edit:hover { background: #0099ff; color: white; }
+    .btn-new { flex: 1; padding: 0.75rem; background: linear-gradient(135deg, #0a1a4a, #0077cc); color: white; border: none; border-radius: 10px; font-family: 'Syne', sans-serif; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 14px rgba(0,119,204,0.3); }
+    .btn-new:hover { transform: translateY(-1px); }
 
-    .section-divider {
-      border: none;
-      border-top: 1.5px solid #eef0f8;
-      margin: 2rem 0;
+    @media (max-width: 768px) {
+      nav { padding: 0.8rem 1.2rem; }
+      .page-header { padding: 2rem 1.5rem; }
+      .page-header h1 { font-size: 1.7rem; }
+      .form-container { margin: 1.5rem auto; padding: 0 1rem 3rem; }
+      .form-card { padding: 1.5rem; border-radius: 14px; }
+      .two-col, .info-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+      .preview-header { flex-direction: column; text-align: center; }
+      #previewSection { padding: 0 1rem; }
+      .action-row { flex-direction: column; }
     }
-    /* ===== RESPONSIVE / MOBILE ===== */
-@media (max-width: 768px) {
-  nav {
-    padding: 0.8rem 1.2rem;
-  }
-  .page-header {
-    padding: 2rem 1.5rem;
-  }
-  .page-header h1 {
-    font-size: 1.7rem;
-  }
-  .form-container {
-    margin: 1.5rem auto;
-    padding: 0 1rem 3rem;
-  }
-  .form-card {
-    padding: 1.5rem;
-    border-radius: 14px;
-  }
-  .two-col {
-    grid-template-columns: 1fr;
-    gap: 0;
-  }
-}
   </style>
 </head>
 <body>
@@ -220,8 +127,12 @@
     <p>Tell us about your company and we'll connect you with the right candidates.</p>
   </div>
 
-  <div class="form-container">
+  <!-- FORM -->
+  <div class="form-container" id="formContainer">
     <div class="form-card">
+
+      <div class="alert error"   id="alertError"></div>
+      <div class="alert success" id="alertSuccess"></div>
 
       <p class="section-label">Contact Details</p>
 
@@ -258,7 +169,7 @@
       <div class="two-col">
         <div class="form-group">
           <label>Industry</label>
-          <select id="industry" title="Industry" aria-label="Industry">
+          <select id="industry" aria-label="Industry">
             <option value="">Select industry</option>
             <option>Technology</option>
             <option>Finance</option>
@@ -271,7 +182,7 @@
         </div>
         <div class="form-group">
           <label>Country</label>
-          <select id="country" title="Country" aria-label="Country">
+          <select id="country" aria-label="Country">
             <option value="">Select country</option>
             <option>Tanzania</option>
             <option>Kenya</option>
@@ -291,27 +202,148 @@
         <textarea placeholder="Describe the roles, skills, or expertise you need..." id="needs"></textarea>
       </div>
 
-      <button class="submit-btn" onclick="submitHire()">Submit Request</button>
-      <div class="success-msg" id="successMsg">✅ Request received! Our team will contact you within 24 hours.</div>
+      <button class="submit-btn" id="submitBtn" onclick="submitHire()">
+        <div class="spinner"></div>
+        <span class="btn-label">Submit Request →</span>
+      </button>
 
     </div>
   </div>
 
+  <!-- Preview (shown after submit) -->
+  <div id="previewSection">
+    <div class="success-banner">✅ Request received! Our team will contact you within 24 hours.</div>
+    <div class="ref-chip">🎫 Reference: <span id="refNumber">—</span></div>
+
+    <div class="preview-header">
+      <div class="company-logo-circle" id="companyInitials">?</div>
+      <div>
+        <div class="preview-company-name"  id="previewCompany">—</div>
+        <div class="preview-contact-name"  id="previewContactName">—</div>
+        <div class="preview-industry-badge" id="previewIndustry">—</div>
+      </div>
+    </div>
+
+    <div class="preview-body">
+      <div class="status-row">
+        <div class="status-dot"></div>
+        <div class="status-text">Status: <strong>Under Review</strong> — team notified</div>
+      </div>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-item-label">Full Name</div>
+          <div class="info-item-value" id="previewFullName">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Email</div>
+          <div class="info-item-value" id="previewEmail">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Phone</div>
+          <div class="info-item-value" id="previewPhone">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-item-label">Country</div>
+          <div class="info-item-value" id="previewCountry">—</div>
+        </div>
+      </div>
+      <div class="needs-section">
+        <div class="info-item-label">Talent Needs</div>
+        <div class="needs-text" id="previewNeeds">—</div>
+      </div>
+      <div class="action-row">
+        <button class="btn-edit" onclick="editRequest()">✏️ Edit Request</button>
+        <button class="btn-new"  onclick="newRequest()">＋ New Request</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- supabase.config.js already sets up the client (window._sbClient) -->
+  <script src="supabase.config.js"></script>
+  <script src="talent-hub.js"></script>
   <script>
-    function submitHire() {
-      const firstname = document.getElementById('firstname').value;
-      const lastname = document.getElementById('lastname').value;
-      const email = document.getElementById('email').value;
-      const contact = document.getElementById('contact').value;
-      const company = document.getElementById('company').value;
+    function showAlert(type, msg) {
+      const el = document.getElementById(type === 'error' ? 'alertError' : 'alertSuccess');
+      el.textContent = msg; el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 6000);
+    }
+    function setLoading(on) {
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = on; btn.classList.toggle('loading', on);
+    }
+
+    async function submitHire() {
+      const firstname = document.getElementById('firstname').value.trim();
+      const lastname  = document.getElementById('lastname').value.trim();
+      const email     = document.getElementById('email').value.trim();
+      const contact   = document.getElementById('contact').value.trim();
+      const company   = document.getElementById('company').value.trim();
 
       if (!firstname || !lastname || !email || !contact || !company) {
-        alert('Please fill in all required fields.');
+        showAlert('error', 'Please fill in all required fields.');
         return;
       }
 
-      document.getElementById('successMsg').style.display = 'block';
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      const industry = document.getElementById('industry').value || 'Not specified';
+      const country  = document.getElementById('country').value  || 'Not specified';
+      const needs    = document.getElementById('needs').value.trim() || 'Not provided';
+
+      setLoading(true);
+
+      // ── Call Supabase via talent-hub.js ──────────────────
+      const { data, refNumber, error } = await TalentHub.submitHireRequest({
+        first_name:   firstname,
+        last_name:    lastname,
+        email,
+        contact,
+        company_name: company,
+        industry,
+        country,
+        talent_needs: needs,
+      });
+
+      setLoading(false);
+
+      if (error) {
+        console.error(error);
+        showAlert('error', '⚠️ Submission failed: ' + (error.message || 'Please try again.'));
+        return;
+      }
+
+      // Populate preview
+      document.getElementById('previewFullName').textContent    = `${firstname} ${lastname}`;
+      document.getElementById('previewEmail').textContent       = email;
+      document.getElementById('previewPhone').textContent       = contact;
+      document.getElementById('previewCompany').textContent     = company;
+      document.getElementById('previewContactName').textContent = `${firstname} ${lastname}`;
+      document.getElementById('previewIndustry').textContent    = industry;
+      document.getElementById('previewCountry').textContent     = country;
+      document.getElementById('previewNeeds').textContent       = needs;
+      document.getElementById('refNumber').textContent          = refNumber;
+
+      const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('companyInitials').textContent = initials || '?';
+
+      document.getElementById('formContainer').style.display  = 'none';
+      document.getElementById('previewSection').style.display = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function editRequest() {
+      document.getElementById('previewSection').style.display = 'none';
+      document.getElementById('formContainer').style.display  = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function newRequest() {
+      ['firstname','lastname','email','contact','company','needs'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('industry').selectedIndex = 0;
+      document.getElementById('country').selectedIndex  = 0;
+      document.getElementById('previewSection').style.display = 'none';
+      document.getElementById('formContainer').style.display  = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   </script>
 
