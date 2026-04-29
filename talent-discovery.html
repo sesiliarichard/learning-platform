@@ -1243,15 +1243,17 @@
     countEl.textContent = 'Loading…';
 
     // Collect filters
-    const search     = (document.getElementById('mainSearch').value ||
-                        document.getElementById('filterSearch').value).trim();
+ const search     = (document.getElementById('mainSearch').value.trim() ||
+                        document.getElementById('filterSearch').value.trim());
     const experience = [...document.querySelectorAll('.exp-check:checked')].map(c => c.value);
     const country    = document.getElementById('filterCountry').value;
+    const sortVal    = document.getElementById('sortSelect').value;
 
     const { data, count, error } = await TalentHub.fetchTalentProfiles({
       search, experience, country,
       page: currentPage,
       pageSize: PAGE_SIZE,
+      sort: sortVal,
     });
 
     totalCount = count;

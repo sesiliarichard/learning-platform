@@ -146,11 +146,10 @@ async function fetchTalentProfiles(opts = {}) {
   const from = (page - 1) * pageSize;
   const to   = from + pageSize - 1;
 
-  let query = _supabase
+ let query = _supabase
     .from('talent_profiles')
     .select('*', { count: 'exact' })
-    .eq('status', 'approved')
-    .order('created_at', { ascending: false })
+    .order(opts.sort === 'name' ? 'full_name' : 'created_at', { ascending: opts.sort === 'name' })
     .range(from, to);
 
   // Free-text search across role and bio using Postgres ilike
