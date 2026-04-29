@@ -180,7 +180,6 @@ async function fetchTalentById(id) {
     .from('talent_profiles')
     .select('*')
     .eq('id', id)
-    .eq('status', 'approved')
     .single();
   return { data, error };
 }
@@ -198,10 +197,9 @@ async function fetchTalentById(id) {
 async function fetchHubStats() {
   try {
     const [talentsRes, companiesRes] = await Promise.all([
-      _supabase
+    _supabase
         .from('talent_profiles')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'approved'),
+        .select('id', { count: 'exact', head: true }),
       _supabase
         .from('hire_requests')
         .select('id', { count: 'exact', head: true }),
