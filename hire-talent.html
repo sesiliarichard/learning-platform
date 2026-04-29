@@ -712,10 +712,36 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label>What kind of talent are you looking for?</label>
-        <textarea placeholder="Describe the roles, skills, or expertise you need..." id="needs"></textarea>
-      </div>
+      <!-- Job Title -->
+<div class="form-group">
+  <label>Job Title <span class="required">*</span></label>
+  <input type="text" placeholder="e.g. AI Engineer, Data Scientist, ML Researcher" id="jobTitle"/>
+</div>
+
+<div class="two-col">
+  <div class="form-group">
+    <label>Job Type</label>
+    <select id="jobType">
+      <option value="full-time">Full-time</option>
+      <option value="part-time">Part-time</option>
+      <option value="contract">Contract</option>
+      <option value="internship">Internship</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Work Location</label>
+    <select id="locationType">
+      <option value="remote">Remote</option>
+      <option value="hybrid">Hybrid</option>
+      <option value="onsite">On-site</option>
+    </select>
+  </div>
+</div>
+
+<div class="form-group">
+  <label>What kind of talent are you looking for?</label>
+  <textarea placeholder="Describe the roles, skills, or expertise you need..." id="needs"></textarea>
+</div>
 
       <button class="submit-btn" id="submitBtn" onclick="submitHire()">
         <div class="spinner"></div>
@@ -925,18 +951,22 @@
 
       setLoading(true);
 
-      // ── Call Supabase via talent-hub.js ──────────────────
-      const { data, refNumber, error } = await TalentHub.submitHireRequest({
-        first_name:   firstname,
-        last_name:    lastname,
-        email,
-        contact,
-        company_name: company,
-        industry,
-        country,
-        talent_needs: needs,
-      });
+   const jobTitle   = document.getElementById('jobTitle').value.trim() || 'Open Position';
+const jobType    = document.getElementById('jobType').value;
+const locType    = document.getElementById('locationType').value;
 
+const { data, refNumber, error } = await TalentHub.submitHireRequest({
+  first_name:    firstname,
+  last_name:     lastname,
+  email,
+  contact,
+  company_name:  company,
+  industry,
+  country,
+  talent_needs:  `${jobTitle}\n\n${needs}`,
+  job_type:      jobType,
+  location_type: locType,
+});
       setLoading(false);
 
       if (error) {
