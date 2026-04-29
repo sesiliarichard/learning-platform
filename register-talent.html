@@ -525,6 +525,32 @@
       padding: 0 1rem;
     }
   }
+    /* ===== TALENT BROWSE BUTTON ===== */
+  .talent-browse-container {
+    text-align: center;
+    margin-top: 16px;
+  }
+
+  .talent-browse-btn {
+    display: block;
+    padding: 14px;
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    color: white;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 15px;
+    font-family: 'Syne', sans-serif;
+    box-shadow: 0 4px 14px rgba(0, 153, 255, 0.3);
+    transition: transform 0.2s;
+  }
+
+  .talent-browse-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+    text-decoration: none;
+  }
+
 </style>
 </head>
 <body>
@@ -659,6 +685,13 @@
         </div>
       </div>
       <button class="edit-btn" onclick="editProfile()">✏️ Edit My Profile</button>
+
+      <div class="talent-browse-container">
+        <a href="talent-discovery.html" class="talent-browse-btn">
+          🔍 Explore Talent Discovery
+        </a>
+      </div>
+
     </div>
   </div>
 
