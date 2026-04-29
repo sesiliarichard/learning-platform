@@ -107,7 +107,14 @@ body { visibility: hidden }
                     <span>Analytics</span>
                 </div>
             </div>
-
+<div class="nav-item" data-section="talentProfiles">
+    <i class="fas fa-id-card"></i>
+    <span>Talent Profiles</span>
+</div>
+<div class="nav-item" data-section="hireRequests">
+    <i class="fas fa-briefcase"></i>
+    <span>Hire Requests</span>
+</div>
             <div class="sb-foot">
                 <div class="sb-av" id="sbAv">AD</div>
                 <div class="sb-info">
@@ -929,6 +936,197 @@ body { visibility: hidden }
         </div>
     </div>
 </div>
+<!-- TALENT PROFILES SECTION -->
+<div id="talentProfilesSection" class="dashboard-section">
+    <div class="header">
+        <h1>Talent Profiles</h1>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="exportTalentCSV()">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+            <button class="btn-secondary" onclick="loadTalentProfiles()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid talent-stats-grid">
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-purple">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <div id="talentTotal" class="stat-number">0</div>
+                <div class="stat-label">Total Submitted</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-green">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div id="talentApproved" class="stat-number">0</div>
+                <div class="stat-label">Approved</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-amber">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stat-content">
+                <div id="talentPending" class="stat-number">0</div>
+                <div class="stat-label">Pending Review</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-red">
+                <i class="fas fa-times-circle"></i>
+            </div>
+            <div class="stat-content">
+                <div id="talentRejected" class="stat-number">0</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card filter-bar">
+        <input type="text" id="talentSearch" placeholder="Search by name, role, country..." class="filter-input talent-search-input" oninput="filterTalentProfiles()">
+        <select id="talentStatusFilter" class="filter-select" onchange="filterTalentProfiles()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+        </select>
+        <select id="talentExpFilter" class="filter-select" onchange="filterTalentProfiles()">
+            <option value="">All Experience</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+        </select>
+    </div>
+
+    <!-- Table -->
+    <div class="card table-container">
+        <div class="table-wrapper">
+            <table class="data-table talent-table">
+                <thead>
+                    <tr class="table-header-talent">
+                        <th>Talent</th>
+                        <th>Role</th>
+                        <th>Country</th>
+                        <th>Experience</th>
+                        <th class="text-center">Status</th>
+                        <th>Submitted</th>
+                        <th class="text-center">Files</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="talentTableBody">
+                    <tr class="loading-row">
+                        <td colspan="8">
+                            <i class="fas fa-spinner fa-spin loading-spinner"></i>Loading...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- HIRE REQUESTS SECTION -->
+<div id="hireRequestsSection" class="dashboard-section">
+    <div class="header">
+        <h1>Hire Requests</h1>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="exportHireCSV()">
+                <i class="fas fa-download"></i> Export CSV
+            </button>
+            <button class="btn-secondary" onclick="loadHireRequests()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid hire-stats-grid">
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-blue">
+                <i class="fas fa-building"></i>
+            </div>
+            <div class="stat-content">
+                <div id="hireTotal" class="stat-number">0</div>
+                <div class="stat-label">Total Requests</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-amber">
+                <i class="fas fa-hourglass-half"></i>
+            </div>
+            <div class="stat-content">
+                <div id="hirePending" class="stat-number">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-green">
+                <i class="fas fa-phone"></i>
+            </div>
+            <div class="stat-content">
+                <div id="hireContacted" class="stat-number">0</div>
+                <div class="stat-label">Contacted</div>
+            </div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-icon stat-icon-emerald">
+                <i class="fas fa-handshake"></i>
+            </div>
+            <div class="stat-content">
+                <div id="hireClosed" class="stat-number">0</div>
+                <div class="stat-label">Closed/Matched</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card filter-bar">
+        <input type="text" id="hireSearch" placeholder="Search by company, name, country..." class="filter-input hire-search-input" oninput="filterHireRequests()">
+        <select id="hireStatusFilter" class="filter-select" onchange="filterHireRequests()">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="contacted">Contacted</option>
+            <option value="closed">Closed</option>
+        </select>
+    </div>
+
+    <!-- Table -->
+    <div class="card table-container">
+        <div class="table-wrapper">
+            <table class="data-table hire-table">
+                <thead>
+                    <tr class="table-header-hire">
+                        <th>Company</th>
+                        <th>Contact</th>
+                        <th>Industry</th>
+                        <th>Country</th>
+                        <th>Talent Needs</th>
+                        <th class="text-center">Status</th>
+                        <th>Ref #</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="hireTableBody">
+                    <tr class="loading-row">
+                        <td colspan="8">
+                            <i class="fas fa-spinner fa-spin loading-spinner"></i>Loading...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
         </div> <!-- /.main-content -->
 
@@ -1463,6 +1661,7 @@ body { visibility: hidden }
     </div>
 </div>
 
+
 <script src="quizzes.js"></script>
 <script src="assignments.js"></script>
 <script>
@@ -1601,6 +1800,8 @@ if (item.dataset.section === 'certificates') {
         if (item.dataset.section === 'analytics') {
             updateAnalytics();
         }
+        if (item.dataset.section === 'talentProfiles') loadTalentProfiles();
+   if (item.dataset.section === 'hireRequests')   loadHireRequests();
   if (item.dataset.section === 'videos') {
     loadVideosSection();
 }
@@ -8662,7 +8863,453 @@ async function handleLogout() {
 // Fix scrolling when switching sections
 function fixSectionScrolling() {
 }
+// ============================================
+// TALENT PROFILES MANAGEMENT
+// ============================================
+let _allTalent = [];
 
+async function loadTalentProfiles() {
+    const tbody = document.getElementById('talentTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:#9ca3af;">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:10px;"></i>Loading...
+    </td></tr>`;
+
+    const { data, error } = await db
+        .from('talent_profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Error: ${error.message}</td></tr>`;
+        return;
+    }
+
+    _allTalent = data || [];
+    updateTalentStats(_allTalent);
+    renderTalentTable(_allTalent);
+}
+
+function updateTalentStats(rows) {
+    document.getElementById('talentTotal').textContent    = rows.length;
+    document.getElementById('talentApproved').textContent = rows.filter(r => r.status === 'approved').length;
+    document.getElementById('talentPending').textContent  = rows.filter(r => r.status === 'pending' || !r.status).length;
+    document.getElementById('talentRejected').textContent = rows.filter(r => r.status === 'rejected').length;
+}
+
+function filterTalentProfiles() {
+    const q      = document.getElementById('talentSearch').value.toLowerCase();
+    const status = document.getElementById('talentStatusFilter').value;
+    const exp    = document.getElementById('talentExpFilter').value;
+
+    const filtered = _allTalent.filter(r => {
+        const matchQ = !q || [r.full_name, r.role, r.country_name, r.bio, r.email].join(' ').toLowerCase().includes(q);
+        const matchS = !status || r.status === status || (!r.status && status === 'pending');
+        const matchE = !exp    || r.experience === exp;
+        return matchQ && matchS && matchE;
+    });
+    renderTalentTable(filtered);
+}
+
+function renderTalentTable(rows) {
+    const tbody = document.getElementById('talentTableBody');
+    if (!tbody) return;
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:50px;text-align:center;color:#9ca3af;">
+            <i class="fas fa-users" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px;"></i>
+            No talent profiles found.
+        </td></tr>`;
+        return;
+    }
+
+    const expLabels = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
+    const statusStyles = {
+        approved: 'background:#d1fae5;color:#065f46;',
+        pending:  'background:#fef3c7;color:#92400e;',
+        rejected: 'background:#fee2e2;color:#991b1b;'
+    };
+
+    tbody.innerHTML = rows.map(r => {
+        const status    = r.status || 'pending';
+        const date      = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
+        const initials  = (r.full_name || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        const headshotBtn = r.headshot_url
+            ? `<a href="${r.headshot_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#ede9fe;color:#7c3aed;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;margin-right:4px;"><i class="fas fa-image"></i> Photo</a>`
+            : '';
+        const projectBtn = r.project_url
+            ? `<a href="${r.project_url}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;background:#dbeafe;color:#2563eb;border-radius:6px;font-size:11px;font-weight:700;text-decoration:none;"><i class="fas fa-file"></i> Project</a>`
+            : '';
+        const bio = (r.bio || '').substring(0, 60) + ((r.bio || '').length > 60 ? '…' : '');
+
+        return `<tr style="border-bottom:1px solid #f3f4f6;"
+                    onmouseenter="this.style.background='#fafafa'"
+                    onmouseleave="this.style.background=''">
+            <td style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    ${r.headshot_url
+                        ? `<img src="${r.headshot_url}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+                        : `<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px;flex-shrink:0;">${initials}</div>`
+                    }
+                    <div>
+                        <div style="font-weight:700;color:#1f2937;">${r.full_name || '—'}</div>
+                        <div style="font-size:12px;color:#6b7280;">${r.email || '—'}</div>
+                    </div>
+                </div>
+            </td>
+            <td style="padding:12px 16px;color:#374151;font-size:13px;">${r.role || '—'}</td>
+            <td style="padding:12px 16px;color:#6b7280;font-size:13px;">${r.country_name || r.country_code || '—'}</td>
+            <td style="padding:12px 16px;">
+                <span style="background:#ede9fe;color:#5b21b6;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">
+                    ${expLabels[r.experience] || r.experience || '—'}
+                </span>
+            </td>
+            <td style="padding:12px 16px;text-align:center;">
+                <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;${statusStyles[status] || statusStyles.pending}">
+                    ${status.charAt(0).toUpperCase() + status.slice(1)}
+                </span>
+            </td>
+            <td style="padding:12px 16px;color:#6b7280;font-size:12px;white-space:nowrap;">${date}</td>
+            <td style="padding:12px 16px;">${headshotBtn}${projectBtn}</td>
+            <td style="padding:12px 16px;text-align:center;">
+                <div style="display:flex;gap:5px;justify-content:center;flex-wrap:wrap;">
+                    <button onclick="viewTalentProfile('${r.id}')"
+                        style="padding:6px 10px;background:#ede9fe;color:#7c3aed;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    ${status !== 'approved' ? `
+                    <button onclick="updateTalentStatus('${r.id}','approved')"
+                        style="padding:6px 10px;background:#d1fae5;color:#065f46;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-check"></i>
+                    </button>` : ''}
+                    ${status !== 'rejected' ? `
+                    <button onclick="updateTalentStatus('${r.id}','rejected')"
+                        style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-times"></i>
+                    </button>` : ''}
+                    <button onclick="deleteTalentProfile('${r.id}')"
+                        style="padding:6px 10px;background:#fee2e2;color:#991b1b;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+function viewTalentProfile(id) {
+    const r = _allTalent.find(t => t.id === id);
+    if (!r) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.style.zIndex = '4000';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:580px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-id-card" style="color:#7c3aed;margin-right:8px;"></i>Talent Profile</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="display:flex;align-items:center;gap:16px;background:#f5f3ff;padding:18px;border-radius:14px;">
+                    ${r.headshot_url
+                        ? `<img src="${r.headshot_url}" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid #7c3aed;">`
+                        : `<div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#6d28d9);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:22px;">${(r.full_name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>`
+                    }
+                    <div>
+                        <div style="font-weight:800;font-size:18px;color:#1f2937;">${r.full_name || '—'}</div>
+                        <div style="color:#7c3aed;font-weight:600;">${r.role || '—'}</div>
+                        <div style="font-size:13px;color:#6b7280;">📍 ${r.country_name || r.country_code || '—'} &nbsp;•&nbsp; ${r.email || '—'}</div>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Experience</div>
+                        <div style="font-weight:600;color:#374151;">${r.experience || '—'}</div>
+                    </div>
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Status</div>
+                        <div style="font-weight:600;color:#374151;">${r.status || 'pending'}</div>
+                    </div>
+                </div>
+                <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+                    <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:6px;">Bio / Expertise</div>
+                    <div style="font-size:14px;color:#374151;line-height:1.6;">${r.bio || '—'}</div>
+                </div>
+                ${r.project_url ? `
+                <div>
+                    <a href="${r.project_url}" target="_blank"
+                        style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:#dbeafe;color:#2563eb;border-radius:10px;font-weight:700;text-decoration:none;">
+                        <i class="fas fa-file-download"></i> Download Project / Research
+                    </a>
+                </div>` : ''}
+                <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid #f3f4f6;">
+                    ${r.status !== 'approved' ? `
+                    <button onclick="updateTalentStatus('${r.id}','approved');this.closest('.modal').remove();"
+                        style="flex:1;padding:12px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:10px;color:white;font-weight:800;cursor:pointer;font-family:inherit;">
+                        <i class="fas fa-check"></i> Approve
+                    </button>` : ''}
+                    ${r.status !== 'rejected' ? `
+                    <button onclick="updateTalentStatus('${r.id}','rejected');this.closest('.modal').remove();"
+                        style="flex:1;padding:12px;background:#fee2e2;border:none;border-radius:10px;color:#dc2626;font-weight:800;cursor:pointer;font-family:inherit;">
+                        <i class="fas fa-times"></i> Reject
+                    </button>` : ''}
+                    <button onclick="this.closest('.modal').remove()"
+                        style="flex:1;padding:12px;border:2px solid #e5e7eb;border-radius:10px;background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function updateTalentStatus(id, status) {
+    const { error } = await db.from('talent_profiles').update({ status }).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    showToast(status === 'approved' ? '✅ Profile approved! Now visible in Talent Discovery.' : '❌ Profile rejected.');
+    loadTalentProfiles();
+}
+
+async function deleteTalentProfile(id) {
+    if (!confirm('Delete this talent profile? This cannot be undone.')) return;
+    const { error } = await db.from('talent_profiles').delete().eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    showToast('Profile deleted.');
+    loadTalentProfiles();
+}
+
+function exportTalentCSV() {
+    const rows = [['Name','Email','Role','Country','Experience','Status','Submitted']];
+    _allTalent.forEach(r => rows.push([
+        r.full_name || '', r.email || '', r.role || '',
+        r.country_name || '', r.experience || '', r.status || 'pending',
+        r.created_at ? new Date(r.created_at).toLocaleDateString() : ''
+    ]));
+    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `talent_profiles_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    showToast('CSV exported!');
+}
+
+// ============================================
+// HIRE REQUESTS MANAGEMENT
+// ============================================
+let _allHire = [];
+
+async function loadHireRequests() {
+    const tbody = document.getElementById('hireTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = `<tr><td colspan="8" style="padding:40px;text-align:center;color:#9ca3af;">
+        <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:10px;"></i>Loading...
+    </td></tr>`;
+
+    const { data, error } = await db
+        .from('hire_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Error: ${error.message}</td></tr>`;
+        return;
+    }
+
+    _allHire = data || [];
+    updateHireStats(_allHire);
+    renderHireTable(_allHire);
+}
+
+function updateHireStats(rows) {
+    document.getElementById('hireTotal').textContent     = rows.length;
+    document.getElementById('hirePending').textContent   = rows.filter(r => (r.status || 'pending') === 'pending').length;
+    document.getElementById('hireContacted').textContent = rows.filter(r => r.status === 'contacted').length;
+    document.getElementById('hireClosed').textContent    = rows.filter(r => r.status === 'closed').length;
+}
+
+function filterHireRequests() {
+    const q      = document.getElementById('hireSearch').value.toLowerCase();
+    const status = document.getElementById('hireStatusFilter').value;
+
+    const filtered = _allHire.filter(r => {
+        const matchQ = !q || [r.company_name, r.first_name, r.last_name, r.email, r.country, r.industry].join(' ').toLowerCase().includes(q);
+        const matchS = !status || (r.status || 'pending') === status;
+        return matchQ && matchS;
+    });
+    renderHireTable(filtered);
+}
+
+function renderHireTable(rows) {
+    const tbody = document.getElementById('hireTableBody');
+    if (!tbody) return;
+
+    if (rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:50px;text-align:center;color:#9ca3af;">
+            <i class="fas fa-briefcase" style="font-size:40px;opacity:0.3;display:block;margin-bottom:12px;"></i>
+            No hire requests found.
+        </td></tr>`;
+        return;
+    }
+
+    const statusStyles = {
+        pending:   'background:#fef3c7;color:#92400e;',
+        contacted: 'background:#dbeafe;color:#1d4ed8;',
+        closed:    'background:#d1fae5;color:#065f46;'
+    };
+
+    tbody.innerHTML = rows.map(r => {
+        const status  = r.status || 'pending';
+        const date    = r.created_at ? new Date(r.created_at).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : '—';
+        const needs   = (r.talent_needs || '—').substring(0, 60) + ((r.talent_needs || '').length > 60 ? '…' : '');
+        const initials = (r.company_name || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+        return `<tr style="border-bottom:1px solid #f3f4f6;"
+                    onmouseenter="this.style.background='#fafafa'"
+                    onmouseleave="this.style.background=''">
+            <td style="padding:12px 16px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:36px;height:36px;min-width:36px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px;">
+                        ${initials}
+                    </div>
+                    <div style="font-weight:700;color:#1f2937;">${r.company_name || '—'}</div>
+                </div>
+            </td>
+            <td style="padding:12px 16px;">
+                <div style="font-weight:600;color:#374151;">${r.first_name || ''} ${r.last_name || ''}</div>
+                <div style="font-size:12px;color:#6b7280;">${r.email || '—'}</div>
+                <div style="font-size:12px;color:#6b7280;">${r.contact || '—'}</div>
+            </td>
+            <td style="padding:12px 16px;color:#6b7280;font-size:13px;">${r.industry || '—'}</td>
+            <td style="padding:12px 16px;color:#6b7280;font-size:13px;">${r.country || '—'}</td>
+            <td style="padding:12px 16px;color:#374151;font-size:13px;max-width:200px;">${needs}</td>
+            <td style="padding:12px 16px;text-align:center;">
+                <select onchange="updateHireStatus('${r.id}', this.value)"
+                    style="padding:5px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;outline:none;background:white;cursor:pointer;">
+                    <option value="pending"   ${status==='pending'   ?'selected':''}>⏳ Pending</option>
+                    <option value="contacted" ${status==='contacted' ?'selected':''}>📞 Contacted</option>
+                    <option value="closed"    ${status==='closed'    ?'selected':''}>✅ Closed</option>
+                </select>
+            </td>
+            <td style="padding:12px 16px;">
+                <span style="font-size:11px;font-family:monospace;background:#f3f4f6;padding:3px 8px;border-radius:6px;color:#374151;">
+                    ${r.ref_number || '—'}
+                </span>
+            </td>
+            <td style="padding:12px 16px;text-align:center;">
+                <div style="display:flex;gap:5px;justify-content:center;">
+                    <button onclick="viewHireRequest('${r.id}')"
+                        style="padding:6px 10px;background:#dbeafe;color:#2563eb;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button onclick="deleteHireRequest('${r.id}')"
+                        style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+async function updateHireStatus(id, status) {
+    const { error } = await db.from('hire_requests').update({ status }).eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    const labels = { pending:'Marked as Pending', contacted:'✅ Marked as Contacted', closed:'✅ Marked as Closed' };
+    showToast(labels[status] || 'Status updated');
+    const row = _allHire.find(r => r.id === id);
+    if (row) row.status = status;
+    updateHireStats(_allHire);
+}
+
+function viewHireRequest(id) {
+    const r = _allHire.find(h => h.id === id);
+    if (!r) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.style.zIndex = '4000';
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:560px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-briefcase" style="color:#2563eb;margin-right:8px;"></i>Hire Request Details</h2>
+                <button class="modal-close" onclick="this.closest('.modal').remove()"><i class="fas fa-times"></i></button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;">
+                <div style="background:#eff6ff;border-radius:14px;padding:18px;">
+                    <div style="font-weight:800;font-size:18px;color:#1e40af;">${r.company_name || '—'}</div>
+                    <div style="font-size:13px;color:#3b82f6;margin-top:2px;">${r.industry || ''} ${r.country ? '· ' + r.country : ''}</div>
+                    <div style="margin-top:8px;">
+                        <span style="background:#dbeafe;color:#1d4ed8;padding:3px 12px;border-radius:20px;font-size:12px;font-weight:700;">
+                            Ref: ${r.ref_number || '—'}
+                        </span>
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Contact Person</div>
+                        <div style="font-weight:600;color:#374151;">${r.first_name || ''} ${r.last_name || ''}</div>
+                    </div>
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Email</div>
+                        <div style="font-size:13px;color:#374151;word-break:break-all;">${r.email || '—'}</div>
+                    </div>
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Phone</div>
+                        <div style="font-size:13px;color:#374151;">${r.contact || '—'}</div>
+                    </div>
+                    <div style="background:#f9fafb;border-radius:10px;padding:12px;">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Submitted</div>
+                        <div style="font-size:13px;color:#374151;">${r.created_at ? new Date(r.created_at).toLocaleDateString() : '—'}</div>
+                    </div>
+                </div>
+                <div style="background:#f9fafb;border-radius:10px;padding:14px;">
+                    <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:6px;">Talent Needs</div>
+                    <div style="font-size:14px;color:#374151;line-height:1.6;">${r.talent_needs || '—'}</div>
+                </div>
+                <div style="display:flex;gap:10px;align-items:center;padding-top:8px;border-top:1px solid #f3f4f6;">
+                    <label style="font-weight:700;color:#374151;font-size:14px;">Update Status:</label>
+                    <select onchange="updateHireStatus('${r.id}', this.value)"
+                        style="flex:1;padding:10px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+                        <option value="pending"   ${(r.status||'pending')==='pending'  ?'selected':''}>⏳ Pending</option>
+                        <option value="contacted" ${r.status==='contacted'?'selected':''}>📞 Contacted</option>
+                        <option value="closed"    ${r.status==='closed'   ?'selected':''}>✅ Closed / Matched</option>
+                    </select>
+                </div>
+                <button onclick="this.closest('.modal').remove()"
+                    style="padding:12px;border:2px solid #e5e7eb;border-radius:10px;background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
+                    Close
+                </button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function deleteHireRequest(id) {
+    if (!confirm('Delete this hire request? This cannot be undone.')) return;
+    const { error } = await db.from('hire_requests').delete().eq('id', id);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    showToast('Hire request deleted.');
+    loadHireRequests();
+}
+
+function exportHireCSV() {
+    const rows = [['Company','Contact','Email','Phone','Industry','Country','Talent Needs','Status','Ref','Submitted']];
+    _allHire.forEach(r => rows.push([
+        r.company_name||'', `${r.first_name||''} ${r.last_name||''}`,
+        r.email||'', r.contact||'', r.industry||'', r.country||'',
+        r.talent_needs||'', r.status||'pending', r.ref_number||'',
+        r.created_at ? new Date(r.created_at).toLocaleDateString() : ''
+    ]));
+    const csv  = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const a    = document.createElement('a');
+    a.href     = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+    a.download = `hire_requests_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    showToast('CSV exported!');
+}
 async function loadRecentActivity() {
     const feed = document.getElementById('analyticsActivityFeed');
     if (!feed) return;
