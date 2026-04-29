@@ -550,7 +550,52 @@
     color: white;
     text-decoration: none;
   }
+/* ===== PROJECT TABS ===== */
+  .project-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
 
+  .project-tab {
+    padding: 8px 16px;
+    border: 1.5px solid #e0e4f0;
+    border-radius: 8px;
+    background: #f8faff;
+    color: #6b7280;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .project-tab:hover {
+    border-color: #0099ff;
+    color: #0099ff;
+  }
+
+  .project-tab.active {
+    background: #0099ff;
+    border-color: #0099ff;
+    color: white;
+  }
+
+  .project-panel {
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0);   }
+  }
+
+  .project-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 5px;
+  }
 </style>
 </head>
 <body>
@@ -618,14 +663,30 @@
       <hr class="section-divider"/>
       <p class="section-label">Uploads</p>
 
-      <div class="form-group">
+    <div class="form-group">
         <label>Research / Project (optional)</label>
-        <div class="upload-box">
-          <input type="file" accept=".pdf,.doc,.docx,.ppt,.pptx" id="project" aria-label="Project file"/>
-          <div class="upload-icon">📄</div>
-          <p><strong>Click to upload</strong> or drag and drop</p>
-          <p>PDF, DOC, PPT supported</p>
-          <div class="upload-filename" id="projectName"></div>
+        
+        <!-- Tab switcher -->
+        <div class="project-tabs">
+          <button type="button" class="project-tab active" onclick="switchProjectTab('link', this)">
+            🔗 Share a Link
+          </button>
+          <button type="button" class="project-tab" onclick="switchProjectTab('text', this)">
+            ✍️ Write a Description
+          </button>
+        </div>
+
+        <!-- Link input -->
+        <div id="projectLinkPanel" class="project-panel">
+          <input type="url" id="projectLink" 
+                 placeholder="https://github.com/yourproject or Google Drive link..."/>
+          <div class="project-hint">Paste a GitHub, Google Drive, Notion, or any public link</div>
+        </div>
+
+        <!-- Text description -->
+        <div id="projectTextPanel" class="project-panel" style="display: none;">
+          <textarea id="projectText" rows="4"
+                    placeholder="Describe your research or project — what you built, the problem it solves, technologies used..."></textarea>
         </div>
       </div>
 
@@ -697,11 +758,31 @@
 
  
   <script>
-    // ── File name display ──────────────────────────────────────
-    document.getElementById('project').addEventListener('change', function () {
-      const el = document.getElementById('projectName');
-      if (this.files[0]) { el.textContent = '✔ ' + this.files[0].name; el.style.display = 'block'; }
-    });
+   // ── Project tab switcher ──────────────────────────────────
+  function switchProjectTab(type, btn) {
+      document.querySelectorAll('.project-tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      document.getElementById('projectLinkPanel').style.display = type === 'link' ? 'block' : 'none';
+      document.getElementById('projectTextPanel').style.display = type === 'text' ? 'block' : 'none';
+    }
+    // ── Get project data based on active tab ──────────────────
+  function getProjectData() {
+      const activeTab = document.querySelector('.project-tab.active');
+      const tabText   = activeTab?.textContent || '';
+
+      if (tabText.includes('Link')) {
+        const link = document.getElementById('projectLink').value.trim();
+        return { type: 'link', value: link, file: null };
+      }
+      if (tabText.includes('Write')) {
+        const text = document.getElementById('projectText').value.trim();
+        return { type: 'text', value: text, file: null };
+      }
+      return { type: 'none', value: '', file: null };
+    }
+   
+
     document.getElementById('headshot').addEventListener('change', function () {
       const el = document.getElementById('headshotName');
       if (this.files[0]) { el.textContent = '✔ ' + this.files[0].name; el.style.display = 'block'; }
@@ -771,8 +852,8 @@
       const expEl        = document.getElementById('experience');
       const experience   = expEl.value;
       const expText      = expEl.selectedOptions[0]?.text || '';
-      const headshotFile = document.getElementById('headshot').files[0];
-      const projectFile  = document.getElementById('project').files[0];
+      const headshotFile  = document.getElementById('headshot').files[0];
+      const projectFile   = projectData.file;
 
       if (!name || !email || !countryCode || !role || !bio || !experience || !headshotFile) {
         showAlert('error', 'Please fill in all required fields and upload your headshot.');
@@ -814,12 +895,20 @@
       const initials = name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       const avatarEl = document.getElementById('previewAvatar');
       if (!avatarEl.querySelector('img')) avatarEl.textContent = initials;
+// Show project in preview based on type
+      const projectData = getProjectData();
+      if (projectData.value) {
+        const icons = { link: '🔗', file: '📄', text: '✍️' };
+        const icon  = icons[projectData.type] || '📄';
+        const label = projectData.type === 'link'
+          ? projectData.value
+          : projectData.type === 'file'
+          ? projectData.value
+          : projectData.value.slice(0, 60) + (projectData.value.length > 60 ? '…' : '');
 
-      if (projectFile) {
-        document.getElementById('previewProject').textContent = projectFile.name;
+        document.getElementById('previewProject').textContent = `${icon} ${label}`;
         document.getElementById('projectSection').style.display = 'block';
       }
-
   // Save profile ID so they never see the form again
       if (data?.id) {
         localStorage.setItem('talent_profile_id', data.id);
