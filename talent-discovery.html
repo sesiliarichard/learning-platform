@@ -1130,7 +1130,7 @@
 
 </div>
 
-
+<div id="profileModal"></div>
 <script>
   // ── State ─────────────────────────────────────────────────
   let currentPage = 1;
@@ -1307,12 +1307,45 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ── View profile (placeholder — wire to your profile modal/page) ─
-  function viewProfile(id) {
-    // Example: redirect to a profile page
-    // window.location.href = `talent-profile.html?id=${id}`;
-    console.log('View profile:', id);
-    alert('Profile ID: ' + id + '\n\nWire this to your talent-profile.html page.');
+  async function viewProfile(id) {
+    const { data, error } = await TalentHub.fetchTalentById(id);
+    if (error || !data) { alert('Could not load profile.'); return; }
+
+    const expLabels = { beginner:'0–2 yrs', intermediate:'2–5 yrs', advanced:'5+ yrs' };
+    const avatar = data.headshot_url
+      ? `<img src="${data.headshot_url}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid white;">`
+      : `<div style="width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#0099ff,#0077cc);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:800;color:white;font-family:Syne,sans-serif;">${data.full_name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase()}</div>`;
+
+    const projectHtml = data.project_url
+      ? `<div style="margin-top:12px"><div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Project / Research</div>
+         <a href="${data.project_url}" target="_blank" style="font-size:13px;color:#0077cc;word-break:break-all;">🔗 ${data.project_url}</a></div>` : '';
+
+    document.getElementById('profileModal').innerHTML = `
+      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="closeModal(event)">
+        <div style="background:white;border-radius:20px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+          <div style="background:linear-gradient(135deg,#0077cc,#00aaff);border-radius:20px 20px 0 0;padding:28px;display:flex;align-items:center;gap:20px;">
+            ${avatar}
+            <div>
+              <div style="font-family:Syne,sans-serif;font-size:1.4rem;font-weight:800;color:white;">${escHtml(data.full_name)}</div>
+              <div style="color:rgba(255,255,255,0.85);font-size:14px;margin-top:2px;">${escHtml(data.role)}</div>
+              <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">📍 ${escHtml(data.country_name || data.country_code)}</div>
+            </div>
+          </div>
+          <div style="padding:24px;">
+            <div style="display:inline-block;background:#e8f4ff;color:#0077cc;border-radius:99px;font-size:12px;font-weight:700;padding:4px 14px;margin-bottom:16px;">${expLabels[data.experience] || data.experience}</div>
+            <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">About</div>
+            <div style="font-size:14px;color:#1a1a2e;line-height:1.6;margin-bottom:16px;">${escHtml(data.bio)}</div>
+            <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Email</div>
+            <div style="font-size:14px;color:#1a1a2e;margin-bottom:16px;">${escHtml(data.email)}</div>
+            ${projectHtml}
+            <button onclick="document.getElementById('profileModal').innerHTML=''" style="margin-top:20px;width:100%;padding:12px;background:linear-gradient(135deg,#0099ff,#0077cc);color:white;border:none;border-radius:10px;font-family:Syne,sans-serif;font-size:14px;font-weight:700;cursor:pointer;">Close</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function closeModal(event) {
+    document.getElementById('profileModal').innerHTML = '';
   }
 
   // ── Enter key search ──────────────────────────────────────
