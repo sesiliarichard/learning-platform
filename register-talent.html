@@ -787,21 +787,142 @@
         document.getElementById('projectSection').style.display = 'block';
       }
 
+  // Save profile ID so they never see the form again
+      if (data?.id) {
+        localStorage.setItem('talent_profile_id', data.id);
+      }
+
       document.getElementById('formContainer').style.display = 'none';
-document.getElementById('profilePreview').style.display  = 'block';
-window.scrollTo({ top: 0, behavior: 'smooth' });
-
-// Redirect to talent discovery after 3 seconds
-setTimeout(() => {
-  window.location.href = 'talent-discovery.html';
-}, 3000);
+      document.getElementById('profilePreview').style.display  = 'block';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
-    function editProfile() {
+    
+function editProfile() {
       document.getElementById('profilePreview').style.display = 'none';
       document.getElementById('formContainer').style.display  = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+
+    // ── Check on load if already registered ──────────────────
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadAllCountries();
+
+      const savedId = localStorage.getItem('talent_profile_id');
+      if (!savedId) return;
+
+      const { data, error } = await window.supabaseClient
+        .from('talent_profiles')
+        .select('*')
+        .eq('id', savedId)
+        .maybeSingle();
+
+      if (!data || error) return;
+
+      document.getElementById('formContainer').style.display = 'none';
+      showExistingProfile(data);
+    });
+
+    function showExistingProfile(profile) {
+      document.getElementById('previewName').textContent     = profile.full_name;
+      document.getElementById('previewRole').textContent     = profile.role;
+      document.getElementById('previewLocation').textContent = '📍 ' + (profile.country_name || '');
+      document.getElementById('previewEmail').textContent    = profile.email;
+      document.getElementById('previewBio').textContent      = profile.bio;
+
+      const expLabels = {
+        beginner:     'Beginner (0–2 yrs)',
+        intermediate: 'Intermediate (2–5 yrs)',
+        advanced:     'Advanced (5+ yrs)'
+      };
+      document.getElementById('previewExp').textContent = expLabels[profile.experience] || profile.experience;
+
+      if (profile.headshot_url) {
+        document.getElementById('previewAvatar').innerHTML =
+          `<img src="${profile.headshot_url}" alt="${profile.full_name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      } else {
+        const initials = profile.full_name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        document.getElementById('previewAvatar').textContent = initials;
+      }
+
+      document.querySelector('.success-banner').textContent =
+        '👋 Welcome back! Your profile is live and being reviewed by companies.';
+
+      document.getElementById('profilePreview').style.display = 'block';
+      document.querySelector('.edit-btn').onclick = () => loadProfileIntoForm(profile);
+    }
+
+    function loadProfileIntoForm(profile) {
+      document.getElementById('fullname').value   = profile.full_name  || '';
+      document.getElementById('email').value      = profile.email      || '';
+      document.getElementById('role').value       = profile.role       || '';
+      document.getElementById('bio').value        = profile.bio        || '';
+      document.getElementById('experience').value = profile.experience || '';
+
+      document.getElementById('profilePreview').style.display = 'none';
+      document.getElementById('formContainer').style.display  = 'block';
+
+      document.querySelector('.btn-label').textContent = 'Update My Profile →';
+      document.getElementById('submitBtn').onclick = () => updateTalent(profile.id);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function updateTalent(profileId) {
+      const name       = document.getElementById('fullname').value.trim();
+      const role       = document.getElementById('role').value.trim();
+      const bio        = document.getElementById('bio').value.trim();
+      const experience = document.getElementById('experience').value;
+
+      if (!name || !role || !bio || !experience) {
+        showAlert('error', 'Please fill in all required fields.');
+        return;
+      }
+
+      setLoading(true);
+
+      const updates = { full_name: name, role, bio, experience };
+
+      const headshotFile = document.getElementById('headshot').files[0];
+      if (headshotFile) {
+        const ext      = headshotFile.name.split('.').pop();
+        const filePath = `headshots/${profileId}-${Date.now()}.${ext}`;
+        const { error: upErr } = await window.supabaseClient.storage
+          .from('talent-files')
+          .upload(filePath, headshotFile, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = window.supabaseClient.storage
+            .from('talent-files')
+            .getPublicUrl(filePath);
+          updates.headshot_url = urlData.publicUrl;
+        }
+      }
+
+      const { error } = await window.supabaseClient
+        .from('talent_profiles')
+        .update(updates)
+        .eq('id', profileId);
+
+      setLoading(false);
+
+      if (error) {
+        showAlert('error', 'Update failed: ' + error.message);
+        return;
+      }
+
+      showAlert('success', '✅ Profile updated successfully!');
+
+      const { data } = await window.supabaseClient
+        .from('talent_profiles')
+        .select('*')
+        .eq('id', profileId)
+        .maybeSingle();
+
+      if (data) {
+        document.getElementById('formContainer').style.display = 'none';
+        showExistingProfile(data);
+      }
+    }
+ 
   </script>
 
 </body>
