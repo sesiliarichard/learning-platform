@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saved Jobs – Women in AI Africa</title>
+<link rel="icon" type="image/x-icon" href="images/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+/* ============================================
+   ROOT VARIABLES & RESET
+   ============================================ */
+:root {
+    --blue: #0077cc;
+    --blue-mid: #0099ff;
+    --blue-light: #00bbff;
+    --blue-bg: #e8f4ff;
+    --blue-soft: #f0f6ff;
+    --green: #22C55E;
+    --yellow: #EAB308;
+    --text: #1a1a2e;
+    --muted: #6B7280;
+    --border: #e0e4f0;
+    --white: #FFFFFF;
+    --page-bg: #f0f4ff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--page-bg);
+    color: var(--text);
+    min-height: 100vh;
+}
+
+/* ============================================
+   NAVIGATION
+   ============================================ */
+nav {
+    background: rgba(255, 255, 255, 0.95);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 153, 255, 0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    display: flex;
+    align-items: center;
+    padding: 0 32px;
+    height: 64px;
+    gap: 48px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    background: var(--blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+}
+
+.logo-text strong {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+}
+
+.logo-text span {
+    font-size: 12px;
+    color: var(--blue-mid);
+    font-weight: 600;
+}
+
+.nav-links {
+    display: flex;
+    gap: 32px;
+    list-style: none;
+    flex: 1;
+    justify-content: center;
+}
+
+.nav-links a {
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    padding-bottom: 4px;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: var(--text);
+}
+
+.nav-links a.active {
+    color: var(--blue);
+    border-bottom: 2px solid var(--blue-mid);
+    font-weight: 700;
+}
+
+/* ============================================
+   CONTAINER & PAGE HEADER
+   ============================================ */
+.container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+.page-header {
+    margin-bottom: 28px;
+}
+
+.page-header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: 'Syne', sans-serif;
+    margin-bottom: 4px;
+}
+
+.page-header p {
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.saved-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 16px;
+}
+
+/* ============================================
+   JOB CARDS CONTAINER
+   ============================================ */
+.cards {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.job-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    animation: fadeUp 0.4s ease both;
+}
+
+.job-card:hover {
+    box-shadow: 0 6px 24px rgba(0, 119, 204, 0.1);
+    transform: translateY(-2px);
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   JOB CARD TOP SECTION
+   ============================================ */
+.job-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.company-logo {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: white;
+}
+
+/* Logo color variants */
+.logo--blue {
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+}
+
+.logo--cyan {
+    background: linear-gradient(135deg, #00bbff, #0099ff);
+}
+
+.logo--dark {
+    background: linear-gradient(135deg, #0077cc, #005fa3);
+}
+
+.logo--teal {
+    background: linear-gradient(135deg, #0099aa, #007788);
+}
+
+/* ============================================
+   JOB INFORMATION
+   ============================================ */
+.job-info {
+    flex: 1;
+}
+
+.job-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    margin-bottom: 3px;
+}
+
+.job-company {
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 600;
+}
+
+/* Meta chips */
+.job-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--blue-soft);
+    border: 1px solid rgba(0, 153, 255, 0.15);
+    color: var(--muted);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+}
+
+.meta-chip.type {
+    background: #e8fff4;
+    color: #16a34a;
+    border-color: rgba(34, 197, 94, 0.2);
+}
+
+.meta-chip.remote {
+    background: #fef3c7;
+    color: #92400e;
+    border-color: rgba(234, 179, 8, 0.2);
+}
+
+/* ============================================
+   JOB DESCRIPTION
+   ============================================ */
+.job-desc {
+    font-size: 13px;
+    color: #374151;
+    line-height: 1.6;
+    margin-bottom: 14px;
+}
+
+/* ============================================
+   JOB FOOTER & BUTTONS
+   ============================================ */
+.job-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.job-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-apply {
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue));
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 3px 10px rgba(0, 153, 255, 0.3);
+}
+
+.btn-apply:hover {
+    transform: translateY(-1px);
+}
+
+.btn-remove {
+    background: white;
+    color: #e53e3e;
+    border: 1.5px solid #fc8181;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-remove:hover {
+    background: #fff0f0;
+}
+
+.posted-date {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 8px;
+}
+
+/* ============================================
+   EMPTY STATE
+   ============================================ */
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+}
+
+.empty-state .emoji {
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.empty-state h3 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+}
+
+.empty-state p {
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.browse-btn {
+    display: inline-block;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--blue-mid), var(--blue));
+    color: white;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 14px;
+    font-family: 'Syne', sans-serif;
+    box-shadow: 0 4px 14px rgba(0, 153, 255, 0.3);
+    transition: transform 0.2s;
+}
+
+.browse-btn:hover {
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* ============================================
+   SKELETON LOADER
+   ============================================ */
+.skel {
+    background: linear-gradient(90deg, #e8f0ff 25%, #d0e0ff 50%, #e8f0ff 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 6px;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="career-support.html">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+    <div class="logo-text"><strong>Women in AI</strong><span>Africa</span></div>
+  </a>
+ <ul class="nav-links">
+  <li><a href="career-support.html">Dashboard</a></li>  <!-- ADD -->
+  <li><a href="jobs.html" class="active">Jobs</a></li>
+  <li><a href="talent-discovery.html">Talent Discovery</a></li>
+  <li><a href="saved.html">Saved</a></li>
+</ul>
+</nav>
+
+<div class="container">
+  <div class="page-header">
+    <h1>🔖 Saved Jobs</h1>
+    <p>Jobs you've saved to review later</p>
+  </div>
+  <div class="saved-count" id="savedCount"></div>
+  <div class="cards" id="cardsContainer">
+    <div style="background:white;border:1px solid #e0e4f0;border-radius:16px;padding:22px;">
+      <div class="skel" style="height:20px;width:40%;margin-bottom:10px"></div>
+      <div class="skel" style="height:14px;width:60%;margin-bottom:8px"></div>
+      <div class="skel" style="height:50px"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const LOGO_CLASSES = ['logo--blue','logo--cyan','logo--dark','logo--teal'];
+  function logoClass(i) { return LOGO_CLASSES[i % LOGO_CLASSES.length]; }
+
+  function timeAgo(dateStr) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const days = Math.floor(diff / 86400000);
+    if (days === 0) return 'Today';
+    if (days === 1) return 'Yesterday';
+    if (days < 7) return `${days} days ago`;
+    if (days < 30) return `${Math.floor(days/7)} weeks ago`;
+    return `${Math.floor(days/30)} months ago`;
+  }
+
+  function escHtml(str) {
+    return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function removeJob(id) {
+    let saved = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+    saved = saved.filter(s => s !== id);
+    localStorage.setItem('saved_jobs', JSON.stringify(saved));
+    loadSaved();
+  }
+
+  function applyToJob(email, company) {
+    window.location.href = `mailto:${email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
+  }
+
+  async function loadSaved() {
+    const container = document.getElementById('cardsContainer');
+    const countEl   = document.getElementById('savedCount');
+
+    const savedIds = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+
+    if (savedIds.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🔖</div>
+          <h3>No saved jobs yet</h3>
+          <p>Browse jobs and click Save to keep track of opportunities you're interested in.</p>
+          <a href="jobs.html" class="browse-btn">Browse Jobs →</a>
+        </div>`;
+      countEl.textContent = '';
+      return;
+    }
+
+    const { data, error } = await window.supabaseClient
+      .from('hire_requests')
+      .select('*')
+      .in('id', savedIds);
+
+    if (error || !data || data.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🔖</div>
+          <h3>No saved jobs found</h3>
+          <p>Your saved jobs may have been removed. Browse for new opportunities.</p>
+          <a href="jobs.html" class="browse-btn">Browse Jobs →</a>
+        </div>`;
+      countEl.textContent = '';
+      return;
+    }
+
+    countEl.textContent = `${data.length} saved job${data.length !== 1 ? 's' : ''}`;
+
+    const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' };
+    const locLabel  = { 'remote':'🌍 Remote','hybrid':'🏢 Hybrid','onsite':'📍 On-site' };
+
+    container.innerHTML = data.map((job, index) => `
+      <div class="job-card" style="animation-delay:${index*0.07}s">
+        <div class="job-card-top">
+          <div class="company-logo ${logoClass(index)}">${escHtml((job.company_name||'?').slice(0,2).toUpperCase())}</div>
+          <div class="job-info">
+            <div class="job-title">${escHtml(job.talent_needs ? job.talent_needs.split('\n')[0] : 'Open Position')}</div>
+            <div class="job-company">${escHtml(job.company_name)}</div>
+            <div class="job-meta">
+              <span class="meta-chip type">${typeLabel[job.job_type] || 'Full-time'}</span>
+              <span class="meta-chip remote">${locLabel[job.location_type] || '📍 On-site'}</span>
+              ${job.country ? `<span class="meta-chip">📍 ${escHtml(job.country)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="job-desc">${escHtml((job.talent_needs||'').slice(0,150))}${(job.talent_needs||'').length > 150 ? '…' : ''}</div>
+        <div class="job-footer">
+          <div class="job-actions">
+            <button class="btn-remove" onclick="removeJob('${job.id}')">🗑 Remove</button>
+            <button class="btn-apply" onclick="applyToJob('${escHtml(job.email)}','${escHtml(job.company_name)}')">Apply Now</button>
+          </div>
+        </div>
+        <div class="posted-date">Posted ${timeAgo(job.created_at)}</div>
+      </div>`).join('');
+  }
+
+  document.addEventListener('DOMContentLoaded', loadSaved);
+</script>
+</body>
+</html>
