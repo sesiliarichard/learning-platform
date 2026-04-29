@@ -1027,14 +1027,6 @@
     <div class="filter-section"> <label for="filterCountry" class="filter-label">Country</label>
 <select class="select-box" id="filterCountry">
   <option value="">All Countries</option>
-  <option value="KE">Kenya</option>
-  <option value="NG">Nigeria</option>
-  <option value="GH">Ghana</option>
-  <option value="TZ">Tanzania</option>
-  <option value="ZA">South Africa</option>
-  <option value="ET">Ethiopia</option>
-  <option value="RW">Rwanda</option>
-  <option value="UG">Uganda</option>
 </select>
     </div>
 
@@ -1348,8 +1340,35 @@
     document.getElementById('profileModal').innerHTML = '';
   }
 
-  // ── Enter key search ──────────────────────────────────────
+ async function loadAllCountries() {
+    const sel = document.getElementById('filterCountry');
+    try {
+      const res  = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd');
+      const data = await res.json();
+      const countries = data
+        .map(c => ({ name: c.name.common, code: c.cca2, phone: (c.idd?.root || '') + (c.idd?.suffixes?.[0] || '') }))
+        .filter(c => c.phone)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      countries.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.code;
+        opt.textContent = `${c.name} (${c.phone})`;
+        sel.appendChild(opt);
+      });
+    } catch {
+      ['KE:Kenya:+254','NG:Nigeria:+234','GH:Ghana:+233','TZ:Tanzania:+255',
+       'ZA:South Africa:+27','ET:Ethiopia:+251','RW:Rwanda:+250','UG:Uganda:+256']
+      .forEach(s => {
+        const [code,,name] = s.split(':');
+        const opt = document.createElement('option');
+        opt.value = code; opt.textContent = name;
+        sel.appendChild(opt);
+      });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
+    loadAllCountries();
     document.getElementById('mainSearch').addEventListener('keyup', e => {
       if (e.key === 'Enter') applyFilters();
     });
