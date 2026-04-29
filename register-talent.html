@@ -864,7 +864,7 @@
 
       setLoading(true);
 
-      // ── Call Supabase via talent-hub.js ───────────────────
+  // ── Get project data & call Supabase via talent-hub.js ─
       const { data, error } = await TalentHub.submitTalentProfile({
         full_name:    name,
         email,
