@@ -567,6 +567,28 @@
       flex-direction: column;
     }
   }
+  .talent-browse-container {
+    text-align: center;
+    margin-top: 16px;
+}
+
+.talent-browse-btn {
+    display: inline-block;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+    color: white;
+    border-radius: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 15px;
+}
+
+/* Optional: Add hover effect for better UX */
+.talent-browse-btn:hover {
+    background: linear-gradient(135deg, #0088ee, #0066bb);
+    color: white;
+    text-decoration: none;
+}
 </style>
 </head>
 <body>
@@ -711,7 +733,12 @@
       </div>
     </div>
   </div>
-
+<!-- After the success banner -->
+<div class="talent-browse-container">
+    <a href="talent-discovery.html" class="talent-browse-btn">
+        🔍 Browse Available Talent
+    </a>
+</div>
   
   <script>
     function showAlert(type, msg) {
