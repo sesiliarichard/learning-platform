@@ -596,6 +596,9 @@
     color: #9ca3af;
     margin-top: 5px;
   }
+  .hidden {
+    display: none;
+}
 </style>
 </head>
 <body>
@@ -684,7 +687,7 @@
         </div>
 
         <!-- Text description -->
-        <div id="projectTextPanel" class="project-panel" style="display: none;">
+        <div id="projectTextPanel" class="project-panel hidden">
           <textarea id="projectText" rows="4"
                     placeholder="Describe your research or project — what you built, the problem it solves, technologies used..."></textarea>
         </div>
@@ -841,7 +844,7 @@
     }
 
     // ── Submit ────────────────────────────────────────────────
-    async function submitTalent() {
+   async function submitTalent() {
       const name         = document.getElementById('fullname').value.trim();
       const email        = document.getElementById('email').value.trim();
       const countryEl    = document.getElementById('country');
@@ -853,7 +856,6 @@
       const experience   = expEl.value;
       const expText      = expEl.selectedOptions[0]?.text || '';
       const headshotFile  = document.getElementById('headshot').files[0];
-      const projectFile   = projectData.file;
 
       if (!name || !email || !countryCode || !role || !bio || !experience || !headshotFile) {
         showAlert('error', 'Please fill in all required fields and upload your headshot.');
@@ -872,7 +874,7 @@
         bio,
         experience,
         headshot_file: headshotFile,
-        project_file:  projectFile || null,
+        project_value: projectData.value || null,
       });
 
       setLoading(false);

@@ -51,10 +51,8 @@ async function submitTalentProfile(params) {
     const headshot_url = await uploadTalentFile(params.headshot_file, 'headshots');
 
     // Upload project doc (optional)
-    let project_url = null;
-    if (params.project_file) {
-      project_url = await uploadTalentFile(params.project_file, 'projects');
-    }
+    
+    const project_url = params.project_value || null;
 
     const { data, error } = await _supabase
       .from('talent_profiles')
