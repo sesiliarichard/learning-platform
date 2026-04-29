@@ -862,7 +862,38 @@
       return prefix === '+?' ? number : `${prefix} ${number}`;
     }
 
-    document.addEventListener('DOMContentLoaded', loadAllCountries);
+    document.addEventListener('DOMContentLoaded', async () => {
+      await loadAllCountries();
+
+      // Check if this company already submitted a request
+      const savedRef = localStorage.getItem('hire_request_ref');
+      const savedData = localStorage.getItem('hire_request_data');
+
+      if (!savedRef || !savedData) return; // First time — show form
+
+      // They already submitted — show their previous request
+      const prev = JSON.parse(savedData);
+
+      document.getElementById('previewFullName').textContent    = prev.fullName;
+      document.getElementById('previewEmail').textContent       = prev.email;
+      document.getElementById('previewPhone').textContent       = prev.contact;
+      document.getElementById('previewCompany').textContent     = prev.company;
+      document.getElementById('previewContactName').textContent = prev.fullName;
+      document.getElementById('previewIndustry').textContent    = prev.industry;
+      document.getElementById('previewCountry').textContent     = prev.country;
+      document.getElementById('previewNeeds').textContent       = prev.needs;
+      document.getElementById('refNumber').textContent          = savedRef;
+
+      const initials = prev.company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('companyInitials').textContent = initials || '?';
+
+      // Change banner to welcome back message
+      document.querySelector('.success-banner').textContent =
+        '👋 Welcome back! Your request is under review. Ref: ' + savedRef;
+
+      document.getElementById('formContainer').style.display  = 'none';
+      document.getElementById('previewSection').style.display = 'block';
+    });
 
      function showAlert(type, msg) {
       const el = document.getElementById(type === 'error' ? 'alertError' : 'alertSuccess');
@@ -928,6 +959,18 @@
       const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       document.getElementById('companyInitials').textContent = initials || '?';
 
+      // Save so they see their request on return visits
+      localStorage.setItem('hire_request_ref', refNumber);
+      localStorage.setItem('hire_request_data', JSON.stringify({
+        fullName: `${firstname} ${lastname}`,
+        email,
+        contact,
+        company,
+        industry,
+        country,
+        needs
+      }));
+
       document.getElementById('formContainer').style.display  = 'none';
       document.getElementById('previewSection').style.display = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -940,11 +983,20 @@
     }
 
     function newRequest() {
+      // Clear saved data so they can submit a fresh request
+      localStorage.removeItem('hire_request_ref');
+      localStorage.removeItem('hire_request_data');
+
       ['firstname','lastname','email','contact','company','needs'].forEach(id => {
         document.getElementById(id).value = '';
       });
       document.getElementById('industry').selectedIndex = 0;
       document.getElementById('country').selectedIndex  = 0;
+
+      // Reset phone prefix
+      document.getElementById('phonePrefix').textContent = '+?';
+      document.getElementById('phonePrefix').classList.remove('active');
+
       document.getElementById('previewSection').style.display = 'none';
       document.getElementById('formContainer').style.display  = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
