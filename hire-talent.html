@@ -645,6 +645,7 @@
   <!-- FORM -->
   <div class="form-container" id="formContainer">
     <div class="form-card">
+      <input type="hidden" id="editingId" value="">
 
       <div class="alert error"   id="alertError"></div>
       <div class="alert success" id="alertSuccess"></div>
@@ -744,10 +745,9 @@
 </div>
 
       <button class="submit-btn" id="submitBtn" onclick="submitHire()">
-        <div class="spinner"></div>
-        <span class="btn-label">Submit Request →</span>
-      </button>
-
+  <div class="spinner"></div>
+  <span class="btn-label" id="submitBtnLabel">Submit Request →</span>
+</button>
     </div>
   </div>
 
@@ -955,62 +955,152 @@
 const jobType    = document.getElementById('jobType').value;
 const locType    = document.getElementById('locationType').value;
 
-const { data, refNumber, error } = await TalentHub.submitHireRequest({
-  first_name:    firstname,
-  last_name:     lastname,
-  email,
-  contact,
-  company_name:  company,
-  industry,
-  country,
-  talent_needs:  `${jobTitle}\n\n${needs}`,
-  job_type:      jobType,
-  location_type: locType,
-});
-      setLoading(false);
+async function submitHire() {
+  const firstname  = document.getElementById('firstname').value.trim();
+  const lastname   = document.getElementById('lastname').value.trim();
+  const email      = document.getElementById('email').value.trim();
+  const contact    = getFullPhone();
+  const company    = document.getElementById('company').value.trim();
+  const jobTitle   = document.getElementById('jobTitle')?.value.trim() || 'Open Position';
+  const jobType    = document.getElementById('jobType')?.value || 'full-time';
+  const locType    = document.getElementById('locationType')?.value || 'remote';
+  const editingId  = document.getElementById('editingId').value;
 
-      if (error) {
-        console.error(error);
-        showAlert('error', '⚠️ Submission failed: ' + (error.message || 'Please try again.'));
-        return;
-      }
+  if (!firstname || !lastname || !email || !contact || !company) {
+    showAlert('error', 'Please fill in all required fields.');
+    return;
+  }
 
-      // Populate preview
-      document.getElementById('previewFullName').textContent    = `${firstname} ${lastname}`;
-      document.getElementById('previewEmail').textContent       = email;
-      document.getElementById('previewPhone').textContent       = contact;
-      document.getElementById('previewCompany').textContent     = company;
-      document.getElementById('previewContactName').textContent = `${firstname} ${lastname}`;
-      document.getElementById('previewIndustry').textContent    = industry;
-      document.getElementById('previewCountry').textContent     = country;
-      document.getElementById('previewNeeds').textContent       = needs;
-      document.getElementById('refNumber').textContent          = refNumber;
+  const countrySelect = document.getElementById('country');
+  const country  = countrySelect.selectedOptions[0]?.dataset.name || 
+                   countrySelect.value || 'Not specified';
+  const industry = document.getElementById('industry').value || 'Not specified';
+  const needs    = document.getElementById('needs').value.trim() || 'Not provided';
 
-      const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-      document.getElementById('companyInitials').textContent = initials || '?';
+  setLoading(true);
 
-      // Save so they see their request on return visits
-      localStorage.setItem('hire_request_ref', refNumber);
-      localStorage.setItem('hire_request_data', JSON.stringify({
-        fullName: `${firstname} ${lastname}`,
+  let error, refNumber;
+
+  if (editingId) {
+    // ── UPDATE existing record ──────────────────────────
+    const { error: updateError } = await window.supabaseClient
+      .from('hire_requests')
+      .update({
+        first_name:    firstname,
+        last_name:     lastname,
         email,
         contact,
-        company,
+        company_name:  company,
         industry,
         country,
-        needs
-      }));
+        talent_needs:  `${jobTitle}\n\n${needs}`,
+        job_type:      jobType,
+        location_type: locType,
+      })
+      .eq('id', editingId);
 
-      document.getElementById('formContainer').style.display  = 'none';
-      document.getElementById('previewSection').style.display = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    error = updateError;
+    refNumber = localStorage.getItem('hire_request_ref');
 
-    function editRequest() {
-      document.getElementById('previewSection').style.display = 'none';
-      document.getElementById('formContainer').style.display  = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    // ── CREATE new record ───────────────────────────────
+    const result = await TalentHub.submitHireRequest({
+      first_name:    firstname,
+      last_name:     lastname,
+      email,
+      contact,
+      company_name:  company,
+      industry,
+      country,
+      talent_needs:  `${jobTitle}\n\n${needs}`,
+      job_type:      jobType,
+      location_type: locType,
+    });
+
+    error     = result.error;
+    refNumber = result.refNumber;
+
+    // Save the new record ID for future edits
+    if (result.data?.[0]?.id) {
+      localStorage.setItem('hire_request_id', result.data[0].id);
     }
+  }
+
+  setLoading(false);
+
+  if (error) {
+    showAlert('error', '⚠️ ' + (error.message || 'Please try again.'));
+    return;
+  }
+
+  // Reset editing mode
+  document.getElementById('editingId').value = '';
+  document.getElementById('submitBtnLabel').textContent = 'Submit Request →';
+
+  // Populate preview
+  document.getElementById('previewFullName').textContent    = `${firstname} ${lastname}`;
+  document.getElementById('previewEmail').textContent       = email;
+  document.getElementById('previewPhone').textContent       = contact;
+  document.getElementById('previewCompany').textContent     = company;
+  document.getElementById('previewContactName').textContent = `${firstname} ${lastname}`;
+  document.getElementById('previewIndustry').textContent    = industry;
+  document.getElementById('previewCountry').textContent     = country;
+  document.getElementById('previewNeeds').textContent       = needs;
+  document.getElementById('refNumber').textContent          = refNumber;
+
+  const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+  document.getElementById('companyInitials').textContent = initials || '?';
+
+  // Save updated data to localStorage
+  localStorage.setItem('hire_request_ref', refNumber);
+  localStorage.setItem('hire_request_data', JSON.stringify({
+    fullName: `${firstname} ${lastname}`,
+    email, contact, company, industry, country, needs,
+    jobTitle, jobType, locationType: locType
+  }));
+
+  document.getElementById('formContainer').style.display  = 'none';
+  document.getElementById('previewSection').style.display = 'block';
+
+  const banner = document.querySelector('.success-banner');
+  banner.textContent = editingId 
+    ? '✅ Changes saved successfully!' 
+    : '✅ Request received! Our team will contact you within 24 hours.';
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+}
+
+   function editRequest() {
+  // Load saved data back into form
+  const savedData = localStorage.getItem('hire_request_data');
+  const savedRef  = localStorage.getItem('hire_request_ref');
+  const savedId   = localStorage.getItem('hire_request_id');
+
+  if (savedData) {
+    const prev = JSON.parse(savedData);
+    const nameParts = prev.fullName.split(' ');
+    document.getElementById('firstname').value  = nameParts[0] || '';
+    document.getElementById('lastname').value   = nameParts.slice(1).join(' ') || '';
+    document.getElementById('email').value      = prev.email || '';
+    document.getElementById('contact').value    = prev.contact || '';
+    document.getElementById('company').value    = prev.company || '';
+    document.getElementById('needs').value      = prev.needs || '';
+    document.getElementById('jobTitle').value   = prev.jobTitle || '';
+
+    // Restore selects
+    if (prev.jobType) document.getElementById('jobType').value = prev.jobType;
+    if (prev.locationType) document.getElementById('locationType').value = prev.locationType;
+
+    // Mark as editing mode
+    document.getElementById('editingId').value = savedId || '';
+    document.getElementById('submitBtnLabel').textContent = '💾 Save Changes →';
+  }
+
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('formContainer').style.display  = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
     function newRequest() {
       // Clear saved data so they can submit a fresh request

@@ -923,11 +923,30 @@
     }
     
 function editProfile() {
-      document.getElementById('profilePreview').style.display = 'none';
-      document.getElementById('formContainer').style.display  = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+  const savedId = localStorage.getItem('talent_profile_id');
 
+  // Fill form with current preview values
+  document.getElementById('fullname').value = 
+    document.getElementById('previewName').textContent || '';
+  document.getElementById('email').value = 
+    document.getElementById('previewEmail').textContent || '';
+  document.getElementById('role').value = 
+    document.getElementById('previewRole').textContent || '';
+  document.getElementById('bio').value = 
+    document.getElementById('previewBio').textContent || '';
+
+  // Change button to Save
+  document.querySelector('.btn-label').textContent = '💾 Save Changes →';
+
+  // If we have a saved ID, wire the button to update instead of create
+  if (savedId) {
+    document.getElementById('submitBtn').onclick = () => updateTalent(savedId);
+  }
+
+  document.getElementById('profilePreview').style.display = 'none';
+  document.getElementById('formContainer').style.display  = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
     // ── Check on load if already registered ──────────────────
     document.addEventListener('DOMContentLoaded', async () => {
       loadAllCountries();
@@ -1042,10 +1061,17 @@ function editProfile() {
         .eq('id', profileId)
         .maybeSingle();
 
-      if (data) {
-        document.getElementById('formContainer').style.display = 'none';
-        showExistingProfile(data);
-      }
+     if (data) {
+  document.getElementById('formContainer').style.display = 'none';
+  
+  // Reset button back to original
+  document.querySelector('.btn-label').textContent = 'Submit My Profile →';
+  document.getElementById('submitBtn').onclick = submitTalent;
+  
+  document.querySelector('.success-banner').textContent = 
+    '✅ Profile updated successfully!';
+  showExistingProfile(data);
+}
     }
  
   </script>
