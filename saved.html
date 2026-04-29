@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Saved Jobs – Women in AI Africa</title>
+<title>Saved Opportunity – Women in AI Africa</title>
 <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -429,7 +429,7 @@ nav {
   </a>
  <ul class="nav-links">
 <li><a href="career-support.html">Dashboard</a></li>
-<li><a href="jobs.html">Jobs</a></li>
+<li><a href="jobs.html">Opportunity Board</a></li>
 <li><a href="talent-discovery.html">Talent Discovery</a></li>
 <li><a href="saved.html" class="active">Saved</a></li>
 </ul>
@@ -437,8 +437,8 @@ nav {
 
 <div class="container">
   <div class="page-header">
-    <h1>🔖 Saved Jobs</h1>
-    <p>Jobs you've saved to review later</p>
+    <h1>🔖 Saved Opportunities</h1>
+    <p>Opportunities you've saved to review later</p>
   </div>
   <div class="saved-count" id="savedCount"></div>
   <div class="cards" id="cardsContainer">
@@ -491,7 +491,7 @@ nav {
           <div class="emoji">🔖</div>
           <h3>No saved jobs yet</h3>
           <p>Browse jobs and click Save to keep track of opportunities you're interested in.</p>
-          <a href="jobs.html" class="browse-btn">Browse Jobs →</a>
+          <a href="jobs.html" class="browse-btn">Browse Opportunities →</a>
         </div>`;
       countEl.textContent = '';
       return;
@@ -506,15 +506,15 @@ nav {
       container.innerHTML = `
         <div class="empty-state">
           <div class="emoji">🔖</div>
-          <h3>No saved jobs found</h3>
-          <p>Your saved jobs may have been removed. Browse for new opportunities.</p>
-          <a href="jobs.html" class="browse-btn">Browse Jobs →</a>
+          <h3>No saved opportunities found</h3>
+          <p>Your saved opportunities may have been removed. Browse for new opportunities.</p>
+          <a href="jobs.html" class="browse-btn">Browse Opportunities →</a>
         </div>`;
       countEl.textContent = '';
       return;
     }
 
-    countEl.textContent = `${data.length} saved job${data.length !== 1 ? 's' : ''}`;
+    countEl.textContent = `${data.length} saved opportunity${data.length !== 1 ? 's' : ''}`;
 
     const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' };
     const locLabel  = { 'remote':'🌍 Remote','hybrid':'🏢 Hybrid','onsite':'📍 On-site' };
