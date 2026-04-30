@@ -499,7 +499,8 @@ async function openEditCourseModal(courseId) {
     if (editor) {
         editor.innerHTML = course.description || '';
     }
-    document.getElementById('courseDescription').value = course.description || '';
+    const descHidden = document.getElementById('courseDescription');
+    if (descHidden) descHidden.value = course.description || '';
     
     // ✅ CHANGE MODAL TITLE
     const modalTitle = document.querySelector('#addCourseModal .modal-header h2');
