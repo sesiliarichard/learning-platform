@@ -1481,14 +1481,20 @@ body { visibility: hidden }
                    oninput="setEditorColor(0, this)">
         </label>
 
-        <label class="editor-color-btn" title="Highlight">
+    <label class="editor-color-btn" title="Highlight">
             <i class="fas fa-highlighter"></i>
             <div class="editor-color-bar color-bar-yellow" id="hlBar_0"></div>
             <input type="color" value="#fef08a" class="editor-color-input"
                    onchange="setEditorHighlight(0, this)" 
                    oninput="setEditorHighlight(0, this)">
         </label>
-
+        <div class="editor-sep"></div>
+        <button type="button" class="editor-btn" onclick="insertTable(0)" title="Insert Table">
+            <i class="fas fa-table"></i>
+        </button>
+        <button type="button" class="editor-btn" onclick="insertImage(0)" title="Insert Image">
+            <i class="fas fa-image"></i>
+        </button>
     </div>
 </div>
                                <div class="editor-content" contenteditable="true" id="editor-0"
@@ -2235,6 +2241,607 @@ function insertHeading(editorIndex) {
         editor.focus();
         document.execCommand('formatBlock', false, '<h3>');
     }
+}
+// ── TABLE INSERTION ──
+function insertTable(editorIndex) {
+    const editor = document.getElementById(`editor-${editorIndex}`) 
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+
+    // Remove any existing table modal
+    document.getElementById('tableInsertModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'tableInsertModal';
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;width:100%;height:100%;
+        background:rgba(0,0,0,0.5);z-index:99999;
+        display:flex;align-items:center;justify-content:center;`;
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:16px;padding:28px;
+                    width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h3 style="margin:0 0 20px;font-size:16px;font-weight:800;color:#1f2937;">
+                <i class="fas fa-table" style="color:#7c3aed;margin-right:8px;"></i>Insert Table
+            </h3>
+
+            <!-- Visual grid picker -->
+            <div style="margin-bottom:16px;">
+                <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">
+                    Click to select size:
+                </div>
+                <div id="tableGrid" style="display:inline-block;border:1px solid #e5e7eb;border-radius:8px;padding:6px;background:#f9fafb;">
+                </div>
+                <div id="tableSizeLabel" style="font-size:12px;color:#7c3aed;font-weight:700;margin-top:6px;text-align:center;">
+                    Hover to select
+                </div>
+            </div>
+
+            <!-- Manual input -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Rows</label>
+                    <input type="number" id="tblRows" value="3" min="1" max="20"
+                        style="width:100%;padding:8px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;"
+                        onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Columns</label>
+                    <input type="number" id="tblCols" value="3" min="1" max="10"
+                        style="width:100%;padding:8px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;"
+                        onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'">
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="document.getElementById('tableInsertModal').remove()"
+                    style="flex:1;padding:10px;border:2px solid #e5e7eb;border-radius:10px;
+                           background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;">
+                    Cancel
+                </button>
+                <button onclick="confirmInsertTable(${editorIndex})"
+                    style="flex:2;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:10px;color:white;font-weight:800;cursor:pointer;font-family:inherit;">
+                    <i class="fas fa-table"></i> Insert Table
+                </button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+
+    // Build visual grid
+    const grid = document.getElementById('tableGrid');
+    const MAXR = 8, MAXC = 8;
+    let selR = 0, selC = 0;
+
+    for (let r = 1; r <= MAXR; r++) {
+        const rowDiv = document.createElement('div');
+        rowDiv.style.cssText = 'display:flex;gap:2px;margin-bottom:2px;';
+        for (let c = 1; c <= MAXC; c++) {
+            const cell = document.createElement('div');
+            cell.style.cssText = `
+                width:18px;height:18px;border:1.5px solid #d1d5db;
+                border-radius:3px;cursor:pointer;background:white;
+                transition:all 0.1s;`;
+            cell.dataset.r = r;
+            cell.dataset.c = c;
+
+            cell.addEventListener('mouseover', () => {
+                selR = r; selC = c;
+                document.getElementById('tblRows').value = r;
+                document.getElementById('tblCols').value = c;
+                document.getElementById('tableSizeLabel').textContent = `${r} × ${c} table`;
+                // Highlight selected cells
+                grid.querySelectorAll('div[data-r]').forEach(el => {
+                    const er = parseInt(el.dataset.r);
+                    const ec = parseInt(el.dataset.c);
+                    if (er <= r && ec <= c) {
+                        el.style.background = '#ede9fe';
+                        el.style.borderColor = '#7c3aed';
+                    } else {
+                        el.style.background = 'white';
+                        el.style.borderColor = '#d1d5db';
+                    }
+                });
+            });
+
+            cell.addEventListener('click', () => {
+                confirmInsertTable(editorIndex);
+            });
+
+            rowDiv.appendChild(cell);
+        }
+        grid.appendChild(rowDiv);
+    }
+}
+
+function confirmInsertTable(editorIndex) {
+    const rows = parseInt(document.getElementById('tblRows')?.value) || 3;
+    const cols = parseInt(document.getElementById('tblCols')?.value) || 3;
+    document.getElementById('tableInsertModal')?.remove();
+
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+
+    // Build the table HTML
+    const cellStyle = `
+        border:1.5px solid #374151;
+        padding:8px 12px;
+        min-width:80px;
+        min-height:30px;
+        text-align:left;
+        vertical-align:top;
+        font-size:14px;
+        position:relative;`;
+
+    let tableHtml = `
+        <br>
+        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
+            <table class="editor-table" style="
+                border-collapse:collapse;
+                width:100%;
+                table-layout:fixed;
+                border:1.5px solid #374151;
+                border-radius:4px;
+                overflow:hidden;">
+                <colgroup>
+                    ${Array(cols).fill(`<col style="width:${Math.floor(100/cols)}%">`).join('')}
+                </colgroup>
+                <thead>
+                    <tr style="background:#f5f3ff;">
+                        ${Array(cols).fill(0).map((_, i) =>
+                            `<th contenteditable="true" style="${cellStyle}font-weight:700;background:#f5f3ff;">
+                                Header ${i+1}
+                            </th>`
+                        ).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Array(rows - 1).fill(0).map(() =>
+                        `<tr>
+                            ${Array(cols).fill(0).map(() =>
+                                `<td contenteditable="true" style="${cellStyle}"></td>`
+                            ).join('')}
+                        </tr>`
+                    ).join('')}
+                </tbody>
+            </table>
+        </div>
+        <br>`;
+
+    editor.focus();
+    document.execCommand('insertHTML', false, tableHtml);
+
+    // Make table cells navigable with Tab
+    setTimeout(() => makeTableNavigable(editor), 100);
+}
+
+function makeTableNavigable(editor) {
+    editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
+        cell.addEventListener('keydown', e => {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const cells = [...editor.querySelectorAll('.editor-table td, .editor-table th')];
+                const idx = cells.indexOf(cell);
+                if (idx < cells.length - 1) {
+                    cells[idx + 1].focus();
+                } else {
+                    // Add a new row at the end
+                    const table = cell.closest('table');
+                    const colCount = table.querySelectorAll('tr:first-child th, tr:first-child td').length;
+                    const cellStyle = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
+                    const newRow = document.createElement('tr');
+                    for (let i = 0; i < colCount; i++) {
+                        const td = document.createElement('td');
+                        td.contentEditable = 'true';
+                        td.style.cssText = cellStyle;
+                        newRow.appendChild(td);
+                    }
+                    table.querySelector('tbody').appendChild(newRow);
+                    makeTableNavigable(editor);
+                    newRow.querySelector('td').focus();
+                }
+            }
+        });
+
+        // Right-click context menu for table operations
+        cell.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            showTableContextMenu(e, cell);
+        });
+    });
+}
+
+function showTableContextMenu(e, cell) {
+    document.getElementById('tableContextMenu')?.remove();
+
+    const menu = document.createElement('div');
+    menu.id = 'tableContextMenu';
+    menu.style.cssText = `
+        position:fixed;top:${e.clientY}px;left:${e.clientX}px;
+        background:white;border:1.5px solid #e5e7eb;border-radius:10px;
+        box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:99999;
+        min-width:200px;padding:6px 0;font-family:'Plus Jakarta Sans',sans-serif;`;
+
+    const items = [
+        { icon: 'fa-plus',       label: 'Add Row Above',    action: () => addTableRow(cell, 'before') },
+        { icon: 'fa-plus',       label: 'Add Row Below',    action: () => addTableRow(cell, 'after') },
+        { icon: 'fa-plus',       label: 'Add Column Left',  action: () => addTableCol(cell, 'before') },
+        { icon: 'fa-plus',       label: 'Add Column Right', action: () => addTableCol(cell, 'after') },
+        { icon: 'fa-minus',      label: 'Delete Row',       action: () => deleteTableRow(cell), danger: true },
+        { icon: 'fa-minus',      label: 'Delete Column',    action: () => deleteTableCol(cell), danger: true },
+        { icon: 'fa-trash',      label: 'Delete Table',     action: () => deleteTable(cell), danger: true },
+    ];
+
+    items.forEach(item => {
+        const btn = document.createElement('button');
+        btn.style.cssText = `
+            display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;
+            border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;
+            color:${item.danger ? '#dc2626' : '#374151'};font-family:inherit;text-align:left;`;
+        btn.innerHTML = `<i class="fas ${item.icon}" style="width:14px;opacity:0.7;"></i> ${item.label}`;
+        btn.onmouseenter = () => btn.style.background = item.danger ? '#fee2e2' : '#f5f3ff';
+        btn.onmouseleave = () => btn.style.background = 'none';
+        btn.onclick = () => { item.action(); menu.remove(); };
+        menu.appendChild(btn);
+    });
+
+    document.body.appendChild(menu);
+    document.addEventListener('click', () => menu.remove(), { once: true });
+}
+
+function addTableRow(cell, position) {
+    const row = cell.closest('tr');
+    const colCount = row.querySelectorAll('td, th').length;
+    const newRow = document.createElement('tr');
+    for (let i = 0; i < colCount; i++) {
+        const td = document.createElement('td');
+        td.contentEditable = 'true';
+        td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
+        newRow.appendChild(td);
+    }
+    if (position === 'before') {
+        row.parentNode.insertBefore(newRow, row);
+    } else {
+        row.parentNode.insertBefore(newRow, row.nextSibling);
+    }
+}
+
+function addTableCol(cell, position) {
+    const table = cell.closest('table');
+    const cellIndex = cell.cellIndex;
+    table.querySelectorAll('tr').forEach((row, rowIdx) => {
+        const newCell = rowIdx === 0 ? document.createElement('th') : document.createElement('td');
+        newCell.contentEditable = 'true';
+        newCell.style.cssText = rowIdx === 0
+            ? 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;font-weight:700;background:#f5f3ff;'
+            : 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
+        const ref = row.cells[cellIndex];
+        if (position === 'before') {
+            row.insertBefore(newCell, ref);
+        } else {
+            row.insertBefore(newCell, ref?.nextSibling || null);
+        }
+    });
+}
+
+function deleteTableRow(cell) {
+    const row = cell.closest('tr');
+    const table = row.closest('table');
+    if (table.querySelectorAll('tr').length <= 1) {
+        deleteTable(cell);
+    } else {
+        row.remove();
+    }
+}
+
+function deleteTableCol(cell) {
+    const table = cell.closest('table');
+    const cellIndex = cell.cellIndex;
+    if (table.rows[0].cells.length <= 1) {
+        deleteTable(cell);
+    } else {
+        table.querySelectorAll('tr').forEach(row => {
+            if (row.cells[cellIndex]) row.deleteCell(cellIndex);
+        });
+    }
+}
+
+function deleteTable(cell) {
+    const wrap = cell.closest('.resizable-table-wrap') || cell.closest('table');
+    wrap?.remove();
+}
+
+// ── IMAGE INSERTION ──
+function insertImage(editorIndex) {
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+
+    document.getElementById('imageInsertModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'imageInsertModal';
+    modal.style.cssText = `
+        position:fixed;top:0;left:0;width:100%;height:100%;
+        background:rgba(0,0,0,0.5);z-index:99999;
+        display:flex;align-items:center;justify-content:center;`;
+
+    modal.innerHTML = `
+        <div style="background:white;border-radius:16px;padding:28px;
+                    width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h3 style="margin:0 0 20px;font-size:16px;font-weight:800;color:#1f2937;">
+                <i class="fas fa-image" style="color:#7c3aed;margin-right:8px;"></i>Insert Image
+            </h3>
+
+            <!-- Upload from device -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">
+                    Upload from device
+                </label>
+                <div onclick="document.getElementById('imgFileInput').click()"
+                    style="border:2px dashed #c4b5fd;border-radius:10px;padding:20px;
+                           text-align:center;cursor:pointer;background:#f5f3ff;transition:all 0.2s;"
+                    onmouseenter="this.style.borderColor='#7c3aed';this.style.background='#ede9fe'"
+                    onmouseleave="this.style.borderColor='#c4b5fd';this.style.background='#f5f3ff'">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:24px;color:#7c3aed;display:block;margin-bottom:8px;"></i>
+                    <div style="font-size:13px;font-weight:600;color:#7c3aed;">Click to choose image</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">PNG, JPG, GIF, WebP</div>
+                </div>
+                <input type="file" id="imgFileInput" accept="image/*" style="display:none"
+                    onchange="previewInsertImage(this)">
+                <div id="imgPreviewWrap" style="display:none;margin-top:10px;text-align:center;">
+                    <img id="imgPreview" style="max-width:100%;max-height:150px;border-radius:8px;border:2px solid #e5e7eb;">
+                </div>
+            </div>
+
+            <!-- OR URL -->
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">
+                    Or paste image URL
+                </label>
+                <input type="url" id="imgUrlInput" placeholder="https://example.com/image.jpg"
+                    style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;
+                           font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'"
+                    oninput="previewInsertImageUrl(this.value)">
+            </div>
+
+            <!-- Size controls -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Width</label>
+                    <select id="imgWidth"
+                        style="width:100%;padding:8px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+                        <option value="25%">25% — Small</option>
+                        <option value="50%">50% — Medium</option>
+                        <option value="75%">75% — Large</option>
+                        <option value="100%" selected>100% — Full</option>
+                        <option value="200px">200px</option>
+                        <option value="400px">400px</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:4px;">Alignment</label>
+                    <select id="imgAlign"
+                        style="width:100%;padding:8px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;outline:none;">
+                        <option value="block;margin:8px 0">None (inline)</option>
+                        <option value="block;margin:8px auto">Center</option>
+                        <option value="block;float:left;margin:8px 16px 8px 0">Float Left</option>
+                        <option value="block;float:right;margin:8px 0 8px 16px">Float Right</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="document.getElementById('imageInsertModal').remove()"
+                    style="flex:1;padding:10px;border:2px solid #e5e7eb;border-radius:10px;
+                           background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;">
+                    Cancel
+                </button>
+                <button onclick="confirmInsertImage(${editorIndex})"
+                    style="flex:2;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:10px;color:white;font-weight:800;cursor:pointer;font-family:inherit;">
+                    <i class="fas fa-image"></i> Insert Image
+                </button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function previewInsertImage(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('imgPreview').src = e.target.result;
+        document.getElementById('imgPreviewWrap').style.display = 'block';
+        document.getElementById('imgUrlInput').value = '';
+    };
+    reader.readAsDataURL(file);
+}
+
+function previewInsertImageUrl(url) {
+    if (!url) return;
+    document.getElementById('imgPreview').src = url;
+    document.getElementById('imgPreviewWrap').style.display = 'block';
+}
+
+function confirmInsertImage(editorIndex) {
+    const fileInput = document.getElementById('imgFileInput');
+    const urlInput  = document.getElementById('imgUrlInput');
+    const width     = document.getElementById('imgWidth')?.value || '100%';
+    const align     = document.getElementById('imgAlign')?.value || 'block;margin:8px 0';
+
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+
+    const doInsert = (src) => {
+        const imgHtml = `
+            <div style="display:${align};width:${width};position:relative;display:inline-block;">
+                <img src="${src}"
+                    class="resizable-img"
+                    style="width:${width};max-width:100%;height:auto;
+                           display:block;border-radius:6px;cursor:pointer;
+                           border:2px solid transparent;transition:border 0.2s;"
+                    onclick="selectResizableImage(this)"
+                    title="Click to select, then drag handle to resize">
+            </div><br>`;
+        editor.focus();
+        document.execCommand('insertHTML', false, imgHtml);
+        document.getElementById('imageInsertModal')?.remove();
+        initResizableImages(editor);
+    };
+
+    if (fileInput?.files?.length > 0) {
+        const reader = new FileReader();
+        reader.onload = (e) => doInsert(e.target.result);
+        reader.readAsDataURL(fileInput.files[0]);
+    } else if (urlInput?.value?.trim()) {
+        doInsert(urlInput.value.trim());
+    } else {
+        showToast('Please select an image or enter a URL', 'error');
+    }
+}
+
+// ── RESIZABLE IMAGES ──
+let _selectedImg = null;
+
+function selectResizableImage(img) {
+    // Deselect previous
+    if (_selectedImg && _selectedImg !== img) {
+        _selectedImg.style.border = '2px solid transparent';
+        _selectedImg.parentNode?.querySelector('.img-resize-handle')?.remove();
+        _selectedImg.parentNode?.querySelector('.img-resize-toolbar')?.remove();
+    }
+
+    _selectedImg = img;
+    img.style.border = '2px solid #7c3aed';
+    img.style.borderRadius = '6px';
+
+    const wrap = img.parentNode;
+
+    // Add resize handle (bottom-right corner)
+    let handle = wrap.querySelector('.img-resize-handle');
+    if (!handle) {
+        handle = document.createElement('div');
+        handle.className = 'img-resize-handle';
+        handle.style.cssText = `
+            position:absolute;bottom:-6px;right:-6px;
+            width:14px;height:14px;background:#7c3aed;
+            border-radius:50%;cursor:nwse-resize;z-index:10;
+            border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);`;
+        wrap.style.position = 'relative';
+        wrap.appendChild(handle);
+
+        // Drag to resize
+        handle.addEventListener('mousedown', startResize);
+    }
+
+    // Add toolbar above image
+    let toolbar = wrap.querySelector('.img-resize-toolbar');
+    if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'img-resize-toolbar';
+        toolbar.style.cssText = `
+            position:absolute;top:-36px;left:0;
+            background:#1f2937;border-radius:8px;
+            display:flex;gap:4px;padding:4px 8px;z-index:10;
+            white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.3);`;
+
+        const sizes = [
+            { label:'25%', val:'25%' },
+            { label:'50%', val:'50%' },
+            { label:'75%', val:'75%' },
+            { label:'100%', val:'100%' },
+        ];
+
+        sizes.forEach(s => {
+            const btn = document.createElement('button');
+            btn.textContent = s.label;
+            btn.style.cssText = `
+                background:rgba(255,255,255,0.15);border:none;color:white;
+                padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px;
+                font-weight:700;font-family:inherit;`;
+            btn.onmouseenter = () => btn.style.background = '#7c3aed';
+            btn.onmouseleave = () => btn.style.background = 'rgba(255,255,255,0.15)';
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                img.style.width = s.val;
+                img.parentNode.style.width = s.val;
+            };
+            toolbar.appendChild(btn);
+        });
+
+        // Delete button
+        const delBtn = document.createElement('button');
+        delBtn.innerHTML = '<i class="fas fa-trash"></i>';
+        delBtn.style.cssText = `
+            background:#dc2626;border:none;color:white;
+            padding:3px 8px;border-radius:5px;cursor:pointer;font-size:11px;
+            font-family:inherit;margin-left:4px;`;
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            wrap.remove();
+            _selectedImg = null;
+        };
+        toolbar.appendChild(delBtn);
+
+        wrap.appendChild(toolbar);
+    }
+
+    // Click outside to deselect
+    const deselect = (e) => {
+        if (!wrap.contains(e.target)) {
+            img.style.border = '2px solid transparent';
+            handle?.remove();
+            toolbar?.remove();
+            _selectedImg = null;
+            document.removeEventListener('click', deselect);
+        }
+    };
+    setTimeout(() => document.addEventListener('click', deselect), 10);
+}
+
+function startResize(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const handle = e.target;
+    const wrap   = handle.parentNode;
+    const img    = wrap.querySelector('img');
+    const startX = e.clientX;
+    const startW = img.offsetWidth;
+
+    const onMove = (ev) => {
+        const newW = Math.max(50, startW + (ev.clientX - startX));
+        img.style.width  = newW + 'px';
+        wrap.style.width = newW + 'px';
+    };
+
+    const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+}
+
+function initResizableImages(editor) {
+    editor.querySelectorAll('.resizable-img').forEach(img => {
+        if (!img.getAttribute('data-resize-init')) {
+            img.setAttribute('data-resize-init', '1');
+            img.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectResizableImage(img);
+            });
+        }
+    });
 }
 
 function setEditorFontFamily(editorIndex, select) {
