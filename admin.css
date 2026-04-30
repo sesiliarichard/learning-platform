@@ -5898,3 +5898,128 @@ body.dark-mode .topic-list .empty-topics {
 .btn-secondary {
     margin-left: 8px;
 }
+/* ── Editor toolbar wrap fix ── */
+.editor-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 8px 10px;
+    align-items: center;
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-bottom: none;
+    border-radius: 10px 10px 0 0;
+}
+
+.editor-btn {
+    height: 30px;
+    min-width: 30px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.editor-btn:hover {
+    background: #ede9fe;
+    border-color: #7c3aed;
+    color: #7c3aed;
+}
+
+.editor-select {
+    height: 30px;
+    padding: 0 6px;
+    font-size: 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    background: white;
+    color: #374151;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.editor-sep {
+    width: 1px;
+    height: 22px;
+    background: #e5e7eb;
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+
+.editor-color-btn {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px;
+    position: relative;
+}
+
+.editor-color-btn:hover {
+    border-color: #7c3aed;
+}
+
+.editor-color-btn i {
+    font-size: 11px;
+    color: #374151;
+}
+
+.editor-color-bar {
+    width: 18px;
+    height: 4px;
+    border-radius: 2px;
+}
+
+.editor-color-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+}
+
+.editor-color-btn input[type="color"] {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+}
+/* Font family select in editor toolbar */
+.editor-select-font {
+    width: 80px;
+}
+
+/* Font size select in editor toolbar */
+.editor-select-size {
+    width: 58px;
+}
+
+/* Default color bar values */
+.color-bar-red {
+    background: #e24b4a;
+}
+
+.color-bar-yellow {
+    background: #fef08a;
+}
+.input-order-num { width: 120px; }
+.order-hint { color: #6b7280; display: block; margin-top: 4px; }

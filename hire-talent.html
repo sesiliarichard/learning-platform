@@ -722,7 +722,7 @@
 <div class="two-col">
   <div class="form-group">
     <label>Job Type</label>
-    <select id="jobType">
+   <select id="jobType" aria-label="Job Type">
       <option value="full-time">Full-time</option>
       <option value="part-time">Part-time</option>
       <option value="contract">Contract</option>
@@ -731,7 +731,7 @@
   </div>
   <div class="form-group">
     <label>Work Location</label>
-    <select id="locationType">
+    <select id="locationType" aria-label="Work Location">
       <option value="remote">Remote</option>
       <option value="hybrid">Hybrid</option>
       <option value="onsite">On-site</option>
@@ -933,27 +933,9 @@
       btn.disabled = on; btn.classList.toggle('loading', on);
     }
 
-    async function submitHire() {
-      const firstname = document.getElementById('firstname').value.trim();
-      const lastname  = document.getElementById('lastname').value.trim();
-      const email     = document.getElementById('email').value.trim();
-      const contact   = getFullPhone();
-      const company   = document.getElementById('company').value.trim();
+    
 
-      if (!firstname || !lastname || !email || !contact || !company) {
-        showAlert('error', 'Please fill in all required fields.');
-        return;
-      }
-
-      const industry = document.getElementById('industry').value || 'Not specified';
-      const country  = document.getElementById('country').value  || 'Not specified';
-      const needs    = document.getElementById('needs').value.trim() || 'Not provided';
-
-      setLoading(true);
-
-   const jobTitle   = document.getElementById('jobTitle').value.trim() || 'Open Position';
-const jobType    = document.getElementById('jobType').value;
-const locType    = document.getElementById('locationType').value;
+  
 
 async function submitHire() {
   const firstname  = document.getElementById('firstname').value.trim();
@@ -1069,7 +1051,7 @@ async function submitHire() {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-}
+
 
    function editRequest() {
   // Load saved data back into form

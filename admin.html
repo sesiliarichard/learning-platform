@@ -1210,19 +1210,101 @@ body { visibility: hidden }
             </div>
 
             <div class="form-group">
+    <label for="courseOrderNum">Display Order *</label>
+    <input type="number" id="courseOrderNum" name="orderNum"
+           min="1" max="999" placeholder="e.g. 1"
+           class="input-order-num">
+    <small class="order-hint">
+        Courses appear in this order (1 = first, 2 = second…)
+    </small>
+</div>
+
+            <div class="form-group">
     <label for="courseDescription">Description *</label>
     <div class="editor-toolbar">
-    <select class="editor-select" onchange="setEditorFontFamily(0, this)" title="Font">
-        <option value="inherit">Font</option>
-        <option value="Arial">Arial</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Courier New">Courier New</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Trebuchet MS">Trebuchet</option>
-        <option value="Impact">Impact</option>
-    </select>
-    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size">
+        <select class="editor-select editor-select-font"
+                onchange="setEditorFontFamily(0, this)" title="Font">
+            <option value="inherit">Font</option>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+        </select>
+        <select class="editor-select editor-select-size"
+                onchange="setEditorFontSize(0, this)" title="Size">
+            <option value="1">8</option>
+            <option value="2">10</option>
+            <option value="3" selected>12</option>
+            <option value="4">14</option>
+            <option value="5">18</option>
+            <option value="6">24</option>
+            <option value="7">36</option>
+        </select>
+        <div class="editor-sep"></div>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'undo')" title="Undo">
+            <i class="fas fa-undo"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'redo')" title="Redo">
+            <i class="fas fa-redo"></i>
+        </button>
+        <div class="editor-sep"></div>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'italic')" title="Italic"><i>I</i></button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'underline')" title="Underline"><u>U</u></button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'strikeThrough')" title="Strikethrough"><s>S</s></button>
+        <div class="editor-sep"></div>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'insertUnorderedList')" title="Bullet list">
+            <i class="fas fa-list-ul"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'insertOrderedList')" title="Numbered list">
+            <i class="fas fa-list-ol"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="insertHeading(0)" title="Heading">
+            <i class="fas fa-heading"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'justifyLeft')" title="Align left">
+            <i class="fas fa-align-left"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'justifyCenter')" title="Align center">
+            <i class="fas fa-align-center"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'justifyRight')" title="Align right">
+            <i class="fas fa-align-right"></i>
+        </button>
+        <div class="editor-sep"></div>
+        <label class="editor-color-btn" title="Text color">
+            <i class="fas fa-font"></i>
+            <div class="editor-color-bar color-bar-red" id="colorBar_0"></div>
+            <input type="color" value="#e24b4a" class="editor-color-input"
+                   onchange="setEditorColor(0, this)"
+                   oninput="setEditorColor(0, this)">
+        </label>
+        <label class="editor-color-btn" title="Highlight color">
+            <i class="fas fa-highlighter"></i>
+            <div class="editor-color-bar color-bar-yellow" id="hlBar_0"></div>
+            <input type="color" value="#fef08a" class="editor-color-input"
+                   onchange="setEditorHighlight(0, this)"
+                   oninput="setEditorHighlight(0, this)">
+        </label>
+    </div>
+    <div class="editor-content" contenteditable="true" id="courseDescriptionEditor"
+         data-name="description"
+         data-placeholder="Enter course description here..."></div>
+</div>
+<input type="hidden" id="courseDescription" name="description">
     <option value="1">8</option>
     <option value="2">10</option>
     <option value="3" selected>12</option>
@@ -1318,6 +1400,15 @@ body { visibility: hidden }
     </div>
 
     <div class="form-group">
+    <label for="chapterOrderNum">Chapter Order Number *</label>
+    <input type="number" id="chapterOrderNum" name="chapterOrderNum"
+           min="1" max="999" placeholder="e.g. 1"
+           class="input-order-num">
+    <small class="order-hint">
+        Chapters appear in this order within the course (1 = first)
+    </small>
+</div>
+    <div class="form-group">
         <label>Chapter Description</label>
         <textarea id="chapterDescription" name="chapterDescription" rows="3" 
           aria-label="Chapter description"></textarea>
@@ -1342,33 +1433,106 @@ body { visibility: hidden }
                                 <input type="text" name="topics[0][title]" required placeholder="e.g., What is Machine Learning?">
                             </div>
 
-                            <div class="form-group">
+  <div class="form-group">
     <label for="topicContent0">Topic Content *</label>
     <div class="editor-toolbar">
-        <button type="button" class="editor-btn" onclick="formatText(0, 'bold')" 
-                aria-label="Bold text">
-            <i class="fas fa-bold"></i>
+
+        <select class="editor-select editor-select-font" 
+                onchange="setEditorFontFamily(0, this)" title="Font">
+            <option value="inherit">Font</option>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+        </select>
+
+        <select class="editor-select editor-select-size" 
+                onchange="setEditorFontSize(0, this)" title="Size">
+            <option value="1">8</option>
+            <option value="2">10</option>
+            <option value="3" selected>12</option>
+            <option value="4">14</option>
+            <option value="5">18</option>
+            <option value="6">24</option>
+            <option value="7">36</option>
+        </select>
+
+        <div class="editor-sep"></div>
+
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'undo')" title="Undo">
+            <i class="fas fa-undo"></i>
         </button>
-        <button type="button" class="editor-btn" onclick="formatText(0, 'italic')" 
-                aria-label="Italic text">
-            <i class="fas fa-italic"></i>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'redo')" title="Redo">
+            <i class="fas fa-redo"></i>
         </button>
-        <button type="button" class="editor-btn" onclick="formatText(0, 'underline')" 
-                aria-label="Underline text">
-            <i class="fas fa-underline"></i>
+
+        <div class="editor-sep"></div>
+
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'bold')" title="Bold">
+            <b>B</b>
         </button>
-        <button type="button" class="editor-btn" onclick="formatText(0, 'insertUnorderedList')" 
-                aria-label="Insert bullet list">
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'italic')" title="Italic">
+            <i>I</i>
+        </button>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'underline')" title="Underline">
+            <u>U</u>
+        </button>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'strikeThrough')" title="Strikethrough">
+            <s>S</s>
+        </button>
+
+        <div class="editor-sep"></div>
+
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'insertUnorderedList')" title="Bullet list">
             <i class="fas fa-list-ul"></i>
         </button>
-        <button type="button" class="editor-btn" onclick="formatText(0, 'insertOrderedList')" 
-                aria-label="Insert numbered list">
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'insertOrderedList')" title="Numbered list">
             <i class="fas fa-list-ol"></i>
         </button>
-        <button type="button" class="editor-btn" onclick="insertHeading(0)" 
-                aria-label="Insert heading">
+        <button type="button" class="editor-btn" 
+                onclick="insertHeading(0)" title="Heading">
             <i class="fas fa-heading"></i>
         </button>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'justifyLeft')" title="Align left">
+            <i class="fas fa-align-left"></i>
+        </button>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'justifyCenter')" title="Align center">
+            <i class="fas fa-align-center"></i>
+        </button>
+        <button type="button" class="editor-btn" 
+                onclick="formatText(0, 'justifyRight')" title="Align right">
+            <i class="fas fa-align-right"></i>
+        </button>
+
+        <div class="editor-sep"></div>
+
+        <label class="editor-color-btn" title="Text color">
+            <i class="fas fa-font"></i>
+            <div class="editor-color-bar color-bar-red" id="colorBar_0"></div>
+            <input type="color" value="#e24b4a" class="editor-color-input"
+                   onchange="setEditorColor(0, this)" 
+                   oninput="setEditorColor(0, this)">
+        </label>
+
+        <label class="editor-color-btn" title="Highlight">
+            <i class="fas fa-highlighter"></i>
+            <div class="editor-color-bar color-bar-yellow" id="hlBar_0"></div>
+            <input type="color" value="#fef08a" class="editor-color-input"
+                   onchange="setEditorHighlight(0, this)" 
+                   oninput="setEditorHighlight(0, this)">
+        </label>
+
     </div>
 </div>
                                <div class="editor-content" contenteditable="true" id="editor-0"
@@ -1831,8 +1995,8 @@ async function loadCourses() {
 
     const { data: courses, error } = await db
         .from('courses')
-        .select('id, title, description')
-        .order('created_at', { ascending: false });
+        .select('id, title, description, order_num')
+        .order('order_num', { ascending: true });
 
     if (error) {
         container.innerHTML = `<div class="card"><p style="color:#ef4444;">Error: ${error.message}</p></div>`;
@@ -1883,10 +2047,10 @@ async function loadCourseSelects() {
         'adminResourceCourseFilter'
     ];
 
-    const { data: courses, error } = await db
+   const { data: courses, error } = await db
         .from('courses')
-        .select('id, title')
-        .order('title', { ascending: true });
+        .select('id, title, order_num')
+        .order('order_num', { ascending: true });
 
     if (error) { console.error('Error loading courses:', error.message); return; }
 
@@ -1949,9 +2113,11 @@ async function handleAddCourse(event) {
         .from('courses')
         .insert({
             title:       formData.get('title'),
-            description: description, // Use the cleaned description
+            description: description,
             teacher_id:  formData.get('teacherId') || null,
+            order_num:   parseInt(formData.get('orderNum')) || 999,
         })
+        
         .select();
 
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
@@ -2196,13 +2362,14 @@ async function handleCreateChapter(event) {
 
     try {
         // 1. Insert chapter
- const { data: chapterData, error: chapterError } = await db
+const { data: chapterData, error: chapterError } = await db
             .from('chapters')
             .insert({
-                course_id: courseId,
-                title: formData.get('chapterTitle'),
+                course_id:   courseId,
+                title:       formData.get('chapterTitle'),
                 description: formData.get('chapterDescription') || '',
-                published: false
+                order_num:   parseInt(formData.get('chapterOrderNum')) || 999,
+                published:   false
             })
             .select('id');
 
@@ -2268,9 +2435,9 @@ async function loadChapters() {
 
     const { data: chapters, error } = await db
         .from('chapters')
-        .select(`id, title, description, published, topics ( id, title, category, duration, order_num )`)
+        .select(`id, title, description, published, order_num, topics ( id, title, category, duration, order_num )`)
         .eq('course_id', courseId)
-        .order('created_at', { ascending: true });
+        .order('order_num', { ascending: true });
 
     if (error) {
         container.innerHTML = `<div class="card"><p style="color:#ef4444;">Error: ${error.message}</p></div>`;
