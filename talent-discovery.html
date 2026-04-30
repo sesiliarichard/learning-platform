@@ -1123,27 +1123,41 @@
 
 <div id="profileModal"></div>
 <script>
-  // ── View Permissions ──────────────────────────────────────
+// ── View Permissions ──────────────────────────────────────
   (function applyViewPermissions() {
     const isHirer  = !!localStorage.getItem('hire_request_ref');
     const isTalent = !!localStorage.getItem('talent_profile_id');
 
     window._isTalent = isTalent;
-    window._isHirer  = isHirer && !isTalent;
+    window._isHirer  = isHirer;
 
     document.addEventListener('DOMContentLoaded', () => {
-      if (window._isHirer) {
-        const navOpp  = document.getElementById('navOpportunity');
+      if (window._isHirer && !window._isTalent) {
+        // Hide nav items
+        const navOpp   = document.getElementById('navOpportunity');
         const navSaved = document.getElementById('navSaved');
         const saveBtn  = document.getElementById('saveSearchBtn');
 
         if (navOpp)   navOpp.style.display  = 'none';
         if (navSaved) navSaved.style.display = 'none';
         if (saveBtn)  saveBtn.style.display  = 'none';
+
+        // Update user chip with company data from localStorage
+        const companyData = localStorage.getItem('hire_request_data');
+        if (companyData) {
+          const parsed = JSON.parse(companyData);
+          const nameEl    = document.querySelector('.user-info strong');
+          const companyEl = document.querySelector('.user-info span');
+          const avatarEl  = document.querySelector('nav .avatar');
+
+          if (nameEl)    nameEl.textContent    = parsed.fullName || 'Company';
+          if (companyEl) companyEl.textContent = parsed.company  || '';
+          if (avatarEl)  avatarEl.textContent  = (parsed.company || 'CO')
+            .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+        }
       }
     });
   })();
-
   // ── State ─────────────────────────────────────────────────
   let currentPage = 1;
   const PAGE_SIZE  = 6;
