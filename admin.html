@@ -1395,6 +1395,14 @@ body { visibility: hidden }
     <label for="topicContent0">Topic Content *</label>
     <div class="editor-toolbar">
 
+        <button type="button" class="editor-btn" onclick="formatText(0, 'undo')" title="Undo">
+            <i class="fas fa-undo"></i>
+        </button>
+        <button type="button" class="editor-btn" onclick="formatText(0, 'redo')" title="Redo">
+            <i class="fas fa-redo"></i>
+        </button>
+        <div class="editor-sep"></div>
+
         <select class="editor-select editor-select-font" 
                 onchange="setEditorFontFamily(0, this)" title="Font">
             <option value="inherit">Font</option>
@@ -2137,7 +2145,10 @@ function addNewTopic() {
             <div class="form-group">
                 <label>Topic Content *</label>
                 <div class="editor-toolbar">
-    <select class="editor-select" onchange="setEditorFontFamily(0, this)" title="Font">
+   <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
+    <div class="editor-sep"></div>
+    <select class="editor-select" onchange="setEditorFontFamily(${idx}, this)" title="Font">
         <option value="inherit">Font</option>
         <option value="Arial">Arial</option>
         <option value="Times New Roman">Times New Roman</option>
@@ -2757,6 +2768,9 @@ function addEditTopic(existingTopic = null) {
             <div class="form-group">
                 <label>Topic Content *</label>
               <div class="editor-toolbar">
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
+    <div class="editor-sep"></div>
     <select class="editor-select" onchange="setEditorFontFamily(${idx}, this)" title="Font">
         <option value="inherit">Font</option>
         <option value="Arial">Arial</option>
