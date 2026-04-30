@@ -536,7 +536,8 @@ async function openEditCourseModal(courseId) {
                         editorContent.trim() === '';
         
         const description = isEmpty ? '' : editorContent;
-        document.getElementById('courseDescription').value = description;
+        const descHidden = document.getElementById('courseDescription');
+        if (descHidden) descHidden.value = description;
         
         const fd = new FormData(e.target);
         const r = await updateCourse(window.editingCourseId, {
