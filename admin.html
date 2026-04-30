@@ -1426,16 +1426,6 @@ body { visibility: hidden }
 
         <div class="editor-sep"></div>
 
-        <button type="button" class="editor-btn" 
-                onclick="formatText(0, 'undo')" title="Undo">
-            <i class="fas fa-undo"></i>
-        </button>
-        <button type="button" class="editor-btn" 
-                onclick="formatText(0, 'redo')" title="Redo">
-            <i class="fas fa-redo"></i>
-        </button>
-
-        <div class="editor-sep"></div>
 
         <button type="button" class="editor-btn" 
                 onclick="formatText(0, 'bold')" title="Bold">
@@ -2168,10 +2158,7 @@ function addNewTopic() {
         <option value="7">36</option>
     </select>
     <div class="editor-sep"></div>
-    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
-    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
-    <div class="editor-sep"></div>
-    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')" aria-label="Bold"><b>B</b></button>
+    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')"aria-label="Bold"><b>B</b></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" aria-label="Italic"><i>I</i></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'underline')" aria-label="Underline"><u>U</u></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'strikeThrough')" aria-label="Strikethrough"><s>S</s></button>
@@ -2230,10 +2217,15 @@ function removeTopic(index) {
 }
 
 function formatText(editorIndex, command, value = null) {
-    const editor = document.getElementById(`editor-${editorIndex}`);
+    // Try both editor ID formats (create vs edit)
+    const editor = document.getElementById(`editor-${editorIndex}`) 
+                || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
-        document.execCommand(command, false, value);
+        // Small delay ensures focus is restored before execCommand
+        setTimeout(() => {
+            document.execCommand(command, false, value);
+        }, 10);
     }
 }
 
@@ -2791,9 +2783,6 @@ function addEditTopic(existingTopic = null) {
         <option value="7">36</option>
     </select>
    <div class="editor-sep"></div>
-    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
-    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
-    <div class="editor-sep"></div>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')" title="Bold"><b>B</b></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" title="Italic"><i>I</i></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'underline')" title="Underline"><u>U</u></button>
