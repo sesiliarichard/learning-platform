@@ -11,7 +11,7 @@ async function getAllCourses() {
             .from('courses')
             .select('id, title, description, duration_weeks, instructor, thumbnail_color, icon, status, created_at, order_num')
             .order('order_num', { ascending: true });
-            
+
         if (error) throw error;
         return { success: true, courses: data || [] };
     } catch (error) {
@@ -25,8 +25,6 @@ async function getAllCourses() {
 // ─────────────────────────────────────────────
 async function getCourseById(courseId) {
     try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-
         const { data: course, error: courseError } = await supabaseClient
             .from('courses')
             .select('*')
@@ -34,25 +32,14 @@ async function getCourseById(courseId) {
             .maybeSingle();
 
         if (courseError) throw courseError;
+        if (!course) throw new Error('Course not found');
 
-        let progress = 0;
-        if (user) {
-            const { data: enrollment } = await supabaseClient
-                .from('enrollments')
-                .select('progress, completed_at')
-                .eq('student_id', user.id)
-                .eq('course_id', courseId)
-                .maybeSingle();
-            if (enrollment) progress = enrollment.progress || 0;
-        }
-
-        return { success: true, course: { ...course, progress } };
+        return { success: true, course: { ...course, progress: 0 } };
     } catch (error) {
         console.error('❌ getCourseById error:', error.message);
         return { success: false, error: error.message };
     }
 }
-
 // ─────────────────────────────────────────────
 // 3. CREATE COURSE (Admin only)
 // ─────────────────────────────────────────────
@@ -486,14 +473,26 @@ async function handleDeleteCourse(courseId, courseTitle) {
 
 async function openEditCourseModal(courseId) {
     const result = await getCourseById(courseId);
-    if (!result.success) { showToast('Could not load course', 'error'); return; }
+    if (!result.success || !result.course) { 
+        showToast('Could not load course: ' + (result.error || 'Unknown error'), 'error'); 
+        return; 
+    }
 
     const course = result.course;
-    
-    // Populate form fields
-    document.getElementById('courseTitle').value = course.title || '';
-    document.getElementById('courseDuration').value = course.duration_weeks || '';
-    document.getElementById('courseInstructor').value = course.instructor || '';
+
+    const titleEl      = document.getElementById('courseTitle');
+    const durationEl   = document.getElementById('courseDuration');
+    const instructorEl = document.getElementById('courseInstructor');
+
+    if (!titleEl || !durationEl || !instructorEl) {
+        showToast('Modal not ready. Please try again.', 'error');
+        console.error('Missing modal inputs:', { titleEl, durationEl, instructorEl });
+        return;
+    }
+
+    titleEl.value      = course.title || '';
+    durationEl.value   = course.duration_weeks || '';
+    instructorEl.value = course.instructor || '';
     
     // Clear and set description in editor
     const editor = document.getElementById('courseDescriptionEditor');
