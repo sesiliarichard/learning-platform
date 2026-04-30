@@ -514,6 +514,10 @@ async function openEditCourseModal(courseId) {
     }
     
     // Store the course ID for update
+    // Open the modal FIRST so all elements exist in DOM
+    document.getElementById('addCourseModal')?.classList.add('active');
+
+    // Store the course ID for update
     window.editingCourseId = courseId;
     
     // Change form handler for update
@@ -562,8 +566,6 @@ async function openEditCourseModal(courseId) {
         await loadAdminCourses();
     };
 
-    // Open the modal
-    document.getElementById('addCourseModal')?.classList.add('active');
 }
 function openAddCourseModal() {
     // Reset form for new course
