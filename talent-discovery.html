@@ -970,6 +970,11 @@
     fill: none;
     stroke-width: 2;
   }
+  .skill-tag--more {
+    background: var(--blue-bg);
+    color: var(--blue-mid);
+    border-color: rgba(0,153,255,0.3);
+}
 </style>
 </head>
 <body>
@@ -1178,7 +1183,11 @@
   };
 
   // ── Build a single card HTML string ──────────────────────
-  function buildCard(talent, index) {
+ function buildCard(talent, index) {
+    // CHANGE 1: shortName added here
+    const shortName = talent.full_name.split(' ').map((w, i) => 
+      i === 0 ? w : w[0] + '.').join(' ');
+
     const initials = talent.full_name
       .split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
 
@@ -1188,12 +1197,17 @@
 
     const expLabel = EXP_LABELS[talent.experience] || talent.experience;
 
-    // Extract skill keywords from role + bio (simple heuristic)
     const SKILL_WORDS = ['Python','Machine Learning','Deep Learning','TensorFlow','NLP','PyTorch',
       'SQL','Data Analysis','Scikit-learn','Research','AI','Computer Vision','Data Science'];
     const combined = `${talent.role} ${talent.bio}`.toLowerCase();
     const skills = SKILL_WORDS.filter(s => combined.includes(s.toLowerCase())).slice(0, 5);
 
+    // CHANGE 2: visibleSkills and skillsHtml added here
+    const visibleSkills = skills.slice(0, 3);
+    const extraCount = skills.length - visibleSkills.length;
+    const skillsHtml = visibleSkills.map(s =>
+      `<span class="skill-tag">${s}</span>`).join('') +
+      (extraCount > 0 ? `<span class="skill-tag skill-tag--more">+${extraCount} more</span>` : '');
 
     return `
       <div class="card" style="animation-delay:${index * 0.07}s">
@@ -1203,27 +1217,30 @@
         </div>
         <div class="card-body">
           <div class="card-name-row">
-            <span class="card-name">${escHtml(talent.full_name)}</span>
+            <span class="card-name">${escHtml(shortName)}</span>
             <svg class="verified-icon" viewBox="0 0 24 24" fill="none">
               <circle cx="12" cy="12" r="10" fill="#0077cc"/>
               <path d="M8 12l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
           <div class="card-role">${escHtml(talent.role)}</div>
-          <div class="card-location">${countryFlag(talent.country_code)} ${escHtml(talent.country_name || talent.country_code)}</div>
+
+          <!-- CHANGE 4: (Remote) added here -->
+          <div class="card-location">${countryFlag(talent.country_code)} ${escHtml(talent.country_name || talent.country_code)} (Remote)</div>
+
           <span class="exp-badge">${expLabel}</span>
           ${skills.length ? `
             <div class="skills-label">Top Skills</div>
             <div class="skills-tags">
-              ${skills.map(s => `<span class="skill-tag">${s}</span>`).join('')}
+              ${skillsHtml}
             </div>` : ''}
-          <div class="project-label">About</div>
+
+          <!-- CHANGE 3: "About" changed to "Key Project" -->
+          <div class="project-label">Key Project</div>
           <div class="project-text">${escHtml(talent.bio.slice(0, 120))}${talent.bio.length > 120 ? '…' : ''}</div>
         </div>
         <div class="card-right">
-          
           <button class="btn-primary" onclick="viewProfile('${talent.id}')">View Profile</button>
-          
           ${window._isTalent ? `
           <button class="btn-save">
             <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>

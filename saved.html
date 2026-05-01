@@ -424,6 +424,33 @@ nav {
         background-position: -200% 0;
     }
 }
+.skeleton-card {
+    background: white;
+    border: 1px solid #e0e4f0;
+    border-radius: 16px;
+    padding: 22px;
+}
+
+.skel-line {
+    margin-bottom: 10px;
+}
+
+.skel-line--short {
+    height: 20px;
+    width: 40%;
+}
+
+.skel-line--medium {
+    height: 14px;
+    width: 60%;
+    margin-bottom: 8px;
+}
+
+.skel-line--tall {
+    height: 50px;
+    width: 100%;
+    margin-bottom: 0;
+}
 </style>
 </head>
 <body>
@@ -448,14 +475,13 @@ nav {
   </div>
   <div class="saved-count" id="savedCount"></div>
   <div class="cards" id="cardsContainer">
-    <div style="background:white;border:1px solid #e0e4f0;border-radius:16px;padding:22px;">
-      <div class="skel" style="height:20px;width:40%;margin-bottom:10px"></div>
-      <div class="skel" style="height:14px;width:60%;margin-bottom:8px"></div>
-      <div class="skel" style="height:50px"></div>
+    <div class="skeleton-card">
+      <div class="skel skel-line skel-line--short"></div>
+      <div class="skel skel-line skel-line--medium"></div>
+      <div class="skel skel-line skel-line--tall"></div>
     </div>
   </div>
 </div>
-
 <script>
   const LOGO_CLASSES = ['logo--blue','logo--cyan','logo--dark','logo--teal'];
   function logoClass(i) { return LOGO_CLASSES[i % LOGO_CLASSES.length]; }
@@ -523,7 +549,7 @@ nav {
     countEl.textContent = `${data.length} saved opportunity${data.length !== 1 ? 's' : ''}`;
 
     const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' };
-    const locLabel  = { 'remote':'🌍 Remote','hybrid':'🏢 Hybrid','onsite':'📍 On-site' };
+   const locLabel  = { 'remote':'Remote','hybrid':'Hybrid','onsite':'On-site' };
 
     container.innerHTML = data.map((job, index) => `
       <div class="job-card" style="animation-delay:${index*0.07}s">
@@ -534,8 +560,8 @@ nav {
             <div class="job-company">${escHtml(job.company_name)}</div>
             <div class="job-meta">
               <span class="meta-chip type">${typeLabel[job.job_type] || 'Full-time'}</span>
-              <span class="meta-chip remote">${locLabel[job.location_type] || '📍 On-site'}</span>
-              ${job.country ? `<span class="meta-chip">📍 ${escHtml(job.country)}</span>` : ''}
+              <span class="meta-chip remote">${locLabel[job.location_type] || 'On-site'}</span>
+              ${job.country ? `<span class="meta-chip">${escHtml(job.country)}</span>` : ''}
             </div>
           </div>
         </div>
