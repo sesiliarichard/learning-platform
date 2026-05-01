@@ -833,36 +833,54 @@ nav {
       <div class="filter-label">Search</div>
       <input class="search-input" type="text" id="filterSearch" placeholder="Role, company, skill...">
     </div>
-    <div class="filter-section">
+   <div class="filter-section">
       <div class="filter-label">Job Type</div>
-   <select class="select-box" id="filterType" aria-label="Filter by job type">
-  <option value="">All Types</option>
-  <option value="full-time">Full-time</option>
-  <option value="part-time">Part-time</option>
-  <option value="contract">Contract</option>
-  <option value="internship">Internship</option>
-</select>
+      <select class="select-box" id="filterType" aria-label="Filter by job type">
+        <option value="">All Types</option>
+        <option value="full-time">Full-time</option>
+        <option value="part-time">Part-time</option>
+        <option value="contract">Contract</option>
+        <option value="internship">Internship</option>
+      </select>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Location</div>
+      <select class="select-box" id="filterLocation" aria-label="Filter by location">
+        <option value="">All Locations</option>
+        <option value="remote">Remote</option>
+        <option value="hybrid">Hybrid</option>
+        <option value="onsite">On-site</option>
+      </select>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">Industry</div>
+      <select class="select-box" id="filterIndustry" aria-label="Filter by industry">
+        <option value="">All Industries</option>
+        <option value="tech">Technology</option>
+        <option value="finance">Finance</option>
+        <option value="health">Healthcare</option>
+        <option value="education">Education</option>
+        <option value="consulting">Consulting</option>
+      </select>
+    </div>
+    <button class="apply-btn" onclick="applyFilters()">Apply Filters</button>
+  </aside>
 
-<select class="select-box" id="filterLocation" aria-label="Filter by location">
-  <option value="">All Locations</option>
-  <option value="remote">Remote</option>
-  <option value="hybrid">Hybrid</option>
-  <option value="onsite">On-site</option>
-</select>
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <h1>Job Listings</h1>
+        <p>Opportunities posted by companies seeking AI talent</p>
+      </div>
+    </div>
 
-<select class="select-box" id="filterIndustry" aria-label="Filter by industry">
-  <option value="">All Industries</option>
-  <option value="tech">Technology</option>
-  <option value="finance">Finance</option>
-  <option value="health">Healthcare</option>
-  <option value="education">Education</option>
-  <option value="consulting">Consulting</option>
-</select>
-
-<select class="sort-select" id="sortSelect" aria-label="Sort jobs" onchange="applyFilters()">
-  <option value="recent">Most Recent</option>
-  <option value="company">Company A–Z</option>
-</select>
+    <div class="results-bar">
+      <span class="results-count" id="resultsCount">Loading…</span>
+      <select class="sort-select" id="sortSelect" aria-label="Sort jobs" onchange="applyFilters()">
+        <option value="recent">Most Recent</option>
+        <option value="company">Company A–Z</option>
+      </select>
     </div>
 
     <div class="cards" id="cardsContainer"></div>
@@ -878,7 +896,6 @@ nav {
     </div>
   </main>
 </div>
-
 <!-- POST JOB MODAL -->
 <div id="postModal" class="hidden">
   <div class="modal-overlay" onclick="closePostModal(event)">
