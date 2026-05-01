@@ -1194,10 +1194,6 @@
     const combined = `${talent.role} ${talent.bio}`.toLowerCase();
     const skills = SKILL_WORDS.filter(s => combined.includes(s.toLowerCase())).slice(0, 5);
 
-    // Readiness score (deterministic from id length as placeholder)
-    const score = 70 + (talent.id.charCodeAt(0) % 20);
-    const scoreClass = score >= 80 ? 'high' : score >= 75 ? 'mid' : 'ok';
-    const scoreLabel = score >= 80 ? 'Strong' : score >= 75 ? 'Strong' : 'Good';
 
     return `
       <div class="card" style="animation-delay:${index * 0.07}s">
@@ -1214,7 +1210,7 @@
             </svg>
           </div>
           <div class="card-role">${escHtml(talent.role)}</div>
-          <div class="card-location">📍 ${escHtml(talent.country_name || talent.country_code)}</div>
+          <div class="card-location">${countryFlag(talent.country_code)} ${escHtml(talent.country_name || talent.country_code)}</div>
           <span class="exp-badge">${expLabel}</span>
           ${skills.length ? `
             <div class="skills-label">Top Skills</div>
@@ -1225,16 +1221,9 @@
           <div class="project-text">${escHtml(talent.bio.slice(0, 120))}${talent.bio.length > 120 ? '…' : ''}</div>
         </div>
         <div class="card-right">
-          <div class="readiness-box">
-            <div class="readiness-label">AI Readiness</div>
-            <div class="readiness-score ${scoreClass}">${score}%</div>
-            <div class="readiness-strength">${scoreLabel}</div>
-          </div>
+          
           <button class="btn-primary" onclick="viewProfile('${talent.id}')">View Profile</button>
-          <button class="btn-outline">
-            <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
-            Request Intro
-          </button>
+          
           ${window._isTalent ? `
           <button class="btn-save">
             <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
@@ -1412,6 +1401,12 @@
     });
     loadTalents();
   });
+  function countryFlag(code) {
+  if (!code) return '📍';
+  return code.toUpperCase().replace(/./g, 
+    char => String.fromCodePoint(127397 + char.charCodeAt(0))
+  );
+}
 </script>
 
 </body>
