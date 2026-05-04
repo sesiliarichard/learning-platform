@@ -15,19 +15,19 @@ async function initPresenceTracking() {
                 Object.values(state).flat().map(p => p.user_id).filter(Boolean)
             );
             if (document.getElementById('usersSection')?.classList.contains('active')) {
-                renderTable();
+                if (typeof renderTable === 'function') renderTable();
             }
         })
         .on('presence', { event: 'join' }, ({ newPresences }) => {
             newPresences.forEach(p => p.user_id && window.onlineUserIds.add(p.user_id));
             if (document.getElementById('usersSection')?.classList.contains('active')) {
-                renderTable();
+                if (typeof renderTable === 'function') renderTable();
             }
         })
         .on('presence', { event: 'leave' }, ({ leftPresences }) => {
             leftPresences.forEach(p => p.user_id && window.onlineUserIds.delete(p.user_id));
             if (document.getElementById('usersSection')?.classList.contains('active')) {
-                renderTable();
+                if (typeof renderTable === 'function') renderTable();
             }
         })
         .subscribe();
