@@ -10806,15 +10806,23 @@ function makeTableDraggable(table) {
     if (table.dataset.wordDragInit) return;
     table.dataset.wordDragInit = '1';
 
-    const wrap = table.closest('.resizable-table-wrap') 
-              || table.closest('.wle-table-wrap') 
+    // ── Support ALL table wrapper formats ──
+    const wrap = table.closest('.resizable-table-wrap')
+              || table.closest('.wle-table-wrap')
+              || table.closest('.word-table-container')
               || table.parentNode;
 
-    // ── Create the ✛ move handle (top-left corner) ──
+    // ── Ensure wrap is positioned ──
+    if (wrap && wrap !== document.body) {
+        wrap.style.position = 'relative';
+    }
+
+    // ── Create the ✛ move handle ──
     const moveHandle = document.createElement('div');
     moveHandle.className = 'word-table-move-handle';
-    moveHandle.innerHTML = '&#10010;'; // ✛ crosshair
+    moveHandle.innerHTML = '&#10010;';
     moveHandle.title = 'Drag to move table';
+    moveHandle.setAttribute('contenteditable', 'false');
     moveHandle.style.cssText = `
         position: absolute;
         top: -22px;
@@ -10837,9 +10845,10 @@ function makeTableDraggable(table) {
         line-height: 1;
     `;
 
-    // ── Create resize handle (bottom-right corner, small square) ──
+    // ── Create resize handle (bottom-right) ──
     const resizeHandle = document.createElement('div');
     resizeHandle.className = 'word-table-resize-handle';
+    resizeHandle.setAttribute('contenteditable', 'false');
     resizeHandle.style.cssText = `
         position: absolute;
         bottom: -8px;
@@ -10854,52 +10863,186 @@ function makeTableDraggable(table) {
         z-index: 1000;
     `;
 
-    // Wrap the table in a positioned container
-    const container = document.createElement('div');
-    container.className = 'word-table-container';
-    container.style.cssText = `
-        position: relative;
-        display: inline-block;
-        width: 100%;
-        margin: 8px 0;
+    // ── Delete button (top-right) ──
+    const deleteHandle = document.createElement('div');
+    deleteHandle.className = 'word-table-delete-handle';
+    deleteHandle.innerHTML = '✕';
+    deleteHandle.title = 'Delete table';
+    deleteHandle.setAttribute('contenteditable', 'false');
+    deleteHandle.style.cssText = `
+        position: absolute;
+        top: -22px;
+        right: -22px;
+        width: 20px;
+        height: 20px;
+        background: #dc2626;
+        color: white;
+        border-radius: 4px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: bold;
+        z-index: 1000;
+        user-select: none;
+        box-shadow: 0 2px 8px rgba(220,38,38,0.4);
+        border: 2px solid white;
+        line-height: 1;
     `;
 
-    // Inject into DOM
+    // ── Add Row button (bottom-left) ──
+    const addRowHandle = document.createElement('div');
+    addRowHandle.innerHTML = '+ Row';
+    addRowHandle.title = 'Add row';
+    addRowHandle.setAttribute('contenteditable', 'false');
+    addRowHandle.style.cssText = `
+        position: absolute;
+        bottom: -28px;
+        left: 0;
+        background: #7c3aed;
+        color: white;
+        border-radius: 4px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: bold;
+        z-index: 1000;
+        user-select: none;
+        padding: 3px 8px;
+        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
+    `;
+
+    // ── Add Col button (top-right area) ──
+    const addColHandle = document.createElement('div');
+    addColHandle.innerHTML = '+ Col';
+    addColHandle.title = 'Add column';
+    addColHandle.setAttribute('contenteditable', 'false');
+    addColHandle.style.cssText = `
+        position: absolute;
+        top: -22px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #7c3aed;
+        color: white;
+        border-radius: 4px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: bold;
+        z-index: 1000;
+        user-select: none;
+        padding: 3px 8px;
+        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
+    `;
+
+    // ── Wrap everything in a container ──
+    const container = document.createElement('div');
+    container.className = 'word-table-container';
+    container.setAttribute('contenteditable', 'false');
+    container.style.cssText = `
+        position: relative;
+        display: block;
+        width: 100%;
+        margin: 24px 0;
+    `;
+
+    // Replace wrap with container in DOM
+    const editor = wrap.closest('.editor-content');
+    if (!editor) return;
+
     wrap.parentNode.insertBefore(container, wrap);
     container.appendChild(wrap);
     container.appendChild(moveHandle);
     container.appendChild(resizeHandle);
+    container.appendChild(deleteHandle);
+    container.appendChild(addRowHandle);
+    container.appendChild(addColHandle);
 
-    // ── Show/hide handles on hover ──
+    // ── Show/hide all handles on hover ──
+    const allHandles = [moveHandle, resizeHandle, deleteHandle, addRowHandle, addColHandle];
+
     container.addEventListener('mouseenter', () => {
-        moveHandle.style.display = 'flex';
+        allHandles.forEach(h => h.style.display = 'flex');
         resizeHandle.style.display = 'block';
     });
     container.addEventListener('mouseleave', () => {
         if (!_wordTableDrag) {
-            moveHandle.style.display = 'none';
-            resizeHandle.style.display = 'none';
+            allHandles.forEach(h => h.style.display = 'none');
         }
     });
 
-    // ── Wire up drag ──
+    // ── DRAG ──
     moveHandle.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        startWordTableDrag(e, container, moveHandle, resizeHandle);
+        startWordTableDrag(e, container, moveHandle, resizeHandle, allHandles);
     });
 
-    // ── Wire up resize (bottom-right) ──
+    // ── RESIZE ──
     resizeHandle.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
         startWordTableResize(e, table, container);
     });
+
+    // ── DELETE TABLE ──
+    deleteHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    });
+    deleteHandle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (confirm('Delete this table?')) {
+            container.remove();
+            if (typeof showToast === 'function') showToast('Table deleted ✓');
+        }
+    });
+
+    // ── ADD ROW ──
+    addRowHandle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+    addRowHandle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const tbody = table.querySelector('tbody') || table;
+        const allRows = Array.from(table.querySelectorAll('tr'));
+        const lastRow = allRows[allRows.length - 1];
+        const colCount = lastRow ? lastRow.cells.length : 1;
+        const newRow = tbody.insertRow();
+        for (let i = 0; i < colCount; i++) {
+            const td = newRow.insertCell();
+            td.contentEditable = 'true';
+            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
+        }
+        if (typeof showToast === 'function') showToast('Row added ✓');
+    });
+
+    // ── ADD COL ──
+    addColHandle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
+    addColHandle.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const allRows = Array.from(table.querySelectorAll('tr'));
+        allRows.forEach((row, idx) => {
+            const isHeader = idx === 0 && !!row.closest('thead');
+            const cell = document.createElement(isHeader ? 'th' : 'td');
+            cell.contentEditable = 'true';
+            cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isHeader ? 'background:#f5f3ff;font-weight:700;' : ''}`;
+            row.appendChild(cell);
+        });
+        if (typeof showToast === 'function') showToast('Column added ✓');
+    });
 }
 
 let _wordTableDrag = null;
 
-function startWordTableDrag(e, container, moveHandle, resizeHandle) {
+function startWordTableDrag(e, container, moveHandle, resizeHandle, allHandles) {
+    allHandles = allHandles || [moveHandle, resizeHandle];
     const editor = container.closest('.editor-content');
     if (!editor) return;
 
@@ -10954,31 +11097,35 @@ function startWordTableDrag(e, container, moveHandle, resizeHandle) {
 
     let currentTarget = null;
 
-    const onMove = (ev) => {
-        // Move ghost
+  const onMove = (ev) => {
         ghost.style.left = ev.clientX - container.offsetWidth / 2 + 'px';
         ghost.style.top  = ev.clientY - 20 + 'px';
 
-        // Find nearest block element to drop before
-        const elements = Array.from(editor.children).filter(
-            el => el !== container && el !== placeholder
+        // Only direct children of editor
+        const elements = Array.from(editor.children).filter(el =>
+            el !== container &&
+            el !== placeholder &&
+            el.parentNode === editor
         );
 
         currentTarget = null;
         let bestDist  = Infinity;
 
         for (const el of elements) {
+            if (!el.getBoundingClientRect) continue;
             const rect = el.getBoundingClientRect();
             const midY = rect.top + rect.height / 2;
             const dist = Math.abs(ev.clientY - midY);
             if (dist < bestDist) {
-                bestDist     = dist;
-                currentTarget = ev.clientY < midY ? el : el.nextSibling;
+                bestDist = dist;
+                const candidate = ev.clientY < midY ? el : el.nextSibling;
+                // Only use candidate if it's a direct child of editor
+                currentTarget = (candidate && candidate.parentNode === editor)
+                    ? candidate : null;
             }
         }
 
-        // Draw drop line
-        if (currentTarget && currentTarget.getBoundingClientRect) {
+        if (currentTarget?.getBoundingClientRect) {
             const r = currentTarget.getBoundingClientRect();
             dropLine.style.display = 'block';
             dropLine.style.top     = (r.top - 2) + 'px';
@@ -10996,24 +11143,29 @@ function startWordTableDrag(e, container, moveHandle, resizeHandle) {
         ghost.remove();
         dropLine.remove();
         container.style.opacity = '';
-        placeholder.remove();
-        moveHandle.style.display   = 'none';
-        resizeHandle.style.display = 'none';
 
-        // Insert at drop position
-        if (currentTarget) {
-            editor.insertBefore(container, currentTarget);
-        } else {
-            editor.appendChild(container);
+        // Hide handles
+        allHandles.forEach(h => h.style.display = 'none');
+
+        // KEY FIX: move container first, THEN remove placeholder
+        try {
+            if (currentTarget &&
+                currentTarget !== container &&
+                currentTarget !== placeholder &&
+                currentTarget.parentNode === editor) {
+                editor.insertBefore(container, currentTarget);
+            } else {
+                editor.appendChild(container);
+            }
+        } catch (err) {
+            console.warn('Table drag insertBefore failed:', err.message);
+            try { editor.appendChild(container); } catch(e) {}
         }
 
-        _wordTableDrag = null;
+        // Remove placeholder AFTER moving
+        try { placeholder.remove(); } catch(e) {}
 
-        // Show handles again after a moment
-        setTimeout(() => {
-            moveHandle.style.display   = 'flex';
-            resizeHandle.style.display = 'block';
-        }, 300);
+        _wordTableDrag = null;
 
         if (typeof showToast === 'function') showToast('Table moved ✓', 'success');
     };
