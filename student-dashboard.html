@@ -5401,6 +5401,26 @@ async function downloadFile(url, filename) {
         showToast('Opened in new tab — use Save As to download', 'info');
     }
 }
+// ── BLOCK ADMIN TABLE TOOLBAR ON STUDENT DASHBOARD ──────────
+(function() {
+    function removeAdminOverlay() {
+        document.querySelectorAll('#sharedTableOverlay').forEach(el => el.remove());
+    }
+    
+    // Remove immediately if already exists
+    removeAdminOverlay();
+    
+    // Block any future injection
+    const origAppend = Element.prototype.appendChild;
+    Element.prototype.appendChild = function(child) {
+        if (child && child.id === 'sharedTableOverlay') return child;
+        return origAppend.call(this, child);
+    };
+    
+    // Watch for late injection
+    new MutationObserver(removeAdminOverlay)
+        .observe(document.body, { childList: true, subtree: false });
+})();
     </script>
 </body>
 </html>

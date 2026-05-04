@@ -7144,3 +7144,9 @@ body.dark-mode #discussionsSection .message-input-area {
         font-size: 16px; /* prevents iOS zoom on focus */
     }
 }
+/* Prevent admin table toolbar from ever showing on student pages */
+#sharedTableOverlay {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
