@@ -525,17 +525,94 @@
    * ───────────────────────────────────────────────────────── */
   function upgradeToolbar(toolbar) {
     if (toolbar.dataset.fontFixed) return;
-    toolbar.dataset.fontFixed = '1';
+    // NOTE: do NOT set fontFixed=1 here — only set it after
+    // we successfully find the editor, so failed toolbars
+    // get retried on the next scan
 
-    // ── FIX 1: look at toolbar's direct next sibling first ──
-    let editorEl = toolbar.nextElementSibling;
-    if (!editorEl || !editorEl.classList?.contains('editor-content')) {
-      // Fallback: search within the same parent container
-      const parent = toolbar.parentElement;
-      editorEl = parent?.querySelector('.editor-content[contenteditable]');
+    let editorEl = null;
+
+    // Strategy 1: toolbar's direct next sibling IS the editor
+    const nextSib = toolbar.nextElementSibling;
+    if (nextSib?.classList?.contains('editor-content')) {
+      editorEl = nextSib;
     }
-    if (!editorEl) return; // still can't find editor — skip
-    // ── END FIX 1 ──
+
+    // Strategy 2: editor is inside the next sibling
+    if (!editorEl && nextSib) {
+      editorEl = nextSib.querySelector?.('.editor-content[contenteditable]');
+    }
+
+    // Strategy 3: walk ALL siblings after toolbar
+    if (!editorEl) {
+      let node = toolbar.nextElementSibling;
+      while (node) {
+        if (node.classList?.contains('editor-content')) {
+          editorEl = node;
+          break;
+        }
+        const found = node.querySelector?.('.editor-content[contenteditable]');
+        if (found) { editorEl = found; break; }
+        node = node.nextElementSibling;
+      }
+    }
+
+    // Strategy 4: parent has data-topic-index → find editor by that index
+    if (!editorEl) {
+      const topicWrap = toolbar.closest('[data-topic-index]');
+      if (topicWrap) {
+        const idx = topicWrap.dataset.topicIndex;
+        editorEl = document.getElementById('editor-' + idx)
+                || document.getElementById('editEditor_' + idx)
+                || topicWrap.querySelector('.editor-content[contenteditable]');
+      }
+    }
+
+    // Strategy 5: walk up to topic/card wrapper
+    if (!editorEl) {
+      const card = toolbar.closest(
+        '.topic-card, .topic-editor, [data-topic-index], .card'
+      );
+      if (card) {
+        editorEl = card.querySelector('.editor-content[contenteditable]');
+      }
+    }
+
+    // Strategy 6: same .form-group
+    if (!editorEl) {
+      const fg = toolbar.closest('.form-group');
+      if (fg) {
+        editorEl = fg.querySelector('.editor-content[contenteditable]');
+      }
+    }
+
+    // Strategy 7: nearest editor in same modal by screen distance
+    if (!editorEl) {
+      const container = toolbar.closest(
+        '.modal-content, form, .dashboard-section, .card, .modal'
+      );
+      if (container) {
+        const all = Array.from(
+          container.querySelectorAll('.editor-content[contenteditable="true"]')
+        );
+        if (all.length === 1) {
+          editorEl = all[0];
+        } else if (all.length > 1) {
+          const tRect = toolbar.getBoundingClientRect();
+          let best = Infinity;
+          all.forEach(ed => {
+            const r    = ed.getBoundingClientRect();
+            const dist = Math.abs(r.top - tRect.bottom);
+            if (dist < best) { best = dist; editorEl = ed; }
+          });
+        }
+      }
+    }
+
+    // All strategies failed — do NOT mark as fixed so we retry
+    if (!editorEl) return;
+
+    // Only mark done after confirmed success
+    toolbar.dataset.fontFixed = '1';
 
     editorEl.addEventListener('keyup',   saveSelection);
     editorEl.addEventListener('mouseup', saveSelection);
@@ -558,7 +635,6 @@
       fontDD.insertAdjacentElement('afterend', sizeDD);
     }
   }
-
   /* ─────────────────────────────────────────────────────────
    * OVERRIDE setEditorFontFamily / setEditorFontSize
    * ───────────────────────────────────────────────────────── */
@@ -659,12 +735,31 @@
    * ───────────────────────────────────────────────────────── */
   injectStyles();
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(upgradeAllToolbars, 400));
+ if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(upgradeAllToolbars, 400);
+      setTimeout(upgradeAllToolbars, 900);
+      setTimeout(upgradeAllToolbars, 2000);
+    });
   } else {
     setTimeout(upgradeAllToolbars, 400);
+    setTimeout(upgradeAllToolbars, 900);
+    setTimeout(upgradeAllToolbars, 2000);
   }
 
-  console.log('✅ ASAI Font Fix loaded — 3 fixes applied, 26 fonts active');
+  // Retry when any modal-opening function runs
+  ['openCreateChapterModal','openEditChapterModal',
+   'addNewTopic','addEditTopic'].forEach(name => {
+    const orig = window[name];
+    if (!orig) return;
+    window[name] = function(...args) {
+      const r = orig.apply(this, args);
+      setTimeout(upgradeAllToolbars, 200);
+      setTimeout(upgradeAllToolbars, 600);
+      return r;
+    };
+  });
+
+  console.log('✅ ASAI Font Fix loaded — 7-strategy editor lookup active');
 
 })();
