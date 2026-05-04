@@ -7150,3 +7150,13 @@ body.dark-mode #discussionsSection .message-input-area {
     visibility: hidden !important;
     pointer-events: none !important;
 }
+/* Block admin editor UI on student pages */
+#sharedTableOverlay,
+.wle-table-toolbar,
+.wle-img-toolbar,
+.wle-handle,
+.asai-dd-panel {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}

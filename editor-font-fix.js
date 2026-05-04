@@ -17,8 +17,11 @@
 (function () {
   'use strict';
 
+  // Only run on admin page
+  if (!document.querySelector('.admin-badge') && !document.getElementById('usersSection')) return;
+
   /* ─────────────────────────────────────────────────────────
-   * FONT CATALOGUE  (name shown in UI → CSS font-family)
+   * FONT CATALOGUE (name shown in UI → CSS font-family)
    * ───────────────────────────────────────────────────────── */
   const FONTS = [
     // Sans-serif

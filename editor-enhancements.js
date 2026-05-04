@@ -26,6 +26,9 @@
 (function () {
   'use strict';
 
+  // Only run on admin page
+  if (!document.querySelector('.admin-badge') && !document.getElementById('usersSection')) return;
+
   /* ============================================================
    * 0.  PATCH MutationObserver
    *     editor-font-fix.js:715 calls .observe() with a non-Node
