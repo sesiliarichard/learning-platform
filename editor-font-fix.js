@@ -709,8 +709,18 @@
   /* ─────────────────────────────────────────────────────────
    * OBSERVE DOM for new toolbars (modal opens, new topic added)
    * ───────────────────────────────────────────────────────── */
-  const obs = new MutationObserver(() => {
-    upgradeAllToolbars();
+ const obs = new MutationObserver((mutations) => {
+    // KEY FIX: only upgrade when a real toolbar is added,
+    // not on every DOM mutation (was causing auto-save triggers)
+    const hasNewToolbar = mutations.some(m =>
+      Array.from(m.addedNodes).some(n =>
+        n.nodeType === 1 && (
+          n.classList?.contains('editor-toolbar') ||
+          n.querySelector?.('.editor-toolbar')
+        )
+      )
+    );
+    if (hasNewToolbar) upgradeAllToolbars();
   });
   obs.observe(document.body, { childList: true, subtree: true });
 

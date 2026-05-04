@@ -507,16 +507,19 @@
     table.querySelectorAll('td, th').forEach(addCellDraggers);
   }
 
-  function tableAct (act, table, wrap) {
+function tableAct (act, table, wrap) {
     if (!table) return;
     switch (act) {
       case 'addRow': {
-        const last   = table.rows[table.rows.length - 1];
-        const newRow = table.insertRow();
-        for (let i = 0; i < last.cells.length; i++) {
+        const allRowsForAdd = Array.from(table.querySelectorAll('tr'));
+        const lastRow = allRowsForAdd[allRowsForAdd.length - 1];
+        const colCount = lastRow ? lastRow.cells.length : 1;
+        const tbody = table.querySelector('tbody') || table;
+        const newRow = tbody.insertRow();
+        for (let i = 0; i < colCount; i++) {
           const td = newRow.insertCell();
           td.contentEditable = 'true';
-          td.style.cssText   = 'border:1.5px solid #374151;padding:8px 10px;position:relative;';
+          td.style.cssText = 'border:1.5px solid #374151;padding:8px 10px;position:relative;min-width:60px;vertical-align:top;';
           addCellDraggers(td);
           makeNavCell(td, table);
         }
@@ -524,30 +527,54 @@
       }
       case 'addCol': {
         Array.from(table.rows).forEach((row, ri) => {
-          const isH  = ri === 0;
+          const isH = ri === 0 && !!row.closest('thead');
           const cell = document.createElement(isH ? 'th' : 'td');
           cell.contentEditable = 'true';
-          cell.style.cssText   = `border:1.5px solid #374151;padding:8px 10px;position:relative;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
+          cell.style.cssText = `border:1.5px solid #374151;padding:8px 10px;position:relative;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
           row.appendChild(cell);
           addCellDraggers(cell);
           makeNavCell(cell, table);
         });
         break;
       }
-      case 'delRow':
-        if (table.rows.length > 1) table.deleteRow(table.rows.length - 1);
+      case 'delRow': {
+        // KEY FIX: use querySelectorAll to get ALL rows across thead+tbody
+        const allRows = Array.from(table.querySelectorAll('tr'));
+        if (allRows.length <= 1) {
+          if (typeof showToast === 'function') showToast('Cannot delete the last row', 'error');
+          return;
+        }
+        const lastRow = allRows[allRows.length - 1];
+        lastRow.parentNode.removeChild(lastRow);
         break;
+      }
       case 'delCol': {
-        const last = table.rows[0]?.cells.length - 1;
-        if (last >= 1) Array.from(table.rows).forEach(r => r.cells[last] && r.deleteCell(last));
+        // KEY FIX: use querySelectorAll rows, delete last cell from each
+        const allRows = Array.from(table.querySelectorAll('tr'));
+        if (!allRows.length) return;
+        const colCount = allRows[0].cells.length;
+        if (colCount <= 1) {
+          if (typeof showToast === 'function') showToast('Cannot delete the last column', 'error');
+          return;
+        }
+        allRows.forEach(row => {
+          if (row.cells.length > 0) {
+            row.deleteCell(row.cells.length - 1);
+          }
+        });
         break;
       }
       case 'delTable':
-        wrap?.remove();
+        // KEY FIX: try multiple parent containers
+        const target = wrap
+          || table.closest('.word-table-container')
+          || table.closest('.wle-table-wrap')
+          || table.closest('.resizable-table-wrap')
+          || table;
+        target.remove();
         break;
     }
   }
-
   function addCellDraggers (cell) {
     if (!cell.querySelector('.wle-col-dragger')) {
       const cd = document.createElement('div');
@@ -783,11 +810,19 @@
 
     editor.querySelectorAll('.wle-table-wrap:not(.wle-toolbar-wired)').forEach(wrap => {
       wrap.classList.add('wle-toolbar-wired');
-      wrap.querySelector('.wle-table-toolbar')?.addEventListener('click', e => {
-        const btn = e.target.closest('button[data-act]');
-        if (!btn) return;
-        tableAct(btn.dataset.act, wrap.querySelector('table'), wrap);
-      });
+      const toolbar = wrap.querySelector('.wle-table-toolbar');
+      if (toolbar) {
+        toolbar.addEventListener('click', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          const btn = e.target.closest('button[data-act]');
+          if (!btn) return;
+          // KEY FIX: find table fresh at click time, not at wire time
+          const tbl = wrap.querySelector('table');
+          if (!tbl && btn.dataset.act !== 'delTable') return;
+          tableAct(btn.dataset.act, tbl, wrap);
+        });
+      }
       wrap.addEventListener('mousedown', e => {
         if (e.target.closest('.wle-table-toolbar, .wle-col-dragger, .wle-row-dragger')) return;
         deselectAll();
@@ -892,8 +927,7 @@
     setTimeout(initEditors, 500);
   }
 
-  /* Catch editors that open after tab-switches or lazy renders */
-  setInterval(initEditors, 2000);
+ 
 
   console.log(
     '%c✅ ASAI Editor Enhancements loaded — Word-like image & table editing active',

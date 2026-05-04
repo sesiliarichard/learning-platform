@@ -10799,230 +10799,268 @@ confirmInsertTable = function(editorIndex) {
     }, 200);
 };
 // ============================================
-// WHOLE TABLE DRAG-TO-REPOSITION
+// WORD-STYLE TABLE DRAG (✛ corner handle)
 // ============================================
 
 function makeTableDraggable(table) {
-    if (table.dataset.tableDragInit) return;
-    table.dataset.tableDragInit = '1';
+    if (table.dataset.wordDragInit) return;
+    table.dataset.wordDragInit = '1';
 
-    const wrap = table.closest('.resizable-table-wrap') || table.parentNode;
+    const wrap = table.closest('.resizable-table-wrap') 
+              || table.closest('.wle-table-wrap') 
+              || table.parentNode;
 
-    // Create drag handle bar above the table
-    const bar = document.createElement('div');
-    bar.className = 'table-drag-bar';
-    bar.innerHTML = `
-        <span style="display:flex;align-items:center;gap:6px;">
-            <span style="font-size:15px;letter-spacing:2px;">⠿⠿⠿</span>
-            <span style="font-size:11px;font-weight:700;opacity:0.7;">Drag table</span>
-        </span>
-        <span style="font-size:11px;opacity:0.6;">click outside to deselect</span>
-    `;
-    bar.style.cssText = `
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    // ── Create the ✛ move handle (top-left corner) ──
+    const moveHandle = document.createElement('div');
+    moveHandle.className = 'word-table-move-handle';
+    moveHandle.innerHTML = '&#10010;'; // ✛ crosshair
+    moveHandle.title = 'Drag to move table';
+    moveHandle.style.cssText = `
+        position: absolute;
+        top: -22px;
+        left: -22px;
+        width: 20px;
+        height: 20px;
+        background: #7c3aed;
         color: white;
-        padding: 5px 12px;
-        border-radius: 8px 8px 0 0;
-        cursor: grab;
+        border-radius: 4px;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        cursor: move;
+        font-size: 13px;
+        font-weight: bold;
+        z-index: 1000;
         user-select: none;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 12px;
-        opacity: 0;
-        transition: opacity 0.2s;
+        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
+        border: 2px solid white;
+        line-height: 1;
     `;
 
-    // Wrapper to hold bar + table together
+    // ── Create resize handle (bottom-right corner, small square) ──
+    const resizeHandle = document.createElement('div');
+    resizeHandle.className = 'word-table-resize-handle';
+    resizeHandle.style.cssText = `
+        position: absolute;
+        bottom: -8px;
+        right: -8px;
+        width: 10px;
+        height: 10px;
+        background: white;
+        border: 2px solid #7c3aed;
+        border-radius: 2px;
+        cursor: nwse-resize;
+        display: none;
+        z-index: 1000;
+    `;
+
+    // Wrap the table in a positioned container
     const container = document.createElement('div');
-    container.className = 'table-float-container';
+    container.className = 'word-table-container';
     container.style.cssText = `
-        display: inline-block;
         position: relative;
-        vertical-align: top;
+        display: inline-block;
+        width: 100%;
         margin: 8px 0;
-        cursor: default;
     `;
 
-    // Inject into DOM — replace wrap/table with container
+    // Inject into DOM
     wrap.parentNode.insertBefore(container, wrap);
-    container.appendChild(bar);
     container.appendChild(wrap);
+    container.appendChild(moveHandle);
+    container.appendChild(resizeHandle);
 
-    // Show bar on hover
-    container.addEventListener('mouseenter', () => bar.style.opacity = '1');
+    // ── Show/hide handles on hover ──
+    container.addEventListener('mouseenter', () => {
+        moveHandle.style.display = 'flex';
+        resizeHandle.style.display = 'block';
+    });
     container.addEventListener('mouseleave', () => {
-        if (!_tableDrag) bar.style.opacity = '0';
+        if (!_wordTableDrag) {
+            moveHandle.style.display = 'none';
+            resizeHandle.style.display = 'none';
+        }
     });
 
-    // ── DRAG LOGIC ──
-    bar.addEventListener('mousedown', (e) => {
+    // ── Wire up drag ──
+    moveHandle.addEventListener('mousedown', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        startTableDrag(e, container, bar);
+        startWordTableDrag(e, container, moveHandle, resizeHandle);
+    });
+
+    // ── Wire up resize (bottom-right) ──
+    resizeHandle.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startWordTableResize(e, table, container);
     });
 }
 
-let _tableDrag = null;
+let _wordTableDrag = null;
 
-function startTableDrag(e, container, bar) {
+function startWordTableDrag(e, container, moveHandle, resizeHandle) {
     const editor = container.closest('.editor-content');
     if (!editor) return;
 
-    bar.style.cursor = 'grabbing';
-
-    // Ghost clone
-    const ghost = container.cloneNode(true);
+    // Ghost that follows cursor
+    const ghost = document.createElement('div');
     ghost.style.cssText = `
         position: fixed;
         pointer-events: none;
         z-index: 99999;
-        opacity: 0.65;
-        transform: rotate(1.5deg) scale(0.97);
-        box-shadow: 0 16px 48px rgba(124,58,237,0.3);
-        border-radius: 8px;
-        width: ${container.offsetWidth}px;
-        transition: transform 0.1s;
-    `;
-    ghost.style.left = e.clientX - container.offsetWidth / 2 + 'px';
-    ghost.style.top  = (e.clientY - 20) + 'px';
-    document.body.appendChild(ghost);
-
-    // Placeholder — keeps layout space
-    const placeholder = document.createElement('div');
-    placeholder.style.cssText = `
-        display: inline-block;
+        opacity: 0.55;
+        border: 2px dashed #7c3aed;
+        border-radius: 6px;
+        background: rgba(124,58,237,0.06);
         width: ${container.offsetWidth}px;
         height: ${container.offsetHeight}px;
-        border: 2px dashed #c4b5fd;
-        border-radius: 8px;
-        background: #f5f3ff;
-        vertical-align: top;
-        margin: 8px 0;
+        box-shadow: 0 8px 32px rgba(124,58,237,0.25);
     `;
-    container.parentNode.insertBefore(placeholder, container);
-    container.style.display = 'none';
+    ghost.style.left = e.clientX - 20 + 'px';
+    ghost.style.top  = e.clientY - 20 + 'px';
+    document.body.appendChild(ghost);
 
-    // Drop indicator line
+    // Placeholder holds space
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText = `
+        width: 100%;
+        height: ${container.offsetHeight}px;
+        border: 2px dashed #c4b5fd;
+        border-radius: 6px;
+        background: #f5f3ff;
+        margin: 8px 0;
+        box-sizing: border-box;
+    `;
+    editor.insertBefore(placeholder, container);
+    container.style.opacity = '0.15';
+
+    // Blue drop line indicator
     const dropLine = document.createElement('div');
     dropLine.style.cssText = `
-        position: absolute;
+        position: fixed;
         height: 3px;
         background: #7c3aed;
         border-radius: 3px;
         pointer-events: none;
         z-index: 99998;
+        box-shadow: 0 0 8px rgba(124,58,237,0.7);
         display: none;
-        box-shadow: 0 0 8px rgba(124,58,237,0.6);
+        width: 0;
     `;
-    editor.style.position = 'relative';
-    editor.appendChild(dropLine);
+    document.body.appendChild(dropLine);
 
-    _tableDrag = { container, placeholder, ghost, dropLine, editor, bar };
+    _wordTableDrag = { container, placeholder, ghost, dropLine, editor };
+
+    let currentTarget = null;
 
     const onMove = (ev) => {
+        // Move ghost
         ghost.style.left = ev.clientX - container.offsetWidth / 2 + 'px';
-        ghost.style.top  = (ev.clientY - 20) + 'px';
-        findDropTarget(ev, editor, dropLine);
+        ghost.style.top  = ev.clientY - 20 + 'px';
+
+        // Find nearest block element to drop before
+        const elements = Array.from(editor.children).filter(
+            el => el !== container && el !== placeholder
+        );
+
+        currentTarget = null;
+        let bestDist  = Infinity;
+
+        for (const el of elements) {
+            const rect = el.getBoundingClientRect();
+            const midY = rect.top + rect.height / 2;
+            const dist = Math.abs(ev.clientY - midY);
+            if (dist < bestDist) {
+                bestDist     = dist;
+                currentTarget = ev.clientY < midY ? el : el.nextSibling;
+            }
+        }
+
+        // Draw drop line
+        if (currentTarget && currentTarget.getBoundingClientRect) {
+            const r = currentTarget.getBoundingClientRect();
+            dropLine.style.display = 'block';
+            dropLine.style.top     = (r.top - 2) + 'px';
+            dropLine.style.left    = r.left + 'px';
+            dropLine.style.width   = r.width + 'px';
+        } else {
+            dropLine.style.display = 'none';
+        }
     };
 
-    const onUp = (ev) => {
+    const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup',   onUp);
 
         ghost.remove();
         dropLine.remove();
-        bar.style.cursor = 'grab';
+        container.style.opacity = '';
+        placeholder.remove();
+        moveHandle.style.display   = 'none';
+        resizeHandle.style.display = 'none';
 
-        // Show container again
-        container.style.display = '';
-
-        // Move to drop target position
-        const target = findDropTarget(ev, editor, null);
-        if (target) {
-            editor.insertBefore(container, target);
+        // Insert at drop position
+        if (currentTarget) {
+            editor.insertBefore(container, currentTarget);
         } else {
-            // Drop at end of editor
             editor.appendChild(container);
         }
 
-        // Remove placeholder
-        placeholder.remove();
-        bar.style.opacity = '0';
-        _tableDrag = null;
+        _wordTableDrag = null;
 
-        showToast('Table repositioned ✓', 'success');
+        // Show handles again after a moment
+        setTimeout(() => {
+            moveHandle.style.display   = 'flex';
+            resizeHandle.style.display = 'block';
+        }, 300);
+
+        if (typeof showToast === 'function') showToast('Table moved ✓', 'success');
     };
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
 }
 
-function findDropTarget(ev, editor, dropLine) {
-    const children  = Array.from(editor.childNodes).filter(
-        n => n !== _tableDrag?.placeholder &&
-             n !== _tableDrag?.container &&
-             n !== _tableDrag?.dropLine
-    );
+function startWordTableResize(e, table, container) {
+    const startX = e.clientX;
+    const startW = table.offsetWidth;
 
-    let bestNode = null;
-    let bestDist = Infinity;
+    const onMove = (ev) => {
+        const newW = Math.max(200, startW + (ev.clientX - startX));
+        table.style.width     = newW + 'px';
+        container.style.width = newW + 'px';
+    };
 
-    for (const child of children) {
-        if (!child.getBoundingClientRect) continue;
-        const rect = child.getBoundingClientRect();
-        const midY = rect.top + rect.height / 2;
-        const dist = Math.abs(ev.clientY - midY);
+    const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+    };
 
-        if (dist < bestDist) {
-            bestDist = dist;
-            bestNode = ev.clientY < midY ? child : child.nextSibling;
-        }
-    }
-
-    // Draw drop indicator
-    if (dropLine) {
-        if (bestNode) {
-            const refRect = bestNode.getBoundingClientRect
-                ? bestNode.getBoundingClientRect()
-                : null;
-            const editorRect = editor.getBoundingClientRect();
-            if (refRect) {
-                dropLine.style.display = 'block';
-                dropLine.style.top     = (refRect.top - editorRect.top - 2) + 'px';
-                dropLine.style.left    = '0px';
-                dropLine.style.width   = editor.offsetWidth + 'px';
-            }
-        } else {
-            dropLine.style.display = 'none';
-        }
-    }
-
-    return bestNode;
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
 }
 
-// ── Patch confirmInsertTable to make new tables draggable ──
-const _origConfirmTable2 = confirmInsertTable;
-confirmInsertTable = function(editorIndex) {
+// ── Patch confirmInsertTable ──
+const _origConfirmTable2 = window.confirmInsertTable;
+window.confirmInsertTable = function(editorIndex) {
     _origConfirmTable2(editorIndex);
     setTimeout(() => {
         const editor = document.getElementById(`editor-${editorIndex}`)
                     || document.getElementById(`editEditor_${editorIndex}`);
         if (!editor) return;
-        editor.querySelectorAll('.editor-table').forEach(t => makeTableDraggable(t));
+        editor.querySelectorAll('table').forEach(t => makeTableDraggable(t));
     }, 250);
 };
 
-// ── Also wrap tables that already exist when editing ──
-const _origOpenEdit = openEditChapterModal;
-openEditChapterModal = async function(chapterId) {
-    await _origOpenEdit(chapterId);
+// ── Patch openEditChapterModal for existing tables ──
+const _origOpenEdit2 = window.openEditChapterModal;
+window.openEditChapterModal = async function(chapterId) {
+    await _origOpenEdit2(chapterId);
     setTimeout(() => {
-        document.querySelectorAll('#editTopicsContainer .editor-content')
-            .forEach(ed => ed.querySelectorAll('.editor-table')
-            .forEach(t => makeTableDraggable(t)));
-    }, 400);
+        document.querySelectorAll('#editTopicsContainer .editor-content table')
+            .forEach(t => makeTableDraggable(t));
+    }, 500);
 };
 </script>
 
