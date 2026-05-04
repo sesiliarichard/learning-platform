@@ -593,99 +593,99 @@
    * NEW CODE:
    *   Check toolbar.nextElementSibling directly.
    * ───────────────────────────────────────────────────────── */
+  function findEditorForToolbar(toolbar) {
+    // Method A: toolbar buttons have onclick="formatText(N, ...)"
+    // Extract N and find editor-N or editEditor_N
+    const onclickAttr = toolbar.innerHTML;
+    const idxMatch = onclickAttr.match(/(?:formatText|setEditorFontSize|setEditorColor)\((\d+)[^)]*\)/);
+    if (idxMatch) {
+      const idx = idxMatch[1];
+      const byId = document.getElementById('editor-' + idx)
+                || document.getElementById('editEditor_' + idx);
+      if (byId) return byId;
+    }
+
+    // Method B: direct next sibling
+    const next = toolbar.nextElementSibling;
+    if (next?.classList?.contains('editor-content')) return next;
+    if (next) {
+      const inside = next.querySelector('.editor-content[contenteditable]');
+      if (inside) return inside;
+    }
+
+    // Method C: walk siblings forward
+    let sib = toolbar.nextElementSibling;
+    while (sib) {
+      if (sib.classList?.contains('editor-content')) return sib;
+      const f = sib.querySelector?.('.editor-content[contenteditable]');
+      if (f) return f;
+      sib = sib.nextElementSibling;
+    }
+
+    // Method D: data-topic-index on ancestor
+    const topicWrap = toolbar.closest('[data-topic-index]');
+    if (topicWrap) {
+      const idx = topicWrap.dataset.topicIndex;
+      return document.getElementById('editor-' + idx)
+          || document.getElementById('editEditor_' + idx)
+          || topicWrap.querySelector('.editor-content[contenteditable]');
+    }
+
+    // Method E: card/topic-card ancestor
+    const card = toolbar.closest('.topic-card, .topic-editor, .card');
+    if (card) {
+      const e = card.querySelector('.editor-content[contenteditable]');
+      if (e) return e;
+    }
+
+    // Method F: form-group ancestor
+    const fg = toolbar.closest('.form-group');
+    if (fg) {
+      const e = fg.querySelector('.editor-content[contenteditable]');
+      if (e) return e;
+    }
+
+    // Method G: closest modal/form, pick nearest by Y distance
+    const modal = toolbar.closest('.modal-content, .modal, form, .dashboard-section');
+    if (modal) {
+      const all = Array.from(
+        modal.querySelectorAll('.editor-content[contenteditable="true"]')
+      );
+      if (all.length === 1) return all[0];
+      if (all.length > 1) {
+        const tRect = toolbar.getBoundingClientRect();
+        let best = Infinity, bestEl = null;
+        all.forEach(ed => {
+          const r = ed.getBoundingClientRect();
+          // prefer editor BELOW toolbar
+          const dist = r.top >= tRect.bottom
+            ? r.top - tRect.bottom
+            : Math.abs(r.top - tRect.bottom) + 9999;
+          if (dist < best) { best = dist; bestEl = ed; }
+        });
+        if (bestEl) return bestEl;
+      }
+    }
+
+    return null;
+  }
+
   function upgradeToolbar(toolbar) {
     if (toolbar.dataset.fontFixed) return;
-    // NOTE: do NOT set fontFixed=1 here — only set it after
-    // we successfully find the editor, so failed toolbars
-    // get retried on the next scan
 
-    let editorEl = null;
+    const editorEl = findEditorForToolbar(toolbar);
 
-    // Strategy 1: toolbar's direct next sibling IS the editor
-    const nextSib = toolbar.nextElementSibling;
-    if (nextSib?.classList?.contains('editor-content')) {
-      editorEl = nextSib;
-    }
-
-    // Strategy 2: editor is inside the next sibling
-    if (!editorEl && nextSib) {
-      editorEl = nextSib.querySelector?.('.editor-content[contenteditable]');
-    }
-
-    // Strategy 3: walk ALL siblings after toolbar
-    if (!editorEl) {
-      let node = toolbar.nextElementSibling;
-      while (node) {
-        if (node.classList?.contains('editor-content')) {
-          editorEl = node;
-          break;
-        }
-        const found = node.querySelector?.('.editor-content[contenteditable]');
-        if (found) { editorEl = found; break; }
-        node = node.nextElementSibling;
-      }
-    }
-
-    // Strategy 4: parent has data-topic-index → find editor by that index
-    if (!editorEl) {
-      const topicWrap = toolbar.closest('[data-topic-index]');
-      if (topicWrap) {
-        const idx = topicWrap.dataset.topicIndex;
-        editorEl = document.getElementById('editor-' + idx)
-                || document.getElementById('editEditor_' + idx)
-                || topicWrap.querySelector('.editor-content[contenteditable]');
-      }
-    }
-
-    // Strategy 5: walk up to topic/card wrapper
-    if (!editorEl) {
-      const card = toolbar.closest(
-        '.topic-card, .topic-editor, [data-topic-index], .card'
-      );
-      if (card) {
-        editorEl = card.querySelector('.editor-content[contenteditable]');
-      }
-    }
-
-    // Strategy 6: same .form-group
-    if (!editorEl) {
-      const fg = toolbar.closest('.form-group');
-      if (fg) {
-        editorEl = fg.querySelector('.editor-content[contenteditable]');
-      }
-    }
-
-    // Strategy 7: nearest editor in same modal by screen distance
-    if (!editorEl) {
-      const container = toolbar.closest(
-        '.modal-content, form, .dashboard-section, .card, .modal'
-      );
-      if (container) {
-        const all = Array.from(
-          container.querySelectorAll('.editor-content[contenteditable="true"]')
-        );
-        if (all.length === 1) {
-          editorEl = all[0];
-        } else if (all.length > 1) {
-          const tRect = toolbar.getBoundingClientRect();
-          let best = Infinity;
-          all.forEach(ed => {
-            const r    = ed.getBoundingClientRect();
-            const dist = Math.abs(r.top - tRect.bottom);
-            if (dist < best) { best = dist; editorEl = ed; }
-          });
-        }
-      }
-    }
-
-    // All strategies failed — do NOT mark as fixed so we retry
+    // Not found yet — don't mark, retry next scan
     if (!editorEl) return;
 
-    // Only mark done after confirmed success
+    // Mark AFTER confirmed success
     toolbar.dataset.fontFixed = '1';
 
     editorEl.addEventListener('keyup',   saveSelection);
     editorEl.addEventListener('mouseup', saveSelection);
+
+    // Remove any previously injected dropdowns to avoid duplicates
+    toolbar.querySelectorAll('.asai-dd-wrap').forEach(el => el.remove());
 
     const fontSelect = toolbar.querySelector('.editor-select-font');
     const sizeSelect = toolbar.querySelector('.editor-select-size');
@@ -807,29 +807,39 @@
 
  if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(upgradeAllToolbars, 400);
-      setTimeout(upgradeAllToolbars, 900);
-      setTimeout(upgradeAllToolbars, 2000);
+      setTimeout(upgradeAllToolbars, 300);
+      setTimeout(upgradeAllToolbars, 800);
+      setTimeout(upgradeAllToolbars, 1800);
     });
   } else {
-    setTimeout(upgradeAllToolbars, 400);
-    setTimeout(upgradeAllToolbars, 900);
-    setTimeout(upgradeAllToolbars, 2000);
+    setTimeout(upgradeAllToolbars, 300);
+    setTimeout(upgradeAllToolbars, 800);
+    setTimeout(upgradeAllToolbars, 1800);
   }
 
-  // Retry when any modal-opening function runs
-  ['openCreateChapterModal','openEditChapterModal',
-   'addNewTopic','addEditTopic'].forEach(name => {
+  // Hook modal openers — re-run upgrade after each opens
+  function hookFn(name) {
     const orig = window[name];
-    if (!orig) return;
+    if (!orig || orig.__fontHooked) return;
     window[name] = function(...args) {
       const r = orig.apply(this, args);
       setTimeout(upgradeAllToolbars, 200);
-      setTimeout(upgradeAllToolbars, 600);
+      setTimeout(upgradeAllToolbars, 500);
+      setTimeout(upgradeAllToolbars, 1000);
       return r;
     };
-  });
+    window[name].__fontHooked = true;
+  }
 
-  console.log('✅ ASAI Font Fix loaded — 7-strategy editor lookup active');
+  // Hook immediately + retry after page fully loads
+  ['openCreateChapterModal','openEditChapterModal',
+   'addNewTopic','addEditTopic'].forEach(hookFn);
+
+  setTimeout(() => {
+    ['openCreateChapterModal','openEditChapterModal',
+     'addNewTopic','addEditTopic'].forEach(hookFn);
+  }, 2000);
+
+  console.log('✅ ASAI Font Fix loaded — Method-A index extraction active');
 
 })();
