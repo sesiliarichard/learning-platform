@@ -26,8 +26,8 @@
 (function () {
   'use strict';
 
-  // Only run on admin page
-  if (!document.querySelector('.admin-badge') && !document.getElementById('usersSection')) return;
+ // Only run on admin page — check URL
+  if (!window.location.pathname.includes('admin') && !window.location.href.includes('admin')) return;
 
   /* ============================================================
    * 0.  PATCH MutationObserver
