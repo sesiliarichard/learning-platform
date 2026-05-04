@@ -7155,8 +7155,24 @@ body.dark-mode #discussionsSection .message-input-area {
 .wle-table-toolbar,
 .wle-img-toolbar,
 .wle-handle,
-.asai-dd-panel {
+.asai-dd-panel,
+.wle-img-wrap .wle-handle,
+.wle-col-dragger,
+.wle-row-dragger,
+.wle-table-wrap > .wle-table-toolbar,
+[id="wleTableModal"],
+.wle-drag-ghost {
     display: none !important;
     visibility: hidden !important;
     pointer-events: none !important;
+}
+
+/* Remove the purple + floating button */
+.wle-img-wrap {
+    cursor: default !important;
+}
+
+.wle-img-wrap::after,
+.wle-img-wrap::before {
+    display: none !important;
 }
