@@ -515,7 +515,7 @@
     wrap.appendChild(btn);
     wrap.appendChild(panel);
 
-    btn.addEventListener('mousedown', e => {
+       btn.addEventListener('mousedown', e => {
       e.preventDefault();
       saveSelection();
       const isOpen = panel.classList.contains('open');
@@ -523,7 +523,18 @@
       if (!isOpen) {
         panel.classList.add('open');
         positionPanel(btn, panel);
-        const curSize = getStyleAtCursor('fontSize') || '12px';
+        // Get current size from the editor directly
+        let curSize = '12px';
+        if (editorEl) {
+          curSize = window.getComputedStyle(editorEl).fontSize || '12px';
+          // Also check if there's a selection with different size
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+            let node = sel.getRangeAt(0).startContainer;
+            let el = node.nodeType === 3 ? node.parentElement : node;
+            if (el) curSize = window.getComputedStyle(el).fontSize || curSize;
+          }
+        }
         panel.querySelectorAll('.asai-size-item').forEach(i => {
           i.classList.toggle('active', i.dataset.px === curSize);
         });
@@ -709,39 +720,129 @@
    * OVERRIDE setEditorFontFamily / setEditorFontSize
    * ───────────────────────────────────────────────────────── */
   window.setEditorFontFamily = function(editorIndex, selectOrValue) {
-    const val = typeof selectOrValue === 'string'
-      ? selectOrValue
-      : selectOrValue?.value;
-    if (!val || val === 'inherit') return;
-    const font = FONTS.find(f => f.value === val || f.label === val);
-    if (font?.google) loadGoogleFont(font.google);
-    const editor = document.getElementById('editor-'     + editorIndex)
-                || document.getElementById('editEditor_' + editorIndex);
+  const val = typeof selectOrValue === 'string'
+    ? selectOrValue
+    : selectOrValue?.value;
+  if (!val || val === 'inherit') return;
+  
+  const font = FONTS.find(f => f.value === val || f.label === val);
+  if (font?.google) loadGoogleFont(font.google);
+  
+  let editor = document.getElementById('editor-' + editorIndex)
+            || document.getElementById('editEditor_' + editorIndex);
+  
+  // Fallback to active editor
+  if (!editor) {
+    const active = document.activeElement;
+    if (active && active.classList && active.classList.contains('editor-content')) {
+      editor = active;
+    } else {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        let node = sel.getRangeAt(0).commonAncestorContainer;
+        while (node && node !== document.body) {
+          if (node.classList && node.classList.contains('editor-content')) {
+            editor = node;
+            break;
+          }
+          node = node.parentNode;
+        }
+      }
+    }
+  }
+  
+  if (!editor) {
+    console.warn('Editor not found for font change');
+    return;
+  }
+  
+  if (typeof applyFontFamily === 'function') {
     applyFontFamily(val, editor);
-  };
-
+  } else if (window.getSelection && !window.getSelection().isCollapsed) {
+    document.execCommand('fontName', false, val);
+  } else {
+    editor.style.fontFamily = val;
+  }
+};
+  /* ─────────────────────────────────────────────────────────
+   * OVERRIDE setEditorFontSize (MISSING! This was the problem)
+   * ───────────────────────────────────────────────────────── */
   window.setEditorFontSize = function(editorIndex, selectOrValue) {
     const raw = typeof selectOrValue === 'string'
       ? selectOrValue
       : selectOrValue?.value;
     if (!raw) return;
+    
     let pxVal;
     if (String(raw).endsWith('px')) {
       pxVal = raw;
     } else if (String(raw).endsWith('pt')) {
-      // convert pt → px  (1pt = 1.333px)
       pxVal = Math.round(parseInt(raw) * 1.333) + 'px';
     } else {
-      // Old 1-7 scale or plain number
+      // Handle old 1-7 scale or plain numbers
       const n = parseInt(raw);
-      const oldMap = { 1:'8px', 2:'10px', 3:'12px', 4:'14px', 5:'18px', 6:'24px', 7:'36px' };
+      const oldMap = { 
+        1: '8px', 
+        2: '10px', 
+        3: '12px', 
+        4: '14px', 
+        5: '18px', 
+        6: '24px', 
+        7: '36px' 
+      };
       pxVal = oldMap[n] || (n + 'px');
     }
-    const editor = document.getElementById('editor-'     + editorIndex)
-                || document.getElementById('editEditor_' + editorIndex);
-    applyFontSize(pxVal, editor);
+    
+    // Find the editor (try multiple methods)
+    let editor = document.getElementById('editor-' + editorIndex)
+              || document.getElementById('editEditor_' + editorIndex);
+    
+    // If not found by index, try to find the currently focused/active editor
+    if (!editor) {
+      const active = document.activeElement;
+      if (active && active.classList && active.classList.contains('editor-content')) {
+        editor = active;
+      } else {
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          let node = sel.getRangeAt(0).commonAncestorContainer;
+          while (node && node !== document.body) {
+            if (node.classList && node.classList.contains('editor-content')) {
+              editor = node;
+              break;
+            }
+            node = node.parentNode;
+          }
+        }
+      }
+    }
+    
+    if (!editor) {
+      console.warn('Editor not found for fontSize change, index:', editorIndex);
+      return;
+    }
+    
+    // Apply the font size
+    if (typeof applyFontSize === 'function') {
+      applyFontSize(pxVal, editor);
+    } else {
+      // Fallback if applyFontSize doesn't exist
+      const sel = window.getSelection();
+      editor.focus();
+      if (sel && !sel.isCollapsed) {
+        try {
+          document.execCommand('fontSize', false, raw);
+        } catch(e) {
+          const range = sel.getRangeAt(0);
+          const span = document.createElement('span');
+          span.style.fontSize = pxVal;
+          range.surroundContents(span);
+        }
+      } else {
+        editor.style.fontSize = pxVal;
+      }
+    }
   };
-
   /* ─────────────────────────────────────────────────────────
    * SCAN & UPGRADE ALL TOOLBARS
    * ───────────────────────────────────────────────────────── */

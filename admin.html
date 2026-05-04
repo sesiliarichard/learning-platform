@@ -2847,19 +2847,67 @@ function initResizableImages(editor) {
 }
 
 function setEditorFontFamily(editorIndex, select) {
-    const editor = document.getElementById(`editor-${editorIndex}`);
+    const editor = document.getElementById(`editor-${editorIndex}`) 
+                || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
-        document.execCommand('fontName', false, select.value);
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) {
+            document.execCommand('fontName', false, select.value);
+        } else {
+            editor.style.fontFamily = select.value;
+        }
     }
 }
 
 function setEditorFontSize(editorIndex, select) {
-    const editor = document.getElementById(`editor-${editorIndex}`);
-    if (editor) {
-        editor.focus();
-        document.execCommand('fontSize', false, select.value);
+    const editor = document.getElementById(`editor-${editorIndex}`) 
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+    
+    editor.focus();
+    
+    const sizeMap = {
+        '1': '10px',
+        '2': '12px', 
+        '3': '14px',
+        '4': '16px',
+        '5': '20px',
+        '6': '24px',
+        '7': '32px'
+    };
+    
+    const pxSize = sizeMap[select.value] || '14px';
+    
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) {
+        try {
+            document.execCommand('fontSize', false, select.value);
+            // Clean up <font> tags
+            const fontTags = editor.querySelectorAll('font');
+            fontTags.forEach(font => {
+                const span = document.createElement('span');
+                const size = font.getAttribute('size');
+                if (size && sizeMap[size]) span.style.fontSize = sizeMap[size];
+                while (font.firstChild) span.appendChild(font.firstChild);
+                font.parentNode.replaceChild(span, font);
+            });
+        } catch(e) {
+            const range = selection.getRangeAt(0);
+            const span = document.createElement('span');
+            span.style.fontSize = pxSize;
+            range.surroundContents(span);
+        }
+    } else {
+        editor.style.fontSize = pxSize;
     }
+}
+
+function stripInlineFontStyles(html) {
+    if (!html) return '';
+    return html.replace(/font-size:\s*[^;]+;?/gi, '')
+               .replace(/<font[^>]*>/gi, '')
+               .replace(/<\/font>/gi, '');
 }
 
 function setEditorColor(editorIndex, input) {
@@ -2921,7 +2969,7 @@ async function handleCreateChapter(event) {
         if (titleInput && contentEditor && titleInput.value.trim()) {
             topics.push({
                 title: titleInput.value.trim(),
-                content: contentEditor.innerHTML,
+                content: stripInlineFontStyles(contentEditor.innerHTML),
                 duration: durationInput?.value || '15',
                 category: categorySelect?.value || 'basics',
             });
