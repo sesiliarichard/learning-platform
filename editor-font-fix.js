@@ -139,13 +139,18 @@
   /* ─────────────────────────────────────────────────────────
    * APPLY FONT FAMILY
    * ───────────────────────────────────────────────────────── */
-  function applyFontFamily(cssValue, editorEl) {
+ function applyFontFamily(cssValue, editorEl) {
     withRestoredSelection(editorEl, () => {
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
         if (editorEl) {
+          // Apply to editor container AND wrap all existing
+          // text nodes so the style is saved in the HTML
           editorEl.style.fontFamily    = cssValue;
           editorEl.dataset.pendingFont = cssValue;
+
+          // Also wrap any bare text nodes so style persists on save
+          applyStyleToAllContent(editorEl, 'fontFamily', cssValue);
         }
         return;
       }
@@ -156,13 +161,16 @@
   /* ─────────────────────────────────────────────────────────
    * APPLY FONT SIZE
    * ───────────────────────────────────────────────────────── */
-  function applyFontSize(pxValue, editorEl) {
+ function applyFontSize(pxValue, editorEl) {
     withRestoredSelection(editorEl, () => {
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
         if (editorEl) {
           editorEl.style.fontSize      = pxValue;
           editorEl.dataset.pendingSize = pxValue;
+
+          // Wrap all content so size persists on save
+          applyStyleToAllContent(editorEl, 'fontSize', pxValue);
         }
         return;
       }
@@ -206,6 +214,68 @@
     newRange.selectNodeContents(span);
     sel.addRange(newRange);
     _savedRange = newRange.cloneRange();
+  }
+
+ /* ─────────────────────────────────────────────────────────
+   * APPLY STYLE TO ALL CONTENT IN EDITOR
+   * Used when no text is selected — wraps everything so
+   * the style is saved in the HTML, not just on the container
+   * ───────────────────────────────────────────────────────── */
+  function applyStyleToAllContent(editorEl, styleProp, styleVal) {
+    if (!editorEl) return;
+
+    // Walk all child nodes and apply style
+    // to block-level elements and text nodes
+    const children = Array.from(editorEl.childNodes);
+
+    children.forEach(node => {
+      // Skip non-content elements
+      if (node.nodeType === 1) {
+        const tag = node.tagName?.toLowerCase();
+        // Skip editor UI elements
+        if (node.classList?.contains('wle-table-toolbar') ||
+            node.classList?.contains('tbl-ui-overlay') ||
+            node.dataset?.nonContent) return;
+
+        // Apply to block elements directly
+        if (['p','div','h1','h2','h3','h4','h5','li','td','th','span'].includes(tag)) {
+          node.style[styleProp] = styleVal;
+        }
+
+        // Recurse into children
+        if (node.childNodes.length > 0) {
+          applyStyleToChildren(node, styleProp, styleVal);
+        }
+      } else if (node.nodeType === 3 && node.textContent.trim()) {
+        // Bare text node — wrap it in a span
+        const span = document.createElement('span');
+        span.style[styleProp] = styleVal;
+        node.parentNode.insertBefore(span, node);
+        span.appendChild(node);
+      }
+    });
+  }
+
+  function applyStyleToChildren(parent, styleProp, styleVal) {
+    Array.from(parent.childNodes).forEach(node => {
+      if (node.nodeType === 1) {
+        const tag = node.tagName?.toLowerCase();
+        if (node.classList?.contains('wle-table-toolbar') ||
+            node.classList?.contains('tbl-ui-overlay') ||
+            node.dataset?.nonContent) return;
+        if (['p','div','h1','h2','h3','h4','h5','li','span'].includes(tag)) {
+          node.style[styleProp] = styleVal;
+        }
+        if (node.childNodes.length > 0) {
+          applyStyleToChildren(node, styleProp, styleVal);
+        }
+      } else if (node.nodeType === 3 && node.textContent.trim()) {
+        const span = document.createElement('span');
+        span.style[styleProp] = styleVal;
+        node.parentNode.insertBefore(span, node);
+        span.appendChild(node);
+      }
+    });
   }
 
   /* ─────────────────────────────────────────────────────────
