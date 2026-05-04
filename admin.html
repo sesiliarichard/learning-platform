@@ -10798,6 +10798,232 @@ confirmInsertTable = function(editorIndex) {
         if (editor) initTableDragReorder(editor);
     }, 200);
 };
+// ============================================
+// WHOLE TABLE DRAG-TO-REPOSITION
+// ============================================
+
+function makeTableDraggable(table) {
+    if (table.dataset.tableDragInit) return;
+    table.dataset.tableDragInit = '1';
+
+    const wrap = table.closest('.resizable-table-wrap') || table.parentNode;
+
+    // Create drag handle bar above the table
+    const bar = document.createElement('div');
+    bar.className = 'table-drag-bar';
+    bar.innerHTML = `
+        <span style="display:flex;align-items:center;gap:6px;">
+            <span style="font-size:15px;letter-spacing:2px;">⠿⠿⠿</span>
+            <span style="font-size:11px;font-weight:700;opacity:0.7;">Drag table</span>
+        </span>
+        <span style="font-size:11px;opacity:0.6;">click outside to deselect</span>
+    `;
+    bar.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        color: white;
+        padding: 5px 12px;
+        border-radius: 8px 8px 0 0;
+        cursor: grab;
+        user-select: none;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 12px;
+        opacity: 0;
+        transition: opacity 0.2s;
+    `;
+
+    // Wrapper to hold bar + table together
+    const container = document.createElement('div');
+    container.className = 'table-float-container';
+    container.style.cssText = `
+        display: inline-block;
+        position: relative;
+        vertical-align: top;
+        margin: 8px 0;
+        cursor: default;
+    `;
+
+    // Inject into DOM — replace wrap/table with container
+    wrap.parentNode.insertBefore(container, wrap);
+    container.appendChild(bar);
+    container.appendChild(wrap);
+
+    // Show bar on hover
+    container.addEventListener('mouseenter', () => bar.style.opacity = '1');
+    container.addEventListener('mouseleave', () => {
+        if (!_tableDrag) bar.style.opacity = '0';
+    });
+
+    // ── DRAG LOGIC ──
+    bar.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        startTableDrag(e, container, bar);
+    });
+}
+
+let _tableDrag = null;
+
+function startTableDrag(e, container, bar) {
+    const editor = container.closest('.editor-content');
+    if (!editor) return;
+
+    bar.style.cursor = 'grabbing';
+
+    // Ghost clone
+    const ghost = container.cloneNode(true);
+    ghost.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        z-index: 99999;
+        opacity: 0.65;
+        transform: rotate(1.5deg) scale(0.97);
+        box-shadow: 0 16px 48px rgba(124,58,237,0.3);
+        border-radius: 8px;
+        width: ${container.offsetWidth}px;
+        transition: transform 0.1s;
+    `;
+    ghost.style.left = e.clientX - container.offsetWidth / 2 + 'px';
+    ghost.style.top  = (e.clientY - 20) + 'px';
+    document.body.appendChild(ghost);
+
+    // Placeholder — keeps layout space
+    const placeholder = document.createElement('div');
+    placeholder.style.cssText = `
+        display: inline-block;
+        width: ${container.offsetWidth}px;
+        height: ${container.offsetHeight}px;
+        border: 2px dashed #c4b5fd;
+        border-radius: 8px;
+        background: #f5f3ff;
+        vertical-align: top;
+        margin: 8px 0;
+    `;
+    container.parentNode.insertBefore(placeholder, container);
+    container.style.display = 'none';
+
+    // Drop indicator line
+    const dropLine = document.createElement('div');
+    dropLine.style.cssText = `
+        position: absolute;
+        height: 3px;
+        background: #7c3aed;
+        border-radius: 3px;
+        pointer-events: none;
+        z-index: 99998;
+        display: none;
+        box-shadow: 0 0 8px rgba(124,58,237,0.6);
+    `;
+    editor.style.position = 'relative';
+    editor.appendChild(dropLine);
+
+    _tableDrag = { container, placeholder, ghost, dropLine, editor, bar };
+
+    const onMove = (ev) => {
+        ghost.style.left = ev.clientX - container.offsetWidth / 2 + 'px';
+        ghost.style.top  = (ev.clientY - 20) + 'px';
+        findDropTarget(ev, editor, dropLine);
+    };
+
+    const onUp = (ev) => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+
+        ghost.remove();
+        dropLine.remove();
+        bar.style.cursor = 'grab';
+
+        // Show container again
+        container.style.display = '';
+
+        // Move to drop target position
+        const target = findDropTarget(ev, editor, null);
+        if (target) {
+            editor.insertBefore(container, target);
+        } else {
+            // Drop at end of editor
+            editor.appendChild(container);
+        }
+
+        // Remove placeholder
+        placeholder.remove();
+        bar.style.opacity = '0';
+        _tableDrag = null;
+
+        showToast('Table repositioned ✓', 'success');
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+}
+
+function findDropTarget(ev, editor, dropLine) {
+    const children  = Array.from(editor.childNodes).filter(
+        n => n !== _tableDrag?.placeholder &&
+             n !== _tableDrag?.container &&
+             n !== _tableDrag?.dropLine
+    );
+
+    let bestNode = null;
+    let bestDist = Infinity;
+
+    for (const child of children) {
+        if (!child.getBoundingClientRect) continue;
+        const rect = child.getBoundingClientRect();
+        const midY = rect.top + rect.height / 2;
+        const dist = Math.abs(ev.clientY - midY);
+
+        if (dist < bestDist) {
+            bestDist = dist;
+            bestNode = ev.clientY < midY ? child : child.nextSibling;
+        }
+    }
+
+    // Draw drop indicator
+    if (dropLine) {
+        if (bestNode) {
+            const refRect = bestNode.getBoundingClientRect
+                ? bestNode.getBoundingClientRect()
+                : null;
+            const editorRect = editor.getBoundingClientRect();
+            if (refRect) {
+                dropLine.style.display = 'block';
+                dropLine.style.top     = (refRect.top - editorRect.top - 2) + 'px';
+                dropLine.style.left    = '0px';
+                dropLine.style.width   = editor.offsetWidth + 'px';
+            }
+        } else {
+            dropLine.style.display = 'none';
+        }
+    }
+
+    return bestNode;
+}
+
+// ── Patch confirmInsertTable to make new tables draggable ──
+const _origConfirmTable2 = confirmInsertTable;
+confirmInsertTable = function(editorIndex) {
+    _origConfirmTable2(editorIndex);
+    setTimeout(() => {
+        const editor = document.getElementById(`editor-${editorIndex}`)
+                    || document.getElementById(`editEditor_${editorIndex}`);
+        if (!editor) return;
+        editor.querySelectorAll('.editor-table').forEach(t => makeTableDraggable(t));
+    }, 250);
+};
+
+// ── Also wrap tables that already exist when editing ──
+const _origOpenEdit = openEditChapterModal;
+openEditChapterModal = async function(chapterId) {
+    await _origOpenEdit(chapterId);
+    setTimeout(() => {
+        document.querySelectorAll('#editTopicsContainer .editor-content')
+            .forEach(ed => ed.querySelectorAll('.editor-table')
+            .forEach(t => makeTableDraggable(t)));
+    }, 400);
+};
 </script>
 
 </body>
