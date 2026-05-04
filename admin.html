@@ -10517,15 +10517,8 @@ async function deleteVideo(id) {
     loadVideosSection();
 }
 // ═══════════════════════════════════════════════
-// CLEAN TABLE UI — single shared overlay system
+// ADMIN-ONLY TABLE UI — scoped to .editor-content
 // ═══════════════════════════════════════════════
-
-// Remove any old overlays
-document.querySelectorAll('.tbl-ui-overlay, #sharedTableOverlay').forEach(o => o.remove());
-document.querySelectorAll('table').forEach(t => {
-    delete t.dataset.tableUiInit;
-    delete t.dataset.wired;
-});
 
 // Disable old conflicting functions
 window.makeTableDraggable    = () => {};
@@ -10533,6 +10526,9 @@ window.initTableDragReorder  = () => {};
 window.addDragHandlesToTable = () => {};
 window.attachTableUI         = () => {};
 window.initAllEditorTables   = () => {};
+
+// Remove any stale overlays from previous loads
+document.querySelectorAll('#sharedTableOverlay').forEach(o => o.remove());
 
 // ── Build the ONE shared overlay ──
 const _sharedOverlay = document.createElement('div');
@@ -10581,10 +10577,19 @@ const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove row',      'bottom:-28px
 
 [_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
     .forEach(b => _sharedOverlay.appendChild(b));
-document.body.appendChild(_sharedOverlay);
 
-let _activeTable  = null;
-let _hideTimer    = null;
+// ── CRITICAL: append to .main-content, NOT document.body ──
+// This means it only exists inside the admin layout
+const _adminContainer = document.querySelector('.main-content') || document.body;
+_adminContainer.appendChild(_sharedOverlay);
+
+let _activeTable = null;
+let _hideTimer   = null;
+
+function _isInAdminEditor(tbl) {
+    // Only show toolbar for tables inside .editor-content divs in admin modals/sections
+    return !!tbl.closest('.editor-content');
+}
 
 function _positionOverlay(tbl) {
     const r = tbl.getBoundingClientRect();
@@ -10598,6 +10603,8 @@ function _positionOverlay(tbl) {
 }
 
 function _showOverlay(tbl) {
+    // GUARD: only show for tables inside admin editor areas
+    if (!_isInAdminEditor(tbl)) return;
     clearTimeout(_hideTimer);
     _activeTable = tbl;
     _positionOverlay(tbl);
@@ -10635,6 +10642,8 @@ document.querySelectorAll('.main-content').forEach(el =>
 
 function _wireTable(tbl) {
     if (tbl.dataset.wired) return;
+    // Only wire tables that are inside .editor-content (admin editors only)
+    if (!tbl.closest('.editor-content')) return;
     tbl.dataset.wired = '1';
     tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
     tbl.addEventListener('mouseleave', _hideOverlay);
@@ -10642,10 +10651,11 @@ function _wireTable(tbl) {
 }
 
 function _wireAll() {
+    // SCOPED: only wire tables inside .editor-content, never bare tables in sections
     document.querySelectorAll('.editor-content table').forEach(_wireTable);
 }
 
-// Tab key — no phantom rows
+// ── Tab key navigation — no phantom rows ──
 makeTableNavigable = function(editor) {
     editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
         cell.addEventListener('keydown', e => {
@@ -10732,77 +10742,95 @@ _btnDelCol.addEventListener('click', () => {
     showToast('Column deleted ✓');
 });
 
-// ── DRAG TO MOVE ──
-
+// ── DRAG TO MOVE (fixed) ──
 _btnMove.addEventListener('mousedown', (e) => {
     if (!_activeTable) return;
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
 
     const tbl        = _activeTable;
     const nodeToMove = tbl.closest('.resizable-table-wrap')
                     || tbl.closest('.wle-table-wrap')
                     || tbl.closest('.word-table-container')
                     || tbl;
-    const editor     = nodeToMove.closest('.editor-content');
+    const editor = nodeToMove.closest('.editor-content');
     if (!editor) return;
 
     const R = tbl.getBoundingClientRect();
 
+    // Ghost preview element
     const ghost = document.createElement('div');
     ghost.style.cssText = `
         position:fixed;
-        width:${R.width}px;height:${Math.min(R.height,180)}px;
+        width:${R.width}px;height:${Math.min(R.height, 120)}px;
         border:3px dashed #7c3aed;border-radius:8px;
-        background:rgba(124,58,237,0.07);pointer-events:none;
+        background:rgba(124,58,237,0.08);pointer-events:none;
         z-index:999999;left:${R.left}px;top:${R.top}px;
+        transition: none;
     `;
     document.body.appendChild(ghost);
 
+    // Drop indicator line
     const dropLine = document.createElement('div');
     dropLine.style.cssText = `
         position:fixed;height:3px;background:#7c3aed;border-radius:3px;
         pointer-events:none;z-index:999998;display:none;
-        box-shadow:0 0 8px rgba(124,58,237,0.6);
+        box-shadow:0 0 8px rgba(124,58,237,0.5);
     `;
     document.body.appendChild(dropLine);
 
+    // Placeholder to hold the space
     const ph = document.createElement('div');
     ph.style.cssText = `
         height:${nodeToMove.offsetHeight}px;
         border:2px dashed #c4b5fd;border-radius:8px;
         background:#f5f3ff;margin:4px 0;box-sizing:border-box;
     `;
-    editor.insertBefore(ph, nodeToMove);
+    nodeToMove.parentNode.insertBefore(ph, nodeToMove);
     nodeToMove.style.opacity = '0.15';
     _sharedOverlay.style.display = 'none';
 
-    let dropTarget = null;
+    let dropRef = null; // the node BEFORE which we'll insert
 
     const onMove = (ev) => {
+        // Move ghost
         ghost.style.left = (ev.clientX - R.width / 2) + 'px';
-        ghost.style.top  = (ev.clientY - 30) + 'px';
+        ghost.style.top  = (ev.clientY - 20) + 'px';
 
+        // Find closest drop position among editor's direct children
         const siblings = [...editor.children].filter(el => el !== nodeToMove && el !== ph);
-        dropTarget = null;
-        let best = Infinity;
+        dropRef = null;
+        let closestDist = Infinity;
 
         for (const sib of siblings) {
             const sr   = sib.getBoundingClientRect();
             const midY = sr.top + sr.height / 2;
-            const d    = Math.abs(ev.clientY - midY);
-            if (d < best) {
-                best = d;
-                const cand = ev.clientY < midY ? sib : sib.nextSibling;
-                dropTarget = (cand && cand.parentNode === editor) ? cand : null;
+            const dist = Math.abs(ev.clientY - midY);
+
+            if (dist < closestDist) {
+                closestDist = dist;
+                dropRef = ev.clientY < midY ? sib : (sib.nextSibling || null);
             }
         }
 
-        if (dropTarget?.getBoundingClientRect) {
-            const dr = dropTarget.getBoundingClientRect();
+        // Show drop indicator
+        const refEl = dropRef;
+        if (refEl && refEl.getBoundingClientRect) {
+            const dr = refEl.getBoundingClientRect();
             dropLine.style.display = 'block';
             dropLine.style.top   = (dr.top - 2) + 'px';
             dropLine.style.left  = dr.left + 'px';
             dropLine.style.width = dr.width + 'px';
+        } else if (!refEl) {
+            // Drop at end — show line after last child
+            const last = editor.lastElementChild;
+            if (last && last !== nodeToMove) {
+                const lr = last.getBoundingClientRect();
+                dropLine.style.display = 'block';
+                dropLine.style.top   = (lr.bottom + 2) + 'px';
+                dropLine.style.left  = lr.left + 'px';
+                dropLine.style.width = lr.width + 'px';
+            }
         } else {
             dropLine.style.display = 'none';
         }
@@ -10811,22 +10839,20 @@ _btnMove.addEventListener('mousedown', (e) => {
     const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup',   onUp);
+
         ghost.remove();
         dropLine.remove();
         nodeToMove.style.opacity = '';
 
-        try {
-            if (dropTarget && dropTarget.parentNode === editor) {
-                editor.insertBefore(nodeToMove, dropTarget);
-            } else {
-                editor.appendChild(nodeToMove);
-            }
-        } catch(err) {
-            try { editor.appendChild(nodeToMove); } catch(e2) {}
+        // Insert at determined position
+        if (dropRef && dropRef.parentNode === editor) {
+            editor.insertBefore(nodeToMove, dropRef);
+        } else {
+            editor.appendChild(nodeToMove);
         }
 
-        try { ph.remove(); } catch(err) {}
-        setTimeout(() => _showOverlay(tbl), 80);
+        try { ph.remove(); } catch (_) {}
+        setTimeout(() => _showOverlay(tbl), 100);
         showToast('Table moved ✓');
     };
 
@@ -10834,7 +10860,7 @@ _btnMove.addEventListener('mousedown', (e) => {
     document.addEventListener('mouseup',   onUp);
 });
 
-// ── INSERT TABLE (clean version) ──
+// ── INSERT TABLE (override to also wire new tables) ──
 window.confirmInsertTable = function(editorIndex) {
     const rows = parseInt(document.getElementById('tblRows')?.value) || 3;
     const cols = parseInt(document.getElementById('tblCols')?.value) || 3;
@@ -10863,12 +10889,14 @@ window.confirmInsertTable = function(editorIndex) {
 
     editor.focus();
     document.execCommand('insertHTML', false, html);
-    setTimeout(() => editor.querySelectorAll('table').forEach(_wireTable), 150);
+    setTimeout(() => {
+        // Wire all new tables in this editor only
+        editor.querySelectorAll('table').forEach(_wireTable);
+        makeTableNavigable(editor);
+    }, 150);
 };
 
-// ── Auto-wire on load + DOM changes ──
-_wireAll();
-
+// ── Auto-wire new tables when modals open ──
 ['openCreateChapterModal','openEditChapterModal','addNewTopic','addEditTopic'].forEach(name => {
     const orig = window[name];
     if (!orig) return;
@@ -10879,11 +10907,19 @@ _wireAll();
     };
 });
 
+// ── MutationObserver: only watch .editor-content areas ──
 if (window._tblObserver) window._tblObserver.disconnect();
-window._tblObserver = new MutationObserver(_wireAll);
+window._tblObserver = new MutationObserver((mutations) => {
+    // Only react to changes inside editor-content divs
+    const affectsEditor = mutations.some(m =>
+        m.target.closest?.('.editor-content') ||
+        [...m.addedNodes].some(n => n.querySelector?.('.editor-content'))
+    );
+    if (affectsEditor) _wireAll();
+});
 window._tblObserver.observe(document.body, { childList: true, subtree: true });
 
-console.log('✅ Table UI ready');
+console.log('✅ Admin-only Table UI ready (scoped to .editor-content)');
 </script>
 
 </body>
