@@ -11662,6 +11662,327 @@ const _tblObserver = new MutationObserver(() => {
 _tblObserver.observe(document.body, { childList: true, subtree: true });
 
 console.log('✅ Table UI (hover overlay) initialized');
+// ── FIX: Overlay hide on outside click + drag fix ──
+
+// Re-run attachTableUI with both fixes baked in
+attachTableUI = function(table, editor) {
+    if (table.dataset.tableUiInit) return;
+    table.dataset.tableUiInit = '1';
+
+    const overlay = document.createElement('div');
+    overlay.className = 'tbl-ui-overlay';
+    overlay.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+    `;
+
+    const btnBase = `
+        position: absolute;
+        pointer-events: all;
+        cursor: pointer;
+        border-radius: 5px;
+        font-size: 12px;
+        font-weight: 700;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        user-select: none;
+        border: 2px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        padding: 0 6px;
+        height: 22px;
+        min-width: 22px;
+        white-space: nowrap;
+    `;
+
+    const makeBtn = (html, extra, title) => {
+        const b = document.createElement('div');
+        b.innerHTML = html;
+        b.title = title || '';
+        b.style.cssText = btnBase + extra;
+        return b;
+    };
+
+    const moveBtn   = makeBtn('✛', 'background:#7c3aed;color:white;cursor:move;top:-26px;left:-2px;width:22px;padding:0;', 'Drag to move');
+    const deleteBtn = makeBtn('✕', 'background:#dc2626;color:white;top:-26px;right:-2px;width:22px;padding:0;', 'Delete table');
+    const addColBtn = makeBtn('+ Col', 'background:#2563eb;color:white;top:-26px;left:50%;transform:translateX(-50%);', 'Add column');
+    const delColBtn = makeBtn('− Col', 'background:#ef4444;color:white;top:-26px;left:calc(50% + 55px);transform:translateX(-50%);', 'Delete last column');
+    const addRowBtn = makeBtn('+ Row', 'background:#059669;color:white;bottom:-26px;left:-2px;', 'Add row');
+    const delRowBtn = makeBtn('− Row', 'background:#ef4444;color:white;bottom:-26px;left:58px;', 'Delete row');
+
+    [moveBtn, deleteBtn, addColBtn, delColBtn, addRowBtn, delRowBtn].forEach(b => overlay.appendChild(b));
+    document.body.appendChild(overlay);
+
+    // ── Position overlay over table ──
+    function positionOverlay() {
+        const rect = table.getBoundingClientRect();
+        if (rect.width === 0) return;
+        overlay.style.top    = rect.top    + 'px';
+        overlay.style.left   = rect.left   + 'px';
+        overlay.style.width  = rect.width  + 'px';
+        overlay.style.height = rect.height + 'px';
+        overlay.style.display = 'block';
+        overlay.style.pointerEvents = 'none';
+        [moveBtn, deleteBtn, addColBtn, delColBtn, addRowBtn, delRowBtn].forEach(b => {
+            b.style.pointerEvents = 'all';
+        });
+    }
+
+    let _pinned = false; // true while a button is being used
+
+    function showOverlay() {
+        positionOverlay();
+    }
+
+    function tryHide() {
+        if (!_pinned) overlay.style.display = 'none';
+    }
+
+    // Show on table hover/click
+    table.addEventListener('mouseenter', showOverlay);
+    table.addEventListener('click', showOverlay);
+
+    // ── HIDE when clicking OUTSIDE both table and overlay ──
+    document.addEventListener('mousedown', function hideOnOutside(e) {
+        if (!table.contains(e.target) && !overlay.contains(e.target)) {
+            overlay.style.display = 'none';
+            _pinned = false;
+        }
+    });
+
+    // Keep visible while hovering overlay buttons
+    overlay.addEventListener('mouseenter', () => { _pinned = true; });
+    overlay.addEventListener('mouseleave', () => {
+        _pinned = false;
+        // Small delay so clicking a button doesn't cause flicker
+        setTimeout(() => {
+            if (!_pinned && !table.matches(':hover')) {
+                overlay.style.display = 'none';
+            }
+        }, 150);
+    });
+    table.addEventListener('mouseleave', (e) => {
+        if (!overlay.contains(e.relatedTarget)) {
+            setTimeout(() => {
+                if (!_pinned) overlay.style.display = 'none';
+            }, 150);
+        }
+    });
+
+    // Reposition on scroll/resize
+    window.addEventListener('scroll',  positionOverlay, { passive: true });
+    window.addEventListener('resize',  positionOverlay, { passive: true });
+    const scrollParent = editor.closest('.main-content');
+    if (scrollParent) scrollParent.addEventListener('scroll', positionOverlay, { passive: true });
+
+    // ── BUTTON ACTIONS ──
+
+    deleteBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (!confirm('Delete this table?')) return;
+        overlay.remove();
+        const wrapper = table.closest('.resizable-table-wrap')
+                     || table.closest('.wle-table-wrap')
+                     || table.closest('.word-table-container');
+        (wrapper || table).remove();
+        showToast('Table deleted ✓');
+    });
+
+    addRowBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        _pinned = true;
+        const lastRow  = [...table.querySelectorAll('tr')].pop();
+        const colCount = lastRow ? lastRow.cells.length : 1;
+        const tbody    = table.querySelector('tbody') || table;
+        const newRow   = tbody.insertRow();
+        for (let i = 0; i < colCount; i++) {
+            const td = newRow.insertCell();
+            td.contentEditable = 'true';
+            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
+        }
+        positionOverlay();
+        showToast('Row added ✓');
+        setTimeout(() => _pinned = false, 200);
+    });
+
+    delRowBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        _pinned = true;
+        const active = document.activeElement?.closest('tr');
+        const target = (active && table.contains(active)) ? active : [...table.querySelectorAll('tr')].pop();
+        const allRows = [...table.querySelectorAll('tr')];
+        if (allRows.length <= 1) { showToast('Cannot delete last row', 'error'); return; }
+        if (target) target.remove();
+        positionOverlay();
+        showToast('Row deleted ✓');
+        setTimeout(() => _pinned = false, 200);
+    });
+
+    addColBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        _pinned = true;
+        [...table.querySelectorAll('tr')].forEach((row, i) => {
+            const isH = i === 0 && !!row.closest('thead');
+            const cell = document.createElement(isH ? 'th' : 'td');
+            cell.contentEditable = 'true';
+            cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
+            row.appendChild(cell);
+        });
+        positionOverlay();
+        showToast('Column added ✓');
+        setTimeout(() => _pinned = false, 200);
+    });
+
+    delColBtn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        _pinned = true;
+        const rows = [...table.querySelectorAll('tr')];
+        if (!rows.length || rows[0].cells.length <= 1) {
+            showToast('Cannot delete last column', 'error'); return;
+        }
+        rows.forEach(row => { if (row.cells.length > 0) row.deleteCell(row.cells.length - 1); });
+        positionOverlay();
+        showToast('Column deleted ✓');
+        setTimeout(() => _pinned = false, 200);
+    });
+
+    // ── DRAG TO MOVE TABLE ──
+    moveBtn.addEventListener('mousedown', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        _pinned = true;
+
+        const nodeToMove = table.closest('.resizable-table-wrap')
+                        || table.closest('.wle-table-wrap')
+                        || table.closest('.word-table-container')
+                        || table;
+
+        const editorNode = nodeToMove.closest('.editor-content');
+        if (!editorNode) return;
+
+        const tableRect = table.getBoundingClientRect();
+
+        // Ghost box following cursor
+        const ghost = document.createElement('div');
+        ghost.style.cssText = `
+            position: fixed;
+            width: ${tableRect.width}px;
+            height: ${tableRect.height}px;
+            left: ${tableRect.left}px;
+            top: ${tableRect.top}px;
+            pointer-events: none;
+            z-index: 99999;
+            border: 3px dashed #7c3aed;
+            border-radius: 6px;
+            background: rgba(124,58,237,0.08);
+            box-shadow: 0 8px 32px rgba(124,58,237,0.2);
+        `;
+        document.body.appendChild(ghost);
+
+        // Blue drop line
+        const dropLine = document.createElement('div');
+        dropLine.style.cssText = `
+            position: fixed;
+            height: 3px;
+            background: #7c3aed;
+            border-radius: 3px;
+            pointer-events: none;
+            z-index: 99998;
+            display: none;
+            box-shadow: 0 0 8px rgba(124,58,237,0.6);
+        `;
+        document.body.appendChild(dropLine);
+
+        // Placeholder to hold space
+        const placeholder = document.createElement('div');
+        placeholder.style.cssText = `
+            width: 100%;
+            height: ${nodeToMove.offsetHeight}px;
+            border: 2px dashed #c4b5fd;
+            border-radius: 6px;
+            background: #f5f3ff;
+            margin: 4px 0;
+            box-sizing: border-box;
+        `;
+        editorNode.insertBefore(placeholder, nodeToMove);
+        nodeToMove.style.opacity = '0.15';
+        overlay.style.display = 'none';
+
+        let dropTarget = null;
+
+        const onMove = (ev) => {
+            ghost.style.left = (ev.clientX - tableRect.width / 2) + 'px';
+            ghost.style.top  = (ev.clientY - 30) + 'px';
+
+            const siblings = [...editorNode.children].filter(el =>
+                el !== nodeToMove && el !== placeholder
+            );
+
+            dropTarget = null;
+            let bestD  = Infinity;
+
+            for (const sib of siblings) {
+                const r    = sib.getBoundingClientRect();
+                const midY = r.top + r.height / 2;
+                const d    = Math.abs(ev.clientY - midY);
+                if (d < bestD) {
+                    bestD = d;
+                    const candidate = ev.clientY < midY ? sib : sib.nextSibling;
+                    dropTarget = (candidate && candidate.parentNode === editorNode)
+                        ? candidate : null;
+                }
+            }
+
+            if (dropTarget?.getBoundingClientRect) {
+                const r = dropTarget.getBoundingClientRect();
+                dropLine.style.display = 'block';
+                dropLine.style.top   = (r.top - 2) + 'px';
+                dropLine.style.left  = r.left + 'px';
+                dropLine.style.width = r.width + 'px';
+            } else {
+                dropLine.style.display = 'none';
+            }
+        };
+
+        const onUp = () => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onUp);
+
+            ghost.remove();
+            dropLine.remove();
+            nodeToMove.style.opacity = '';
+
+            try {
+                if (dropTarget && dropTarget.parentNode === editorNode) {
+                    editorNode.insertBefore(nodeToMove, dropTarget);
+                } else {
+                    editorNode.appendChild(nodeToMove);
+                }
+            } catch(err) {
+                try { editorNode.appendChild(nodeToMove); } catch(e2) {}
+            }
+
+            try { placeholder.remove(); } catch(e) {}
+
+            _pinned = false;
+            setTimeout(() => { positionOverlay(); overlay.style.display = 'block'; }, 80);
+            showToast('Table moved ✓');
+        };
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onUp);
+    });
+};
+
+// Re-initialize all existing tables with the fixed version
+document.querySelectorAll('.tbl-ui-overlay').forEach(o => o.remove());
+document.querySelectorAll('.editor-content table').forEach(t => {
+    delete t.dataset.tableUiInit;
+});
+initAllEditorTables();
+
 </script>
 
 </body>
