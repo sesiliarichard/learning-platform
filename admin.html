@@ -10516,621 +10516,293 @@ async function deleteVideo(id) {
     showToast('Video deleted.');
     loadVideosSection();
 }
-// ============================================
-// TABLE DRAG-TO-REORDER — rows & columns
-// ============================================
+// ═══════════════════════════════════════════════
+// CLEAN TABLE UI — single shared overlay system
+// ═══════════════════════════════════════════════
 
-// Override makeTableNavigable to also wire up drag handles
-const _origMakeTableNavigable = makeTableNavigable;
+// Remove any old overlays
+document.querySelectorAll('.tbl-ui-overlay, #sharedTableOverlay').forEach(o => o.remove());
+document.querySelectorAll('table').forEach(t => {
+    delete t.dataset.tableUiInit;
+    delete t.dataset.wired;
+});
+
+// Disable old conflicting functions
+window.makeTableDraggable    = () => {};
+window.initTableDragReorder  = () => {};
+window.addDragHandlesToTable = () => {};
+window.attachTableUI         = () => {};
+window.initAllEditorTables   = () => {};
+
+// ── Build the ONE shared overlay ──
+const _sharedOverlay = document.createElement('div');
+_sharedOverlay.id = 'sharedTableOverlay';
+_sharedOverlay.style.cssText = `
+    position: fixed;
+    pointer-events: none;
+    z-index: 99999;
+    display: none;
+`;
+
+const _btnBase = `
+    position: absolute;
+    pointer-events: all;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    padding: 0 7px;
+    height: 24px;
+    min-width: 24px;
+    white-space: nowrap;
+`;
+
+function _mkBtn(html, bg, title, extraCss) {
+    const b = document.createElement('div');
+    b.innerHTML = html;
+    b.title = title;
+    b.style.cssText = _btnBase + `background:${bg};color:white;` + (extraCss || '');
+    return b;
+}
+
+const _btnMove   = _mkBtn('✛', '#7c3aed', 'Drag to move',       'cursor:move;width:24px;padding:0;top:-28px;left:0;');
+const _btnDel    = _mkBtn('✕', '#dc2626', 'Delete table',        'width:24px;padding:0;top:-28px;right:0;');
+const _btnAddCol = _mkBtn('+ Col', '#2563eb', 'Add column',      'top:-28px;left:50%;transform:translateX(-50%);');
+const _btnDelCol = _mkBtn('− Col', '#ef4444', 'Remove last col', 'top:-28px;right:28px;');
+const _btnAddRow = _mkBtn('+ Row', '#059669', 'Add row',         'bottom:-28px;left:0;');
+const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove row',      'bottom:-28px;left:62px;');
+
+[_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
+    .forEach(b => _sharedOverlay.appendChild(b));
+document.body.appendChild(_sharedOverlay);
+
+let _activeTable  = null;
+let _hideTimer    = null;
+
+function _positionOverlay(tbl) {
+    const r = tbl.getBoundingClientRect();
+    if (!r.width) return;
+    _sharedOverlay.style.top    = r.top    + 'px';
+    _sharedOverlay.style.left   = r.left   + 'px';
+    _sharedOverlay.style.width  = r.width  + 'px';
+    _sharedOverlay.style.height = r.height + 'px';
+    _sharedOverlay.style.display = 'block';
+    _sharedOverlay.style.pointerEvents = 'none';
+}
+
+function _showOverlay(tbl) {
+    clearTimeout(_hideTimer);
+    _activeTable = tbl;
+    _positionOverlay(tbl);
+}
+
+function _hideOverlay() {
+    _hideTimer = setTimeout(() => {
+        _sharedOverlay.style.display = 'none';
+        _activeTable = null;
+    }, 180);
+}
+
+_sharedOverlay.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+_sharedOverlay.addEventListener('mouseleave', _hideOverlay);
+
+document.addEventListener('mousedown', (e) => {
+    if (!_activeTable) return;
+    if (_activeTable.contains(e.target)) return;
+    if (_sharedOverlay.contains(e.target)) return;
+    clearTimeout(_hideTimer);
+    _sharedOverlay.style.display = 'none';
+    _activeTable = null;
+});
+
+['scroll', 'resize'].forEach(evt =>
+    window.addEventListener(evt, () => {
+        if (_activeTable) _positionOverlay(_activeTable);
+    }, { passive: true })
+);
+document.querySelectorAll('.main-content').forEach(el =>
+    el.addEventListener('scroll', () => {
+        if (_activeTable) _positionOverlay(_activeTable);
+    }, { passive: true })
+);
+
+function _wireTable(tbl) {
+    if (tbl.dataset.wired) return;
+    tbl.dataset.wired = '1';
+    tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
+    tbl.addEventListener('mouseleave', _hideOverlay);
+    tbl.addEventListener('click',      () => _showOverlay(tbl));
+}
+
+function _wireAll() {
+    document.querySelectorAll('.editor-content table').forEach(_wireTable);
+}
+
+// Tab key — no phantom rows
 makeTableNavigable = function(editor) {
-    _origMakeTableNavigable(editor);
-    initTableDragReorder(editor);
+    editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
+        cell.addEventListener('keydown', e => {
+            if (e.key !== 'Tab') return;
+            e.preventDefault();
+            const cells = [...editor.querySelectorAll('.editor-table td, .editor-table th')];
+            const idx = cells.indexOf(cell);
+            if (idx < cells.length - 1) cells[idx + 1].focus();
+        });
+        cell.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            showTableContextMenu(e, cell);
+        });
+    });
 };
 
-function initTableDragReorder(editor) {
-    editor.querySelectorAll('.editor-table').forEach(table => {
-        if (table.dataset.dragInit) return;
-        table.dataset.dragInit = '1';
-        addDragHandlesToTable(table);
-    });
-}
+// ── BUTTON ACTIONS ──
 
-function addDragHandlesToTable(table) {
-    // ── ROW drag handles (left side) ──
-    table.querySelectorAll('tr').forEach(tr => {
-        if (tr.querySelector('.row-drag-handle')) return;
+_btnDel.addEventListener('click', () => {
+    if (!_activeTable) return;
+    if (!confirm('Delete this table?')) return;
+    const wrap = _activeTable.closest('.resizable-table-wrap')
+              || _activeTable.closest('.wle-table-wrap')
+              || _activeTable.closest('.word-table-container');
+    (wrap || _activeTable).remove();
+    _sharedOverlay.style.display = 'none';
+    _activeTable = null;
+    showToast('Table deleted ✓');
+});
 
-        const firstCell = tr.cells[0];
-        if (!firstCell) return;
-
-        // Wrap existing content
-        const handle = document.createElement('span');
-        handle.className = 'row-drag-handle';
-        handle.innerHTML = '⠿';
-        handle.title = 'Drag to reorder row';
-        handle.style.cssText = `
-            position: absolute;
-            left: -22px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: grab;
-            color: #c4b5fd;
-            font-size: 16px;
-            line-height: 1;
-            padding: 2px 4px;
-            border-radius: 4px;
-            user-select: none;
-            opacity: 0;
-            transition: opacity 0.15s;
-            z-index: 10;
-        `;
-
-        // Make firstCell relatively positioned
-        firstCell.style.position = 'relative';
-        firstCell.insertBefore(handle, firstCell.firstChild);
-
-        // Show handle on row hover
-        tr.addEventListener('mouseenter', () => handle.style.opacity = '1');
-        tr.addEventListener('mouseleave', () => handle.style.opacity = '0');
-
-        // Drag events on the handle
-        handle.addEventListener('mousedown', (e) => startRowDrag(e, tr, table));
-    });
-
-    // ── COLUMN drag handles (top of each header cell) ──
-    const headerRow = table.querySelector('thead tr');
-    if (headerRow) {
-        Array.from(headerRow.cells).forEach((th, colIdx) => {
-            if (th.querySelector('.col-drag-handle')) return;
-
-            const handle = document.createElement('div');
-            handle.className = 'col-drag-handle';
-            handle.innerHTML = '⠿';
-            handle.title = 'Drag to reorder column';
-            handle.style.cssText = `
-                position: absolute;
-                top: -20px;
-                left: 50%;
-                transform: translateX(-50%);
-                cursor: grab;
-                color: #c4b5fd;
-                font-size: 14px;
-                padding: 2px 6px;
-                border-radius: 4px;
-                user-select: none;
-                opacity: 0;
-                transition: opacity 0.15s;
-                z-index: 10;
-                background: white;
-                border: 1px solid #ddd6fe;
-            `;
-
-            th.style.position = 'relative';
-            th.insertBefore(handle, th.firstChild);
-
-            th.addEventListener('mouseenter', () => handle.style.opacity = '1');
-            th.addEventListener('mouseleave', () => handle.style.opacity = '0');
-
-            handle.addEventListener('mousedown', (e) => startColDrag(e, colIdx, table));
-        });
+_btnAddRow.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const rows     = [..._activeTable.querySelectorAll('tr')];
+    const lastRow  = rows[rows.length - 1];
+    const colCount = lastRow ? lastRow.cells.length : 1;
+    const tbody    = _activeTable.querySelector('tbody') || _activeTable;
+    const newRow   = tbody.insertRow();
+    for (let i = 0; i < colCount; i++) {
+        const td = newRow.insertCell();
+        td.contentEditable = 'true';
+        td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
     }
-}
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Row added ✓');
+});
 
-// ── ROW DRAG ──────────────────────────────────────────────────
-let _rowDrag = null;
-
-function startRowDrag(e, tr, table) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const allRows  = Array.from(table.querySelectorAll('tr'));
-    const rowIndex = allRows.indexOf(tr);
-
-    // Ghost element
-    const ghost = tr.cloneNode(true);
-    ghost.style.cssText = `
-        position: fixed;
-        left: ${e.clientX + 10}px;
-        top: ${e.clientY - 10}px;
-        opacity: 0.7;
-        pointer-events: none;
-        z-index: 99999;
-        background: #f5f3ff;
-        border: 2px solid #7c3aed;
-        border-radius: 6px;
-        box-shadow: 0 8px 24px rgba(124,58,237,0.25);
-        width: ${tr.offsetWidth}px;
-    `;
-    document.body.appendChild(ghost);
-
-    tr.style.opacity = '0.3';
-    tr.style.background = '#ede9fe';
-
-    _rowDrag = { tr, table, ghost, startY: e.clientY };
-
-    const onMove = (ev) => {
-        ghost.style.left = (ev.clientX + 10) + 'px';
-        ghost.style.top  = (ev.clientY - 10) + 'px';
-
-        // Find target row
-        const rows = Array.from(table.querySelectorAll('tr'));
-        for (const r of rows) {
-            if (r === tr) continue;
-            const rect = r.getBoundingClientRect();
-            if (ev.clientY >= rect.top && ev.clientY <= rect.bottom) {
-                rows.forEach(x => x.style.borderTop = '');
-                r.style.borderTop = '3px solid #7c3aed';
-                _rowDrag.targetRow = r;
-                break;
-            }
-        }
-    };
-
-    const onUp = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-
-        ghost.remove();
-        tr.style.opacity  = '';
-        tr.style.background = '';
-        table.querySelectorAll('tr').forEach(r => r.style.borderTop = '');
-
-        if (_rowDrag.targetRow) {
-            const target = _rowDrag.targetRow;
-            const tbody  = target.parentNode;
-            const rows   = Array.from(tbody.querySelectorAll('tr'));
-            const fromIdx = rows.indexOf(tr);
-            const toIdx   = rows.indexOf(target);
-
-            if (fromIdx < toIdx) {
-                tbody.insertBefore(tr, target.nextSibling);
-            } else {
-                tbody.insertBefore(tr, target);
-            }
-            showToast('Row moved ✓', 'success');
-        }
-        _rowDrag = null;
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',  onUp);
-}
-
-// ── COLUMN DRAG ───────────────────────────────────────────────
-let _colDrag = null;
-
-function startColDrag(e, colIdx, table) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const headerCells = Array.from(table.querySelectorAll('thead tr th'));
-    const srcTh = headerCells[colIdx];
-
-    // Highlight source column
-    table.querySelectorAll('tr').forEach(tr => {
-        if (tr.cells[colIdx]) tr.cells[colIdx].style.background = '#ede9fe';
-    });
-
-    // Ghost
-    const ghost = document.createElement('div');
-    ghost.textContent = srcTh.textContent.replace('⠿', '').trim() || `Col ${colIdx + 1}`;
-    ghost.style.cssText = `
-        position: fixed;
-        left: ${e.clientX + 10}px;
-        top: ${e.clientY - 10}px;
-        background: #7c3aed;
-        color: white;
-        padding: 8px 16px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 700;
-        pointer-events: none;
-        z-index: 99999;
-        box-shadow: 0 6px 20px rgba(124,58,237,0.35);
-        font-family: 'Plus Jakarta Sans', sans-serif;
-    `;
-    document.body.appendChild(ghost);
-
-    _colDrag = { colIdx, table, ghost, targetIdx: null };
-
-    const onMove = (ev) => {
-        ghost.style.left = (ev.clientX + 10) + 'px';
-        ghost.style.top  = (ev.clientY - 10) + 'px';
-
-        // Find which column the cursor is over
-        headerCells.forEach((th, i) => {
-            th.style.borderLeft = '';
-            if (i === colIdx) return;
-            const rect = th.getBoundingClientRect();
-            if (ev.clientX >= rect.left && ev.clientX <= rect.right) {
-                th.style.borderLeft = '3px solid #7c3aed';
-                _colDrag.targetIdx = i;
-            }
-        });
-    };
-
-    const onUp = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',  onUp);
-
-        ghost.remove();
-
-        // Clear highlights
-        table.querySelectorAll('tr').forEach(tr => {
-            Array.from(tr.cells).forEach(td => td.style.background = '');
-        });
-        headerCells.forEach(th => th.style.borderLeft = '');
-
-        const toIdx = _colDrag.targetIdx;
-        if (toIdx !== null && toIdx !== colIdx) {
-            moveTableColumn(table, colIdx, toIdx);
-            showToast('Column moved ✓', 'success');
-        }
-        _colDrag = null;
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',  onUp);
-}
-
-function moveTableColumn(table, fromIdx, toIdx) {
-    table.querySelectorAll('tr').forEach(tr => {
-        const cells = Array.from(tr.cells);
-        if (!cells[fromIdx] || !cells[toIdx]) return;
-        const moving = cells[fromIdx];
-        if (fromIdx < toIdx) {
-            tr.insertBefore(moving, cells[toIdx].nextSibling);
-        } else {
-            tr.insertBefore(moving, cells[toIdx]);
-        }
-    });
-    // Re-wire drag handles after column move
-    addDragHandlesToTable(table);
-}
-
-// Also patch confirmInsertTable so new tables get drag handles immediately
-const _origConfirmInsertTable = confirmInsertTable;
-confirmInsertTable = function(editorIndex) {
-    _origConfirmInsertTable(editorIndex);
-    setTimeout(() => {
-        const editor = document.getElementById(`editor-${editorIndex}`)
-                    || document.getElementById(`editEditor_${editorIndex}`);
-        if (editor) initTableDragReorder(editor);
-    }, 200);
-};
-// ============================================
-// WORD-STYLE TABLE DRAG (✛ corner handle)
-// ============================================
-
-function makeTableDraggable(table) {
-    if (table.dataset.wordDragInit) return;
-    table.dataset.wordDragInit = '1';
-
-    // ── Support ALL table wrapper formats ──
-    const wrap = table.closest('.resizable-table-wrap')
-              || table.closest('.wle-table-wrap')
-              || table.closest('.word-table-container')
-              || table.parentNode;
-
-    // ── Ensure wrap is positioned ──
-    if (wrap && wrap !== document.body) {
-        wrap.style.position = 'relative';
+_btnDelRow.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const allRows = [..._activeTable.querySelectorAll('tr')];
+    if (allRows.length <= 1) { showToast('Cannot delete last row', 'error'); return; }
+    const active = document.activeElement?.closest('tr');
+    const target = (active && _activeTable.contains(active))
+        ? active
+        : allRows[allRows.length - 1];
+    if (target?.closest('thead') && allRows.length <= 2) {
+        showToast('Cannot delete — only header remains', 'error'); return;
     }
+    target.remove();
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Row deleted ✓');
+});
 
-    // ── Create the ✛ move handle ──
-    const moveHandle = document.createElement('div');
-    moveHandle.className = 'word-table-move-handle';
-    moveHandle.innerHTML = '&#10010;';
-    moveHandle.title = 'Drag to move table';
-    moveHandle.setAttribute('contenteditable', 'false');
-    moveHandle.style.cssText = `
-        position: absolute;
-        top: -22px;
-        left: -22px;
-        width: 20px;
-        height: 20px;
-        background: #7c3aed;
-        color: white;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: move;
-        font-size: 13px;
-        font-weight: bold;
-        z-index: 1000;
-        user-select: none;
-        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
-        border: 2px solid white;
-        line-height: 1;
-    `;
+_btnAddCol.addEventListener('click', () => {
+    if (!_activeTable) return;
+    [..._activeTable.querySelectorAll('tr')].forEach((row, i) => {
+        const isH = i === 0 && !!row.closest('thead');
+        const cell = document.createElement(isH ? 'th' : 'td');
+        cell.contentEditable = 'true';
+        cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
+        row.appendChild(cell);
+    });
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Column added ✓');
+});
 
-    // ── Create resize handle (bottom-right) ──
-    const resizeHandle = document.createElement('div');
-    resizeHandle.className = 'word-table-resize-handle';
-    resizeHandle.setAttribute('contenteditable', 'false');
-    resizeHandle.style.cssText = `
-        position: absolute;
-        bottom: -8px;
-        right: -8px;
-        width: 10px;
-        height: 10px;
-        background: white;
-        border: 2px solid #7c3aed;
-        border-radius: 2px;
-        cursor: nwse-resize;
-        display: none;
-        z-index: 1000;
-    `;
+_btnDelCol.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const rows = [..._activeTable.querySelectorAll('tr')];
+    if (!rows.length || rows[0].cells.length <= 1) {
+        showToast('Cannot delete last column', 'error'); return;
+    }
+    rows.forEach(row => { if (row.cells.length > 0) row.deleteCell(row.cells.length - 1); });
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Column deleted ✓');
+});
 
-    // ── Delete button (top-right) ──
-    const deleteHandle = document.createElement('div');
-    deleteHandle.className = 'word-table-delete-handle';
-    deleteHandle.innerHTML = '✕';
-    deleteHandle.title = 'Delete table';
-    deleteHandle.setAttribute('contenteditable', 'false');
-    deleteHandle.style.cssText = `
-        position: absolute;
-        top: -22px;
-        right: -22px;
-        width: 20px;
-        height: 20px;
-        background: #dc2626;
-        color: white;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 13px;
-        font-weight: bold;
-        z-index: 1000;
-        user-select: none;
-        box-shadow: 0 2px 8px rgba(220,38,38,0.4);
-        border: 2px solid white;
-        line-height: 1;
-    `;
+// ── DRAG TO MOVE ──
 
-    // ── Add Row button (bottom-left) ──
-    const addRowHandle = document.createElement('div');
-    addRowHandle.innerHTML = '+ Row';
-    addRowHandle.title = 'Add row';
-    addRowHandle.setAttribute('contenteditable', 'false');
-    addRowHandle.style.cssText = `
-        position: absolute;
-        bottom: -28px;
-        left: 0;
-        background: #7c3aed;
-        color: white;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 11px;
-        font-weight: bold;
-        z-index: 1000;
-        user-select: none;
-        padding: 3px 8px;
-        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
-    `;
+_btnMove.addEventListener('mousedown', (e) => {
+    if (!_activeTable) return;
+    e.preventDefault(); e.stopPropagation();
 
-    // ── Add Col button (top-right area) ──
-    const addColHandle = document.createElement('div');
-    addColHandle.innerHTML = '+ Col';
-    addColHandle.title = 'Add column';
-    addColHandle.setAttribute('contenteditable', 'false');
-    addColHandle.style.cssText = `
-        position: absolute;
-        top: -22px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: #7c3aed;
-        color: white;
-        border-radius: 4px;
-        display: none;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        font-size: 11px;
-        font-weight: bold;
-        z-index: 1000;
-        user-select: none;
-        padding: 3px 8px;
-        box-shadow: 0 2px 8px rgba(124,58,237,0.4);
-    `;
-
-    // ── Wrap everything in a container ──
-    const container = document.createElement('div');
-    container.className = 'word-table-container';
-    container.setAttribute('contenteditable', 'false');
-    container.style.cssText = `
-        position: relative;
-        display: block;
-        width: 100%;
-        margin: 24px 0;
-    `;
-
-    // Replace wrap with container in DOM
-    const editor = wrap.closest('.editor-content');
+    const tbl        = _activeTable;
+    const nodeToMove = tbl.closest('.resizable-table-wrap')
+                    || tbl.closest('.wle-table-wrap')
+                    || tbl.closest('.word-table-container')
+                    || tbl;
+    const editor     = nodeToMove.closest('.editor-content');
     if (!editor) return;
 
-    wrap.parentNode.insertBefore(container, wrap);
-    container.appendChild(wrap);
-    container.appendChild(moveHandle);
-    container.appendChild(resizeHandle);
-    container.appendChild(deleteHandle);
-    container.appendChild(addRowHandle);
-    container.appendChild(addColHandle);
+    const R = tbl.getBoundingClientRect();
 
-    // ── Show/hide all handles on hover ──
-    const allHandles = [moveHandle, resizeHandle, deleteHandle, addRowHandle, addColHandle];
-
-    container.addEventListener('mouseenter', () => {
-        allHandles.forEach(h => h.style.display = 'flex');
-        resizeHandle.style.display = 'block';
-    });
-    container.addEventListener('mouseleave', () => {
-        if (!_wordTableDrag) {
-            allHandles.forEach(h => h.style.display = 'none');
-        }
-    });
-
-    // ── DRAG ──
-    moveHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startWordTableDrag(e, container, moveHandle, resizeHandle, allHandles);
-    });
-
-    // ── RESIZE ──
-    resizeHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        startWordTableResize(e, table, container);
-    });
-
-    // ── DELETE TABLE ──
-    deleteHandle.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    });
-    deleteHandle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (confirm('Delete this table?')) {
-            container.remove();
-            if (typeof showToast === 'function') showToast('Table deleted ✓');
-        }
-    });
-
-    // ── ADD ROW ──
-    addRowHandle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
-    addRowHandle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const tbody = table.querySelector('tbody') || table;
-        const allRows = Array.from(table.querySelectorAll('tr'));
-        const lastRow = allRows[allRows.length - 1];
-        const colCount = lastRow ? lastRow.cells.length : 1;
-        const newRow = tbody.insertRow();
-        for (let i = 0; i < colCount; i++) {
-            const td = newRow.insertCell();
-            td.contentEditable = 'true';
-            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
-        }
-        if (typeof showToast === 'function') showToast('Row added ✓');
-    });
-
-    // ── ADD COL ──
-    addColHandle.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); });
-    addColHandle.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        const allRows = Array.from(table.querySelectorAll('tr'));
-        allRows.forEach((row, idx) => {
-            const isHeader = idx === 0 && !!row.closest('thead');
-            const cell = document.createElement(isHeader ? 'th' : 'td');
-            cell.contentEditable = 'true';
-            cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isHeader ? 'background:#f5f3ff;font-weight:700;' : ''}`;
-            row.appendChild(cell);
-        });
-        if (typeof showToast === 'function') showToast('Column added ✓');
-    });
-}
-
-let _wordTableDrag = null;
-
-function startWordTableDrag(e, container, moveHandle, resizeHandle, allHandles) {
-    allHandles = allHandles || [moveHandle, resizeHandle];
-    const editor = container.closest('.editor-content');
-    if (!editor) return;
-
-    // Ghost that follows cursor
     const ghost = document.createElement('div');
     ghost.style.cssText = `
-        position: fixed;
-        pointer-events: none;
-        z-index: 99999;
-        opacity: 0.55;
-        border: 2px dashed #7c3aed;
-        border-radius: 6px;
-        background: rgba(124,58,237,0.06);
-        width: ${container.offsetWidth}px;
-        height: ${container.offsetHeight}px;
-        box-shadow: 0 8px 32px rgba(124,58,237,0.25);
+        position:fixed;
+        width:${R.width}px;height:${Math.min(R.height,180)}px;
+        border:3px dashed #7c3aed;border-radius:8px;
+        background:rgba(124,58,237,0.07);pointer-events:none;
+        z-index:999999;left:${R.left}px;top:${R.top}px;
     `;
-    ghost.style.left = e.clientX - 20 + 'px';
-    ghost.style.top  = e.clientY - 20 + 'px';
     document.body.appendChild(ghost);
 
-    // Placeholder holds space
-    const placeholder = document.createElement('div');
-    placeholder.style.cssText = `
-        width: 100%;
-        height: ${container.offsetHeight}px;
-        border: 2px dashed #c4b5fd;
-        border-radius: 6px;
-        background: #f5f3ff;
-        margin: 8px 0;
-        box-sizing: border-box;
-    `;
-    editor.insertBefore(placeholder, container);
-    container.style.opacity = '0.15';
-
-    // Blue drop line indicator
     const dropLine = document.createElement('div');
     dropLine.style.cssText = `
-        position: fixed;
-        height: 3px;
-        background: #7c3aed;
-        border-radius: 3px;
-        pointer-events: none;
-        z-index: 99998;
-        box-shadow: 0 0 8px rgba(124,58,237,0.7);
-        display: none;
-        width: 0;
+        position:fixed;height:3px;background:#7c3aed;border-radius:3px;
+        pointer-events:none;z-index:999998;display:none;
+        box-shadow:0 0 8px rgba(124,58,237,0.6);
     `;
     document.body.appendChild(dropLine);
 
-    _wordTableDrag = { container, placeholder, ghost, dropLine, editor };
+    const ph = document.createElement('div');
+    ph.style.cssText = `
+        height:${nodeToMove.offsetHeight}px;
+        border:2px dashed #c4b5fd;border-radius:8px;
+        background:#f5f3ff;margin:4px 0;box-sizing:border-box;
+    `;
+    editor.insertBefore(ph, nodeToMove);
+    nodeToMove.style.opacity = '0.15';
+    _sharedOverlay.style.display = 'none';
 
-    let currentTarget = null;
+    let dropTarget = null;
 
-  const onMove = (ev) => {
-        ghost.style.left = ev.clientX - container.offsetWidth / 2 + 'px';
-        ghost.style.top  = ev.clientY - 20 + 'px';
+    const onMove = (ev) => {
+        ghost.style.left = (ev.clientX - R.width / 2) + 'px';
+        ghost.style.top  = (ev.clientY - 30) + 'px';
 
-        // Only direct children of editor
-        const elements = Array.from(editor.children).filter(el =>
-            el !== container &&
-            el !== placeholder &&
-            el.parentNode === editor
-        );
+        const siblings = [...editor.children].filter(el => el !== nodeToMove && el !== ph);
+        dropTarget = null;
+        let best = Infinity;
 
-        currentTarget = null;
-        let bestDist  = Infinity;
-
-        for (const el of elements) {
-            if (!el.getBoundingClientRect) continue;
-            const rect = el.getBoundingClientRect();
-            const midY = rect.top + rect.height / 2;
-            const dist = Math.abs(ev.clientY - midY);
-            if (dist < bestDist) {
-                bestDist = dist;
-                const candidate = ev.clientY < midY ? el : el.nextSibling;
-                // Only use candidate if it's a direct child of editor
-                currentTarget = (candidate && candidate.parentNode === editor)
-                    ? candidate : null;
+        for (const sib of siblings) {
+            const sr   = sib.getBoundingClientRect();
+            const midY = sr.top + sr.height / 2;
+            const d    = Math.abs(ev.clientY - midY);
+            if (d < best) {
+                best = d;
+                const cand = ev.clientY < midY ? sib : sib.nextSibling;
+                dropTarget = (cand && cand.parentNode === editor) ? cand : null;
             }
         }
 
-        if (currentTarget?.getBoundingClientRect) {
-            const r = currentTarget.getBoundingClientRect();
+        if (dropTarget?.getBoundingClientRect) {
+            const dr = dropTarget.getBoundingClientRect();
             dropLine.style.display = 'block';
-            dropLine.style.top     = (r.top - 2) + 'px';
-            dropLine.style.left    = r.left + 'px';
-            dropLine.style.width   = r.width + 'px';
+            dropLine.style.top   = (dr.top - 2) + 'px';
+            dropLine.style.left  = dr.left + 'px';
+            dropLine.style.width = dr.width + 'px';
         } else {
             dropLine.style.display = 'none';
         }
@@ -11139,850 +10811,79 @@ function startWordTableDrag(e, container, moveHandle, resizeHandle, allHandles) 
     const onUp = () => {
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup',   onUp);
-
         ghost.remove();
         dropLine.remove();
-        container.style.opacity = '';
+        nodeToMove.style.opacity = '';
 
-        // Hide handles
-        allHandles.forEach(h => h.style.display = 'none');
-
-        // KEY FIX: move container first, THEN remove placeholder
         try {
-            if (currentTarget &&
-                currentTarget !== container &&
-                currentTarget !== placeholder &&
-                currentTarget.parentNode === editor) {
-                editor.insertBefore(container, currentTarget);
+            if (dropTarget && dropTarget.parentNode === editor) {
+                editor.insertBefore(nodeToMove, dropTarget);
             } else {
-                editor.appendChild(container);
+                editor.appendChild(nodeToMove);
             }
-        } catch (err) {
-            console.warn('Table drag insertBefore failed:', err.message);
-            try { editor.appendChild(container); } catch(e) {}
+        } catch(err) {
+            try { editor.appendChild(nodeToMove); } catch(e2) {}
         }
 
-        // Remove placeholder AFTER moving
-        try { placeholder.remove(); } catch(e) {}
-
-        _wordTableDrag = null;
-
-        if (typeof showToast === 'function') showToast('Table moved ✓', 'success');
+        try { ph.remove(); } catch(err) {}
+        setTimeout(() => _showOverlay(tbl), 80);
+        showToast('Table moved ✓');
     };
 
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup',   onUp);
-}
-
-function startWordTableResize(e, table, container) {
-    const startX = e.clientX;
-    const startW = table.offsetWidth;
-
-    const onMove = (ev) => {
-        const newW = Math.max(200, startW + (ev.clientX - startX));
-        table.style.width     = newW + 'px';
-        container.style.width = newW + 'px';
-    };
-
-    const onUp = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
-}
-
-// ── Patch confirmInsertTable ──
-const _origConfirmTable2 = window.confirmInsertTable;
-window.confirmInsertTable = function(editorIndex) {
-    _origConfirmTable2(editorIndex);
-    setTimeout(() => {
-        const editor = document.getElementById(`editor-${editorIndex}`)
-                    || document.getElementById(`editEditor_${editorIndex}`);
-        if (!editor) return;
-        editor.querySelectorAll('table').forEach(t => makeTableDraggable(t));
-    }, 250);
-};
-
-// ── Patch openEditChapterModal for existing tables ──
-const _origOpenEdit2 = window.openEditChapterModal;
-window.openEditChapterModal = async function(chapterId) {
-    await _origOpenEdit2(chapterId);
-    setTimeout(() => {
-        document.querySelectorAll('#editTopicsContainer .editor-content table')
-            .forEach(t => makeTableDraggable(t));
-    }, 500);
-};
-// ============================================================
-// COMPLETE TABLE INTERACTION REWRITE
-// Handles old tables (resizable-table-wrap) + new (wle-table-wrap)
-// ============================================================
-
-// Remove all previous table drag attempts to start clean
-document.querySelectorAll('.word-table-container').forEach(c => {
-    const inner = c.querySelector('.resizable-table-wrap, .wle-table-wrap');
-    if (inner && c.parentNode) {
-        c.parentNode.insertBefore(inner, c);
-        c.remove();
-    }
 });
 
-function initAllEditorTables() {
-    document.querySelectorAll('.editor-content[contenteditable="true"]').forEach(editor => {
-        // Find ALL tables inside this editor
-        editor.querySelectorAll('table').forEach(table => {
-            if (table.dataset.tableUIInit) return;
-            table.dataset.tableUIInit = '1';
-            attachTableUI(table, editor);
-        });
-    });
-}
+// ── INSERT TABLE (clean version) ──
+window.confirmInsertTable = function(editorIndex) {
+    const rows = parseInt(document.getElementById('tblRows')?.value) || 3;
+    const cols = parseInt(document.getElementById('tblCols')?.value) || 3;
+    document.getElementById('tableInsertModal')?.remove();
 
-function attachTableUI(table, editor) {
-    // ── Inject styles once ──
-    if (!document.getElementById('tableUIStyles')) {
-        const style = document.createElement('style');
-        style.id = 'tableUIStyles';
-        style.textContent = `
-            .tbl-ui-overlay {
-                position: absolute;
-                pointer-events: none;
-                z-index: 9999;
-                display: none;
-            }
-            .tbl-ui-overlay.visible { display: block; }
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
 
-            .tbl-ui-btn {
-                position: absolute;
-                pointer-events: all;
-                cursor: pointer;
-                border-radius: 5px;
-                font-size: 12px;
-                font-weight: 700;
-                font-family: 'Plus Jakarta Sans', sans-serif;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                user-select: none;
-                border: 2px solid white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-                transition: transform 0.1s, opacity 0.1s;
-                white-space: nowrap;
-                padding: 0 6px;
-                height: 22px;
-                min-width: 22px;
-            }
-            .tbl-ui-btn:hover { transform: scale(1.1); }
+    const cs = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;text-align:left;vertical-align:top;font-size:14px;';
+    const html = `
+        <br>
+        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
+            <table class="editor-table" style="border-collapse:collapse;width:100%;table-layout:fixed;border:1.5px solid #374151;">
+                <colgroup>${Array(cols).fill(`<col style="width:${Math.floor(100/cols)}%">`).join('')}</colgroup>
+                <thead>
+                    <tr style="background:#f5f3ff;">
+                        ${Array(cols).fill(0).map((_,i)=>`<th contenteditable="true" style="${cs}font-weight:700;background:#f5f3ff;">Header ${i+1}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Array(rows-1).fill(0).map(()=>`<tr>${Array(cols).fill(0).map(()=>`<td contenteditable="true" style="${cs}"></td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        </div><br>`;
 
-            .tbl-move-btn   { background: #7c3aed; color: white; cursor: move; font-size: 15px; }
-            .tbl-delete-btn { background: #dc2626; color: white; }
-            .tbl-addrow-btn { background: #059669; color: white; font-size: 11px; }
-            .tbl-addcol-btn { background: #2563eb; color: white; font-size: 11px; }
-            .tbl-delrow-btn { background: #ef4444; color: white; font-size: 11px; }
-            .tbl-delcol-btn { background: #ef4444; color: white; font-size: 11px; }
+    editor.focus();
+    document.execCommand('insertHTML', false, html);
+    setTimeout(() => editor.querySelectorAll('table').forEach(_wireTable), 150);
+};
 
-            .tbl-drag-ghost {
-                position: fixed;
-                pointer-events: none;
-                z-index: 99999;
-                border: 3px dashed #7c3aed;
-                border-radius: 6px;
-                background: rgba(124,58,237,0.08);
-                box-shadow: 0 8px 32px rgba(124,58,237,0.2);
-            }
-            .tbl-drop-line {
-                position: fixed;
-                height: 3px;
-                background: #7c3aed;
-                border-radius: 3px;
-                pointer-events: none;
-                z-index: 99998;
-                box-shadow: 0 0 8px rgba(124,58,237,0.6);
-                display: none;
-            }
-            .tbl-placeholder {
-                border: 2px dashed #c4b5fd;
-                border-radius: 6px;
-                background: #f5f3ff;
-                margin: 4px 0;
-            }
-        `;
-        document.head.appendChild(style);
-    }
+// ── Auto-wire on load + DOM changes ──
+_wireAll();
 
-    // ── Create overlay that sits over the table ──
-    const overlay = document.createElement('div');
-    overlay.className = 'tbl-ui-overlay';
-
-    // Move button (✛) - top left
-    const moveBtn = document.createElement('div');
-    moveBtn.className = 'tbl-ui-btn tbl-move-btn';
-    moveBtn.innerHTML = '✛';
-    moveBtn.title = 'Drag to move table';
-
-    // Delete button (✕) - top right
-    const deleteBtn = document.createElement('div');
-    deleteBtn.className = 'tbl-ui-btn tbl-delete-btn';
-    deleteBtn.innerHTML = '✕';
-    deleteBtn.title = 'Delete table';
-
-    // Add Row - bottom left
-    const addRowBtn = document.createElement('div');
-    addRowBtn.className = 'tbl-ui-btn tbl-addrow-btn';
-    addRowBtn.innerHTML = '+ Row';
-    addRowBtn.title = 'Add row';
-
-    // Del Row - bottom
-    const delRowBtn = document.createElement('div');
-    delRowBtn.className = 'tbl-ui-btn tbl-delrow-btn';
-    delRowBtn.innerHTML = '− Row';
-    delRowBtn.title = 'Delete last row';
-
-    // Add Col - top center
-    const addColBtn = document.createElement('div');
-    addColBtn.className = 'tbl-ui-btn tbl-addcol-btn';
-    addColBtn.innerHTML = '+ Col';
-    addColBtn.title = 'Add column';
-
-    // Del Col
-    const delColBtn = document.createElement('div');
-    delColBtn.className = 'tbl-ui-btn tbl-delcol-btn';
-    delColBtn.innerHTML = '− Col';
-    delColBtn.title = 'Delete last column';
-
-    overlay.appendChild(moveBtn);
-    overlay.appendChild(deleteBtn);
-    overlay.appendChild(addRowBtn);
-    overlay.appendChild(delRowBtn);
-    overlay.appendChild(addColBtn);
-    overlay.appendChild(delColBtn);
-
-    // Append overlay to BODY (not inside contenteditable)
-    document.body.appendChild(overlay);
-
-    // ── Position overlay buttons relative to table ──
-    function positionOverlay() {
-        const rect = table.getBoundingClientRect();
-        const scrollX = window.scrollX || window.pageXOffset;
-        const scrollY = window.scrollY || window.pageYOffset;
-
-        const absTop  = rect.top  + scrollY;
-        const absLeft = rect.left + scrollX;
-
-        overlay.style.top    = absTop  + 'px';
-        overlay.style.left   = absLeft + 'px';
-        overlay.style.width  = rect.width  + 'px';
-        overlay.style.height = rect.height + 'px';
-
-        // ✛ Move — top left corner
-        moveBtn.style.cssText += `
-            top: -26px; left: -2px;
-            width: 22px; height: 22px; padding: 0;
-        `;
-
-        // ✕ Delete — top right corner
-        deleteBtn.style.cssText += `
-            top: -26px; right: -2px;
-            width: 22px; height: 22px; padding: 0;
-        `;
-
-        // + Col — top center
-        addColBtn.style.cssText += `
-            top: -26px; left: 50%; transform: translateX(-50%);
-        `;
-
-        // − Col — top center-right
-        delColBtn.style.cssText += `
-            top: -26px; left: calc(50% + 50px); transform: translateX(-50%);
-        `;
-
-        // + Row — bottom left
-        addRowBtn.style.cssText += `
-            bottom: -26px; left: -2px;
-        `;
-
-        // − Row — bottom left+
-        delRowBtn.style.cssText += `
-            bottom: -26px; left: 54px;
-        `;
-    }
-
-    // ── Show overlay on table hover ──
-    let hideTimer = null;
-
-    function showOverlay() {
-        clearTimeout(hideTimer);
-        positionOverlay();
-        overlay.classList.add('visible');
-    }
-
-    function hideOverlay() {
-        hideTimer = setTimeout(() => {
-            if (!_tblDragging) overlay.classList.remove('visible');
-        }, 200);
-    }
-
-    table.addEventListener('mouseenter', showOverlay);
-    table.addEventListener('mouseleave', hideOverlay);
-    overlay.addEventListener('mouseenter', () => clearTimeout(hideTimer));
-    overlay.addEventListener('mouseleave', hideOverlay);
-
-    // ── Also show when clicking inside table ──
-    table.addEventListener('click', showOverlay);
-
-    // ── UPDATE position on scroll/resize ──
-    const scrollEl = editor.closest('.main-content') || window;
-    scrollEl.addEventListener('scroll', () => {
-        if (overlay.classList.contains('visible')) positionOverlay();
-    }, { passive: true });
-    window.addEventListener('resize', () => {
-        if (overlay.classList.contains('visible')) positionOverlay();
-    }, { passive: true });
-
-    // ============================================================
-    // BUTTON ACTIONS
-    // ============================================================
-
-    // DELETE TABLE
-    deleteBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        if (!confirm('Delete this table?')) return;
-        overlay.remove();
-        // Remove the table + its wrapper
-        const wrapper = table.closest('.resizable-table-wrap')
-                     || table.closest('.wle-table-wrap')
-                     || table.closest('.word-table-container');
-        if (wrapper) wrapper.remove();
-        else table.remove();
-        if (typeof showToast === 'function') showToast('Table deleted ✓');
-    });
-
-    // ADD ROW
-    addRowBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const allRows  = Array.from(table.querySelectorAll('tr'));
-        const lastRow  = allRows[allRows.length - 1];
-        const colCount = lastRow ? lastRow.cells.length : 1;
-        const tbody    = table.querySelector('tbody') || table;
-        const newRow   = tbody.insertRow();
-        for (let i = 0; i < colCount; i++) {
-            const td = newRow.insertCell();
-            td.contentEditable = 'true';
-            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
-        }
-        positionOverlay();
-        if (typeof showToast === 'function') showToast('Row added ✓');
-    });
-
-    // DELETE ROW
-    delRowBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const allRows = Array.from(table.querySelectorAll('tr'));
-        if (allRows.length <= 1) {
-            if (typeof showToast === 'function') showToast('Cannot delete last row', 'error');
-            return;
-        }
-        allRows[allRows.length - 1].remove();
-        positionOverlay();
-        if (typeof showToast === 'function') showToast('Row deleted ✓');
-    });
-
-    // ADD COL
-    addColBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        Array.from(table.querySelectorAll('tr')).forEach((row, idx) => {
-            const isH = idx === 0 && !!row.closest('thead');
-            const cell = document.createElement(isH ? 'th' : 'td');
-            cell.contentEditable = 'true';
-            cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
-            row.appendChild(cell);
-        });
-        positionOverlay();
-        if (typeof showToast === 'function') showToast('Column added ✓');
-    });
-
-    // DELETE COL
-    delColBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        const allRows = Array.from(table.querySelectorAll('tr'));
-        if (!allRows.length || allRows[0].cells.length <= 1) {
-            if (typeof showToast === 'function') showToast('Cannot delete last column', 'error');
-            return;
-        }
-        allRows.forEach(row => {
-            if (row.cells.length > 0) row.deleteCell(row.cells.length - 1);
-        });
-        positionOverlay();
-        if (typeof showToast === 'function') showToast('Column deleted ✓');
-    });
-
-    // ============================================================
-    // DRAG TO MOVE TABLE
-    // ============================================================
-    let _tblDragging = false;
-
-    moveBtn.addEventListener('mousedown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-
-        const tableWrapper = table.closest('.resizable-table-wrap')
-                          || table.closest('.wle-table-wrap')
-                          || table.closest('.word-table-container')
-                          || table;
-
-        // The node we will actually move in the DOM
-        const nodeToMove = tableWrapper;
-        const editorNode = nodeToMove.closest('.editor-content');
-        if (!editorNode) return;
-
-        _tblDragging = true;
-
-        const tableRect = table.getBoundingClientRect();
-
-        // Ghost
-        const ghost = document.createElement('div');
-        ghost.className = 'tbl-drag-ghost';
-        ghost.style.width  = tableRect.width  + 'px';
-        ghost.style.height = tableRect.height + 'px';
-        ghost.style.left   = tableRect.left   + 'px';
-        ghost.style.top    = tableRect.top    + 'px';
-        document.body.appendChild(ghost);
-
-        // Drop line
-        const dropLine = document.createElement('div');
-        dropLine.className = 'tbl-drop-line';
-        document.body.appendChild(dropLine);
-
-        // Placeholder
-        const placeholder = document.createElement('div');
-        placeholder.className = 'tbl-placeholder';
-        placeholder.style.width  = tableRect.width  + 'px';
-        placeholder.style.height = tableRect.height + 'px';
-        editorNode.insertBefore(placeholder, nodeToMove);
-
-        // Hide original
-        nodeToMove.style.opacity = '0.1';
-        overlay.classList.remove('visible');
-
-        let dropTarget = null;
-
-        const onMove = (ev) => {
-            ghost.style.left = (ev.clientX - tableRect.width  / 2) + 'px';
-            ghost.style.top  = (ev.clientY - 30) + 'px';
-
-            // Find drop position among DIRECT children of editor
-            const siblings = Array.from(editorNode.children).filter(el =>
-                el !== nodeToMove && el !== placeholder
-            );
-
-            dropTarget  = null;
-            let bestD   = Infinity;
-
-            for (const sib of siblings) {
-                const r    = sib.getBoundingClientRect();
-                const midY = r.top + r.height / 2;
-                const d    = Math.abs(ev.clientY - midY);
-                if (d < bestD) {
-                    bestD = d;
-                    const candidate = ev.clientY < midY ? sib : sib.nextSibling;
-                    dropTarget = (candidate && candidate.parentNode === editorNode)
-                        ? candidate : null;
-                }
-            }
-
-            // Show drop line
-            if (dropTarget?.getBoundingClientRect) {
-                const r = dropTarget.getBoundingClientRect();
-                dropLine.style.display = 'block';
-                dropLine.style.top   = (r.top - 2)     + 'px';
-                dropLine.style.left  = r.left           + 'px';
-                dropLine.style.width = r.width          + 'px';
-            } else {
-                dropLine.style.display = 'none';
-            }
-        };
-
-        const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup',   onUp);
-
-            ghost.remove();
-            dropLine.remove();
-            nodeToMove.style.opacity = '';
-
-            // Move node
-            try {
-                if (dropTarget && dropTarget.parentNode === editorNode) {
-                    editorNode.insertBefore(nodeToMove, dropTarget);
-                } else {
-                    editorNode.appendChild(nodeToMove);
-                }
-            } catch(err) {
-                console.warn('Table move error:', err.message);
-                try { editorNode.appendChild(nodeToMove); } catch(e) {}
-            }
-
-            // Remove placeholder after move
-            try { placeholder.remove(); } catch(e) {}
-
-            _tblDragging = false;
-
-            // Reposition overlay on new location
-            setTimeout(() => {
-                positionOverlay();
-                overlay.classList.add('visible');
-            }, 50);
-
-            if (typeof showToast === 'function') showToast('Table moved ✓');
-        };
-
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup',   onUp);
-    });
-}
-
-// ── Run on all currently open editors ──
-initAllEditorTables();
-
-// ── Run when chapter/topic modals open ──
 ['openCreateChapterModal','openEditChapterModal','addNewTopic','addEditTopic'].forEach(name => {
     const orig = window[name];
     if (!orig) return;
     window[name] = function(...args) {
         const r = orig.apply(this, args);
-        setTimeout(initAllEditorTables, 500);
+        setTimeout(_wireAll, 600);
         return r;
     };
 });
 
-// ── Auto-detect new tables inserted into editors ──
-const _tblObserver = new MutationObserver(() => {
-    initAllEditorTables();
-});
-_tblObserver.observe(document.body, { childList: true, subtree: true });
+if (window._tblObserver) window._tblObserver.disconnect();
+window._tblObserver = new MutationObserver(_wireAll);
+window._tblObserver.observe(document.body, { childList: true, subtree: true });
 
-console.log('✅ Table UI (hover overlay) initialized');
-// ── FIX: Overlay hide on outside click + drag fix ──
-
-// Re-run attachTableUI with both fixes baked in
-attachTableUI = function(table, editor) {
-    if (table.dataset.tableUiInit) return;
-    table.dataset.tableUiInit = '1';
-
-    const overlay = document.createElement('div');
-    overlay.className = 'tbl-ui-overlay';
-    overlay.style.cssText = `
-        position: fixed;
-        pointer-events: none;
-        z-index: 9999;
-        display: none;
-    `;
-
-    const btnBase = `
-        position: absolute;
-        pointer-events: all;
-        cursor: pointer;
-        border-radius: 5px;
-        font-size: 12px;
-        font-weight: 700;
-        font-family: 'Plus Jakarta Sans', sans-serif;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        user-select: none;
-        border: 2px solid white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-        padding: 0 6px;
-        height: 22px;
-        min-width: 22px;
-        white-space: nowrap;
-    `;
-
-    const makeBtn = (html, extra, title) => {
-        const b = document.createElement('div');
-        b.innerHTML = html;
-        b.title = title || '';
-        b.style.cssText = btnBase + extra;
-        return b;
-    };
-
-    const moveBtn   = makeBtn('✛', 'background:#7c3aed;color:white;cursor:move;top:-26px;left:-2px;width:22px;padding:0;', 'Drag to move');
-    const deleteBtn = makeBtn('✕', 'background:#dc2626;color:white;top:-26px;right:-2px;width:22px;padding:0;', 'Delete table');
-    const addColBtn = makeBtn('+ Col', 'background:#2563eb;color:white;top:-26px;left:50%;transform:translateX(-50%);', 'Add column');
-    const delColBtn = makeBtn('− Col', 'background:#ef4444;color:white;top:-26px;left:calc(50% + 55px);transform:translateX(-50%);', 'Delete last column');
-    const addRowBtn = makeBtn('+ Row', 'background:#059669;color:white;bottom:-26px;left:-2px;', 'Add row');
-    const delRowBtn = makeBtn('− Row', 'background:#ef4444;color:white;bottom:-26px;left:58px;', 'Delete row');
-
-    [moveBtn, deleteBtn, addColBtn, delColBtn, addRowBtn, delRowBtn].forEach(b => overlay.appendChild(b));
-    document.body.appendChild(overlay);
-
-    // ── Position overlay over table ──
-    function positionOverlay() {
-        const rect = table.getBoundingClientRect();
-        if (rect.width === 0) return;
-        overlay.style.top    = rect.top    + 'px';
-        overlay.style.left   = rect.left   + 'px';
-        overlay.style.width  = rect.width  + 'px';
-        overlay.style.height = rect.height + 'px';
-        overlay.style.display = 'block';
-        overlay.style.pointerEvents = 'none';
-        [moveBtn, deleteBtn, addColBtn, delColBtn, addRowBtn, delRowBtn].forEach(b => {
-            b.style.pointerEvents = 'all';
-        });
-    }
-
-    let _pinned = false; // true while a button is being used
-
-    function showOverlay() {
-        positionOverlay();
-    }
-
-    function tryHide() {
-        if (!_pinned) overlay.style.display = 'none';
-    }
-
-    // Show on table hover/click
-    table.addEventListener('mouseenter', showOverlay);
-    table.addEventListener('click', showOverlay);
-
-    // ── HIDE when clicking OUTSIDE both table and overlay ──
-    document.addEventListener('mousedown', function hideOnOutside(e) {
-        if (!table.contains(e.target) && !overlay.contains(e.target)) {
-            overlay.style.display = 'none';
-            _pinned = false;
-        }
-    });
-
-    // Keep visible while hovering overlay buttons
-    overlay.addEventListener('mouseenter', () => { _pinned = true; });
-    overlay.addEventListener('mouseleave', () => {
-        _pinned = false;
-        // Small delay so clicking a button doesn't cause flicker
-        setTimeout(() => {
-            if (!_pinned && !table.matches(':hover')) {
-                overlay.style.display = 'none';
-            }
-        }, 150);
-    });
-    table.addEventListener('mouseleave', (e) => {
-        if (!overlay.contains(e.relatedTarget)) {
-            setTimeout(() => {
-                if (!_pinned) overlay.style.display = 'none';
-            }, 150);
-        }
-    });
-
-    // Reposition on scroll/resize
-    window.addEventListener('scroll',  positionOverlay, { passive: true });
-    window.addEventListener('resize',  positionOverlay, { passive: true });
-    const scrollParent = editor.closest('.main-content');
-    if (scrollParent) scrollParent.addEventListener('scroll', positionOverlay, { passive: true });
-
-    // ── BUTTON ACTIONS ──
-
-    deleteBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        if (!confirm('Delete this table?')) return;
-        overlay.remove();
-        const wrapper = table.closest('.resizable-table-wrap')
-                     || table.closest('.wle-table-wrap')
-                     || table.closest('.word-table-container');
-        (wrapper || table).remove();
-        showToast('Table deleted ✓');
-    });
-
-    addRowBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        _pinned = true;
-        const lastRow  = [...table.querySelectorAll('tr')].pop();
-        const colCount = lastRow ? lastRow.cells.length : 1;
-        const tbody    = table.querySelector('tbody') || table;
-        const newRow   = tbody.insertRow();
-        for (let i = 0; i < colCount; i++) {
-            const td = newRow.insertCell();
-            td.contentEditable = 'true';
-            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
-        }
-        positionOverlay();
-        showToast('Row added ✓');
-        setTimeout(() => _pinned = false, 200);
-    });
-
-    delRowBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        _pinned = true;
-        const active = document.activeElement?.closest('tr');
-        const target = (active && table.contains(active)) ? active : [...table.querySelectorAll('tr')].pop();
-        const allRows = [...table.querySelectorAll('tr')];
-        if (allRows.length <= 1) { showToast('Cannot delete last row', 'error'); return; }
-        if (target) target.remove();
-        positionOverlay();
-        showToast('Row deleted ✓');
-        setTimeout(() => _pinned = false, 200);
-    });
-
-    addColBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        _pinned = true;
-        [...table.querySelectorAll('tr')].forEach((row, i) => {
-            const isH = i === 0 && !!row.closest('thead');
-            const cell = document.createElement(isH ? 'th' : 'td');
-            cell.contentEditable = 'true';
-            cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
-            row.appendChild(cell);
-        });
-        positionOverlay();
-        showToast('Column added ✓');
-        setTimeout(() => _pinned = false, 200);
-    });
-
-    delColBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        _pinned = true;
-        const rows = [...table.querySelectorAll('tr')];
-        if (!rows.length || rows[0].cells.length <= 1) {
-            showToast('Cannot delete last column', 'error'); return;
-        }
-        rows.forEach(row => { if (row.cells.length > 0) row.deleteCell(row.cells.length - 1); });
-        positionOverlay();
-        showToast('Column deleted ✓');
-        setTimeout(() => _pinned = false, 200);
-    });
-
-    // ── DRAG TO MOVE TABLE ──
-    moveBtn.addEventListener('mousedown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        _pinned = true;
-
-        const nodeToMove = table.closest('.resizable-table-wrap')
-                        || table.closest('.wle-table-wrap')
-                        || table.closest('.word-table-container')
-                        || table;
-
-        const editorNode = nodeToMove.closest('.editor-content');
-        if (!editorNode) return;
-
-        const tableRect = table.getBoundingClientRect();
-
-        // Ghost box following cursor
-        const ghost = document.createElement('div');
-        ghost.style.cssText = `
-            position: fixed;
-            width: ${tableRect.width}px;
-            height: ${tableRect.height}px;
-            left: ${tableRect.left}px;
-            top: ${tableRect.top}px;
-            pointer-events: none;
-            z-index: 99999;
-            border: 3px dashed #7c3aed;
-            border-radius: 6px;
-            background: rgba(124,58,237,0.08);
-            box-shadow: 0 8px 32px rgba(124,58,237,0.2);
-        `;
-        document.body.appendChild(ghost);
-
-        // Blue drop line
-        const dropLine = document.createElement('div');
-        dropLine.style.cssText = `
-            position: fixed;
-            height: 3px;
-            background: #7c3aed;
-            border-radius: 3px;
-            pointer-events: none;
-            z-index: 99998;
-            display: none;
-            box-shadow: 0 0 8px rgba(124,58,237,0.6);
-        `;
-        document.body.appendChild(dropLine);
-
-        // Placeholder to hold space
-        const placeholder = document.createElement('div');
-        placeholder.style.cssText = `
-            width: 100%;
-            height: ${nodeToMove.offsetHeight}px;
-            border: 2px dashed #c4b5fd;
-            border-radius: 6px;
-            background: #f5f3ff;
-            margin: 4px 0;
-            box-sizing: border-box;
-        `;
-        editorNode.insertBefore(placeholder, nodeToMove);
-        nodeToMove.style.opacity = '0.15';
-        overlay.style.display = 'none';
-
-        let dropTarget = null;
-
-        const onMove = (ev) => {
-            ghost.style.left = (ev.clientX - tableRect.width / 2) + 'px';
-            ghost.style.top  = (ev.clientY - 30) + 'px';
-
-            const siblings = [...editorNode.children].filter(el =>
-                el !== nodeToMove && el !== placeholder
-            );
-
-            dropTarget = null;
-            let bestD  = Infinity;
-
-            for (const sib of siblings) {
-                const r    = sib.getBoundingClientRect();
-                const midY = r.top + r.height / 2;
-                const d    = Math.abs(ev.clientY - midY);
-                if (d < bestD) {
-                    bestD = d;
-                    const candidate = ev.clientY < midY ? sib : sib.nextSibling;
-                    dropTarget = (candidate && candidate.parentNode === editorNode)
-                        ? candidate : null;
-                }
-            }
-
-            if (dropTarget?.getBoundingClientRect) {
-                const r = dropTarget.getBoundingClientRect();
-                dropLine.style.display = 'block';
-                dropLine.style.top   = (r.top - 2) + 'px';
-                dropLine.style.left  = r.left + 'px';
-                dropLine.style.width = r.width + 'px';
-            } else {
-                dropLine.style.display = 'none';
-            }
-        };
-
-        const onUp = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup',   onUp);
-
-            ghost.remove();
-            dropLine.remove();
-            nodeToMove.style.opacity = '';
-
-            try {
-                if (dropTarget && dropTarget.parentNode === editorNode) {
-                    editorNode.insertBefore(nodeToMove, dropTarget);
-                } else {
-                    editorNode.appendChild(nodeToMove);
-                }
-            } catch(err) {
-                try { editorNode.appendChild(nodeToMove); } catch(e2) {}
-            }
-
-            try { placeholder.remove(); } catch(e) {}
-
-            _pinned = false;
-            setTimeout(() => { positionOverlay(); overlay.style.display = 'block'; }, 80);
-            showToast('Table moved ✓');
-        };
-
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup',   onUp);
-    });
-};
-
-// Re-initialize all existing tables with the fixed version
-document.querySelectorAll('.tbl-ui-overlay').forEach(o => o.remove());
-document.querySelectorAll('.editor-content table').forEach(t => {
-    delete t.dataset.tableUiInit;
-});
-initAllEditorTables();
-
+console.log('✅ Table UI ready');
 </script>
 
 </body>
