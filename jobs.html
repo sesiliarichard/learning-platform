@@ -1094,8 +1094,8 @@ nav {
 
 <script>
   let currentPage = 1;
-const jobDataMap = {};
   const PAGE_SIZE = 8;
+  const jobDataMap = {};
   let totalCount = 0;
   const LOGO_CLASSES = ['logo--blue','logo--cyan','logo--dark','logo--teal'];
 
@@ -1115,14 +1115,17 @@ const jobDataMap = {};
     return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
-  function buildJobCard(job, index) {
+ function buildJobCard(job, index) {
+    jobDataMap[job.id] = {
+      appLink: job.application_link || '',
+      email:   job.email || '',
+      company: job.company_name || ''
+    };
     const initials = (job.company_name||'?').slice(0,2).toUpperCase();
     const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
     const isSaved = savedJobs.includes(job.id);
     const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' }[job.job_type] || job.job_type || 'Full-time';
     const locLabel  = { 'remote':'Remote','hybrid':'Hybrid','onsite':'On-site' }[job.location_type] || job.location_type || 'On-site';
-
-   jobDataMap[job.id] = { appLink: job.application_link || '', email: job.email || '', company: job.company_name || '' };
     return `
       <div class="job-card" style="animation-delay:${index*0.07}s" onclick="viewJob('${job.id}')">
         <div class="job-card-top">
@@ -1284,6 +1287,13 @@ const jobDataMap = {};
   async function viewJob(id) {
     const { data, error } = await window.supabaseClient.from('hire_requests').select('*').eq('id', id).single();
     if (error || !data) return;
+
+    // Store in map so applyToJob works from the modal
+    jobDataMap[data.id] = {
+      appLink: data.application_link || '',
+      email:   data.email || '',
+      company: data.company_name || ''
+    };
 
     const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
     const isSaved = savedJobs.includes(data.id);

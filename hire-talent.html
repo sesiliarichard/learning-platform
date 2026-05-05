@@ -1060,9 +1060,7 @@ async function submitHire() {
 
   if (editingId) {
     // ── UPDATE existing record ──────────────────────────
-    const { error: updateError } = await window.supabaseClient
-      .from('hire_requests')
-     .update({
+    const updatePayload = {
         first_name:       firstname,
         last_name:        lastname,
         email,
@@ -1074,11 +1072,20 @@ async function submitHire() {
         job_type:         jobType,
         location_type:    locType,
         application_link: appLink || null,
-        ...(logoUrl && { logo_url: logoUrl }),
-      })
+    };
+    if (logoUrl) updatePayload.logo_url = logoUrl;
+
+    const { error: updateError } = await window.supabaseClient
+      .from('hire_requests')
+      .update(updatePayload)
       .eq('id', editingId);
 
     error = updateError;
+
+    // ⬇ CRITICAL: prevent falling through to create
+    if (!updateError) {
+      refNumber = localStorage.getItem('hire_request_ref') || refNumber;
+    }
     
 
   } else {
