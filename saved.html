@@ -572,11 +572,25 @@ nav {
   }
 
  function applyToJob(appLink, email, company) {
-  const url = appLink.replace(/&amp;/g,'&').replace(/&#47;/g,'/').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
-  if (url) {
-    window.open(url, '_blank', 'noopener');
-  } else {
+  // Clean up any HTML entities that might be in the link
+  let cleanLink = appLink;
+  if (cleanLink) {
+    cleanLink = cleanLink.replace(/&amp;/g, '&')
+                         .replace(/&#47;/g, '/')
+                         .replace(/&#39;/g, "'")
+                         .replace(/&quot;/g, '"')
+                         .replace(/&lt;/g, '<')
+                         .replace(/&gt;/g, '>');
+  }
+  
+  if (cleanLink && cleanLink.trim() !== '' && cleanLink !== 'null' && cleanLink !== 'undefined') {
+    // Open the stored application link in a new tab
+    window.open(cleanLink, '_blank', 'noopener');
+  } else if (email && email.trim() !== '') {
+    // Fallback to email
     window.location.href = `mailto:${email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
+  } else {
+    alert('No application link or contact email available for this position.');
   }
 }
   async function loadSaved() {

@@ -975,40 +975,36 @@
       const number = document.getElementById('contact').value.trim().replace(/\s/g, '');
       return prefix === '+?' ? number : `${prefix} ${number}`;
     }
+document.addEventListener('DOMContentLoaded', async () => {
+  await loadAllCountries();
+  
+  const isEditing = loadEditMode();
+  
+  if (!isEditing) {
+    const savedRef = localStorage.getItem('hire_request_ref');
+    const savedData = localStorage.getItem('hire_request_data');
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      await loadAllCountries();
-
-      // Check if this company already submitted a request
-      const savedRef = localStorage.getItem('hire_request_ref');
-      const savedData = localStorage.getItem('hire_request_data');
-
-      if (!savedRef || !savedData) return; // First time — show form
-
-      // They already submitted — show their previous request
+    if (savedRef && savedData) {
       const prev = JSON.parse(savedData);
-
-      document.getElementById('previewFullName').textContent    = prev.fullName;
-      document.getElementById('previewEmail').textContent       = prev.email;
-      document.getElementById('previewPhone').textContent       = prev.contact;
-      document.getElementById('previewCompany').textContent     = prev.company;
+      document.getElementById('previewFullName').textContent = prev.fullName;
+      document.getElementById('previewEmail').textContent = prev.email;
+      document.getElementById('previewPhone').textContent = prev.contact;
+      document.getElementById('previewCompany').textContent = prev.company;
       document.getElementById('previewContactName').textContent = prev.fullName;
-      document.getElementById('previewIndustry').textContent    = prev.industry;
-      document.getElementById('previewCountry').textContent     = prev.country;
-      document.getElementById('previewNeeds').textContent       = prev.needs;
-      document.getElementById('refNumber').textContent          = savedRef;
-
+      document.getElementById('previewIndustry').textContent = prev.industry;
+      document.getElementById('previewCountry').textContent = prev.country;
+      document.getElementById('previewNeeds').textContent = prev.needs;
+      document.getElementById('refNumber').textContent = savedRef;
+      
       const initials = prev.company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       document.getElementById('companyInitials').textContent = initials || '?';
-
-      // Change banner to welcome back message
-      document.querySelector('.success-banner').textContent =
-        '👋 Welcome back! Your request is under review. Ref: ' + savedRef;
-
-      document.getElementById('formContainer').style.display  = 'none';
+      
+      document.querySelector('.success-banner').textContent = '👋 Welcome back! Your request is under review.';
+      document.getElementById('formContainer').style.display = 'none';
       document.getElementById('previewSection').style.display = 'block';
-    });
-
+    }
+  }
+});
      function showAlert(type, msg) {
       const el = document.getElementById(type === 'error' ? 'alertError' : 'alertSuccess');
       el.textContent = msg; el.classList.add('show');
@@ -1021,23 +1017,18 @@
       btn.disabled = on; btn.classList.toggle('loading', on);
     }
 
-    
-
-  
-
 async function submitHire() {
   const firstname  = document.getElementById('firstname').value.trim();
   const lastname   = document.getElementById('lastname').value.trim();
   const email      = document.getElementById('email').value.trim();
   const contact    = getFullPhone();
   const company    = document.getElementById('company').value.trim();
-   const appLink  = document.getElementById('applicationLink').value.trim();
-   const logoFile = document.getElementById('companyLogoFile').files[0];
+  const appLink    = document.getElementById('applicationLink').value.trim();
+  const logoFile   = document.getElementById('companyLogoFile').files[0];
   const jobTitle   = document.getElementById('jobTitle')?.value.trim() || 'Open Position';
   const jobType    = document.getElementById('jobType')?.value || 'full-time';
   const locType    = document.getElementById('locationType')?.value || 'remote';
   const editingId  = document.getElementById('editingId').value;
-
 
   if (!firstname || !lastname || !email || !contact || !company) {
     showAlert('error', 'Please fill in all required fields.');
@@ -1052,26 +1043,28 @@ async function submitHire() {
 
   setLoading(true);
 
- let refNumber = editingId
+  let refNumber = editingId
     ? (localStorage.getItem('hire_request_ref') || 'REF')
     : 'HIRE-' + Date.now().toString(36).toUpperCase().slice(-6);
+  
   const logoUrl = await uploadCompanyLogo(logoFile, refNumber);
-  let error;
+  let error, newId;
 
   if (editingId) {
-    // ── UPDATE existing record ──────────────────────────
+    // UPDATE existing record - NOT CREATE NEW
     const updatePayload = {
-        first_name:       firstname,
-        last_name:        lastname,
-        email,
-        contact,
-        company_name:     company,
-        industry,
-        country,
-        talent_needs:     `${jobTitle}\n\n${needs}`,
-        job_type:         jobType,
-        location_type:    locType,
-        application_link: appLink || null,
+      first_name:       firstname,
+      last_name:        lastname,
+      email:            email,
+      contact:          contact,
+      company_name:     company,
+      industry:         industry,
+      country:          country,
+      talent_needs:     `${jobTitle}\n\n${needs}`,
+      job_type:         jobType,
+      location_type:    locType,
+      application_link: appLink || null,
+      updated_at:       new Date().toISOString()
     };
     if (logoUrl) updatePayload.logo_url = logoUrl;
 
@@ -1081,23 +1074,21 @@ async function submitHire() {
       .eq('id', editingId);
 
     error = updateError;
-
-    // ⬇ CRITICAL: prevent falling through to create
+    newId = editingId;
+    
     if (!updateError) {
       refNumber = localStorage.getItem('hire_request_ref') || refNumber;
     }
-    
-
   } else {
-    // ── CREATE new record ───────────────────────────────
-   const result = await TalentHub.submitHireRequest({
+    // CREATE new record
+    const result = await TalentHub.submitHireRequest({
       first_name:       firstname,
       last_name:        lastname,
-      email,
-      contact,
+      email:            email,
+      contact:          contact,
       company_name:     company,
-      industry,
-      country,
+      industry:         industry,
+      country:          country,
       talent_needs:     `${jobTitle}\n\n${needs}`,
       job_type:         jobType,
       location_type:    locType,
@@ -1105,12 +1096,12 @@ async function submitHire() {
       logo_url:         logoUrl,
     });
 
-    error     = result.error;
+    error = result.error;
     refNumber = result.refNumber;
+    newId = result.data?.[0]?.id;
 
-    // Save the new record ID for future edits
-    if (result.data?.[0]?.id) {
-      localStorage.setItem('hire_request_id', result.data[0].id);
+    if (newId) {
+      localStorage.setItem('hire_request_id', newId);
     }
   }
 
@@ -1126,15 +1117,15 @@ async function submitHire() {
   document.getElementById('submitBtnLabel').textContent = 'Submit Request →';
 
   // Populate preview
-  document.getElementById('previewFullName').textContent    = `${firstname} ${lastname}`;
-  document.getElementById('previewEmail').textContent       = email;
-  document.getElementById('previewPhone').textContent       = contact;
-  document.getElementById('previewCompany').textContent     = company;
+  document.getElementById('previewFullName').textContent = `${firstname} ${lastname}`;
+  document.getElementById('previewEmail').textContent = email;
+  document.getElementById('previewPhone').textContent = contact;
+  document.getElementById('previewCompany').textContent = company;
   document.getElementById('previewContactName').textContent = `${firstname} ${lastname}`;
-  document.getElementById('previewIndustry').textContent    = industry;
-  document.getElementById('previewCountry').textContent     = country;
-  document.getElementById('previewNeeds').textContent       = needs;
-  document.getElementById('refNumber').textContent          = refNumber;
+  document.getElementById('previewIndustry').textContent = industry;
+  document.getElementById('previewCountry').textContent = country;
+  document.getElementById('previewNeeds').textContent = needs;
+  document.getElementById('refNumber').textContent = refNumber;
 
   const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
   document.getElementById('companyInitials').textContent = initials || '?';
@@ -1150,7 +1141,7 @@ async function submitHire() {
     logoUrl: logoUrl || localStorage.getItem('hire_logo_url') || null,
   }));
 
-  document.getElementById('formContainer').style.display  = 'none';
+  document.getElementById('formContainer').style.display = 'none';
   document.getElementById('previewSection').style.display = 'block';
 
   const banner = document.querySelector('.success-banner');
@@ -1160,13 +1151,25 @@ async function submitHire() {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+  
 
-
-   function editRequest() {
-  // Load saved data back into form
+async function editRequest() {
   const savedData = localStorage.getItem('hire_request_data');
   const savedRef  = localStorage.getItem('hire_request_ref');
-  const savedId   = localStorage.getItem('hire_request_id');
+  let   savedId   = localStorage.getItem('hire_request_id');
+
+  // If we don't have the ID yet, fetch it from Supabase by ref_number
+  if (!savedId && savedRef) {
+    const { data } = await window.supabaseClient
+      .from('hire_requests')
+      .select('id')
+      .eq('ref_number', savedRef)
+      .single();
+    if (data && data.id) {
+      savedId = data.id;
+      localStorage.setItem('hire_request_id', savedId);
+    }
+  }
 
   if (savedData) {
     const prev = JSON.parse(savedData);
@@ -1174,23 +1177,79 @@ async function submitHire() {
     document.getElementById('firstname').value  = nameParts[0] || '';
     document.getElementById('lastname').value   = nameParts.slice(1).join(' ') || '';
     document.getElementById('email').value      = prev.email || '';
-    document.getElementById('contact').value    = prev.contact || '';
+    
+    // Extract just the number part (remove prefix) for phone
+    const phoneMatch = (prev.contact || '').match(/\d[\d\s]*$/);
+    document.getElementById('contact').value    = phoneMatch ? phoneMatch[0].trim() : '';
+    
     document.getElementById('company').value    = prev.company || '';
+    document.getElementById('industry').value   = prev.industry || '';
     document.getElementById('needs').value      = prev.needs || '';
     document.getElementById('jobTitle').value   = prev.jobTitle || '';
+    if (prev.applicationLink) document.getElementById('applicationLink').value = prev.applicationLink || '';
 
     // Restore selects
-    if (prev.jobType) document.getElementById('jobType').value = prev.jobType;
+    if (prev.jobType)      document.getElementById('jobType').value      = prev.jobType;
     if (prev.locationType) document.getElementById('locationType').value = prev.locationType;
 
-    // Mark as editing mode
+    // Set phone prefix from saved data
+    const prefixMatch = (prev.contact || '').match(/^\+\d+/);
+    if (prefixMatch) {
+      document.getElementById('phonePrefix').textContent = prefixMatch[0];
+      document.getElementById('phonePrefix').classList.add('active');
+    }
+
+    // Critical: Set the editing ID
     document.getElementById('editingId').value = savedId || '';
+
+    if (!savedId) {
+      showAlert('error', '⚠️ Could not find record to edit. Please submit a new request.');
+      return;
+    }
+
     document.getElementById('submitBtnLabel').textContent = '💾 Save Changes →';
   }
 
   document.getElementById('previewSection').style.display = 'none';
   document.getElementById('formContainer').style.display  = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function loadEditMode() {
+  const editingId = localStorage.getItem('hire_request_id');
+  const editingData = localStorage.getItem('hire_request_data');
+  
+  if (editingId && editingData) {
+    const data = JSON.parse(editingData);
+    const nameParts = data.fullName.split(' ');
+    
+    document.getElementById('editingId').value = editingId;
+    document.getElementById('firstname').value = nameParts[0] || '';
+    document.getElementById('lastname').value = nameParts.slice(1).join(' ') || '';
+    document.getElementById('email').value = data.email || '';
+    // Extract just the number part (remove prefix)
+    const phoneMatch = (data.contact || '').match(/\d[\d\s]*$/);
+    document.getElementById('contact').value = phoneMatch ? phoneMatch[0].trim() : '';
+    document.getElementById('company').value = data.company || '';
+    document.getElementById('industry').value = data.industry || '';
+    document.getElementById('needs').value = data.needs || '';
+    document.getElementById('jobTitle').value = data.jobTitle || '';
+    if (data.jobType) document.getElementById('jobType').value = data.jobType;
+    if (data.locationType) document.getElementById('locationType').value = data.locationType;
+    if (data.applicationLink) document.getElementById('applicationLink').value = data.applicationLink;
+    
+    // Set phone prefix from saved data
+    const prefixMatch = (data.contact || '').match(/^\+\d+/);
+    if (prefixMatch) {
+      document.getElementById('phonePrefix').textContent = prefixMatch[0];
+      document.getElementById('phonePrefix').classList.add('active');
+    }
+    
+    document.getElementById('submitBtnLabel').textContent = '💾 Update Request →';
+    document.getElementById('formContainer').style.display = 'block';
+    document.getElementById('previewSection').style.display = 'none';
+    return true;
+  }
+  return false;
 }
 
     function newRequest() {
@@ -1242,6 +1301,7 @@ async function uploadCompanyLogo(file, ref) {
     return data.publicUrl;
   } catch { return null; }
 }
+
   </script>
 
 </body>

@@ -1115,9 +1115,9 @@ nav {
     return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
 
- function buildJobCard(job, index) {
+function buildJobCard(job, index) {
     jobDataMap[job.id] = {
-      appLink: job.application_link || '',
+      appLink: job.application_link || '', 
       email:   job.email || '',
       company: job.company_name || ''
     };
@@ -1355,11 +1355,20 @@ nav {
 
  function applyToJob(jobId) {
   const job = jobDataMap[jobId];
-  if (!job) return;
-  if (job.appLink) {
+  if (!job) {
+    console.error('Job not found:', jobId);
+    return;
+  }
+  
+  // Check if there's an application link
+  if (job.appLink && job.appLink.trim() !== '') {
+    // Open the stored application link in a new tab
     window.open(job.appLink, '_blank', 'noopener');
-  } else {
+  } else if (job.email) {
+    // Fallback to email
     window.location.href = `mailto:${job.email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${job.company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
+  } else {
+    alert('No application link or contact email available for this position.');
   }
 }
 
