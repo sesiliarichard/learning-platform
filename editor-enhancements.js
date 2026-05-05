@@ -495,12 +495,23 @@
         tableAct(btn.dataset.act, tbl, wrap);
       });
 
-      wrap.appendChild(tb);
+        wrap.appendChild(tb);
       table.parentNode.insertBefore(wrap, table);
       wrap.appendChild(table);
 
-      wrap.addEventListener('mousedown', e => {
+      // Show toolbar when ANY part of the table is clicked
+      const showTableToolbar = (e) => {
         if (e.target.closest('.wle-table-toolbar, .wle-col-dragger, .wle-row-dragger')) return;
+        deselectAll();
+        _activeTable = wrap;
+        wrap.classList.add('selected');
+      };
+      
+      wrap.addEventListener('mousedown', showTableToolbar);
+      table.addEventListener('mousedown', showTableToolbar);
+      
+      // Show toolbar when table gets focus (from Tab navigation)
+      table.addEventListener('focusin', () => {
         deselectAll();
         _activeTable = wrap;
         wrap.classList.add('selected');
@@ -811,7 +822,7 @@ function tableAct (act, table, wrap) {
       t.querySelectorAll('td, th').forEach(cell => makeNavCell(cell, t));
     });
 
-    editor.querySelectorAll('.wle-table-wrap:not(.wle-toolbar-wired)').forEach(wrap => {
+     editor.querySelectorAll('.wle-table-wrap:not(.wle-toolbar-wired)').forEach(wrap => {
       wrap.classList.add('wle-toolbar-wired');
       const toolbar = wrap.querySelector('.wle-table-toolbar');
       if (toolbar) {
@@ -820,18 +831,23 @@ function tableAct (act, table, wrap) {
           e.stopPropagation();
           const btn = e.target.closest('button[data-act]');
           if (!btn) return;
-          // KEY FIX: find table fresh at click time, not at wire time
           const tbl = wrap.querySelector('table');
           if (!tbl && btn.dataset.act !== 'delTable') return;
           tableAct(btn.dataset.act, tbl, wrap);
         });
       }
-      wrap.addEventListener('mousedown', e => {
+      
+      // Show toolbar when ANY part of the table is clicked
+      const showToolbar = (e) => {
         if (e.target.closest('.wle-table-toolbar, .wle-col-dragger, .wle-row-dragger')) return;
         deselectAll();
         _activeTable = wrap;
         wrap.classList.add('selected');
-      });
+      };
+      
+      wrap.addEventListener('mousedown', showToolbar);
+      const tbl = wrap.querySelector('table');
+      if (tbl) tbl.addEventListener('mousedown', showToolbar);
     });
   }
 
