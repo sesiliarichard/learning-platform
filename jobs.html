@@ -802,6 +802,121 @@ nav {
 .form-textarea--small {
     min-height: 70px;
 }
+@media (max-width: 768px) {
+  nav {
+    padding: 0 16px;
+    gap: 12px;
+    flex-wrap: wrap;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    flex-wrap: nowrap;
+  }
+
+  .nav-links a {
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .nav-right {
+    margin-left: auto;
+  }
+
+  .page {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .sidebar {
+    position: static;
+    top: auto;
+  }
+
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .main-header h1 {
+    font-size: 20px;
+  }
+
+  .job-card {
+    padding: 16px;
+  }
+
+  .job-card-top {
+    gap: 10px;
+  }
+
+  .company-logo {
+    width: 42px;
+    height: 42px;
+    font-size: 14px;
+    border-radius: 10px;
+  }
+
+  .job-title {
+    font-size: 14px;
+  }
+
+  .job-footer {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .job-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .btn-apply, .btn-save-job {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+
+  .results-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .sort-select {
+    width: 100%;
+  }
+
+  .modal {
+    margin: 10px;
+    border-radius: 16px;
+  }
+
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-footer {
+    flex-direction: column-reverse;
+  }
+
+  .post-job-btn {
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+}
 </style>
 </head>
 <body>

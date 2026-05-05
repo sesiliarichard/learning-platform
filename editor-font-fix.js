@@ -23,8 +23,9 @@
 (function () {
   'use strict';
 
-  // Only run on admin page
-  if (!window.location.pathname.includes('admin') && !window.location.href.includes('admin')) return;
+   // Only run on admin page - check for admin elements
+  const isAdmin = document.querySelector('.admin-badge, .sidebar, [data-section="users"]');
+  if (!isAdmin) return;
 
   /* ─────────────────────────────────────────────────────────
    * FONT CATALOGUE

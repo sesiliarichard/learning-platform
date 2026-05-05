@@ -451,6 +451,70 @@ nav {
     width: 100%;
     margin-bottom: 0;
 }
+@media (max-width: 768px) {
+  nav {
+    padding: 0 16px;
+    height: auto;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .nav-links {
+    order: 3;
+    width: 100%;
+    gap: 16px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 8px;
+  }
+
+  .nav-links a {
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .container {
+    padding: 16px;
+  }
+
+  .page-header h1 {
+    font-size: 22px;
+  }
+
+  .job-card {
+    padding: 16px;
+  }
+
+  .company-logo {
+    width: 42px;
+    height: 42px;
+    font-size: 14px;
+  }
+
+  .job-title {
+    font-size: 14px;
+  }
+
+  .job-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .job-actions {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .btn-apply, .btn-remove {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    padding: 10px 12px;
+  }
+}
 </style>
 </head>
 <body>
