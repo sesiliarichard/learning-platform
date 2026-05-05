@@ -1047,11 +1047,16 @@ async function submitHire() {
     ? (localStorage.getItem('hire_request_ref') || 'REF')
     : 'HIRE-' + Date.now().toString(36).toUpperCase().slice(-6);
   
-  const logoUrl = await uploadCompanyLogo(logoFile, refNumber);
+  // Upload logo and get URL
+  let logoUrl = null;
+  if (logoFile) {
+    logoUrl = await uploadCompanyLogo(logoFile, refNumber);
+    console.log('Logo uploaded URL:', logoUrl); // Debug log
+  }
+  
   let error, newId;
 
   if (editingId) {
-    // UPDATE existing record - NOT CREATE NEW
     const updatePayload = {
       first_name:       firstname,
       last_name:        lastname,
@@ -1066,7 +1071,12 @@ async function submitHire() {
       application_link: appLink || null,
       updated_at:       new Date().toISOString()
     };
-    if (logoUrl) updatePayload.logo_url = logoUrl;
+    
+    // Only add logo_url if we have one
+    if (logoUrl) {
+      updatePayload.logo_url = logoUrl;
+      console.log('Adding logo_url to update:', logoUrl);
+    }
 
     const { error: updateError } = await window.supabaseClient
       .from('hire_requests')
@@ -1080,7 +1090,6 @@ async function submitHire() {
       refNumber = localStorage.getItem('hire_request_ref') || refNumber;
     }
   } else {
-    // CREATE new record
     const result = await TalentHub.submitHireRequest({
       first_name:       firstname,
       last_name:        lastname,
@@ -1093,7 +1102,7 @@ async function submitHire() {
       job_type:         jobType,
       location_type:    locType,
       application_link: appLink || null,
-      logo_url:         logoUrl,
+      logo_url:         logoUrl,  // Make sure this is included
     });
 
     error = result.error;
@@ -1108,15 +1117,15 @@ async function submitHire() {
   setLoading(false);
 
   if (error) {
+    console.error('Submit error:', error);
     showAlert('error', '⚠️ ' + (error.message || 'Please try again.'));
     return;
   }
 
-  // Reset editing mode
+  // Rest of your submitHire function continues...
   document.getElementById('editingId').value = '';
   document.getElementById('submitBtnLabel').textContent = 'Submit Request →';
 
-  // Populate preview
   document.getElementById('previewFullName').textContent = `${firstname} ${lastname}`;
   document.getElementById('previewEmail').textContent = email;
   document.getElementById('previewPhone').textContent = contact;
@@ -1130,7 +1139,6 @@ async function submitHire() {
   const initials = company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
   document.getElementById('companyInitials').textContent = initials || '?';
 
-  // Save updated data to localStorage
   localStorage.setItem('hire_request_ref', refNumber);
   if (logoUrl) localStorage.setItem('hire_logo_url', logoUrl);
   localStorage.setItem('hire_request_data', JSON.stringify({
@@ -1151,7 +1159,6 @@ async function submitHire() {
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-  
 
 async function editRequest() {
   const savedData = localStorage.getItem('hire_request_data');
@@ -1292,16 +1299,38 @@ function updateLogoInitials(name) {
 
 async function uploadCompanyLogo(file, ref) {
   if (!file) return null;
+  
   try {
-    const ext  = file.name.split('.').pop();
-    const path = `company-logos/${ref}-${Date.now()}.${ext}`;
-    const { error } = await window.supabaseClient.storage.from('talent-files').upload(path, file, { upsert: true });
-    if (error) return null;
-    const { data } = window.supabaseClient.storage.from('talent-files').getPublicUrl(path);
+    const ext = file.name.split('.').pop();
+    const fileName = `company-logos/${ref}-${Date.now()}.${ext}`;
+    
+    console.log('Uploading logo to:', fileName);
+    
+    const { error: uploadError } = await window.supabaseClient.storage
+      .from('talent-files')
+      .upload(fileName, file, { 
+        upsert: true,
+        cacheControl: '3600'
+      });
+    
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      return null;
+    }
+    
+    // Get the public URL
+    const { data } = window.supabaseClient.storage
+      .from('talent-files')
+      .getPublicUrl(fileName);
+    
+    console.log('Logo public URL:', data.publicUrl);
     return data.publicUrl;
-  } catch { return null; }
+    
+  } catch (err) {
+    console.error('Logo upload exception:', err);
+    return null;
+  }
 }
-
 // Add this validation function
 async function validateAndLoadSavedRequest() {
   const savedRef = localStorage.getItem('hire_request_ref');

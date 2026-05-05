@@ -1117,26 +1117,41 @@ nav {
 
 function buildJobCard(job, index) {
     jobDataMap[job.id] = {
-      appLink: job.application_link || '', 
+      appLink: job.application_link || '',
       email:   job.email || '',
       company: job.company_name || ''
     };
-    const initials = (job.company_name||'?').slice(0,2).toUpperCase();
-    const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
-    const isSaved = savedJobs.includes(job.id);
+    
+    // Get logo URL - check both possible field names
+    const logoUrl = job.logo_url || job.company_logo || null;
+    const initials = (job.company_name || '?').slice(0, 2).toUpperCase();
+    const logoClassList = logoClass(index);
+    
+    // Logo display logic
+    let logoHtml = '';
+    if (logoUrl && logoUrl.trim() !== '') {
+      logoHtml = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;" 
+                       onerror="this.style.display='none'; this.parentElement.innerHTML='${initials}'; this.parentElement.classList.add('${logoClassList}');">`;
+    } else {
+      logoHtml = initials;
+    }
+    
     const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' }[job.job_type] || job.job_type || 'Full-time';
     const locLabel  = { 'remote':'Remote','hybrid':'Hybrid','onsite':'On-site' }[job.location_type] || job.location_type || 'On-site';
+    
     return `
       <div class="job-card" style="animation-delay:${index*0.07}s" onclick="viewJob('${job.id}')">
         <div class="job-card-top">
-          <div class="company-logo ${logoClass(index)}" style="${job.logo_url ? 'background:white;border:1.5px solid #e0e4f0;padding:2px;' : ''}">${job.logo_url ? `<img src="${escHtml(job.logo_url)}" style="width:100%;height:100%;object-fit:contain;border-radius:10px;">` : escHtml(initials)}</div>
+          <div class="company-logo ${logoUrl ? '' : logoClassList}" style="${logoUrl ? 'background:white;border:1.5px solid #e0e4f0;padding:0;overflow:hidden;' : ''}">
+            ${logoHtml}
+          </div>
           <div class="job-info">
             <div class="job-title">${escHtml(job.talent_needs ? job.talent_needs.split('\n')[0] : 'Open Position')}</div>
             <div class="job-company">${escHtml(job.company_name)}</div>
             <div class="job-meta">
               <span class="meta-chip type">${typeLabel}</span>
               <span class="meta-chip remote">${locLabel}</span>
-             ${job.country ? `<span class="meta-chip">${escHtml(job.country)}</span>` : ''}
+              ${job.country ? `<span class="meta-chip">${escHtml(job.country)}</span>` : ''}
               ${job.industry ? `<span class="meta-chip">${escHtml(job.industry)}</span>` : ''}
             </div>
           </div>
@@ -1148,13 +1163,12 @@ function buildJobCard(job, index) {
           </div>
           <div class="job-actions" onclick="event.stopPropagation()">
             <button class="btn-save-job ${isSaved?'saved':''}" onclick="toggleSaveJob('${job.id}', this)">${isSaved?'✓ Saved':'Save'}</button>
-           <button class="btn-apply" onclick="applyToJob('${job.id}')">Apply Now</button>
+            <button class="btn-apply" onclick="applyToJob('${job.id}')">Apply Now</button>
           </div>
         </div>
         <div class="posted-date">Posted ${timeAgo(job.created_at)}</div>
       </div>`;
-  }
-
+}
   async function loadJobs() {
     const container = document.getElementById('cardsContainer');
     const countEl   = document.getElementById('resultsCount');
