@@ -1382,7 +1382,7 @@
             </svg>
           </div>
           <div class="card-role">${escHtml(talent.role)}</div>
-          <div class="card-location">${countryFlag(talent.country_code)} ${escHtml(talent.country_name || talent.country_code)}</div>
+          <div class="card-location">${countryFlag(talent.country_code)}${escHtml(talent.country_name || talent.country_code)}</div>
           <span class="exp-badge">${expLabel}</span>
           ${skills.length ? `
             <div class="skills-label">Top Skills</div>
@@ -1516,7 +1516,9 @@
             <div>
               <div style="font-family:Syne,sans-serif;font-size:1.4rem;font-weight:800;color:white;">${escHtml(data.full_name)}</div>
               <div style="color:rgba(255,255,255,0.85);font-size:14px;margin-top:2px;">${escHtml(data.role)}</div>
-              <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">📍 ${escHtml(data.country_name || data.country_code)}</div>
+              <div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:4px;">
+             ${countryFlag(data.country_code)} ${escHtml(data.country_name || data.country_code)}
+          </div>
             </div>
           </div>
           <div style="padding:24px;">
@@ -1573,11 +1575,15 @@
     });
     loadTalents();
   });
-  function countryFlag(code) {
-  if (!code) return '📍';
-  return code.toUpperCase().replace(/./g, 
-    char => String.fromCodePoint(127397 + char.charCodeAt(0))
-  );
+function countryFlag(code) {
+  if (!code || code.length !== 2) return '📍';
+  return `<img 
+    src="https://flagcdn.com/20x15/${code.toLowerCase()}.png"
+    alt="${code.toUpperCase()}"
+    style="width:20px;height:15px;border-radius:2px;
+           vertical-align:middle;margin-right:4px;"
+    onerror="this.replaceWith(document.createTextNode('🌍'))"
+  >`;
 }
 function toggleMenu() {
   const menu = document.getElementById('navMenu');
