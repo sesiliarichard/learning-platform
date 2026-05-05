@@ -1302,6 +1302,40 @@ async function uploadCompanyLogo(file, ref) {
   } catch { return null; }
 }
 
+// Add this validation function
+async function validateAndLoadSavedRequest() {
+  const savedRef = localStorage.getItem('hire_request_ref');
+  const savedId = localStorage.getItem('hire_request_id');
+  const savedData = localStorage.getItem('hire_request_data');
+  
+  if (!savedRef || !savedData) return false;
+  
+  try {
+    let query = window.supabaseClient.from('hire_requests').select('id');
+    
+    if (savedId) {
+      query = query.eq('id', savedId);
+    } else {
+      query = query.eq('ref_number', savedRef);
+    }
+    
+    const { data, error } = await query.maybeSingle();
+    
+    if (error || !data) {
+      // Record doesn't exist in database - clear localStorage
+      localStorage.removeItem('hire_request_ref');
+      localStorage.removeItem('hire_request_data');
+      localStorage.removeItem('hire_request_id');
+      localStorage.removeItem('hire_logo_url');
+      return false;
+    }
+    
+    return true;
+  } catch (err) {
+    console.error('Validation error:', err);
+    return false;
+  }
+}
   </script>
 
 </body>
