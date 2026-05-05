@@ -50,175 +50,219 @@
 
   /* ===== NAVIGATION ===== */
   nav {
-    background: rgba(255,255,255,0.95);
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(0,153,255,0.1);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    display: flex;
-    align-items: center;
-    padding: 0 32px;
-    height: 64px;
-    gap: 48px;
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 153, 255, 0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  height: 64px;
+  gap: 48px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: var(--blue);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: white;
+}
+
+.logo-text { line-height: 1.15; }
+
+.logo-text strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+}
+
+.logo-text span {
+  font-size: 12px;
+  color: var(--blue-mid);
+  font-weight: 600;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  list-style: none;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+  padding-bottom: 4px;
+  transition: color .2s;
+}
+
+.nav-links a:hover { color: var(--text); }
+
+.nav-links a.active {
+  color: var(--blue);
+  border-bottom: 2px solid var(--blue-mid);
+  font-weight: 700;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;
+}
+
+/* User chip — desktop only */
+.nav-user-item {
+  display: none;
+}
+
+/* Hamburger — hidden on desktop */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all 0.3s;
+}
+
+/* Desktop user chip (keep your original styles) */
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background .15s;
+}
+
+.user-chip:hover { background: var(--blue-bg); }
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--blue), var(--blue-mid));
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user-info { line-height: 1.2; }
+
+.user-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-info span {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ── MOBILE NAV ── */
+@media (max-width: 768px) {
+  nav {
+    padding: 0 16px;
+    height: 56px;
+    gap: 0;
     position: sticky;
     top: 0;
-    z-index: 100;
   }
 
-  .logo {
+  .hamburger {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    text-decoration: none;
-    flex-shrink: 0;
-  }
-
-  .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--blue);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .logo-icon svg {
-    width: 20px;
-    height: 20px;
-    fill: white;
-  }
-
-  .logo-text { line-height: 1.15; }
-
-  .logo-text strong {
-    display: block;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-  }
-
-  .logo-text span {
-    font-size: 12px;
-    color: var(--blue-mid);
-    font-weight: 600;
   }
 
   .nav-links {
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    background: white;
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+    order: 10;
+  }
+
+  .nav-links.open {
     display: flex;
-    gap: 32px;
-    list-style: none;
-    flex: 1;
-    justify-content: center;
+  }
+
+  .nav-links li {
+    width: 100%;
   }
 
   .nav-links a {
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--muted);
-    padding-bottom: 4px;
-    transition: color .2s;
+    display: block;
+    padding: 12px 16px;
+    font-size: 15px;
+    border-bottom: none;
   }
-
-  .nav-links a:hover { color: var(--text); }
 
   .nav-links a.active {
-    color: var(--blue);
-    border-bottom: 2px solid var(--blue-mid);
-    font-weight: 700;
+    background: var(--blue-soft);
+    border-bottom: none;
+    border-left: 3px solid var(--blue-mid);
+    padding-left: 13px;
   }
 
-  .nav-right {
+  .nav-user-item {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-left: auto;
+    gap: 10px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
   }
 
-  .nav-icon-btn {
-    position: relative;
-    width: 36px;
-    height: 36px;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    background: var(--white);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: border-color .2s;
+  .nav-user-item .user-info strong {
+    font-size: 14px;
   }
-
-  .nav-icon-btn:hover { border-color: var(--blue-mid); }
-
-  .nav-icon-btn svg {
-    width: 18px;
-    height: 18px;
-    stroke: var(--muted);
-    fill: none;
-    stroke-width: 2;
-  }
-
-  .badge {
-    position: absolute;
-    top: -3px;
-    right: -3px;
-    background: var(--blue);
-    color: white;
-    border-radius: 99px;
-    font-size: 9px;
-    font-weight: 700;
-    padding: 1px 5px;
-  }
-
-  .user-chip {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: background .15s;
-  }
-
-  .user-chip:hover { background: var(--blue-bg); }
-
-  .avatar {
-    width: 34px;
-    height: 34px;
-    background: linear-gradient(135deg, var(--blue), var(--blue-mid));
-    color: white;
-    border-radius: 50%;
-    font-size: 12px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .user-info { line-height: 1.2; }
-
-  .user-info strong {
-    display: block;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .user-info span {
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  .chevron {
-    width: 14px;
-    height: 14px;
-    stroke: var(--muted);
-    fill: none;
-    stroke-width: 2;
-  }
-
+}
   /* ===== LAYOUT ===== */
   .page {
     display: grid;
@@ -1108,23 +1152,23 @@
     <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
     <div class="logo-text"><strong>Women in AI</strong><span>Africa</span></div>
   </a>
-  <ul class="nav-links">
-  <li><a href="career-support.html">Dashboard</a></li>
-  <li id="navOpportunity"><a href="jobs.html">Opportunity Board</a></li>
-  <li><a href="#" class="active">Talent Discovery</a></li>
-  <li id="navSaved"><a href="saved.html">Saved</a></li>
-</ul>
+
   <div class="nav-right">
-    <button class="nav-icon-btn" aria-label="Notifications">
-      <svg viewBox="0 0 24 24"><path d="M15 17h5l-1.4-1.4A2 2 0 0118 14V11a6 6 0 00-5-5.9V4a1 1 0 00-2 0v1.1A6 6 0 006 11v3a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 01-6 0v-1m6 0H9"/></svg>
-      <span class="badge">3</span>
+    <button class="hamburger" id="hamburgerBtn" onclick="toggleMenu()" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
     </button>
-    <div class="user-chip">
+  </div>
+
+  <ul class="nav-links" id="navMenu">
+    <li><a href="career-support.html">Dashboard</a></li>
+    <li id="navOpportunity"><a href="jobs.html">Opportunity Board</a></li>
+    <li><a href="#" class="active">Talent Discovery</a></li>
+    <li id="navSaved"><a href="saved.html">Saved</a></li>
+    <li class="nav-user-item">
       <div class="avatar">CO</div>
       <div class="user-info"><strong>Company Owner</strong><span>TechNova AI</span></div>
-      <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-    </div>
-  </div>
+    </li>
+  </ul>
 </nav>
 
 <!-- PAGE -->
@@ -1535,6 +1579,19 @@
     char => String.fromCodePoint(127397 + char.charCodeAt(0))
   );
 }
+function toggleMenu() {
+  const menu = document.getElementById('navMenu');
+  const btn  = document.getElementById('hamburgerBtn');
+  menu.classList.toggle('open');
+  btn.setAttribute('aria-expanded', menu.classList.contains('open'));
+}
+
+// Close menu when a link is tapped
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', () => {
+    document.getElementById('navMenu').classList.remove('open');
+  });
+});
 </script>
 
 </body>

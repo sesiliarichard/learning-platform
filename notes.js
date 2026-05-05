@@ -13,6 +13,42 @@ const supabase = createClient(
 )
 
 // ================================================
+// CLEAN CONTENT - Remove admin UI elements from saved content
+// ================================================
+function cleanAdminContent(html) {
+    if (!html || typeof html !== 'string') return html || '';
+    
+    let cleaned = html;
+    
+    // Remove all dragger elements
+    cleaned = cleaned.replace(/<div\s+class="wle-col-dragger"[^>]*><\/div>/gi, '');
+    cleaned = cleaned.replace(/<div\s+class="wle-row-dragger"[^>]*><\/div>/gi, '');
+    cleaned = cleaned.replace(/<div\s+class="wle-handle"[^>]*><\/div>/gi, '');
+    cleaned = cleaned.replace(/<span\s+class="wle-handle"[^>]*><\/span>/gi, '');
+    
+    // Remove toolbars
+    cleaned = cleaned.replace(/<div\s+class="wle-table-toolbar"[^>]*>[\s\S]*?<\/div>/gi, '');
+    cleaned = cleaned.replace(/<div\s+class="wle-img-toolbar"[^>]*>[\s\S]*?<\/div>/gi, '');
+    
+    // Remove contenteditable attributes
+    cleaned = cleaned.replace(/contenteditable="[^"]*"/gi, '');
+    
+    // Remove admin-specific classes
+    cleaned = cleaned.replace(/\s*class="[^"]*wle-[^"]*"/gi, '');
+    cleaned = cleaned.replace(/\s*class="wle-[^"]*"/gi, '');
+    
+    // Remove wrapper divs but keep inner content
+    cleaned = cleaned.replace(/<div\s+class="wle-table-wrap"[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<div\s+class="wle-img-wrap"[^>]*>/gi, '');
+    cleaned = cleaned.replace(/<\/div>\s*(?=<table|<img)/gi, '');
+    
+    // Remove resize handles
+    cleaned = cleaned.replace(/<span\s+class="wle-handle[^>]*><\/span>/gi, '');
+    cleaned = cleaned.replace(/data-dir="[^"]*"/gi, '');
+    
+    return cleaned;
+}
+// ================================================
 // GET /api/courses/:id/chapters
 // Get ALL chapters for a specific course
 // Used in: student notes reader + admin chapter list
@@ -63,9 +99,18 @@ export async function getTopicsByChapter(chapterId) {
     console.error('❌ getTopicsByChapter:', error.message)
     return []
   }
+  
+  // Clean content for each topic
+  if (data && data.length > 0) {
+    data.forEach(topic => {
+      if (topic.content) {
+        topic.content = cleanAdminContent(topic.content)
+      }
+    })
+  }
+  
   return data
 }
-
 // ================================================
 // GET single topic full content
 // Get ONE topic with its full content to display
@@ -81,9 +126,14 @@ export async function getTopicById(topicId) {
     console.error('❌ getTopicById:', error.message)
     return null
   }
+  
+  // Clean the content before returning
+  if (data && data.content) {
+    data.content = cleanAdminContent(data.content)
+  }
+  
   return data
 }
-
 // ================================================
 // POST /api/courses/:id/chapters — ADMIN ONLY
 // Create a new chapter WITH its topics all at once
