@@ -293,13 +293,31 @@
   /* ─────────────────────────────────────────────────────────
    * INJECT STYLES
    * ───────────────────────────────────────────────────────── */
-  function injectStyles() {
+ function injectStyles() {
     if (document.getElementById('asai-font-fix-styles')) return;
     const s = document.createElement('style');
     s.id = 'asai-font-fix-styles';
     s.textContent = `
+      /* FORCE HIDE original dropdowns */
       .editor-toolbar .editor-select-font,
-      .editor-toolbar .editor-select-size { display: none !important; }
+      .editor-toolbar .editor-select-size,
+      select.editor-select-font,
+      select.editor-select-size,
+      .editor-select-font,
+      .editor-select-size {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        opacity: 0 !important;
+        position: absolute !important;
+        pointer-events: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+      }
 
       .asai-dd-wrap { position: relative; display: inline-block; }
 
@@ -374,8 +392,7 @@
       .asai-dd-search input:focus { border-color: #7c3aed; }
     `;
     document.head.appendChild(s);
-  }
-
+}
   /* ─────────────────────────────────────────────────────────
    * BUILD FONT DROPDOWN
    * ───────────────────────────────────────────────────────── */
@@ -917,7 +934,16 @@
     setTimeout(upgradeAllToolbars, 800);
     setTimeout(upgradeAllToolbars, 1800);
   }
-
+  // Force hide original dropdowns after page loads
+  setTimeout(function forceHideOriginalDropdowns() {
+    const originalSelects = document.querySelectorAll('.editor-select-font, .editor-select-size');
+    originalSelects.forEach(el => {
+      el.style.cssText = 'display: none !important; visibility: hidden !important; width: 0 !important; height: 0 !important; position: absolute !important; opacity: 0 !important; pointer-events: none !important;';
+    });
+    if (originalSelects.length > 0) {
+      console.log(`✅ Force-hid ${originalSelects.length} original font/size dropdowns`);
+    }
+  }, 500);
   // Hook modal openers — re-run upgrade after each opens
   function hookFn(name) {
     const orig = window[name];

@@ -1221,28 +1221,10 @@ body { visibility: hidden }
     </small>
 </div>
 
-            <div class="form-group">
+                 <div class="form-group">
     <label for="courseDescription">Description *</label>
     <div class="editor-toolbar">
-        <select class="editor-select editor-select-font"
-                onchange="setEditorFontFamily(0, this)" title="Font">
-            <option value="inherit">Font</option>
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Verdana">Verdana</option>
-        </select>
-        <select class="editor-select editor-select-size"
-                onchange="setEditorFontSize(0, this)" title="Size">
-            <option value="1">8</option>
-            <option value="2">10</option>
-            <option value="3" selected>12</option>
-            <option value="4">14</option>
-            <option value="5">18</option>
-            <option value="6">24</option>
-            <option value="7">36</option>
-        </select>
+        <!-- Font & Size dropdowns removed - handled by editor-font-fix.js -->
         <div class="editor-sep"></div>
         <button type="button" class="editor-btn"
                 onclick="formatText(0, 'undo')" title="Undo">
@@ -1404,27 +1386,6 @@ body { visibility: hidden }
             <i class="fas fa-redo"></i>
         </button>
         <div class="editor-sep"></div>
-
-        <select class="editor-select editor-select-font" 
-                onchange="setEditorFontFamily(0, this)" title="Font">
-            <option value="inherit">Font</option>
-            <option value="Arial">Arial</option>
-            <option value="Times New Roman">Times New Roman</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Courier New">Courier New</option>
-            <option value="Verdana">Verdana</option>
-        </select>
-
-        <select class="editor-select editor-select-size" 
-                onchange="setEditorFontSize(0, this)" title="Size">
-            <option value="1">8</option>
-            <option value="2">10</option>
-            <option value="3" selected>12</option>
-            <option value="4">14</option>
-            <option value="5">18</option>
-            <option value="6">24</option>
-            <option value="7">36</option>
-        </select>
 
         <div class="editor-sep"></div>
 
@@ -2146,25 +2107,8 @@ function addNewTopic() {
    <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
     <div class="editor-sep"></div>
-    <select class="editor-select" onchange="setEditorFontFamily(${idx}, this)" title="Font">
-        <option value="inherit">Font</option>
-        <option value="Arial">Arial</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Courier New">Courier New</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Trebuchet MS">Trebuchet</option>
-        <option value="Impact">Impact</option>
-    </select>
-    <select class="editor-select" onchange="setEditorFontSize(0, this)" title="Size" style="width:58px;">
-        <option value="1">8</option>
-        <option value="2">10</option>
-        <option value="3" selected>12</option>
-        <option value="4">14</option>
-        <option value="5">18</option>
-        <option value="6">24</option>
-        <option value="7">36</option>
-    </select>
+        <!-- Font & Size dropdowns removed - handled by editor-font-fix.js -->
+
     <div class="editor-sep"></div>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')"aria-label="Bold"><b>B</b></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" aria-label="Italic"><i>I</i></button>
@@ -3420,25 +3364,7 @@ function addEditTopic(existingTopic = null) {
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'undo')" title="Undo"><i class="fas fa-undo"></i></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'redo')" title="Redo"><i class="fas fa-redo"></i></button>
     <div class="editor-sep"></div>
-    <select class="editor-select" onchange="setEditorFontFamily(${idx}, this)" title="Font">
-        <option value="inherit">Font</option>
-        <option value="Arial">Arial</option>
-        <option value="Times New Roman">Times New Roman</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Courier New">Courier New</option>
-        <option value="Verdana">Verdana</option>
-        <option value="Trebuchet MS">Trebuchet</option>
-        <option value="Impact">Impact</option>
-    </select>
-    <select class="editor-select" onchange="setEditorFontSize(${idx}, this)" title="Size" style="width:58px;">
-        <option value="1">8</option>
-        <option value="2">10</option>
-        <option value="3" selected>12</option>
-        <option value="4">14</option>
-        <option value="5">18</option>
-        <option value="6">24</option>
-        <option value="7">36</option>
-    </select>
+
    <div class="editor-sep"></div>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'bold')" title="Bold"><b>B</b></button>
     <button type="button" class="editor-btn" onclick="formatText(${idx}, 'italic')" title="Italic"><i>I</i></button>
