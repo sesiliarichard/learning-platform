@@ -1122,27 +1122,41 @@ function buildJobCard(job, index) {
       company: job.company_name || ''
     };
     
-    // Get logo URL - check both possible field names
-    const logoUrl = job.logo_url || job.company_logo || null;
+    // Get saved jobs from localStorage
+    const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+    const isSaved = savedJobs.includes(job.id);
+    
     const initials = (job.company_name || '?').slice(0, 2).toUpperCase();
+    const logoUrl = job.logo_url;
     const logoClassList = logoClass(index);
     
-    // Logo display logic
     let logoHtml = '';
-    if (logoUrl && logoUrl.trim() !== '') {
+    if (logoUrl && logoUrl.trim() !== '' && logoUrl !== 'null') {
       logoHtml = `<img src="${logoUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;" 
-                       onerror="this.style.display='none'; this.parentElement.innerHTML='${initials}'; this.parentElement.classList.add('${logoClassList}');">`;
+                       onerror="this.onerror=null; this.style.display='none'; this.parentElement.innerHTML='${initials}'; this.parentElement.classList.add('${logoClassList}');"
+                       alt="${job.company_name} logo">`;
     } else {
       logoHtml = initials;
     }
     
-    const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' }[job.job_type] || job.job_type || 'Full-time';
-    const locLabel  = { 'remote':'Remote','hybrid':'Hybrid','onsite':'On-site' }[job.location_type] || job.location_type || 'On-site';
+    const typeLabel = { 
+      'full-time': 'Full-time',
+      'part-time': 'Part-time', 
+      'contract': 'Contract',
+      'internship': 'Internship' 
+    }[job.job_type] || job.job_type || 'Full-time';
+    
+    const locLabel = { 
+      'remote': 'Remote',
+      'hybrid': 'Hybrid', 
+      'onsite': 'On-site' 
+    }[job.location_type] || job.location_type || 'On-site';
     
     return `
-      <div class="job-card" style="animation-delay:${index*0.07}s" onclick="viewJob('${job.id}')">
+      <div class="job-card" style="animation-delay:${index * 0.07}s" onclick="viewJob('${job.id}')">
         <div class="job-card-top">
-          <div class="company-logo ${logoUrl ? '' : logoClassList}" style="${logoUrl ? 'background:white;border:1.5px solid #e0e4f0;padding:0;overflow:hidden;' : ''}">
+          <div class="company-logo ${logoUrl ? '' : logoClassList}" 
+               style="${logoUrl ? 'background:white;border:1.5px solid #e0e4f0;padding:0;overflow:hidden;' : ''}">
             ${logoHtml}
           </div>
           <div class="job-info">
@@ -1156,19 +1170,20 @@ function buildJobCard(job, index) {
             </div>
           </div>
         </div>
-        <div class="job-desc">${escHtml((job.talent_needs||'').slice(0,150))}${(job.talent_needs||'').length > 150 ? '…' : ''}</div>
+        <div class="job-desc">${escHtml((job.talent_needs || '').slice(0, 150))}${(job.talent_needs || '').length > 150 ? '…' : ''}</div>
         <div class="job-footer">
           <div class="job-tags">
-            ${(job.talent_needs||'').split(/[,\n]/).slice(0,4).map(s=>s.trim()).filter(Boolean).map(s=>`<span class="job-tag">${escHtml(s.slice(0,25))}</span>`).join('')}
+            ${(job.talent_needs || '').split(/[,\n]/).slice(0, 4).map(s => s.trim()).filter(Boolean).map(s => `<span class="job-tag">${escHtml(s.slice(0, 25))}</span>`).join('')}
           </div>
           <div class="job-actions" onclick="event.stopPropagation()">
-            <button class="btn-save-job ${isSaved?'saved':''}" onclick="toggleSaveJob('${job.id}', this)">${isSaved?'✓ Saved':'Save'}</button>
-            <button class="btn-apply" onclick="applyToJob('${job.id}')">Apply Now</button>
+            <button class="btn-save-job ${isSaved ? 'saved' : ''}" onclick="toggleSaveJob('${job.id}', this)">${isSaved ? '✓ Saved' : 'Save'}</button>
+            <button class="btn-apply" onclick="applyToJob('${job.id}')">Apply Now →</button>
           </div>
         </div>
         <div class="posted-date">Posted ${timeAgo(job.created_at)}</div>
       </div>`;
 }
+
   async function loadJobs() {
     const container = document.getElementById('cardsContainer');
     const countEl   = document.getElementById('resultsCount');
@@ -1299,44 +1314,45 @@ function buildJobCard(job, index) {
 
   // ── View Job Detail ───────────────────────────────────────
   async function viewJob(id) {
-    const { data, error } = await window.supabaseClient.from('hire_requests').select('*').eq('id', id).single();
-    if (error || !data) return;
+  const { data, error } = await window.supabaseClient.from('hire_requests').select('*').eq('id', id).single();
+  if (error || !data) return;
 
-    // Store in map so applyToJob works from the modal
-    jobDataMap[data.id] = {
-      appLink: data.application_link || '',
-      email:   data.email || '',
-      company: data.company_name || ''
-    };
+  // Get saved jobs from localStorage
+  const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
+  const isSaved = savedJobs.includes(data.id);
 
-    const savedJobs = JSON.parse(localStorage.getItem('saved_jobs') || '[]');
-    const isSaved = savedJobs.includes(data.id);
-    const typeLabel = { 'full-time':'Full-time','part-time':'Part-time','contract':'Contract','internship':'Internship' }[data.job_type] || 'Full-time';
-    const locLabel  = { 'remote':'Remote','hybrid':'Hybrid','onsite':'On-site' }[data.location_type] || 'On-site';
+  jobDataMap[data.id] = {
+    appLink: data.application_link || '',
+    email: data.email || '',
+    company: data.company_name || ''
+  };
 
-    document.getElementById('jobDetailModal').innerHTML = `
-      <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="closeJobDetail(event)">
-        <div style="background:white;border-radius:20px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
-          <div style="background:linear-gradient(135deg,#0077cc,#00aaff);border-radius:20px 20px 0 0;padding:28px;">
-            <div style="font-family:Syne,sans-serif;font-size:1.3rem;font-weight:800;color:white;">${escHtml(data.company_name)}</div>
-            <div style="color:rgba(255,255,255,0.85);font-size:14px;margin-top:4px;">${typeLabel} · ${locLabel}${data.country ? ' · '+escHtml(data.country) : ''}</div>
-            ${data.industry ? `<div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:2px;">${escHtml(data.industry)}</div>` : ''}
-          </div>
-          <div style="padding:24px;">
-            <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Job Details</div>
-            <div style="font-size:14px;color:#1a1a2e;line-height:1.7;white-space:pre-wrap;margin-bottom:20px;">${escHtml(data.talent_needs||'')}</div>
-            <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Contact</div>
-            <div style="font-size:14px;color:#0077cc;margin-bottom:20px;">${escHtml(data.email||'')}</div>
-            <div style="font-size:11px;color:#9ca3af;margin-bottom:20px;">Posted ${timeAgo(data.created_at)} · Ref: ${escHtml(data.ref_number||'')}</div>
-            <div style="display:flex;gap:10px;">
-              <button onclick="toggleSaveJobModal('${data.id}', this)" style="flex:1;padding:12px;background:white;color:#0099ff;border:1.5px solid #0099ff;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${isSaved ? '✓ Saved' : '🔖 Save Job'}</button>
-             <button onclick="applyToJob('${data.id}')" style="flex:1;padding:12px;background:linear-gradient(135deg,#0099ff,#0077cc);color:white;border:none;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Apply Now →</button>
-            </div>
-            <button onclick="document.getElementById('jobDetailModal').innerHTML=''" style="margin-top:10px;width:100%;padding:10px;background:none;color:#6b7280;border:1.5px solid #e0e4f0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Close</button>
-          </div>
+  const typeLabel = { 'full-time': 'Full-time', 'part-time': 'Part-time', 'contract': 'Contract', 'internship': 'Internship' }[data.job_type] || 'Full-time';
+  const locLabel = { 'remote': 'Remote', 'hybrid': 'Hybrid', 'onsite': 'On-site' }[data.location_type] || 'On-site';
+
+  document.getElementById('jobDetailModal').innerHTML = `
+    <div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="closeJobDetail(event)">
+      <div style="background:white;border-radius:20px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+        <div style="background:linear-gradient(135deg,#0077cc,#00aaff);border-radius:20px 20px 0 0;padding:28px;">
+          <div style="font-family:Syne,sans-serif;font-size:1.3rem;font-weight:800;color:white;">${escHtml(data.company_name)}</div>
+          <div style="color:rgba(255,255,255,0.85);font-size:14px;margin-top:4px;">${typeLabel} · ${locLabel}${data.country ? ' · ' + escHtml(data.country) : ''}</div>
+          ${data.industry ? `<div style="color:rgba(255,255,255,0.7);font-size:13px;margin-top:2px;">${escHtml(data.industry)}</div>` : ''}
         </div>
-      </div>`;
-  }
+        <div style="padding:24px;">
+          <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Job Details</div>
+          <div style="font-size:14px;color:#1a1a2e;line-height:1.7;white-space:pre-wrap;margin-bottom:20px;">${escHtml(data.talent_needs || '')}</div>
+          <div style="font-size:11px;font-weight:700;color:#0099ff;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Contact</div>
+          <div style="font-size:14px;color:#0077cc;margin-bottom:20px;">${escHtml(data.email || '')}</div>
+          <div style="font-size:11px;color:#9ca3af;margin-bottom:20px;">Posted ${timeAgo(data.created_at)} · Ref: ${escHtml(data.ref_number || '')}</div>
+          <div style="display:flex;gap:10px;">
+            <button onclick="toggleSaveJobModal('${data.id}', this)" style="flex:1;padding:12px;background:white;color:#0099ff;border:1.5px solid #0099ff;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${isSaved ? '✓ Saved' : '🔖 Save Job'}</button>
+            <button onclick="applyToJob('${data.id}')" style="flex:1;padding:12px;background:linear-gradient(135deg,#0099ff,#0077cc);color:white;border:none;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Apply Now →</button>
+          </div>
+          <button onclick="document.getElementById('jobDetailModal').innerHTML=''" style="margin-top:10px;width:100%;padding:10px;background:none;color:#6b7280;border:1.5px solid #e0e4f0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Close</button>
+        </div>
+      </div>
+    </div>`;
+}
 
   function closeJobDetail(event) {
     if (event.target === event.currentTarget) document.getElementById('jobDetailModal').innerHTML = '';
@@ -1374,18 +1390,26 @@ function buildJobCard(job, index) {
     return;
   }
   
+  // Clean the URL if it has HTML entities
+  let cleanLink = job.appLink;
+  if (cleanLink) {
+    cleanLink = cleanLink.replace(/&amp;/g, '&')
+                         .replace(/&#47;/g, '/')
+                         .replace(/&#39;/g, "'")
+                         .replace(/&quot;/g, '"')
+                         .replace(/&lt;/g, '<')
+                         .replace(/&gt;/g, '>');
+  }
+  
   // Check if there's an application link
-  if (job.appLink && job.appLink.trim() !== '') {
-    // Open the stored application link in a new tab
-    window.open(job.appLink, '_blank', 'noopener');
+  if (cleanLink && cleanLink.trim() !== '' && cleanLink !== 'null' && cleanLink !== 'undefined') {
+    window.open(cleanLink, '_blank', 'noopener');
   } else if (job.email) {
-    // Fallback to email
     window.location.href = `mailto:${job.email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${job.company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
   } else {
     alert('No application link or contact email available for this position.');
   }
 }
-
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filterSearch').addEventListener('keyup', e => { if (e.key === 'Enter') applyFilters(); });
     loadJobs();
