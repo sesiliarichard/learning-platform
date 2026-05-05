@@ -571,10 +571,13 @@ nav {
     loadSaved();
   }
 
-  function applyToJob(email, company) {
+ function applyToJob(appLink, email, company) {
+  if (appLink) {
+    window.open(appLink, '_blank', 'noopener');
+  } else {
     window.location.href = `mailto:${email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
   }
-
+}
   async function loadSaved() {
     const container = document.getElementById('cardsContainer');
     const countEl   = document.getElementById('savedCount');
@@ -618,7 +621,7 @@ nav {
     container.innerHTML = data.map((job, index) => `
       <div class="job-card" style="animation-delay:${index*0.07}s">
         <div class="job-card-top">
-          <div class="company-logo ${logoClass(index)}">${escHtml((job.company_name||'?').slice(0,2).toUpperCase())}</div>
+          <div class="company-logo ${logoClass(index)}" style="${job.logo_url ? 'background:white;border:1.5px solid #e0e4f0;padding:2px;' : ''}">${job.logo_url ? `<img src="${escHtml(job.logo_url)}" style="width:100%;height:100%;object-fit:contain;border-radius:10px;">` : escHtml((job.company_name||'?').slice(0,2).toUpperCase())}</div>
           <div class="job-info">
             <div class="job-title">${escHtml(job.talent_needs ? job.talent_needs.split('\n')[0] : 'Open Position')}</div>
             <div class="job-company">${escHtml(job.company_name)}</div>
@@ -633,7 +636,7 @@ nav {
         <div class="job-footer">
           <div class="job-actions">
             <button class="btn-remove" onclick="removeJob('${job.id}')">🗑 Remove</button>
-            <button class="btn-apply" onclick="applyToJob('${escHtml(job.email)}','${escHtml(job.company_name)}')">Apply Now</button>
+            <button class="btn-apply" onclick="applyToJob('${escHtml(job.application_link||'')}','${escHtml(job.email)}','${escHtml(job.company_name)}')">Apply Now</button>
           </div>
         </div>
         <div class="posted-date">Posted ${timeAgo(job.created_at)}</div>

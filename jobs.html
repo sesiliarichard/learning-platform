@@ -1124,7 +1124,7 @@ nav {
     return `
       <div class="job-card" style="animation-delay:${index*0.07}s" onclick="viewJob('${job.id}')">
         <div class="job-card-top">
-          <div class="company-logo ${logoClass(index)}">${escHtml(initials)}</div>
+          <div class="company-logo ${logoClass(index)}" style="${job.logo_url ? 'background:white;border:1.5px solid #e0e4f0;padding:2px;' : ''}">${job.logo_url ? `<img src="${escHtml(job.logo_url)}" style="width:100%;height:100%;object-fit:contain;border-radius:10px;">` : escHtml(initials)}</div>
           <div class="job-info">
             <div class="job-title">${escHtml(job.talent_needs ? job.talent_needs.split('\n')[0] : 'Open Position')}</div>
             <div class="job-company">${escHtml(job.company_name)}</div>
@@ -1143,7 +1143,7 @@ nav {
           </div>
           <div class="job-actions" onclick="event.stopPropagation()">
             <button class="btn-save-job ${isSaved?'saved':''}" onclick="toggleSaveJob('${job.id}', this)">${isSaved?'✓ Saved':'Save'}</button>
-            <button class="btn-apply" onclick="applyToJob('${escHtml(job.email)}','${escHtml(job.company_name)}')">Apply Now</button>
+           <button class="btn-apply" onclick="applyToJob('${escHtml(job.application_link||'')}','${escHtml(job.email)}','${escHtml(job.company_name)}')">Apply Now</button>
           </div>
         </div>
         <div class="posted-date">Posted ${timeAgo(job.created_at)}</div>
@@ -1304,7 +1304,7 @@ nav {
             <div style="font-size:11px;color:#9ca3af;margin-bottom:20px;">Posted ${timeAgo(data.created_at)} · Ref: ${escHtml(data.ref_number||'')}</div>
             <div style="display:flex;gap:10px;">
               <button onclick="toggleSaveJobModal('${data.id}', this)" style="flex:1;padding:12px;background:white;color:#0099ff;border:1.5px solid #0099ff;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">${isSaved ? '✓ Saved' : '🔖 Save Job'}</button>
-              <button onclick="applyToJob('${escHtml(data.email)}','${escHtml(data.company_name)}')" style="flex:1;padding:12px;background:linear-gradient(135deg,#0099ff,#0077cc);color:white;border:none;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Apply Now →</button>
+              <button onclick="applyToJob('${escHtml(data.application_link||'')}','${escHtml(data.email)}','${escHtml(data.company_name)}')" style="flex:1;padding:12px;background:linear-gradient(135deg,#0099ff,#0077cc);color:white;border:none;border-radius:10px;font-family:Syne,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">Apply Now →</button>
             </div>
             <button onclick="document.getElementById('jobDetailModal').innerHTML=''" style="margin-top:10px;width:100%;padding:10px;background:none;color:#6b7280;border:1.5px solid #e0e4f0;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;">Close</button>
           </div>
@@ -1341,9 +1341,13 @@ nav {
     localStorage.setItem('saved_jobs', JSON.stringify(saved));
   }
 
-  function applyToJob(email, company) {
+  function applyToJob(appLink, email, company) {
+  if (appLink) {
+    window.open(appLink, '_blank', 'noopener');
+  } else {
     window.location.href = `mailto:${email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
   }
+}
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filterSearch').addEventListener('keyup', e => { if (e.key === 'Enter') applyFilters(); });

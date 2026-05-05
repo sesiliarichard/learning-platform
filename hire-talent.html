@@ -628,6 +628,74 @@
     color: white;
     text-decoration: none;
 }
+.logo-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.logo-preview-circle {
+  width: 68px;
+  height: 68px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0099ff, #0077cc);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Syne', sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: white;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 2px solid #e0e4f0;
+}
+
+.logo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 1rem;
+  border: 1.5px dashed #b0c4e8;
+  border-radius: 10px;
+  background: #f0f6ff;
+  color: #0077cc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo-upload-btn:hover {
+  border-color: #0099ff;
+  background: #e8f4ff;
+}
+
+.logo-upload-btn input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.logo-upload-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 5px;
+}
+.link-hint-box {
+  background: #f0f6ff;
+  border: 1px solid rgba(0, 153, 255, 0.2);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: #374151;
+  margin-top: 6px;
+  line-height: 1.5;
+}
 </style>
 </head>
 <body>
@@ -686,9 +754,22 @@
       <hr class="section-divider"/>
       <p class="section-label">Company Details</p>
 
+  <div class="form-group">
+  <label>Company Logo</label>
+  <div class="logo-upload-area">
+    <div id="logoPreviewCircle" class="logo-preview-circle">?</div>
+    <div>
+      <label class="logo-upload-btn">
+        📷 Upload Logo
+        <input type="file" accept="image/*" id="companyLogoFile" onchange="previewLogo(this)"/>
+      </label>
+      <div class="logo-upload-hint">PNG, JPG · Square recommended</div>
+    </div>
+  </div>
+</div>
       <div class="form-group">
         <label>Company Name <span class="required">*</span></label>
-        <input type="text" placeholder="e.g. TechCorp Africa" id="company"/>
+        <input type="text" placeholder="e.g. TechCorp Africa" id="company" oninput="updateLogoInitials(this.value)"/>
       </div>
 
    <div class="two-col">
@@ -742,6 +823,13 @@
 <div class="form-group">
   <label>What kind of talent are you looking for?</label>
   <textarea placeholder="Describe the roles, skills, or expertise you need..." id="needs"></textarea>
+</div>
+<div class="form-group">
+  <label>Application Form Link</label>
+  <input type="url" id="applicationLink" placeholder="https://yourcompany.com/apply or Google Form link..."/>
+  <div class="link-hint-box">
+    💡 When candidates click <strong>Apply Now</strong> on the job board, they'll be sent directly to this link.
+  </div>
 </div>
 
       <button class="submit-btn" id="submitBtn" onclick="submitHire()">
@@ -943,10 +1031,13 @@ async function submitHire() {
   const email      = document.getElementById('email').value.trim();
   const contact    = getFullPhone();
   const company    = document.getElementById('company').value.trim();
+   const appLink  = document.getElementById('applicationLink').value.trim();
+   const logoFile = document.getElementById('companyLogoFile').files[0];
   const jobTitle   = document.getElementById('jobTitle')?.value.trim() || 'Open Position';
   const jobType    = document.getElementById('jobType')?.value || 'full-time';
   const locType    = document.getElementById('locationType')?.value || 'remote';
   const editingId  = document.getElementById('editingId').value;
+
 
   if (!firstname || !lastname || !email || !contact || !company) {
     showAlert('error', 'Please fill in all required fields.');
@@ -961,42 +1052,50 @@ async function submitHire() {
 
   setLoading(true);
 
-  let error, refNumber;
+ let refNumber = editingId
+    ? (localStorage.getItem('hire_request_ref') || 'REF')
+    : 'HIRE-' + Date.now().toString(36).toUpperCase().slice(-6);
+  const logoUrl = await uploadCompanyLogo(logoFile, refNumber);
+  let error;
 
   if (editingId) {
     // ── UPDATE existing record ──────────────────────────
     const { error: updateError } = await window.supabaseClient
       .from('hire_requests')
-      .update({
-        first_name:    firstname,
-        last_name:     lastname,
+     .update({
+        first_name:       firstname,
+        last_name:        lastname,
         email,
         contact,
-        company_name:  company,
+        company_name:     company,
         industry,
         country,
-        talent_needs:  `${jobTitle}\n\n${needs}`,
-        job_type:      jobType,
-        location_type: locType,
+        talent_needs:     `${jobTitle}\n\n${needs}`,
+        job_type:         jobType,
+        location_type:    locType,
+        application_link: appLink || null,
+        ...(logoUrl && { logo_url: logoUrl }),
       })
       .eq('id', editingId);
 
     error = updateError;
-    refNumber = localStorage.getItem('hire_request_ref');
+    
 
   } else {
     // ── CREATE new record ───────────────────────────────
-    const result = await TalentHub.submitHireRequest({
-      first_name:    firstname,
-      last_name:     lastname,
+   const result = await TalentHub.submitHireRequest({
+      first_name:       firstname,
+      last_name:        lastname,
       email,
       contact,
-      company_name:  company,
+      company_name:     company,
       industry,
       country,
-      talent_needs:  `${jobTitle}\n\n${needs}`,
-      job_type:      jobType,
-      location_type: locType,
+      talent_needs:     `${jobTitle}\n\n${needs}`,
+      job_type:         jobType,
+      location_type:    locType,
+      application_link: appLink || null,
+      logo_url:         logoUrl,
     });
 
     error     = result.error;
@@ -1035,10 +1134,13 @@ async function submitHire() {
 
   // Save updated data to localStorage
   localStorage.setItem('hire_request_ref', refNumber);
+  if (logoUrl) localStorage.setItem('hire_logo_url', logoUrl);
   localStorage.setItem('hire_request_data', JSON.stringify({
     fullName: `${firstname} ${lastname}`,
     email, contact, company, industry, country, needs,
-    jobTitle, jobType, locationType: locType
+    jobTitle, jobType, locationType: locType,
+    applicationLink: appLink,
+    logoUrl: logoUrl || localStorage.getItem('hire_logo_url') || null,
   }));
 
   document.getElementById('formContainer').style.display  = 'none';
@@ -1103,6 +1205,36 @@ async function submitHire() {
       document.getElementById('formContainer').style.display  = 'block';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    function previewLogo(input) {
+  if (!input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const circle = document.getElementById('logoPreviewCircle');
+    circle.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;border-radius:12px;">`;
+    circle.style.background = 'transparent';
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function updateLogoInitials(name) {
+  const circle = document.getElementById('logoPreviewCircle');
+  if (!circle.querySelector('img')) {
+    const initials = name.split(' ').map(w => w[0]).filter(Boolean).slice(0,2).join('').toUpperCase();
+    circle.textContent = initials || '?';
+  }
+}
+
+async function uploadCompanyLogo(file, ref) {
+  if (!file) return null;
+  try {
+    const ext  = file.name.split('.').pop();
+    const path = `company-logos/${ref}-${Date.now()}.${ext}`;
+    const { error } = await window.supabaseClient.storage.from('talent-files').upload(path, file, { upsert: true });
+    if (error) return null;
+    const { data } = window.supabaseClient.storage.from('talent-files').getPublicUrl(path);
+    return data.publicUrl;
+  } catch { return null; }
+}
   </script>
 
 </body>
