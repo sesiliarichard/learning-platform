@@ -5421,6 +5421,99 @@ async function downloadFile(url, filename) {
     new MutationObserver(removeAdminOverlay)
         .observe(document.body, { childList: true, subtree: false });
 })();
+
+(function() {
+    'use strict';
+    
+    // Complete removal of all admin table UI elements
+    function removeAdminUI() {
+        // Remove toolbars and draggers
+        document.querySelectorAll('.wle-table-toolbar, .wle-img-toolbar, .wle-handle, .wle-col-dragger, .wle-row-dragger, .asai-dd-panel, .asai-dd-wrap, #sharedTableOverlay, .wle-table-wrap.selected, .wle-img-wrap.selected').forEach(el => {
+            el.remove();
+        });
+        
+        // Remove any selected classes
+        document.querySelectorAll('.wle-table-wrap, .wle-img-wrap').forEach(el => {
+            el.classList.remove('selected');
+            el.style.outline = 'none';
+        });
+        
+        // Remove mutation observer that might re-add them
+        if (window._tblObserver) {
+            window._tblObserver.disconnect();
+            delete window._tblObserver;
+        }
+        
+        // Remove the global table overlay if exists
+        if (window._sharedOverlay && window._sharedOverlay.remove) {
+            window._sharedOverlay.remove();
+        }
+    }
+    
+    // Run immediately
+    removeAdminUI();
+    
+    // Run again after DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', removeAdminUI);
+    } else {
+        removeAdminUI();
+    }
+    
+    // Run after any delay (catch late injections)
+    setTimeout(removeAdminUI, 100);
+    setTimeout(removeAdminUI, 500);
+    setTimeout(removeAdminUI, 1000);
+    setTimeout(removeAdminUI, 2000);
+    
+    // Watch for new elements being added
+    const observer = new MutationObserver(function(mutations) {
+        let needsCleanup = false;
+        for (const mutation of mutations) {
+            if (mutation.addedNodes.length) {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === 1) {
+                        if (node.classList && (
+                            node.classList.contains('wle-table-toolbar') ||
+                            node.classList.contains('wle-col-dragger') ||
+                            node.classList.contains('wle-row-dragger') ||
+                            node.classList.contains('asai-dd-wrap') ||
+                            node.id === 'sharedTableOverlay'
+                        )) {
+                            needsCleanup = true;
+                            break;
+                        }
+                        if (node.querySelector && node.querySelector('.wle-table-toolbar, .wle-col-dragger, .wle-row-dragger, .asai-dd-wrap')) {
+                            needsCleanup = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        if (needsCleanup) {
+            removeAdminUI();
+        }
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Also block any future class additions
+    const originalClassAdd = DOMTokenList.prototype.add;
+    DOMTokenList.prototype.add = function(...tokens) {
+        const result = originalClassAdd.apply(this, tokens);
+        if (this.value.includes('wle-table-toolbar') || 
+            this.value.includes('wle-img-wrap') ||
+            this.value.includes('wle-handle')) {
+            if (this._element && this._element.remove) {
+                setTimeout(() => this._element.remove(), 0);
+            }
+        }
+        return result;
+    };
+    
+    console.log('✅ Admin UI elements blocked on student page');
+})();
     </script>
 </body>
 </html>
