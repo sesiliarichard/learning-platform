@@ -793,13 +793,7 @@ document.getElementById('signupFormElement').addEventListener('submit', async fu
     const termsAccepted   = document.getElementById('acceptTerms').checked;
 
     // Get full country name from selected option instead of code
-    const countrySelect = document.getElementById('country');
-    const selectedOption = countrySelect.options[countrySelect.selectedIndex];
-    let countryName = countryCode;
-    if (selectedOption && selectedOption.textContent && countryCode) {
-        let fullText = selectedOption.textContent;
-        countryName = fullText.split('(')[0].trim();
-    }
+   const countryName = countryCode; // saves the 2-letter code e.g. "TZ", "KE", "AO"
 
     if (!firstName || !lastName || !email || !phone || !countryCode || !password) {
         showAlert('Please fill in all required fields.');
@@ -984,11 +978,13 @@ async function loadAllCountries() {
         // Populate dropdown
         sel.innerHTML = '<option value="">Select your country</option>';
         COUNTRIES.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.code;
-            opt.textContent = `${c.name} (${c.phone})`;
-            sel.appendChild(opt);
-        });
+    const opt = document.createElement('option');
+    opt.value          = c.code;
+    opt.dataset.name   = c.name;
+    opt.dataset.phone  = c.phone;
+    opt.textContent    = `${c.name} (${c.phone})`;
+    sel.appendChild(opt);
+});
 
     } catch (err) {
         // Fallback message if API fails
@@ -1008,14 +1004,17 @@ async function loadAllCountries() {
 
 // Update phone code when country selected
 function updatePhoneCode() {
-    const code  = document.getElementById('country').value;
-    const found = COUNTRIES.find(c => c.code === code);
+    const sel = document.getElementById('country');
+    const opt = sel.selectedOptions[0];
     const phoneCodeInput = document.getElementById('phoneCode');
-    if (found && phoneCodeInput) {
-        phoneCodeInput.value = found.phone;
+    if (!phoneCodeInput) return;
+
+    if (opt && opt.dataset.phone) {
+        phoneCodeInput.value = opt.dataset.phone;
+    } else {
+        phoneCodeInput.value = '';
     }
 }
-
 
 
 // ─── PHONE NUMBER AUTO-FORMAT ─────────────────────────────────

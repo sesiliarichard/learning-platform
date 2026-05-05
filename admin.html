@@ -1756,7 +1756,20 @@ body { visibility: hidden }
 <script>
 
 
-
+// Load all countries once from API — no hardcoded list needed
+window._countryCache = [];
+(async function loadCountryCache() {
+    try {
+        const res  = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+        const data = await res.json();
+        window._countryCache = data.map(c => ({
+            name: c.name.common,
+            code: c.cca2
+        }));
+    } catch (e) {
+        console.warn('Could not load country cache:', e.message);
+    }
+})();
 // Database Simulation
 let database = {
     users: [
@@ -7804,135 +7817,6 @@ function renderTable() {
     const initials = ((u.firstName[0]||'') + (u.lastName[0]||'')).toUpperCase() || '?';
     const color    = AVATAR_COLORS[i % AVATAR_COLORS.length];
  // Comprehensive country code mapping to full names and flags
-const countryMap = {
-    // Africa
-    'tz': { name: 'Tanzania', flag: '🇹🇿' },
-    'tza': { name: 'Tanzania', flag: '🇹🇿' },
-    'tanzania': { name: 'Tanzania', flag: '🇹🇿' },
-    'ke': { name: 'Kenya', flag: '🇰🇪' },
-    'kenya': { name: 'Kenya', flag: '🇰🇪' },
-    'ng': { name: 'Nigeria', flag: '🇳🇬' },
-    'nga': { name: 'Nigeria', flag: '🇳🇬' },
-    'nigeria': { name: 'Nigeria', flag: '🇳🇬' },
-    'gh': { name: 'Ghana', flag: '🇬🇭' },
-    'gha': { name: 'Ghana', flag: '🇬🇭' },
-    'ghana': { name: 'Ghana', flag: '🇬🇭' },
-    'za': { name: 'South Africa', flag: '🇿🇦' },
-    'zaf': { name: 'South Africa', flag: '🇿🇦' },
-    'south-africa': { name: 'South Africa', flag: '🇿🇦' },
-    'south_africa': { name: 'South Africa', flag: '🇿🇦' },
-    'et': { name: 'Ethiopia', flag: '🇪🇹' },
-    'eth': { name: 'Ethiopia', flag: '🇪🇹' },
-    'ethiopia': { name: 'Ethiopia', flag: '🇪🇹' },
-    'ug': { name: 'Uganda', flag: '🇺🇬' },
-    'uga': { name: 'Uganda', flag: '🇺🇬' },
-    'uganda': { name: 'Uganda', flag: '🇺🇬' },
-    'rw': { name: 'Rwanda', flag: '🇷🇼' },
-    'rwa': { name: 'Rwanda', flag: '🇷🇼' },
-    'rwanda': { name: 'Rwanda', flag: '🇷🇼' },
-    'zm': { name: 'Zambia', flag: '🇿🇲' },
-    'zambia': { name: 'Zambia', flag: '🇿🇲' },
-    'zw': { name: 'Zimbabwe', flag: '🇿🇼' },
-    'zimbabwe': { name: 'Zimbabwe', flag: '🇿🇼' },
-    'mw': { name: 'Malawi', flag: '🇲🇼' },
-    'malawi': { name: 'Malawi', flag: '🇲🇼' },
-    'sn': { name: 'Senegal', flag: '🇸🇳' },
-    'senegal': { name: 'Senegal', flag: '🇸🇳' },
-    'ci': { name: 'Ivory Coast', flag: '🇨🇮' },
-    'bf': { name: 'Burkina Faso', flag: '🇧🇫' },
-    'ml': { name: 'Mali', flag: '🇲🇱' },
-    'ne': { name: 'Niger', flag: '🇳🇪' },
-    'td': { name: 'Chad', flag: '🇹🇩' },
-    'sd': { name: 'Sudan', flag: '🇸🇩' },
-    'ss': { name: 'South Sudan', flag: '🇸🇸' },
-    'er': { name: 'Eritrea', flag: '🇪🇷' },
-    'dj': { name: 'Djibouti', flag: '🇩🇯' },
-    'so': { name: 'Somalia', flag: '🇸🇴' },
-    'bi': { name: 'Burundi', flag: '🇧🇮' },
-    'cd': { name: 'DR Congo', flag: '🇨🇩' },
-    'cg': { name: 'Congo', flag: '🇨🇬' },
-    'cm': { name: 'Cameroon', flag: '🇨🇲' },
-    'cf': { name: 'Central African Republic', flag: '🇨🇫' },
-    'ga': { name: 'Gabon', flag: '🇬🇦' },
-    'gq': { name: 'Equatorial Guinea', flag: '🇬🇶' },
-    'ao': { name: 'Angola', flag: '🇦🇴' },
-    'na': { name: 'Namibia', flag: '🇳🇦' },
-    'bw': { name: 'Botswana', flag: '🇧🇼' },
-    'mz': { name: 'Mozambique', flag: '🇲🇿' },
-    'mg': { name: 'Madagascar', flag: '🇲🇬' },
-    'mu': { name: 'Mauritius', flag: '🇲🇺' },
-    'km': { name: 'Comoros', flag: '🇰🇲' },
-    'sc': { name: 'Seychelles', flag: '🇸🇨' },
-    // North America
-    'us': { name: 'United States', flag: '🇺🇸' },
-    'usa': { name: 'United States', flag: '🇺🇸' },
-    'ca': { name: 'Canada', flag: '🇨🇦' },
-    'canada': { name: 'Canada', flag: '🇨🇦' },
-    'mx': { name: 'Mexico', flag: '🇲🇽' },
-    'mexico': { name: 'Mexico', flag: '🇲🇽' },
-    // Europe
-    'uk': { name: 'United Kingdom', flag: '🇬🇧' },
-    'gb': { name: 'United Kingdom', flag: '🇬🇧' },
-    'fr': { name: 'France', flag: '🇫🇷' },
-    'france': { name: 'France', flag: '🇫🇷' },
-    'de': { name: 'Germany', flag: '🇩🇪' },
-    'germany': { name: 'Germany', flag: '🇩🇪' },
-    'it': { name: 'Italy', flag: '🇮🇹' },
-    'italy': { name: 'Italy', flag: '🇮🇹' },
-    'es': { name: 'Spain', flag: '🇪🇸' },
-    'spain': { name: 'Spain', flag: '🇪🇸' },
-    'pt': { name: 'Portugal', flag: '🇵🇹' },
-    'portugal': { name: 'Portugal', flag: '🇵🇹' },
-    'nl': { name: 'Netherlands', flag: '🇳🇱' },
-    'be': { name: 'Belgium', flag: '🇧🇪' },
-    'ch': { name: 'Switzerland', flag: '🇨🇭' },
-    'at': { name: 'Austria', flag: '🇦🇹' },
-    'se': { name: 'Sweden', flag: '🇸🇪' },
-    'no': { name: 'Norway', flag: '🇳🇴' },
-    'dk': { name: 'Denmark', flag: '🇩🇰' },
-    'fi': { name: 'Finland', flag: '🇫🇮' },
-    'ie': { name: 'Ireland', flag: '🇮🇪' },
-    // Asia
-    'in': { name: 'India', flag: '🇮🇳' },
-    'india': { name: 'India', flag: '🇮🇳' },
-    'cn': { name: 'China', flag: '🇨🇳' },
-    'china': { name: 'China', flag: '🇨🇳' },
-    'jp': { name: 'Japan', flag: '🇯🇵' },
-    'japan': { name: 'Japan', flag: '🇯🇵' },
-    'kr': { name: 'South Korea', flag: '🇰🇷' },
-    'id': { name: 'Indonesia', flag: '🇮🇩' },
-    'pk': { name: 'Pakistan', flag: '🇵🇰' },
-    'bd': { name: 'Bangladesh', flag: '🇧🇩' },
-    'vn': { name: 'Vietnam', flag: '🇻🇳' },
-    'th': { name: 'Thailand', flag: '🇹🇭' },
-    'my': { name: 'Malaysia', flag: '🇲🇾' },
-    'ph': { name: 'Philippines', flag: '🇵🇭' },
-    // South America
-    'br': { name: 'Brazil', flag: '🇧🇷' },
-    'brazil': { name: 'Brazil', flag: '🇧🇷' },
-    'ar': { name: 'Argentina', flag: '🇦🇷' },
-    'argentina': { name: 'Argentina', flag: '🇦🇷' },
-    'co': { name: 'Colombia', flag: '🇨🇴' },
-    'cl': { name: 'Chile', flag: '🇨🇱' },
-    'pe': { name: 'Peru', flag: '🇵🇪' },
-    've': { name: 'Venezuela', flag: '🇻🇪' },
-    // Middle East
-    'ae': { name: 'UAE', flag: '🇦🇪' },
-    'sa': { name: 'Saudi Arabia', flag: '🇸🇦' },
-    'qa': { name: 'Qatar', flag: '🇶🇦' },
-    'kw': { name: 'Kuwait', flag: '🇰🇼' },
-    'om': { name: 'Oman', flag: '🇴🇲' },
-    'bh': { name: 'Bahrain', flag: '🇧🇭' },
-    'jo': { name: 'Jordan', flag: '🇯🇴' },
-    'lb': { name: 'Lebanon', flag: '🇱🇧' },
-    'il': { name: 'Israel', flag: '🇮🇱' },
-    'tr': { name: 'Turkey', flag: '🇹🇷' },
-    'turkey': { name: 'Turkey', flag: '🇹🇷' },
-    // Australia/Oceania
-    'au': { name: 'Australia', flag: '🇦🇺' },
-    'australia': { name: 'Australia', flag: '🇦🇺' },
-    'nz': { name: 'New Zealand', flag: '🇳🇿' }
-};
 
 // Get country value and handle empty/null values
 let countryValue = (u.country && u.country !== 'null' && u.country !== 'undefined') 
@@ -7950,9 +7834,29 @@ if (countryValue === 'united kingdom' || countryValue === 'uk' || countryValue =
     countryValue = 'uk';
 }
 
-let countryInfo = countryMap[countryValue] || { name: u.country || 'Other', flag: '🌍' };
-let flag = countryInfo.flag;
-let countryLabel = countryInfo.name;
+function codeToFlag(code) {
+    if (!code || code.length !== 2) return '🌍';
+    return code.toUpperCase().replace(/./g,
+        c => String.fromCodePoint(127397 + c.charCodeAt(0))
+    );
+}
+
+let rawCountry = (u.country && u.country !== 'null' && u.country !== 'undefined')
+    ? u.country.toString().trim() : '';
+
+let flag = '🌍';
+let countryLabel = rawCountry || 'Not specified';
+
+if (rawCountry.length === 2) {
+    flag = codeToFlag(rawCountry);
+} else if (rawCountry.length > 2) {
+    const match = window._countryCache?.find(
+        c => c.name.toLowerCase() === rawCountry.toLowerCase()
+    );
+    if (match) {
+        flag = codeToFlag(match.code);
+    }
+}
 
 // If country name is empty or "other", try to extract from email domain or set as "Not specified"
 if (!countryLabel || countryLabel === 'Other' || countryLabel === 'other') {

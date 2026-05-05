@@ -207,13 +207,32 @@ async function viewUser(userId) {
             { month: 'long', day: 'numeric', year: 'numeric' })
         : '—';
 
-    const fields = [
-        ['📧 Email',   user.email              || '—'],
-        ['🎭 Role',    user.role               || '—'],
-        ['✅ Status',  user.teacher_status     || 'active'],
-        ['📅 Joined',  joined],
-        ['🔑 User ID', user.id]
-    ];
+    // Get flag for view modal
+function codeToFlag(code) {
+    if (!code || code.length !== 2) return '🌍';
+    return code.toUpperCase().replace(/./g,
+        c => String.fromCodePoint(127397 + c.charCodeAt(0))
+    );
+}
+let userFlag = '🌍';
+let userCountryLabel = user.country || '—';
+if (user.country?.length === 2) {
+    userFlag = codeToFlag(user.country);
+} else if (user.country?.length > 2) {
+    const m = window._countryCache?.find(
+        c => c.name.toLowerCase() === user.country.toLowerCase()
+    );
+    if (m) userFlag = codeToFlag(m.code);
+}
+
+const fields = [
+    ['📧 Email',   user.email          || '—'],
+    ['🎭 Role',    user.role           || '—'],
+    ['✅ Status',  user.teacher_status || 'active'],
+    ['🌍 Country', `${userFlag} ${userCountryLabel}`],
+    ['📅 Joined',  joined],
+    ['🔑 User ID', user.id]
+];
 
     const modal = document.createElement('div');
     modal.className = 'modal active';
