@@ -584,7 +584,19 @@
   document.addEventListener('mousedown', e => {
     if (!e.target.closest('.asai-dd-wrap')) closeAllDropdowns();
   });
-  document.addEventListener('scroll', closeAllDropdowns, true);
+   
+  
+  // Instead, keep dropdowns open when scrolling inside them
+  document.addEventListener('scroll', function(e) {
+    // Check if scroll happened inside an open dropdown panel
+    const openPanel = document.querySelector('.asai-dd-panel.open');
+    if (openPanel && openPanel.contains(e.target)) {
+      // Don't close if scrolling inside the dropdown
+      return;
+    }
+    // Close only if scrolling outside
+    closeAllDropdowns();
+  }, true);
 
   /* ─────────────────────────────────────────────────────────
    * SAVE SELECTION on any change inside an editor
