@@ -7836,9 +7836,14 @@ if (countryValue === 'united kingdom' || countryValue === 'uk' || countryValue =
 
 function codeToFlag(code) {
     if (!code || code.length !== 2) return '🌍';
-    return code.toUpperCase().replace(/./g,
-        c => String.fromCodePoint(127397 + c.charCodeAt(0))
-    );
+    const upper = code.toUpperCase();
+    return `<img 
+        src="https://flagcdn.com/20x15/${code.toLowerCase()}.png" 
+        alt="${upper}"
+        style="width:20px;height:15px;border-radius:2px;
+               vertical-align:middle;margin-right:4px;"
+        onerror="this.replaceWith('🌍')"
+    >`;
 }
 
 let rawCountry = (u.country && u.country !== 'null' && u.country !== 'undefined')
