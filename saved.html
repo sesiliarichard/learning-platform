@@ -572,8 +572,9 @@ nav {
   }
 
  function applyToJob(appLink, email, company) {
-  if (appLink) {
-    window.open(appLink, '_blank', 'noopener');
+  const url = appLink.replace(/&amp;/g,'&').replace(/&#47;/g,'/').replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&lt;/g,'<').replace(/&gt;/g,'>');
+  if (url) {
+    window.open(url, '_blank', 'noopener');
   } else {
     window.location.href = `mailto:${email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
   }
