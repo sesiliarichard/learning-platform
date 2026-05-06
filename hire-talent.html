@@ -1511,6 +1511,44 @@ async function validateAndLoadSavedRequest() {
     return false;
   }
 }
+ // Force check after everything loads (as a backup)
+  setTimeout(function() {
+    console.log('=== FORCE CHECK AFTER 500ms ===');
+    const savedRef = localStorage.getItem('hire_request_ref');
+    const savedData = localStorage.getItem('hire_request_data');
+    
+    if (savedRef && savedData && !document.getElementById('editingId').value) {
+      try {
+        const prev = JSON.parse(savedData);
+        console.log('Force showing preview for:', prev.company);
+        
+        document.getElementById('previewFullName').textContent = prev.fullName || '—';
+        document.getElementById('previewEmail').textContent = prev.email || '—';
+        document.getElementById('previewPhone').textContent = prev.contact || '—';
+        document.getElementById('previewCompany').textContent = prev.company || '—';
+        document.getElementById('previewContactName').textContent = prev.fullName || '—';
+        document.getElementById('previewIndustry').textContent = prev.industry || '—';
+        document.getElementById('previewCountry').textContent = prev.country || 'Not specified';
+        document.getElementById('previewNeeds').textContent = prev.needs || '—';
+        document.getElementById('refNumber').textContent = savedRef;
+        
+        const initials = (prev.company || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+        document.getElementById('companyInitials').textContent = initials;
+        
+        document.getElementById('formContainer').style.display = 'none';
+        document.getElementById('previewSection').style.display = 'block';
+        
+        const banner = document.querySelector('.success-banner');
+        if (banner) banner.textContent = '👋 Welcome back! Your request is under review.';
+        
+        console.log('✅ Force check - Preview shown!');
+      } catch(e) {
+        console.error('Force check error:', e);
+      }
+    } else {
+      console.log('Force check - No profile found or in edit mode');
+    }
+  }, 500);
   </script>
 
 </body>
