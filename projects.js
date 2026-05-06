@@ -526,9 +526,16 @@ async function loadProjectProgress() {
     const container = document.getElementById('projectProgressTracker');
     if (!container) return;
 
+    // ── prevent concurrent calls ──────────────────────────
+    if (window._loadingProjectProgress) return;
+    window._loadingProjectProgress = true;
+
     try {
         const { data: { user } } = await getCurrentUser();
-        if (!user) return;
+        if (!user) {
+            window._loadingProjectProgress = false;
+            return;
+        }
 
         const [proposalRes, phasesRes, finalRes, progressRes] = await Promise.all([
             supabaseClient
@@ -642,8 +649,13 @@ async function loadProjectProgress() {
                 </div>` : ''}
             </div>`;
 
-    } catch (err) {
-        console.error('loadProjectProgress error:', err);
+} catch (err) {
+        // Ignore lock errors — they are caused by concurrent calls
+        if (!err.message?.includes('lock')) {
+            console.error('loadProjectProgress error:', err);
+        }
+    } finally {
+        window._loadingProjectProgress = false;
     }
 }
 
@@ -764,15 +776,20 @@ function init() {
  // Call on page load to show current state
 loadProjectProgress();
 
-// Re-call whenever ANY project tab is clicked (so it always stays visible)
+// Re-call only when switching TO the projects section, not on every tab click
 document.querySelectorAll('.project-tab').forEach(tab => {
-    tab.addEventListener('click', loadProjectProgress);
+    tab.addEventListener('click', () => {
+        if (!window._loadingProjectProgress) {
+            setTimeout(loadProjectProgress, 200);
+        }
+    });
 });
-
 // Re-call whenever the Projects nav item is clicked
 document.querySelector('.nav-item[data-section="projects"]')
     ?.addEventListener('click', () => {
-        setTimeout(loadProjectProgress, 100);
+        setTimeout(() => {
+            if (!window._loadingProjectProgress) loadProjectProgress();
+        }, 300);
     });
     // ── wire file inputs DIRECTLY ─────────────────────────
     function wireUpload(area, input) {
