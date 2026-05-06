@@ -937,13 +937,13 @@
             <div class="form-group">
                 <label><i class="fas fa-upload"></i> Upload Supporting Files</label>
                 <div class="file-upload">
-                    <i class="fas fa-folder-open"></i>
-                    <p>Upload research notes, diagrams, or documents</p>
-                    <p class="file-upload-hint">PDF, PNG, JPG, DOCX (Max: 20MB)</p>
-                    <input type="file" class="file-input" id="phase1File"
-                           accept=".pdf,.png,.jpg,.jpeg,.docx"
-                           aria-label="Upload Phase 1 files">
-                </div>
+    <i class="fas fa-folder-open"></i>
+    <p>Upload research notes, diagrams, documents <strong>or Jupyter/Colab notebook</strong></p>
+    <p class="file-upload-hint">PDF, PNG, JPG, DOCX, .ipynb, .py, .r, .sql, .js (Max: 20MB)</p>
+    <input type="file" class="file-input" id="phase1File"
+           accept=".pdf,.png,.jpg,.jpeg,.docx,.ipynb,.py,.r,.sql,.js"
+           aria-label="Upload Phase 1 files">
+</div>
             </div>
 
             <button type="button" class="upload-btn" onclick="submitPhase(1)">
@@ -1014,13 +1014,13 @@
             <div class="form-group">
                 <label><i class="fas fa-upload"></i> Upload Code / Screenshots</label>
                <div class="file-upload">
-                    <i class="fas fa-code"></i>
-                    <p>Upload ZIP of code, screenshots, or datasets</p>
-                    <p class="file-upload-hint">ZIP, PNG, JPG, PDF (Max: 50MB)</p>
-                    <input type="file" class="file-input" id="phase2File"
-                           accept=".zip,.png,.jpg,.jpeg,.pdf"
-                           aria-label="Upload Phase 2 files">
-                </div>
+    <i class="fas fa-code"></i>
+    <p>Upload code, screenshots, datasets <strong>or Jupyter/Colab notebook</strong></p>
+    <p class="file-upload-hint">ZIP, PNG, JPG, PDF, .ipynb, .py, .r, .sql, .js (Max: 50MB)</p>
+    <input type="file" class="file-input" id="phase2File"
+           accept=".zip,.png,.jpg,.jpeg,.pdf,.ipynb,.py,.r,.sql,.js"
+           aria-label="Upload Phase 2 files">
+</div>
             </div>
 
             <button type="button" class="upload-btn phase-2-submit-btn" onclick="submitPhase(2)">
@@ -1085,14 +1085,15 @@
 
             <div class="form-group">
                 <label><i class="fas fa-upload"></i> Upload Test Results / Final Report Draft</label>
-                <div class="file-upload">
-                    <i class="fas fa-file-alt"></i>
-                    <p>Upload test results, evaluation report, or draft final report</p>
-                    <p class="file-upload-hint">PDF, DOCX, XLSX (Max: 20MB)</p>
-                    <input type="file" class="file-input" id="phase3File"
-                           accept=".pdf,.docx,.xlsx"
-                           aria-label="Upload Phase 3 files">
-                </div>
+               <div class="file-upload">
+    <i class="fas fa-file-alt"></i>
+    <p>Upload test results, evaluation report, final draft <strong>or Jupyter/Colab notebook</strong></p>
+    <p class="file-upload-hint">PDF, DOCX, XLSX, .ipynb, .py, .r, .sql, .js (Max: 20MB)</p>
+    <input type="file" class="file-input" id="phase3File"
+           accept=".pdf,.docx,.xlsx,.ipynb,.py,.r,.sql,.js"
+           aria-label="Upload Phase 3 files">
+</div>
+
             </div>
 
             <button type="button" class="upload-btn phase-3-submit-btn" onclick="submitPhase(3)">
@@ -1149,13 +1150,13 @@
             <div class="form-group">
                 <label><i class="fas fa-upload"></i> Upload Supporting Documents</label>
                 <div class="file-upload" id="progressUpload">
-                    <i class="fas fa-folder-open"></i>
-                    <p>Upload code files, screenshots, or documents</p>
-                    <p class="file-upload-hint">ZIP, PNG, JPG, PDF (Max: 20MB)</p>
-                    <input type="file" class="file-input" id="progressFile"
-                           accept=".zip,.png,.jpg,.jpeg,.pdf"
-                           aria-label="Upload supporting documents">
-                </div>
+    <i class="fas fa-folder-open"></i>
+    <p>Upload code, screenshots, documents <strong>or Jupyter/Colab notebook</strong></p>
+    <p class="file-upload-hint">ZIP, PNG, JPG, PDF, .ipynb, .py, .r, .sql, .js (Max: 20MB)</p>
+    <input type="file" class="file-input" id="progressFile"
+           accept=".zip,.png,.jpg,.jpeg,.pdf,.ipynb,.py,.r,.sql,.js"
+           aria-label="Upload supporting documents">
+</div>
             </div>
 
             <button type="submit" class="upload-btn" id="submitProgressBtn">
@@ -1181,12 +1182,13 @@
             <div class="form-group">
                 <label><i class="fas fa-code"></i> Source Code</label>
                 <div class="file-upload" id="codeUpload">
-                    <i class="fas fa-code"></i>
-                    <p>Upload your project source code (ZIP format)</p>
-                    <input type="file" class="file-input" id="codeFile"
-                           accept=".zip,.rar"
-                           aria-label="Upload source code file">
-                </div>
+    <i class="fas fa-code"></i>
+    <p>Upload your project source code, scripts <strong>or Jupyter/Colab notebook</strong></p>
+    <p class="file-upload-hint">ZIP, .ipynb, .py, .r, .sql, .js (Max: 50MB)</p>
+    <input type="file" class="file-input" id="codeFile"
+           accept=".zip,.rar,.ipynb,.py,.r,.sql,.js"
+           aria-label="Upload source code file">
+</div>
             </div>
             <div class="form-group">
                 <label><i class="fas fa-file-powerpoint"></i> Presentation Slides</label>

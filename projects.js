@@ -194,24 +194,25 @@ let phaseError;
 
 if (existingPhase) {
     // UPDATE existing record
-    const { error } = await supabaseClient
-        .from('project_phases')
-        .update({
-            proposal_id:  proposal?.id || null,
-            plan,
-            work_description: work,
-            challenges,
-            next_steps:   nextSteps,
-            results,
-            activities:   JSON.stringify(activities),
-            completion_percentage: parseInt(percentage),
-            file_url:     fileUrl || existingPhase.file_url,
-            file_name:    fileOrigName || existingPhase.file_name,
-            status:       'submitted',
-            submitted_at: new Date().toISOString()
-        })
-        .eq('student_id', user.id)
-        .eq('phase_number', phaseNum);
+   const { error } = await supabaseClient
+    .from('project_phases')
+    .update({
+        proposal_id:           proposal?.id || null,
+        plan,
+        work_description:      work,
+        challenges,
+        next_steps:            nextSteps,
+        results,
+        activities:            JSON.stringify(activities),
+        completion_percentage: parseInt(percentage),
+        file_url:              fileUrl || existingPhase.file_url,       // ← keep old if no new file
+        file_name:             fileOrigName || existingPhase.file_name, // ← keep old if no new file
+        status:                'submitted',
+        submitted_at:          new Date().toISOString()
+    })
+    .eq('student_id', user.id)
+    .eq('phase_number', phaseNum);
+       
     phaseError = error;
 } else {
     // INSERT new record
@@ -714,15 +715,31 @@ function showFileSelected(area, fileName) {
         `;
         area.appendChild(label);
     }
-    label.innerHTML = `
-        <i class="fas fa-check-circle" style="font-size:36px;color:#7c3aed;display:block;"></i>
-        <div style="font-size:14px;font-weight:700;color:#7c3aed;">File Selected</div>
-        <div style="font-size:13px;color:#6b7280;max-width:300px;
-                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-            ${escHtml(fileName)}
-        </div>
-        <div style="font-size:11px;color:#9ca3af;">Click to change file</div>
-    `;
+   const ext = fileName.split('.').pop().toLowerCase();
+const fileTypeMap = {
+    ipynb: { label: 'Jupyter / Colab Notebook',  color: '#f97316', icon: 'fa-book-open'  },
+    py:    { label: 'Python script',              color: '#3b82f6', icon: 'fa-code'       },
+    r:     { label: 'R script',                   color: '#2563eb', icon: 'fa-chart-bar'  },
+    sql:   { label: 'SQL file',                   color: '#8b5cf6', icon: 'fa-database'   },
+    js:    { label: 'JavaScript file',            color: '#eab308', icon: 'fa-code'       },
+    zip:   { label: 'Archive / ZIP',              color: '#6b7280', icon: 'fa-file-archive'},
+    pdf:   { label: 'PDF document',               color: '#ef4444', icon: 'fa-file-pdf'   },
+    docx:  { label: 'Word document',              color: '#2563eb', icon: 'fa-file-word'  },
+};
+const meta      = fileTypeMap[ext];
+const color     = meta ? meta.color : '#7c3aed';
+const iconClass = meta ? meta.icon  : 'fa-check-circle';
+const typeLabel = meta ? meta.label : 'File selected';
+
+label.innerHTML = `
+    <i class="fas ${iconClass}" style="font-size:32px;color:${color};display:block;margin-bottom:6px;"></i>
+    <div style="font-size:13px;font-weight:700;color:${color};margin-bottom:4px;">${typeLabel}</div>
+    <div style="font-size:12px;color:#6b7280;max-width:300px;
+                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+        ${escHtml(fileName)}
+    </div>
+    <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Click to change file</div>
+`;
 }
 function init() {
     // Proposal form
@@ -782,11 +799,11 @@ document.querySelector('.nav-item[data-section="projects"]')
 
     // Named upload areas
     const fileMap = {
-        'proposalUpload':     'proposalFile',
-        'progressUpload':     'progressFile',
-        'codeUpload':         'codeFile',
-        'presentationUpload': 'presentationFile'
-    };
+    'proposalUpload':     'proposalFile',
+    'progressUpload':     'progressFile',
+    'codeUpload':         'codeFile',
+    'presentationUpload': 'presentationFile'
+};
 
     Object.entries(fileMap).forEach(([areaId, inputId]) => {
         const area  = document.getElementById(areaId);

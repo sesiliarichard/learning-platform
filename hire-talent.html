@@ -978,33 +978,15 @@
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllCountries();
   
+  // First try to load edit mode (if user clicked Edit)
   const isEditing = loadEditMode();
   
+  // If not in edit mode, check for existing profile to show preview
   if (!isEditing) {
-    const savedRef = localStorage.getItem('hire_request_ref');
-    const savedData = localStorage.getItem('hire_request_data');
-
-    if (savedRef && savedData) {
-      const prev = JSON.parse(savedData);
-      document.getElementById('previewFullName').textContent = prev.fullName;
-      document.getElementById('previewEmail').textContent = prev.email;
-      document.getElementById('previewPhone').textContent = prev.contact;
-      document.getElementById('previewCompany').textContent = prev.company;
-      document.getElementById('previewContactName').textContent = prev.fullName;
-      document.getElementById('previewIndustry').textContent = prev.industry;
-      document.getElementById('previewCountry').textContent = prev.country;
-      document.getElementById('previewNeeds').textContent = prev.needs;
-      document.getElementById('refNumber').textContent = savedRef;
-      
-      const initials = prev.company.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-      document.getElementById('companyInitials').textContent = initials || '?';
-      
-      document.querySelector('.success-banner').textContent = '👋 Welcome back! Your request is under review.';
-      document.getElementById('formContainer').style.display = 'none';
-      document.getElementById('previewSection').style.display = 'block';
-    }
+    showExistingProfileIfAny();
   }
 });
+
      function showAlert(type, msg) {
       const el = document.getElementById(type === 'error' ? 'alertError' : 'alertSuccess');
       el.textContent = msg; el.classList.add('show');
@@ -1281,26 +1263,91 @@ function loadEditMode() {
   return false;
 }
 
-    function newRequest() {
-      // Clear saved data so they can submit a fresh request
-      localStorage.removeItem('hire_request_ref');
-      localStorage.removeItem('hire_request_data');
-
-      ['firstname','lastname','email','contact','company','needs'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      document.getElementById('industry').selectedIndex = 0;
-      document.getElementById('country').selectedIndex  = 0;
-
-      // Reset phone prefix
-      document.getElementById('phonePrefix').textContent = '+?';
-      document.getElementById('phonePrefix').classList.remove('active');
-
-      document.getElementById('previewSection').style.display = 'none';
-      document.getElementById('formContainer').style.display  = 'block';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+// Add this function - it checks for existing profile and shows preview
+function showExistingProfileIfAny() {
+  const savedRef = localStorage.getItem('hire_request_ref');
+  const savedData = localStorage.getItem('hire_request_data');
+  const editingId = localStorage.getItem('hire_request_id');
+  
+  // Check if we have saved data AND no active editing
+  if (savedRef && savedData && !document.getElementById('editingId').value) {
+    try {
+      const prev = JSON.parse(savedData);
+      
+      // Populate preview
+      document.getElementById('previewFullName').textContent = prev.fullName || '—';
+      document.getElementById('previewEmail').textContent = prev.email || '—';
+      document.getElementById('previewPhone').textContent = prev.contact || '—';
+      document.getElementById('previewCompany').textContent = prev.company || '—';
+      document.getElementById('previewContactName').textContent = prev.fullName || '—';
+      document.getElementById('previewIndustry').textContent = prev.industry || '—';
+      document.getElementById('previewCountry').textContent = prev.country || 'Not specified';
+      document.getElementById('previewNeeds').textContent = prev.needs || '—';
+      document.getElementById('refNumber').textContent = savedRef;
+      
+      const initials = (prev.company || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      document.getElementById('companyInitials').textContent = initials;
+      
+      // Show preview, hide form
+      document.getElementById('formContainer').style.display = 'none';
+      document.getElementById('previewSection').style.display = 'block';
+      
+      // Update banner text
+      const banner = document.querySelector('.success-banner');
+      if (banner) banner.textContent = '👋 Welcome back! Your request is under review.';
+      
+      return true;
+    } catch(e) {
+      console.error('Error parsing saved data:', e);
     }
-
+  }
+  return false;
+}
+   function newRequest() {
+  // Clear all localStorage
+  localStorage.removeItem('hire_request_ref');
+  localStorage.removeItem('hire_request_data');
+  localStorage.removeItem('hire_request_id');
+  localStorage.removeItem('hire_logo_url');
+  
+  // Clear form fields
+  const fields = ['firstname', 'lastname', 'email', 'contact', 'company', 'needs', 'jobTitle', 'applicationLink'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  
+  // Reset selects
+  const selects = ['industry', 'country', 'jobType', 'locationType'];
+  selects.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  
+  // Reset phone prefix
+  const prefix = document.getElementById('phonePrefix');
+  if (prefix) {
+    prefix.textContent = '+?';
+    prefix.classList.remove('active');
+  }
+  
+  // Reset logo preview
+  const logoCircle = document.getElementById('logoPreviewCircle');
+  if (logoCircle) {
+    logoCircle.innerHTML = '?';
+    logoCircle.style.background = '';
+  }
+  
+  // Reset editing ID
+  document.getElementById('editingId').value = '';
+  document.getElementById('submitBtnLabel').textContent = 'Submit Request →';
+  
+  // Show form, hide preview
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('formContainer').style.display = 'block';
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
     function previewLogo(input) {
   if (!input.files || !input.files[0]) {

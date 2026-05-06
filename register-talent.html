@@ -925,25 +925,46 @@
 function editProfile() {
   const savedId = localStorage.getItem('talent_profile_id');
   
+  if (!savedId) {
+    showAlert('error', 'No profile found to edit.');
+    return;
+  }
+  
+  // Get current values from preview
   const name = document.getElementById('previewName').textContent;
   const email = document.getElementById('previewEmail').textContent;
   const role = document.getElementById('previewRole').textContent;
   const bio = document.getElementById('previewBio').textContent;
   const expText = document.getElementById('previewExp').textContent;
   
+  // Map experience text back to value
   let expValue = '';
   if (expText.includes('Beginner')) expValue = 'beginner';
   else if (expText.includes('Intermediate')) expValue = 'intermediate';
   else if (expText.includes('Advanced')) expValue = 'advanced';
   
+  // Fill form with current values
   document.getElementById('fullname').value = name;
   document.getElementById('email').value = email;
   document.getElementById('role').value = role;
   document.getElementById('bio').value = bio;
   if (expValue) document.getElementById('experience').value = expValue;
   
+  // Try to set the country in dropdown from preview location
+  let locationText = document.getElementById('previewLocation').textContent;
+  let countryName = locationText.replace('📍', '').trim();
+  const countrySelect = document.getElementById('country');
+  for (let i = 0; i < countrySelect.options.length; i++) {
+    if (countrySelect.options[i].dataset.name === countryName) {
+      countrySelect.selectedIndex = i;
+      break;
+    }
+  }
+  
+  // Change button text and behavior
   document.querySelector('.btn-label').textContent = '💾 Save Changes →';
   
+  // Override the submit function temporarily
   const originalSubmit = window.submitTalent;
   window.submitTalent = () => updateTalentProfile(savedId);
   window._originalSubmit = originalSubmit;
@@ -971,7 +992,7 @@ function editProfile() {
       showExistingProfile(data);
     });
 
-    async function updateTalentProfile(profileId) {
+async function updateTalentProfile(profileId) {
   const name = document.getElementById('fullname').value.trim();
   const email = document.getElementById('email').value.trim();
   const role = document.getElementById('role').value.trim();
@@ -988,6 +1009,7 @@ function editProfile() {
   
   setLoading(true);
   
+  // Prepare update data
   const updates = {
     full_name: name,
     email: email,
@@ -995,14 +1017,29 @@ function editProfile() {
     bio: bio,
     experience: experience,
     country_code: countryCode,
-    country_name: countryName,
-    updated_at: new Date().toISOString()
+    country_name: countryName
   };
   
+  // Handle headshot upload if a new file is selected
   const headshotFile = document.getElementById('headshot').files[0];
+  
   if (headshotFile) {
+    if (headshotFile.size > 2 * 1024 * 1024) {
+      showAlert('error', 'Headshot file too large. Please use an image under 2MB.');
+      setLoading(false);
+      return;
+    }
+    
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(headshotFile.type)) {
+      showAlert('error', 'Please upload a JPG, PNG, or GIF file.');
+      setLoading(false);
+      return;
+    }
+    
     const ext = headshotFile.name.split('.').pop();
     const filePath = `headshots/${profileId}-${Date.now()}.${ext}`;
+    
     const { error: uploadError } = await window.supabaseClient.storage
       .from('talent-files')
       .upload(filePath, headshotFile, { upsert: true });
@@ -1015,12 +1052,19 @@ function editProfile() {
     }
   }
   
+  // Handle project data
   const projectData = getProjectData();
   if (projectData.value) {
-    updates.project_url = projectData.type === 'link' ? projectData.value : null;
-    updates.project_description = projectData.type === 'text' ? projectData.value : null;
+    if (projectData.type === 'link') {
+      updates.project_url = projectData.value;
+      updates.project_description = null;
+    } else if (projectData.type === 'text') {
+      updates.project_url = null;
+      updates.project_description = projectData.value;
+    }
   }
   
+  // Update the database
   const { error } = await window.supabaseClient
     .from('talent_profiles')
     .update(updates)
@@ -1029,26 +1073,33 @@ function editProfile() {
   setLoading(false);
   
   if (error) {
+    console.error('Update error:', error);
     showAlert('error', 'Update failed: ' + error.message);
     return;
   }
   
   showAlert('success', '✅ Profile updated successfully!');
   
-  const { data } = await window.supabaseClient
+  // Clear the file input
+  document.getElementById('headshot').value = '';
+  
+  // Reload the updated profile data
+  const { data: updatedProfile } = await window.supabaseClient
     .from('talent_profiles')
     .select('*')
     .eq('id', profileId)
     .single();
   
-  if (data) {
+  if (updatedProfile) {
+    // Restore original submit function
     if (window._originalSubmit) {
       window.submitTalent = window._originalSubmit;
     }
     document.querySelector('.btn-label').textContent = 'Submit My Profile →';
+    document.getElementById('submitBtn').onclick = submitTalent;
     document.getElementById('formContainer').style.display = 'none';
     document.querySelector('.success-banner').textContent = '✅ Profile updated successfully!';
-    showExistingProfile(data);
+    showExistingProfile(updatedProfile);
   }
 }
     function showExistingProfile(profile) {
@@ -1081,84 +1132,43 @@ function editProfile() {
     }
 
     function loadProfileIntoForm(profile) {
-      document.getElementById('fullname').value   = profile.full_name  || '';
-      document.getElementById('email').value      = profile.email      || '';
-      document.getElementById('role').value       = profile.role       || '';
-      document.getElementById('bio').value        = profile.bio        || '';
-      document.getElementById('experience').value = profile.experience || '';
-
-      document.getElementById('profilePreview').style.display = 'none';
-      document.getElementById('formContainer').style.display  = 'block';
-
-      document.querySelector('.btn-label').textContent = '💾 Save Changes →';
-      document.getElementById('submitBtn').onclick = () => updateTalent(profile.id);
-
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('fullname').value = profile.full_name || '';
+  document.getElementById('email').value = profile.email || '';
+  document.getElementById('role').value = profile.role || '';
+  document.getElementById('bio').value = profile.bio || '';
+  document.getElementById('experience').value = profile.experience || '';
+  
+  // Set country in dropdown
+  const countrySelect = document.getElementById('country');
+  for (let i = 0; i < countrySelect.options.length; i++) {
+    if (countrySelect.options[i].dataset.name === profile.country_name) {
+      countrySelect.selectedIndex = i;
+      break;
     }
-
-    async function updateTalent(profileId) {
-      const name       = document.getElementById('fullname').value.trim();
-      const role       = document.getElementById('role').value.trim();
-      const bio        = document.getElementById('bio').value.trim();
-      const experience = document.getElementById('experience').value;
-
-      if (!name || !role || !bio || !experience) {
-        showAlert('error', 'Please fill in all required fields.');
-        return;
-      }
-
-      setLoading(true);
-
-      const updates = { full_name: name, role, bio, experience };
-
-      const headshotFile = document.getElementById('headshot').files[0];
-      if (headshotFile) {
-        const ext      = headshotFile.name.split('.').pop();
-        const filePath = `headshots/${profileId}-${Date.now()}.${ext}`;
-        const { error: upErr } = await window.supabaseClient.storage
-          .from('talent-files')
-          .upload(filePath, headshotFile, { upsert: true });
-        if (!upErr) {
-          const { data: urlData } = window.supabaseClient.storage
-            .from('talent-files')
-            .getPublicUrl(filePath);
-          updates.headshot_url = urlData.publicUrl;
-        }
-      }
-
-      const { error } = await window.supabaseClient
-        .from('talent_profiles')
-        .update(updates)
-        .eq('id', profileId);
-
-      setLoading(false);
-
-      if (error) {
-        showAlert('error', 'Update failed: ' + error.message);
-        return;
-      }
-
-      showAlert('success', '✅ Profile updated successfully!');
-
-      const { data } = await window.supabaseClient
-        .from('talent_profiles')
-        .select('*')
-        .eq('id', profileId)
-        .maybeSingle();
-
-     if (data) {
-  document.getElementById('formContainer').style.display = 'none';
+  }
   
-  // Reset button back to original
-  document.querySelector('.btn-label').textContent = 'Submit My Profile →';
-  document.getElementById('submitBtn').onclick = submitTalent;
+  // Set project data if exists
+  if (profile.project_url) {
+    document.getElementById('projectLink').value = profile.project_url;
+    // Switch to link tab
+    const linkTab = document.querySelector('.project-tab');
+    if (linkTab) switchProjectTab('link', linkTab);
+  } else if (profile.project_description) {
+    document.getElementById('projectText').value = profile.project_description;
+    // Switch to text tab
+    const textTab = document.querySelectorAll('.project-tab')[1];
+    if (textTab) switchProjectTab('text', textTab);
+  }
   
-  document.querySelector('.success-banner').textContent = 
-    '✅ Profile updated successfully!';
-  showExistingProfile(data);
+  document.getElementById('profilePreview').style.display = 'none';
+  document.getElementById('formContainer').style.display = 'block';
+  
+  document.querySelector('.btn-label').textContent = '💾 Save Changes →';
+  document.getElementById('submitBtn').onclick = () => updateTalentProfile(profile.id);
+  
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-    }
- 
+   
   </script>
 
 </body>
