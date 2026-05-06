@@ -1143,6 +1143,7 @@ async function submitHire() {
 
   // Reset editing mode
   document.getElementById('editingId').value = '';
+  sessionStorage.removeItem('is_editing_mode');
   document.getElementById('submitBtnLabel').textContent = 'Submit Request →';
 
   // Populate preview
@@ -1185,8 +1186,10 @@ async function editRequest() {
   const savedData = localStorage.getItem('hire_request_data');
   const savedRef  = localStorage.getItem('hire_request_ref');
   let   savedId   = localStorage.getItem('hire_request_id');
+  
+  // Set the edit mode flag
+  sessionStorage.setItem('is_editing_mode', 'true');
 
-  // If we don't have the ID yet, fetch it from Supabase by ref_number
   if (!savedId && savedRef) {
     const { data } = await window.supabaseClient
       .from('hire_requests')
@@ -1211,13 +1214,11 @@ async function editRequest() {
     document.getElementById('industry').value   = prev.industry || '';
     document.getElementById('needs').value      = prev.needs || '';
     document.getElementById('jobTitle').value   = prev.jobTitle || '';
-    document.getElementById('applicationLink').value = prev.applicationLink || ''; // ← ADD THIS LINE
+    document.getElementById('applicationLink').value = prev.applicationLink || '';
 
-    // Restore selects
     if (prev.jobType)      document.getElementById('jobType').value      = prev.jobType;
     if (prev.locationType) document.getElementById('locationType').value = prev.locationType;
 
-    // Set phone prefix from saved data
     const prefixMatch = (prev.contact || '').match(/^\+\d+/);
     if (prefixMatch) {
       document.getElementById('phonePrefix').textContent = prefixMatch[0];
@@ -1240,39 +1241,42 @@ async function editRequest() {
 }
 
 function loadEditMode() {
-  const editingId = localStorage.getItem('hire_request_id');
-  const editingData = localStorage.getItem('hire_request_data');
+  // Only enter edit mode if we have an editingId AND the edit mode flag is set
+  const isEditingFlag = sessionStorage.getItem('is_editing_mode');
   
-  if (editingId && editingData) {
-    const data = JSON.parse(editingData);
-    const nameParts = data.fullName.split(' ');
+  if (isEditingFlag === 'true') {
+    const editingId = localStorage.getItem('hire_request_id');
+    const editingData = localStorage.getItem('hire_request_data');
     
-    document.getElementById('editingId').value = editingId;
-    document.getElementById('firstname').value = nameParts[0] || '';
-    document.getElementById('lastname').value = nameParts.slice(1).join(' ') || '';
-    document.getElementById('email').value = data.email || '';
-    // Extract just the number part (remove prefix)
-    const phoneMatch = (data.contact || '').match(/\d[\d\s]*$/);
-    document.getElementById('contact').value = phoneMatch ? phoneMatch[0].trim() : '';
-    document.getElementById('company').value = data.company || '';
-    document.getElementById('industry').value = data.industry || '';
-    document.getElementById('needs').value = data.needs || '';
-    document.getElementById('jobTitle').value = data.jobTitle || '';
-    if (data.jobType) document.getElementById('jobType').value = data.jobType;
-    if (data.locationType) document.getElementById('locationType').value = data.locationType;
-    if (data.applicationLink) document.getElementById('applicationLink').value = data.applicationLink;
-    
-    // Set phone prefix from saved data
-    const prefixMatch = (data.contact || '').match(/^\+\d+/);
-    if (prefixMatch) {
-      document.getElementById('phonePrefix').textContent = prefixMatch[0];
-      document.getElementById('phonePrefix').classList.add('active');
+    if (editingId && editingData) {
+      const data = JSON.parse(editingData);
+      const nameParts = data.fullName.split(' ');
+      
+      document.getElementById('editingId').value = editingId;
+      document.getElementById('firstname').value = nameParts[0] || '';
+      document.getElementById('lastname').value = nameParts.slice(1).join(' ') || '';
+      document.getElementById('email').value = data.email || '';
+      const phoneMatch = (data.contact || '').match(/\d[\d\s]*$/);
+      document.getElementById('contact').value = phoneMatch ? phoneMatch[0].trim() : '';
+      document.getElementById('company').value = data.company || '';
+      document.getElementById('industry').value = data.industry || '';
+      document.getElementById('needs').value = data.needs || '';
+      document.getElementById('jobTitle').value = data.jobTitle || '';
+      if (data.jobType) document.getElementById('jobType').value = data.jobType;
+      if (data.locationType) document.getElementById('locationType').value = data.locationType;
+      if (data.applicationLink) document.getElementById('applicationLink').value = data.applicationLink;
+      
+      const prefixMatch = (data.contact || '').match(/^\+\d+/);
+      if (prefixMatch) {
+        document.getElementById('phonePrefix').textContent = prefixMatch[0];
+        document.getElementById('phonePrefix').classList.add('active');
+      }
+      
+      document.getElementById('submitBtnLabel').textContent = '💾 Update Request →';
+      document.getElementById('formContainer').style.display = 'block';
+      document.getElementById('previewSection').style.display = 'none';
+      return true;
     }
-    
-    document.getElementById('submitBtnLabel').textContent = '💾 Update Request →';
-    document.getElementById('formContainer').style.display = 'block';
-    document.getElementById('previewSection').style.display = 'none';
-    return true;
   }
   return false;
 }
@@ -1328,6 +1332,9 @@ function showExistingProfileIfAny() {
 }
 
    function newRequest() {
+  // Clear edit mode flag
+  sessionStorage.removeItem('is_editing_mode');
+  
   // Clear all localStorage
   localStorage.removeItem('hire_request_ref');
   localStorage.removeItem('hire_request_data');
