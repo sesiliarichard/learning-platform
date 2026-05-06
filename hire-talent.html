@@ -1267,14 +1267,11 @@ function loadEditMode() {
 function showExistingProfileIfAny() {
   const savedRef = localStorage.getItem('hire_request_ref');
   const savedData = localStorage.getItem('hire_request_data');
-  const editingId = localStorage.getItem('hire_request_id');
   
-  // Check if we have saved data AND no active editing
   if (savedRef && savedData && !document.getElementById('editingId').value) {
     try {
       const prev = JSON.parse(savedData);
       
-      // Populate preview
       document.getElementById('previewFullName').textContent = prev.fullName || '—';
       document.getElementById('previewEmail').textContent = prev.email || '—';
       document.getElementById('previewPhone').textContent = prev.contact || '—';
@@ -1288,11 +1285,9 @@ function showExistingProfileIfAny() {
       const initials = (prev.company || '?').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       document.getElementById('companyInitials').textContent = initials;
       
-      // Show preview, hide form
       document.getElementById('formContainer').style.display = 'none';
       document.getElementById('previewSection').style.display = 'block';
       
-      // Update banner text
       const banner = document.querySelector('.success-banner');
       if (banner) banner.textContent = '👋 Welcome back! Your request is under review.';
       

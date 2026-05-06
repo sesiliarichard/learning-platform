@@ -615,7 +615,7 @@ html {
       <p>Our platform bridges the gap between skilled professionals and leading employers. Register your talent or post your opportunity — we handle the matching.</p>
       <div class="hero-btns">
        <a href="register-talent.html" class="btn-hero-main">Join the Hub</a>
-      <a href="hire-talent.html" class="btn-hero-out">Hire Talent</a>
+      <a href="hire-talent.html" class="btn-hero-out" id="hireTalentBtn">Hire Talent</a>
       </div>
     </div>
 
@@ -795,6 +795,17 @@ html {
   window.addEventListener('scroll', () => {
     document.getElementById('scrollTop').style.display = 
       window.scrollY > 400 ? 'block' : 'none';
+  });
+    // Check if hire profile exists and update link if needed
+  document.addEventListener('DOMContentLoaded', function() {
+    const hasHireProfile = localStorage.getItem('hire_request_ref');
+    const hireBtn = document.getElementById('hireTalentBtn');
+    
+    if (hireBtn) {
+      // The link already goes to hire-talent.html
+      // The hire-talent.html page will handle showing preview vs form
+      console.log('Hire profile exists:', hasHireProfile ? 'Yes' : 'No');
+    }
   });
 </script>
 </body>
