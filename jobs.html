@@ -1116,6 +1116,13 @@ nav {
   }
 
 function buildJobCard(job, index) {
+    // Debug: Log if application link exists
+    if (job.application_link) {
+      console.log(`Job ${job.company_name} has application link:`, job.application_link);
+    } else {
+      console.log(`Job ${job.company_name} has NO application link`);
+    }
+    
     jobDataMap[job.id] = {
       appLink: job.application_link || '',
       email:   job.email || '',
@@ -1383,33 +1390,29 @@ function buildJobCard(job, index) {
     localStorage.setItem('saved_jobs', JSON.stringify(saved));
   }
 
- function applyToJob(jobId) {
+function applyToJob(jobId) {
   const job = jobDataMap[jobId];
+  console.log('Applying to job:', jobId, job); // Debug log
+  
   if (!job) {
     console.error('Job not found:', jobId);
+    alert('Job information not found. Please refresh the page.');
     return;
   }
   
-  // Clean the URL if it has HTML entities
-  let cleanLink = job.appLink;
-  if (cleanLink) {
-    cleanLink = cleanLink.replace(/&amp;/g, '&')
-                         .replace(/&#47;/g, '/')
-                         .replace(/&#39;/g, "'")
-                         .replace(/&quot;/g, '"')
-                         .replace(/&lt;/g, '<')
-                         .replace(/&gt;/g, '>');
-  }
+  console.log('Application link found:', job.appLink);
   
-  // Check if there's an application link
-  if (cleanLink && cleanLink.trim() !== '' && cleanLink !== 'null' && cleanLink !== 'undefined') {
-    window.open(cleanLink, '_blank', 'noopener');
+  if (job.appLink && job.appLink.trim() !== '') {
+    console.log('Opening link:', job.appLink);
+    window.open(job.appLink, '_blank', 'noopener');
   } else if (job.email) {
-    window.location.href = `mailto:${job.email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${job.company} team,%0D%0A%0D%0AI am writing to express my interest in the position posted on the Women in AI Talent Hub.%0D%0A%0D%0APlease find my details attached.%0D%0A%0D%0AKind regards`;
+    console.log('No link, using email:', job.email);
+    window.location.href = `mailto:${job.email}?subject=Job Application – Women in AI Talent Hub&body=Hello ${job.company} team,%0D%0A%0D%0AI am writing to express my interest...`;
   } else {
     alert('No application link or contact email available for this position.');
   }
 }
+
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('filterSearch').addEventListener('keyup', e => { if (e.key === 'Enter') applyFilters(); });
     loadJobs();
