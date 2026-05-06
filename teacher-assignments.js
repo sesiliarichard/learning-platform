@@ -281,10 +281,11 @@ function buildSubmissionRow(s, isGraded) {
           ${_esc(c?.title || '')}
         </div>
         ${s.file_url ? `
-          <a href="${_esc(s.file_url)}" target="_blank"
-             style="font-size:10px;color:var(--acc)">
-            <i class="fas fa-paperclip"></i> attachment
-          </a>` : ''}
+  <a href="${_esc(s.file_url)}" target="_blank" rel="noopener noreferrer"
+     onclick="event.stopPropagation()"
+     style="font-size:10px;color:var(--acc);cursor:pointer">
+    <i class="fas fa-paperclip"></i> View File
+  </a>` : ''}
       </div>
       <div style="text-align:center">
         <div style="font-size:11px;color:var(--mut)">${date}</div>
@@ -304,14 +305,19 @@ function buildSubmissionRow(s, isGraded) {
       </div>
       <div style="text-align:center;display:flex;gap:6px;justify-content:center">
         <button class="bxs"
-                onclick="openGradePanel('${s.id}','${safeName}','${safeTitle}',${maxPts})">
-          <i class="fas fa-${isGraded ? 'edit' : 'pen'}"></i>
-          ${isGraded ? 'Edit' : 'Grade'}
-        </button>
-        ${s.file_url ? `
-          <a href="${_esc(s.file_url)}" download class="btn bg" title="Download">
-            <i class="fas fa-download"></i>
-          </a>` : ''}
+        onclick="openGradePanel('${s.id}','${safeName}','${safeTitle}',${maxPts})">
+  <i class="fas fa-${isGraded ? 'edit' : 'pen'}"></i>
+  ${isGraded ? 'Edit' : 'Grade'}
+</button>
+${s.file_url ? `
+  <a href="${_esc(s.file_url)}" target="_blank" rel="noopener noreferrer"
+     class="btn bg" title="View File" style="padding:5px 9px;font-size:11px">
+    <i class="fas fa-eye"></i>
+  </a>
+  <a href="${_esc(s.file_url)}" download class="btn bg" title="Download"
+     style="padding:5px 9px;font-size:11px">
+    <i class="fas fa-download"></i>
+  </a>` : ''}
       </div>
     </div>`;
 }
@@ -335,6 +341,15 @@ function openGradePanel(submissionId, studentName, assignmentTitle, maxPoints) {
   }
   const gmMax = document.getElementById('gmMax');
   if (gmMax) gmMax.textContent = maxPoints;
+
+  // ✅ Clear all fields so professor grades manually — no AI pre-fill
+  const gmScore = document.getElementById('gmScore');
+  if (gmScore) { gmScore.value = ''; }
+  const gmGrade = document.getElementById('gmGrade');
+  if (gmGrade) { gmGrade.selectedIndex = 0; }
+  const gradeFeedback = document.getElementById('gradeFeedback');
+  if (gradeFeedback) { gradeFeedback.value = ''; }
+
   const gradeForm = document.getElementById('gradeForm');
   if (gradeForm) gradeForm.dataset.submissionId = submissionId;
   openM('gradeModal');
