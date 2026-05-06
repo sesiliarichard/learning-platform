@@ -1023,14 +1023,13 @@ async function submitHire() {
   const email      = document.getElementById('email').value.trim();
   const contact    = getFullPhone();
   const company    = document.getElementById('company').value.trim();
-  const appLink    = document.getElementById('applicationLink').value.trim(); // ← GET THIS VALUE
+  const appLink    = document.getElementById('applicationLink').value.trim();
   const logoFile   = document.getElementById('companyLogoFile').files[0];
   const jobTitle   = document.getElementById('jobTitle')?.value.trim() || 'Open Position';
   const jobType    = document.getElementById('jobType')?.value || 'full-time';
   const locType    = document.getElementById('locationType')?.value || 'remote';
   const editingId  = document.getElementById('editingId').value;
 
-  // DEBUG: Check if we got the link
   console.log('=== SUBMITTING HIRE REQUEST ===');
   console.log('Application Link from form:', appLink);
   console.log('Editing ID:', editingId);
@@ -1056,7 +1055,7 @@ async function submitHire() {
   let error, newId;
 
   if (editingId) {
-    // UPDATE existing record - MAKE SURE application_link IS INCLUDED
+    // UPDATE existing record - NO updated_at field
     const updatePayload = {
       first_name:       firstname,
       last_name:        lastname,
@@ -1068,8 +1067,7 @@ async function submitHire() {
       talent_needs:     `${jobTitle}\n\n${needs}`,
       job_type:         jobType,
       location_type:    locType,
-      application_link: appLink || null,  // ← CRITICAL: Must be here
-      updated_at:       new Date().toISOString()
+      application_link: appLink || null,
     };
     if (logoUrl) updatePayload.logo_url = logoUrl;
 
@@ -1087,7 +1085,7 @@ async function submitHire() {
       refNumber = localStorage.getItem('hire_request_ref') || refNumber;
     }
   } else {
-    // CREATE new record - MAKE SURE application_link IS INCLUDED
+    // CREATE new record
     const insertPayload = {
       ref_number:       refNumber,
       first_name:       firstname,
@@ -1100,7 +1098,7 @@ async function submitHire() {
       talent_needs:     `${jobTitle}\n\n${needs}`,
       job_type:         jobType,
       location_type:    locType,
-      application_link: appLink || null,  // ← CRITICAL: Must be here
+      application_link: appLink || null,
       logo_url:         logoUrl,
       created_at:       new Date().toISOString()
     };
@@ -1127,7 +1125,6 @@ async function submitHire() {
     showAlert('error', '⚠️ ' + (error.message || 'Please try again.'));
     return;
   }
-
   // VERIFY: Check if application_link was saved
   if (newId || editingId) {
     const checkId = newId || editingId;
