@@ -975,21 +975,30 @@
       const number = document.getElementById('contact').value.trim().replace(/\s/g, '');
       return prefix === '+?' ? number : `${prefix} ${number}`;
     }
-    
+
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('DOMContentLoaded - Starting...');
+  console.log('=== PAGE LOADED ===');
   await loadAllCountries();
+  
+  // Check if there's an editing ID first
+  const editingId = document.getElementById('editingId').value;
+  console.log('Current editingId value:', editingId);
   
   // First try to load edit mode (if user clicked Edit)
   const isEditing = loadEditMode();
-  console.log('isEditing result:', isEditing);
+  console.log('isEditing:', isEditing);
   
   // If not in edit mode, check for existing profile to show preview
   if (!isEditing) {
     console.log('Not in edit mode, checking for existing profile...');
-    showExistingProfileIfAny();
+    const hasProfile = showExistingProfileIfAny();
+    console.log('showExistingProfileIfAny returned:', hasProfile);
+    
+    if (!hasProfile) {
+      console.log('No profile found, showing form');
+    }
   } else {
-    console.log('In edit mode, showing form');
+    console.log('In edit mode, showing form with data');
   }
 });
      function showAlert(type, msg) {
@@ -1270,18 +1279,21 @@ function loadEditMode() {
 
 // Add this function - it checks for existing profile and shows preview
 function showExistingProfileIfAny() {
+  console.log('=== showExistingProfileIfAny called ===');
   const savedRef = localStorage.getItem('hire_request_ref');
   const savedData = localStorage.getItem('hire_request_data');
   const editingIdValue = document.getElementById('editingId').value;
   
-  console.log('showExistingProfileIfAny - savedRef:', savedRef);
-  console.log('showExistingProfileIfAny - editingIdValue:', editingIdValue);
+  console.log('savedRef:', savedRef);
+  console.log('savedData exists:', !!savedData);
+  console.log('editingIdValue:', editingIdValue);
   
   // Check if we have saved data AND no active editing
   if (savedRef && savedData && !editingIdValue) {
     try {
       const prev = JSON.parse(savedData);
-      console.log('Parsed data:', prev);
+      console.log('Parsed data - fullName:', prev.fullName);
+      console.log('Parsed data - company:', prev.company);
       
       // Populate preview
       document.getElementById('previewFullName').textContent = prev.fullName || '—';
@@ -1304,13 +1316,13 @@ function showExistingProfileIfAny() {
       const banner = document.querySelector('.success-banner');
       if (banner) banner.textContent = '👋 Welcome back! Your request is under review.';
       
-      console.log('Preview shown successfully');
+      console.log('✅ Preview shown successfully!');
       return true;
     } catch(e) {
       console.error('Error parsing saved data:', e);
     }
   } else {
-    console.log('Condition not met - savedRef:', !!savedRef, 'savedData:', !!savedData, 'editingIdValue:', editingIdValue);
+    console.log('Condition failed - savedRef:', !!savedRef, 'savedData:', !!savedData, 'editingIdValue:', editingIdValue);
   }
   return false;
 }
