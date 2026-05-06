@@ -245,20 +245,23 @@ function openGradeModalById(itemId, type) {
          </a>
        </div>
        <div style="border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;background:var(--s3)">
-         ${item.fileUrl.match(/\.(pdf)(\?|$)/i)
-           ? `<iframe src="${_esc(item.fileUrl)}" width="100%" height="320"
-                      style="border:none;display:block"></iframe>`
-           : item.fileUrl.match(/\.(png|jpg|jpeg|gif|webp)(\?|$)/i)
-           ? `<img src="${_esc(item.fileUrl)}" style="width:100%;max-height:320px;object-fit:contain;display:block;padding:8px"/>`
-           : `<div style="padding:20px;text-align:center;color:var(--mut)">
-                <i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px"></i>
-                <div style="font-size:12px">Preview not available for this file type</div>
-                <a href="${_esc(item.fileUrl)}" target="_blank"
-                   style="font-size:12px;color:var(--acc);margin-top:6px;display:inline-block">
-                  Open file in new tab →
-                </a>
-              </div>`
-         }
+  ${(() => {
+  const rawUrl = item.fileUrl || '';
+  const cleanUrl = rawUrl.split('?')[0].toLowerCase();
+  if (cleanUrl.match(/\.pdf$/)) {
+    return `<iframe src="${_esc(rawUrl)}" width="100%" height="400" style="border:none;display:block"></iframe>`;
+  } else if (cleanUrl.match(/\.(png|jpg|jpeg|gif|webp)$/)) {
+    return `<img src="${_esc(rawUrl)}" style="width:100%;max-height:320px;object-fit:contain;display:block;padding:8px"/>`;
+  } else if (cleanUrl.match(/\.(doc|docx|ppt|pptx|xls|xlsx)$/)) {
+    return `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true" width="100%" height="400" style="border:none;display:block"></iframe>`;
+  } else {
+    return `<div style="padding:20px;text-align:center;color:var(--mut)">
+      <i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px"></i>
+      <div style="font-size:12px">Preview not available for this file type</div>
+      <a href="${_esc(rawUrl)}" target="_blank" style="font-size:12px;color:var(--acc);margin-top:6px;display:inline-block">Open file in new tab →</a>
+    </div>`;
+  }
+})()}
        </div>
      </div>`
   : ''}
@@ -506,33 +509,36 @@ async function renderStudentAssignments(studentId, body, student) {
           </div>
           ${sub.text_response
             ? `<div class="sub-txt">${_esc(sub.text_response)}</div>` : ''}
-          ${sub.file_url
+     ${sub.file_url
   ? `<div style="margin-bottom:14px">
        <div style="display:flex;gap:8px;margin-bottom:8px">
-         <a href="${_esc(sub.file_url)}" target="_blank"
+         <a href="${_esc(sub.file_url)}" target="_blank" rel="noopener noreferrer"
             class="btn bg" style="font-size:11px;padding:6px 12px">
            <i class="fas fa-eye"></i> View File
          </a>
-         <a href="${_esc(sub.file_url)}" download
+         <a href="${_esc(sub.file_url)}" download rel="noopener noreferrer"
             class="btn bg" style="font-size:11px;padding:6px 12px">
            <i class="fas fa-download"></i> Download
          </a>
        </div>
        <div style="border:1.5px solid var(--bdr);border-radius:8px;overflow:hidden;background:var(--s3)">
-         ${sub.file_url.match(/\.(pdf)(\?|$)/i)
-           ? `<iframe src="${_esc(sub.file_url)}" width="100%" height="320"
-                      style="border:none;display:block"></iframe>`
-           : sub.file_url.match(/\.(png|jpg|jpeg|gif|webp)(\?|$)/i)
-           ? `<img src="${_esc(sub.file_url)}" style="width:100%;max-height:320px;object-fit:contain;display:block;padding:8px"/>`
-           : `<div style="padding:20px;text-align:center;color:var(--mut)">
-                <i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px"></i>
-                <div style="font-size:12px">Preview not available for this file type</div>
-                <a href="${_esc(sub.file_url)}" target="_blank"
-                   style="font-size:12px;color:var(--acc);margin-top:6px;display:inline-block">
-                  Open file in new tab →
-                </a>
-              </div>`
-         }
+         ${(() => {
+           const rawUrl = sub.file_url || '';
+           const cleanUrl = rawUrl.split('?')[0].toLowerCase();
+           if (cleanUrl.match(/\.pdf$/)) {
+             return `<iframe src="${_esc(rawUrl)}" width="100%" height="400" style="border:none;display:block"></iframe>`;
+           } else if (cleanUrl.match(/\.(png|jpg|jpeg|gif|webp)$/)) {
+             return `<img src="${_esc(rawUrl)}" style="width:100%;max-height:320px;object-fit:contain;display:block;padding:8px"/>`;
+           } else if (cleanUrl.match(/\.(doc|docx|ppt|pptx|xls|xlsx)$/)) {
+             return `<iframe src="https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true" width="100%" height="400" style="border:none;display:block"></iframe>`;
+           } else {
+             return `<div style="padding:20px;text-align:center;color:var(--mut)">
+               <i class="fas fa-file-alt" style="font-size:32px;display:block;margin-bottom:8px"></i>
+               <div style="font-size:12px">Preview not available for this file type</div>
+               <a href="${_esc(rawUrl)}" target="_blank" style="font-size:12px;color:var(--acc);margin-top:6px;display:inline-block">Open file in new tab →</a>
+             </div>`;
+           }
+         })()}
        </div>
      </div>` : ''}
           ${isGraded && pct !== null ? `
