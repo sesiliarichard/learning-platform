@@ -1165,10 +1165,13 @@
     <li><a href="#" class="active">Talent Discovery</a></li>
     <li id="navSaved"><a href="saved.html">Saved</a></li>
     <li class="nav-user-item">
-      <div class="avatar">CO</div>
-      <div class="user-info"><strong>Company Owner</strong><span>TechNova AI</span></div>
+      <div class="avatar" id="navUserAvatar">CO</div>
+      <div class="user-info">
+        <strong id="navUserName">Company Owner</strong>
+        <span id="navUserCompany">TechNova AI</span>
+      </div>
     </li>
-  </ul>
+</ul>
 </nav>
 
 <!-- PAGE -->
@@ -1296,7 +1299,7 @@
 <div id="profileModal"></div>
 <script>
 // ── View Permissions ──────────────────────────────────────
-  (function applyViewPermissions() {
+(function applyViewPermissions() {
     const isHirer  = !!localStorage.getItem('hire_request_ref');
     const isTalent = !!localStorage.getItem('talent_profile_id');
 
@@ -1304,29 +1307,66 @@
     window._isHirer  = isHirer;
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Get nav elements
+      const navOpportunity = document.getElementById('navOpportunity');
+      const navSaved = document.getElementById('navSaved');
+      const saveSearchBtn = document.getElementById('saveSearchBtn');
+      
+      // CASE 1: User is a Hirer (company/employer) - HIDE Opportunity Board and Saved
       if (window._isHirer && !window._isTalent) {
-        // Hide nav items
-        const navOpp   = document.getElementById('navOpportunity');
-        const navSaved = document.getElementById('navSaved');
-        const saveBtn  = document.getElementById('saveSearchBtn');
-
-        if (navOpp)   navOpp.style.display  = 'none';
+        console.log('Hirer mode - hiding Opportunity Board and Saved');
+        
+        // Hide nav items that are for talent only
+        if (navOpportunity) navOpportunity.style.display = 'none';
         if (navSaved) navSaved.style.display = 'none';
-        if (saveBtn)  saveBtn.style.display  = 'none';
-
+        if (saveSearchBtn) saveSearchBtn.style.display = 'none';
+        
         // Update user chip with company data from localStorage
         const companyData = localStorage.getItem('hire_request_data');
         if (companyData) {
-          const parsed = JSON.parse(companyData);
-          const nameEl    = document.querySelector('.user-info strong');
-          const companyEl = document.querySelector('.user-info span');
-          const avatarEl  = document.querySelector('nav .avatar');
-
-          if (nameEl)    nameEl.textContent    = parsed.fullName || 'Company';
-          if (companyEl) companyEl.textContent = parsed.company  || '';
-          if (avatarEl)  avatarEl.textContent  = (parsed.company || 'CO')
-            .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+          try {
+            const parsed = JSON.parse(companyData);
+            const nameEl = document.querySelector('.user-info strong');
+            const companyEl = document.querySelector('.user-info span');
+            const avatarEl = document.querySelector('nav .avatar');
+            
+            if (nameEl) nameEl.textContent = parsed.fullName || 'Company Representative';
+            if (companyEl) companyEl.textContent = parsed.company || 'Tech Company';
+            if (avatarEl) {
+              avatarEl.textContent = (parsed.company || 'CO')
+                .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            }
+          } catch(e) { console.error('Error parsing company data:', e); }
         }
+      } 
+      // CASE 2: User is Talent (job seeker) - SHOW everything
+      else if (window._isTalent && !window._isHirer) {
+        console.log('Talent mode - showing all nav options');
+        // Keep everything visible for talent users
+        if (navOpportunity) navOpportunity.style.display = '';
+        if (navSaved) navSaved.style.display = '';
+        
+        // Update user chip with talent data if available
+        const talentData = localStorage.getItem('talent_profile_data');
+        if (talentData) {
+          try {
+            const parsed = JSON.parse(talentData);
+            const nameEl = document.querySelector('.user-info strong');
+            const roleEl = document.querySelector('.user-info span');
+            const avatarEl = document.querySelector('nav .avatar');
+            
+            if (nameEl) nameEl.textContent = parsed.fullName || 'Talent';
+            if (roleEl) roleEl.textContent = parsed.role || 'AI Professional';
+            if (avatarEl) {
+              avatarEl.textContent = (parsed.fullName || 'TA')
+                .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            }
+          } catch(e) { console.error('Error parsing talent data:', e); }
+        }
+      }
+      // CASE 3: Not logged in (Guest)
+      else {
+        console.log('Guest mode - no special permissions');
       }
     });
   })();
