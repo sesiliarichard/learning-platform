@@ -696,19 +696,52 @@
   margin-top: 6px;
   line-height: 1.5;
 }
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+}
+
+.nav-links a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: #6B7280;
+  transition: color .2s;
+}
+
+.nav-links a:hover {
+  color: #1a1a2e;
+}
+@media (max-width: 600px) {
+  nav {
+    padding: 0.8rem 1rem;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  nav > div {
+    gap: 14px;
+  }
+  nav > div a[href="career-support.html"]:not(.back-btn),
+  nav > div a[href="talent-discovery.html"] {
+    font-size: 13px;
+  }
+}
 </style>
 </head>
 <body>
 
   <nav>
-    <div class="logo">Women in <span>AI Talent Hub</span></div>
-    <a href="career-support.html" class="back-btn">← Back to Home</a>
-  </nav>
+  <div class="logo">Women in <span>AI Talent Hub</span></div>
 
-  <div class="page-header">
-    <h1>Hire AI Talent</h1>
-    <p>Tell us about your company and we'll connect you with the right candidates.</p>
-  </div>
+  <ul class="nav-links">
+    <li><a href="career-support.html">Dashboard</a></li>
+    <li><a href="talent-discovery.html">Talent Discovery</a></li>
+  </ul>
+
+  <a href="career-support.html" class="back-btn">← Back to Home</a>
+</nav>
 
   <!-- FORM -->
   <div class="form-container" id="formContainer">
