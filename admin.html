@@ -10957,6 +10957,55 @@ console.log('✅ Admin-only Table UI ready (scoped to .editor-content)');
     
     console.log('✅ Editor font persistence fix loaded');
 })();
+// ============================================
+// FINAL FONT FIX - Force font on all editors
+// ============================================
+(function finalFontFix() {
+    function fixAllEditors() {
+        const editors = document.querySelectorAll('.editor-content[contenteditable="true"]');
+        
+        editors.forEach(editor => {
+            // Set font on editor container
+            editor.style.fontFamily = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            editor.style.fontSize = '14px';
+            
+            // Set font on all child elements
+            editor.querySelectorAll('*').forEach(el => {
+                if (!el.style.fontFamily || el.style.fontFamily === '' || el.style.fontFamily === 'inherit') {
+                    el.style.fontFamily = "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+                }
+                if (!el.style.fontSize || el.style.fontSize === '') {
+                    el.style.fontSize = '14px';
+                }
+            });
+        });
+    }
+    
+    // Run on load
+    setTimeout(fixAllEditors, 100);
+    setTimeout(fixAllEditors, 500);
+    setTimeout(fixAllEditors, 1000);
+    
+    // Run when modals open
+    const modalFunctions = ['openCreateChapterModal', 'openEditChapterModal', 'addNewTopic', 'addEditTopic'];
+    modalFunctions.forEach(fnName => {
+        const original = window[fnName];
+        if (original) {
+            window[fnName] = function(...args) {
+                const result = original.apply(this, args);
+                setTimeout(fixAllEditors, 200);
+                setTimeout(fixAllEditors, 500);
+                return result;
+            };
+        }
+    });
+    
+    // Watch for new editors
+    const observer = new MutationObserver(() => fixAllEditors());
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    console.log('✅ Final font fix applied');
+})();
 </script>
 
 </body>

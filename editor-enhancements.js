@@ -950,7 +950,82 @@ function tableAct (act, table, wrap) {
     setTimeout(initEditors, 500);
   }
 
- 
+   /* ============================================================
+   * 8. FIX: Preserve font family when typing in editors
+   * ============================================================ */
+  function preserveEditorFonts() {
+      const editors = document.querySelectorAll('.editor-content[contenteditable="true"]');
+      
+      editors.forEach(editor => {
+          if (editor.hasAttribute('data-font-preserve')) return;
+          editor.setAttribute('data-font-preserve', 'true');
+          
+          // Store the current font
+          const currentFont = editor.style.fontFamily || getComputedStyle(editor).fontFamily || "'Plus Jakarta Sans', sans-serif";
+          const currentSize = editor.style.fontSize || getComputedStyle(editor).fontSize || '14px';
+          
+          editor.setAttribute('data-stored-font', currentFont);
+          editor.setAttribute('data-stored-size', currentSize);
+          
+          // Apply font to all new content
+          editor.addEventListener('input', function() {
+              const storedFont = this.getAttribute('data-stored-font');
+              const storedSize = this.getAttribute('data-stored-size');
+              
+              // Apply to any new elements without styles
+              const allElements = this.querySelectorAll('*');
+              allElements.forEach(el => {
+                  if (storedFont && (!el.style.fontFamily || el.style.fontFamily === '')) {
+                      el.style.fontFamily = storedFont;
+                  }
+                  if (storedSize && (!el.style.fontSize || el.style.fontSize === '')) {
+                      el.style.fontSize = storedSize;
+                  }
+              });
+              
+              // Wrap bare text nodes
+              const walker = document.createTreeWalker(this, NodeFilter.SHOW_TEXT);
+              const textNodes = [];
+              while (walker.nextNode()) textNodes.push(walker.currentNode);
+              
+              textNodes.forEach(node => {
+                  if (node.textContent.trim() && node.parentElement === this) {
+                      const span = document.createElement('span');
+                      if (storedFont) span.style.fontFamily = storedFont;
+                      if (storedSize) span.style.fontSize = storedSize;
+                      node.parentNode.insertBefore(span, node);
+                      span.appendChild(node);
+                  }
+              });
+          });
+          
+          // Also apply on paste
+          editor.addEventListener('paste', function() {
+              setTimeout(() => {
+                  const storedFont = this.getAttribute('data-stored-font');
+                  const storedSize = this.getAttribute('data-stored-size');
+                  if (storedFont || storedSize) {
+                      const allElements = this.querySelectorAll('*');
+                      allElements.forEach(el => {
+                          if (storedFont) el.style.fontFamily = storedFont;
+                          if (storedSize) el.style.fontSize = storedSize;
+                      });
+                  }
+              }, 10);
+          });
+      });
+  }
+  
+  // Run font preservation after editors are ready
+  const originalInitEditors = initEditors;
+  window.initEditors = function() {
+      originalInitEditors();
+      setTimeout(preserveEditorFonts, 100);
+      setTimeout(preserveEditorFonts, 500);
+  };
+  
+  // Also run when modals open
+  setTimeout(preserveEditorFonts, 1000);
 
   console.log(
     '%c✅ ASAI Editor Enhancements loaded — Word-like image & table editing active',
