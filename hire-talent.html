@@ -1121,6 +1121,7 @@ async function submitHire() {
     showAlert('error', '⚠️ ' + (error.message || 'Please try again.'));
     return;
   }
+   localStorage.setItem('is_hirer', 'true');
   // VERIFY: Check if application_link was saved
   if (newId || editingId) {
     const checkId = newId || editingId;
