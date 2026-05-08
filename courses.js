@@ -49,31 +49,54 @@ async function createCourse({ title, description, durationWeeks, instructor, thu
         if (!user) throw new Error('Not authenticated');
         if (!title?.trim()) throw new Error('Course title is required');
         
-        // FIX: Clean the description by removing empty HTML tags
+        // FIX: Clean the description properly
         let cleanDescription = description || '';
         
-        // Check if description is empty or just contains empty HTML
-        const isEmpty = !cleanDescription || 
-                        cleanDescription === '<p><br></p>' || 
-                        cleanDescription === '<p> </p>' || 
-                        cleanDescription === '<p></p>' || 
-                        cleanDescription === '<br>' ||
-                        cleanDescription === '<div><br></div>' ||
-                        cleanDescription.trim() === '' ||
-                        cleanDescription === '&nbsp;' ||
-                        cleanDescription === '<p>&nbsp;</p>';
+        // Remove all possible empty HTML patterns
+        const emptyPatterns = [
+            '<p><br></p>',
+            '<p><br/>',
+            '<p> </p>',
+            '<p></p>',
+            '<br>',
+            '<br/>',
+            '<div><br></div>',
+            '<div><br/></div>',
+            '<div></div>',
+            '&nbsp;',
+            '<p>&nbsp;</p>',
+            '<div>&nbsp;</div>'
+        ];
         
-        // If empty, set to empty string instead of HTML tags
-        if (isEmpty) {
-            cleanDescription = '';
+        // Check if description is empty after stripping HTML
+        let isActuallyEmpty = false;
+        let tempDescription = cleanDescription;
+        
+        // Remove all HTML tags to check if there's real text
+        const textOnly = tempDescription.replace(/<[^>]*>/g, '').trim();
+        
+        if (textOnly === '') {
+            isActuallyEmpty = true;
         }
         
+        // Also check against empty patterns
+        for (const pattern of emptyPatterns) {
+            if (cleanDescription === pattern || cleanDescription === pattern.toLowerCase()) {
+                isActuallyEmpty = true;
+                break;
+            }
+        }
+        
+        // If empty, set to empty string
+        if (isActuallyEmpty || !cleanDescription || cleanDescription.trim() === '') {
+            cleanDescription = '';
+        }
         
         const { data, error } = await supabaseClient
             .from('courses')
             .insert({
                 title:           title.trim(),
-                description:     cleanDescription, // Use the cleaned description
+                description:     cleanDescription,
                 duration_weeks:  durationWeeks || 12,
                 instructor:      instructor?.trim() || '',
                 thumbnail_color: thumbnailColor || 'purple',
@@ -92,17 +115,42 @@ async function createCourse({ title, description, durationWeeks, instructor, thu
         return { success: false, error: error.message };
     }
 }
-
 // ─────────────────────────────────────────────
 // 4. UPDATE COURSE (Admin only)
 // ─────────────────────────────────────────────
 async function updateCourse(courseId, { title, description, durationWeeks, instructor, status }) {
     try {
+        // FIX: Clean the description properly
+        let cleanDescription = description || '';
+        
+        // Remove all possible empty HTML patterns
+        const emptyPatterns = [
+            '<p><br></p>', '<p><br/>', '<p> </p>', '<p></p>',
+            '<br>', '<br/>', '<div><br></div>', '<div></div>',
+            '&nbsp;', '<p>&nbsp;</p>', '<div>&nbsp;</div>'
+        ];
+        
+        // Check if description has real text
+        const textOnly = cleanDescription.replace(/<[^>]*>/g, '').trim();
+        
+        let isActuallyEmpty = textOnly === '';
+        
+        for (const pattern of emptyPatterns) {
+            if (cleanDescription === pattern || cleanDescription === pattern.toLowerCase()) {
+                isActuallyEmpty = true;
+                break;
+            }
+        }
+        
+        if (isActuallyEmpty || !cleanDescription || cleanDescription.trim() === '') {
+            cleanDescription = '';
+        }
+        
         const { data, error } = await supabaseClient
             .from('courses')
             .update({
                 title:          title?.trim(),
-                description:    description?.trim(),
+                description:    cleanDescription,
                 duration_weeks: durationWeeks,
                 instructor:     instructor?.trim(),
                 status:         status || 'active',

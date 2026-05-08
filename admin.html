@@ -2030,19 +2030,27 @@ async function handleAddCourse(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
     
-    // FIX: Check if editor is empty
-    const editorContent = document.getElementById('courseDescriptionEditor').innerHTML;
-    let description = editorContent;
+    // FIX: Properly clean editor content
+    let editorContent = document.getElementById('courseDescriptionEditor').innerHTML;
+    let description = editorContent || '';
     
-    // Check if content is just empty HTML tags
-    if (!editorContent || 
-        editorContent === '<p><br></p>' || 
-        editorContent === '<p> </p>' || 
-        editorContent === '<p></p>' || 
-        editorContent === '<br>' ||
-        editorContent === '<div><br></div>' ||
-        editorContent.trim() === '') {
-        description = ''; // Set to empty string instead of HTML tags
+    // Remove all HTML tags to check for real text
+    const textOnly = description.replace(/<[^>]*>/g, '').trim();
+    
+    // Empty patterns to check
+    const emptyPatterns = ['<p><br></p>', '<p> </p>', '<p></p>', '<br>', '<div><br></div>', '<div></div>', '&nbsp;'];
+    
+    let isEmpty = textOnly === '';
+    
+    for (const pattern of emptyPatterns) {
+        if (description === pattern) {
+            isEmpty = true;
+            break;
+        }
+    }
+    
+    if (isEmpty) {
+        description = '';
     }
     
     document.getElementById('courseDescription').value = description;
@@ -2055,13 +2063,17 @@ async function handleAddCourse(event) {
             teacher_id:  formData.get('teacherId') || null,
             order_num:   parseInt(formData.get('orderNum')) || 999,
         })
-        
         .select();
 
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
     closeModal('addCourseModal');
     event.target.reset();
+    
+    // Clear the editor
+    const editor = document.getElementById('courseDescriptionEditor');
+    if (editor) editor.innerHTML = '';
+    
     await loadCourseSelects();
     showToast('Course created successfully!');
 }
@@ -2862,9 +2874,10 @@ function setEditorFontSize(editorIndex, select) {
 
 function stripInlineFontStyles(html) {
     if (!html) return '';
-    return html.replace(/font-size:\s*[^;]+;?/gi, '')
-               .replace(/<font[^>]*>/gi, '')
+    // Only remove font tags but preserve inline styles
+    return html.replace(/<font[^>]*>/gi, '')
                .replace(/<\/font>/gi, '');
+    
 }
 
 function setEditorColor(editorIndex, input) {
@@ -2926,7 +2939,7 @@ async function handleCreateChapter(event) {
         if (titleInput && contentEditor && titleInput.value.trim()) {
             topics.push({
                 title: titleInput.value.trim(),
-                content: stripInlineFontStyles(contentEditor.innerHTML),
+                content: contentEditor.innerHTML,  
                 duration: durationInput?.value || '15',
                 category: categorySelect?.value || 'basics',
             });
