@@ -762,7 +762,7 @@ function applyFontFamily(cssValue, editorEl) {
     if (toolbar.dataset.fontFixed) return;
 
     const editorEl = findEditorForToolbar(toolbar);
-console.log('upgradeToolbar → toolbar:', toolbar, '→ editor found:', editorEl);
+
     // Not found yet — don't mark, retry next scan
     if (!editorEl) return;
 
