@@ -679,14 +679,14 @@ function applyFontFamily(cssValue, editorEl) {
    *   Check toolbar.nextElementSibling directly.
    * ───────────────────────────────────────────────────────── */
   function findEditorForToolbar(toolbar) {
-    // Method A: toolbar buttons have onclick="formatText(N, ...)"
-    // Extract N and find editor-N or editEditor_N
+    // Extract N and find editor-N or editEditor_N or courseDescriptionEditor
     const onclickAttr = toolbar.innerHTML;
     const idxMatch = onclickAttr.match(/(?:formatText|setEditorFontSize|setEditorColor)\((\d+)[^)]*\)/);
     if (idxMatch) {
       const idx = idxMatch[1];
       const byId = document.getElementById('editor-' + idx)
-                || document.getElementById('editEditor_' + idx);
+                || document.getElementById('editEditor_' + idx)
+                || document.getElementById('courseDescriptionEditor');
       if (byId) return byId;
     }
 
@@ -751,6 +751,10 @@ function applyFontFamily(cssValue, editorEl) {
         if (bestEl) return bestEl;
       }
     }
+
+    // Method H: last resort — any visible editor on the page
+    const anyEditor = document.querySelector('.editor-content[contenteditable="true"]');
+    if (anyEditor) return anyEditor;
 
     return null;
   }
