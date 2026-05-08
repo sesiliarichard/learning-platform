@@ -6023,3 +6023,43 @@ body.dark-mode .topic-list .empty-topics {
 }
 .input-order-num { width: 120px; }
 .order-hint { color: #6b7280; display: block; margin-top: 4px; }
+/* ===== FIX FOR EDITOR FONT DISAPPEARING ===== */
+.editor-content,
+.editor-content *,
+[contenteditable="true"],
+[contenteditable="true"] *,
+.editor-content p,
+.editor-content div,
+.editor-content span,
+.editor-content h1,
+.editor-content h2,
+.editor-content h3,
+.editor-content h4,
+.editor-content li,
+.editor-content td,
+.editor-content th {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    color: #1f2937 !important;
+}
+
+/* Preserve heading sizes */
+.editor-content h1 { font-size: 28px !important; font-weight: 700 !important; }
+.editor-content h2 { font-size: 24px !important; font-weight: 700 !important; }
+.editor-content h3 { font-size: 20px !important; font-weight: 600 !important; }
+.editor-content h4 { font-size: 18px !important; font-weight: 600 !important; }
+
+/* Editor toolbar fonts */
+.editor-toolbar,
+.editor-toolbar button,
+.editor-toolbar .editor-btn,
+.editor-color-btn {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* When saving content to database, preserve formatting */
+.topic-editor .editor-content,
+#editTopicsContainer .editor-content {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}

@@ -140,44 +140,88 @@
   /* ─────────────────────────────────────────────────────────
    * APPLY FONT FAMILY
    * ───────────────────────────────────────────────────────── */
- function applyFontFamily(cssValue, editorEl) {
-    withRestoredSelection(editorEl, () => {
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-        if (editorEl) {
-          // Apply to editor container AND wrap all existing
-          // text nodes so the style is saved in the HTML
-          editorEl.style.fontFamily    = cssValue;
-          editorEl.dataset.pendingFont = cssValue;
-
-          // Also wrap any bare text nodes so style persists on save
-          applyStyleToAllContent(editorEl, 'fontFamily', cssValue);
-        }
-        return;
-      }
-      wrapSelectionWithStyle({ fontFamily: cssValue });
-    });
-  }
+function applyFontFamily(cssValue, editorEl) {
+    if (!editorEl) return;
+    
+    const sel = window.getSelection();
+    const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
+    
+    if (isCollapsed) {
+        // No selection - apply to entire editor
+        editorEl.style.fontFamily = cssValue;
+        editorEl.dataset.pendingFont = cssValue;
+        
+        // Apply to all content
+        const allElements = editorEl.querySelectorAll('*');
+        allElements.forEach(el => {
+            el.style.fontFamily = cssValue;
+        });
+        
+        // Wrap text nodes
+        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        
+        textNodes.forEach(node => {
+            if (node.textContent.trim() && node.parentElement === editorEl) {
+                const span = document.createElement('span');
+                span.style.fontFamily = cssValue;
+                node.parentNode.insertBefore(span, node);
+                span.appendChild(node);
+            } else if (node.parentElement && node.parentElement !== editorEl) {
+                node.parentElement.style.fontFamily = cssValue;
+            }
+        });
+    } else {
+        // Has selection - apply only to selection
+        withRestoredSelection(editorEl, () => {
+            wrapSelectionWithStyle({ fontFamily: cssValue });
+        });
+    }
+}
 
   /* ─────────────────────────────────────────────────────────
    * APPLY FONT SIZE
    * ───────────────────────────────────────────────────────── */
  function applyFontSize(pxValue, editorEl) {
-    withRestoredSelection(editorEl, () => {
-      const sel = window.getSelection();
-      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) {
-        if (editorEl) {
-          editorEl.style.fontSize      = pxValue;
-          editorEl.dataset.pendingSize = pxValue;
-
-          // Wrap all content so size persists on save
-          applyStyleToAllContent(editorEl, 'fontSize', pxValue);
-        }
-        return;
-      }
-      wrapSelectionWithStyle({ fontSize: pxValue });
-    });
-  }
+    if (!editorEl) return;
+    
+    const sel = window.getSelection();
+    const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
+    
+    if (isCollapsed) {
+        // No selection - apply to entire editor
+        editorEl.style.fontSize = pxValue;
+        editorEl.dataset.pendingSize = pxValue;
+        
+        // Apply to all elements
+        const allElements = editorEl.querySelectorAll('*');
+        allElements.forEach(el => {
+            el.style.fontSize = pxValue;
+        });
+        
+        // Wrap text nodes
+        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
+        const textNodes = [];
+        while (walker.nextNode()) textNodes.push(walker.currentNode);
+        
+        textNodes.forEach(node => {
+            if (node.textContent.trim() && node.parentElement === editorEl) {
+                const span = document.createElement('span');
+                span.style.fontSize = pxValue;
+                node.parentNode.insertBefore(span, node);
+                span.appendChild(node);
+            } else if (node.parentElement && node.parentElement !== editorEl) {
+                node.parentElement.style.fontSize = pxValue;
+            }
+        });
+    } else {
+        // Has selection - apply only to selection
+        withRestoredSelection(editorEl, () => {
+            wrapSelectionWithStyle({ fontSize: pxValue });
+        });
+    }
+}
 
   /* ─────────────────────────────────────────────────────────
    * WRAP SELECTION WITH SPAN

@@ -10818,6 +10818,145 @@ window._tblObserver = new MutationObserver((mutations) => {
 window._tblObserver.observe(document.body, { childList: true, subtree: true });
 
 console.log('✅ Admin-only Table UI ready (scoped to .editor-content)');
+// ============================================
+// FIX: Editor Font Persistence
+// ============================================
+(function fixEditorFontPersistence() {
+    // Force apply font to entire editor
+    function forceApplyFontToEditor(editorEl, fontValue, sizeValue) {
+        if (!editorEl) return;
+        
+        const sel = window.getSelection();
+        const hasSelection = sel && !sel.isCollapsed && sel.rangeCount > 0;
+        let savedRange = null;
+        
+        if (hasSelection) {
+            savedRange = sel.getRangeAt(0).cloneRange();
+        }
+        
+        // Apply to all text nodes and elements
+        const walker = document.createTreeWalker(
+            editorEl,
+            NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+            {
+                acceptNode: function(node) {
+                    if (node.nodeType === 1 && (node.tagName === 'SCRIPT' || node.tagName === 'STYLE')) {
+                        return NodeFilter.FILTER_REJECT;
+                    }
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+        
+        const nodesToStyle = [];
+        while (walker.nextNode()) {
+            nodesToStyle.push(walker.currentNode);
+        }
+        
+        nodesToStyle.forEach(node => {
+            if (node.nodeType === 1) {
+                if (fontValue) node.style.fontFamily = fontValue;
+                if (sizeValue) node.style.fontSize = sizeValue;
+            } else if (node.nodeType === 3 && node.textContent.trim()) {
+                const parent = node.parentElement;
+                if (parent && parent !== editorEl) {
+                    if (fontValue && parent.style.fontFamily !== fontValue) {
+                        parent.style.fontFamily = fontValue;
+                    }
+                    if (sizeValue && parent.style.fontSize !== sizeValue) {
+                        parent.style.fontSize = sizeValue;
+                    }
+                } else if (parent === editorEl) {
+                    const span = document.createElement('span');
+                    if (fontValue) span.style.fontFamily = fontValue;
+                    if (sizeValue) span.style.fontSize = sizeValue;
+                    parent.insertBefore(span, node);
+                    span.appendChild(node);
+                }
+            }
+        });
+        
+        if (fontValue) editorEl.style.fontFamily = fontValue;
+        if (sizeValue) editorEl.style.fontSize = sizeValue;
+        
+        if (savedRange) {
+            sel.removeAllRanges();
+            sel.addRange(savedRange);
+        }
+    }
+    
+    // Watch for typing in editors
+    function watchEditorTyping() {
+        const editors = document.querySelectorAll('.editor-content[contenteditable="true"]');
+        
+        editors.forEach(editor => {
+            if (editor.hasAttribute('data-typing-watch')) return;
+            editor.setAttribute('data-typing-watch', 'true');
+            
+            const currentFont = editor.style.fontFamily || getComputedStyle(editor).fontFamily;
+            const currentSize = editor.style.fontSize || getComputedStyle(editor).fontSize;
+            
+            editor.setAttribute('data-default-font', currentFont);
+            editor.setAttribute('data-default-size', currentSize);
+            
+            editor.addEventListener('input', function() {
+                const defaultFont = this.getAttribute('data-default-font');
+                const defaultSize = this.getAttribute('data-default-size');
+                
+                if (defaultFont || defaultSize) {
+                    const lastChild = this.lastChild;
+                    if (lastChild && lastChild.nodeType === 1) {
+                        if (defaultFont && !lastChild.style.fontFamily) {
+                            lastChild.style.fontFamily = defaultFont;
+                        }
+                        if (defaultSize && !lastChild.style.fontSize) {
+                            lastChild.style.fontSize = defaultSize;
+                        }
+                    }
+                }
+            });
+            
+            editor.addEventListener('paste', function() {
+                setTimeout(() => {
+                    const defaultFont = this.getAttribute('data-default-font');
+                    const defaultSize = this.getAttribute('data-default-size');
+                    if (defaultFont || defaultSize) {
+                        forceApplyFontToEditor(this, defaultFont, defaultSize);
+                    }
+                }, 10);
+            });
+        });
+    }
+    
+    // Run when modal opens
+    function hookModalOpen(modalName) {
+        const originalFn = window[modalName];
+        if (originalFn && !originalFn.__fontFixed) {
+            window[modalName] = function(...args) {
+                const result = originalFn.apply(this, args);
+                setTimeout(watchEditorTyping, 200);
+                setTimeout(watchEditorTyping, 500);
+                return result;
+            };
+            window[modalName].__fontFixed = true;
+        }
+    }
+    
+    // Hook all relevant modal functions
+    ['openCreateChapterModal', 'openEditChapterModal', 'addNewTopic', 'addEditTopic'].forEach(hookModalOpen);
+    
+    // Initial run
+    setTimeout(watchEditorTyping, 500);
+    setTimeout(watchEditorTyping, 1500);
+    
+    // Monitor for new editors
+    const observer = new MutationObserver(() => {
+        watchEditorTyping();
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    console.log('✅ Editor font persistence fix loaded');
+})();
 </script>
 
 </body>
