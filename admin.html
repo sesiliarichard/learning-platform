@@ -1226,28 +1226,17 @@ body { visibility: hidden }
     <div class="editor-toolbar">
         <!-- Font & Size dropdowns removed - handled by editor-font-fix.js -->
         <div class="editor-sep"></div>
-    <button type="button" class="editor-btn"
-            onclick="formatText(0, 'undo')" title="Undo">
-        <i class="fas fa-undo"></i>
-    </button>
-    <button type="button" class="editor-btn"
-            onclick="formatText(0, 'redo')" title="Redo">
-        <i class="fas fa-redo"></i>
-    </button>
-    <div class="editor-sep"></div>
-    <select class="editor-select-font"
-            onchange="setEditorFontFamily(0, this)"
-            aria-label="Font family">
-        <option value="">Font</option>
-    </select>
-    <select class="editor-select-size"
-            onchange="setEditorFontSize(0, this)"
-            aria-label="Font size">
-        <option value="">Size</option>
-    </select>
-    <div class="editor-sep"></div>
-    <button type="button" class="editor-btn"
-            onclick="formatText(0, 'bold')" title="Bold"><b>B</b></button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'undo')" title="Undo">
+            <i class="fas fa-undo"></i>
+        </button>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'redo')" title="Redo">
+            <i class="fas fa-redo"></i>
+        </button>
+        <div class="editor-sep"></div>
+        <button type="button" class="editor-btn"
+                onclick="formatText(0, 'bold')" title="Bold"><b>B</b></button>
         <button type="button" class="editor-btn"
                 onclick="formatText(0, 'italic')" title="Italic"><i>I</i></button>
         <button type="button" class="editor-btn"
@@ -1390,24 +1379,17 @@ body { visibility: hidden }
     <label for="topicContent0">Topic Content *</label>
     <div class="editor-toolbar">
 
-    <button type="button" class="editor-btn" onclick="formatText(0, 'undo')" title="Undo">
+        <button type="button" class="editor-btn" onclick="formatText(0, 'undo')" title="Undo">
             <i class="fas fa-undo"></i>
         </button>
         <button type="button" class="editor-btn" onclick="formatText(0, 'redo')" title="Redo">
             <i class="fas fa-redo"></i>
         </button>
         <div class="editor-sep"></div>
-        <select class="editor-select-font"
-                onchange="setEditorFontFamily(0, this)"
-                aria-label="Font family">
-            <option value="">Font</option>
-        </select>
-        <select class="editor-select-size"
-                onchange="setEditorFontSize(0, this)"
-                aria-label="Font size">
-            <option value="">Size</option>
-        </select>
+
         <div class="editor-sep"></div>
+
+
         <button type="button" class="editor-btn" 
                 onclick="formatText(0, 'bold')" title="Bold">
             <b>B</b>
@@ -2895,7 +2877,7 @@ function stripInlineFontStyles(html) {
     // Only remove font tags but preserve inline styles
     return html.replace(/<font[^>]*>/gi, '')
                .replace(/<\/font>/gi, '');
-    
+    // Do NOT remove font-size or font-family from inline styles
 }
 
 function setEditorColor(editorIndex, input) {
