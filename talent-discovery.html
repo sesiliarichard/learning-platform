@@ -1145,6 +1145,64 @@
 </style>
 </head>
 <body>
+<script>
+(function() {
+    // Check if user is a Hirer (company representative)
+    const checkIsHirer = function() {
+        // Check all possible hirer indicators
+        const hasHireRef = localStorage.getItem('hire_request_ref');
+        const hasHireId = localStorage.getItem('hire_request_id');
+        const hasHireData = localStorage.getItem('hire_request_data');
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromHire = urlParams.get('from') === 'hire';
+        
+        // If ANY of these exist, user is a hirer
+        const isHirer = !!(hasHireRef || hasHireId || hasHireData || fromHire);
+        
+        console.log('🔍 Checking if Hirer:', isHirer);
+        console.log('  - hire_request_ref:', hasHireRef);
+        console.log('  - hire_request_id:', hasHireId);
+        console.log('  - hire_request_data:', !!hasHireData);
+        
+        if (isHirer) {
+            console.log('✅ HIRER DETECTED - Hiding Opportunity Board and Saved');
+            
+            // Hide the navigation items
+            const hideNavItems = function() {
+                const oppLink = document.getElementById('navOpportunity');
+                const savedLink = document.getElementById('navSaved');
+                
+                if (oppLink) {
+                    oppLink.style.display = 'none';
+                    console.log('  ✓ Hidden: Opportunity Board');
+                }
+                if (savedLink) {
+                    savedLink.style.display = 'none';
+                    console.log('  ✓ Hidden: Saved');
+                }
+                
+                // Also hide any parent elements if needed
+                if (!oppLink || !savedLink) {
+                    // Try again after a short delay
+                    setTimeout(hideNavItems, 100);
+                }
+            };
+            
+            // Run immediately and after DOM loads
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', hideNavItems);
+            } else {
+                hideNavItems();
+            }
+            setTimeout(hideNavItems, 200);
+        } else {
+            console.log('❌ Not a Hirer - Showing all navigation');
+        }
+    };
+    
+    checkIsHirer();
+})();
+</script>
 
 <!-- NAVBAR -->
 <nav>
@@ -1299,90 +1357,61 @@
 <div id="profileModal"></div>
 <script>
 // ── View Permissions ──────────────────────────────────────
-(function applyViewPermissions() {
-    // Check for HIRER in multiple ways
+// ── VIEW PERMISSIONS - COMPLETE WORKING VERSION ──────────────
+(function() {
+    // Check multiple ways to identify a Hirer
+    const urlParams = new URLSearchParams(window.location.search);
+    const isHirerFromUrl = urlParams.get('from') === 'hire';
     const hasHireRef = localStorage.getItem('hire_request_ref');
     const hasHireId = localStorage.getItem('hire_request_id');
-    const isHirerFromFlag = localStorage.getItem('is_hirer') === 'true';
     const hasHireData = localStorage.getItem('hire_request_data');
+    const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
     
-    // User is a Hirer if ANY of these exist
-    const isHirer = !!(hasHireRef || hasHireId || isHirerFromFlag || hasHireData);
+    // User is Hirer if ANY of these are true
+    const isHirer = isHirerFromUrl || hasHireRef || hasHireId || hasHireData || isHirerFlag;
     
-    // Check for TALENT
-    const hasTalentId = localStorage.getItem('talent_profile_id');
-    const isTalentFromFlag = localStorage.getItem('is_talent') === 'true';
-    const hasTalentData = localStorage.getItem('talent_profile_data');
+    // User is Talent only if explicitly set and not a hirer
+    const isTalent = !isHirer && (localStorage.getItem('talent_profile_id') || localStorage.getItem('is_talent') === 'true');
     
-    const isTalent = !!(hasTalentId || isTalentFromFlag || hasTalentData);
-
     window._isTalent = isTalent;
     window._isHirer = isHirer;
-
-    // Function to hide/show navigation
+    
+    console.log('🔐 PERMISSIONS:', { isHirer, isTalent, isHirerFromUrl, hasHireRef });
+    
     function updateNavigation() {
-        console.log('=== PERMISSION CHECK ===');
-        console.log('isHirer:', isHirer);
-        console.log('isTalent:', isTalent);
-        console.log('hire_request_ref:', localStorage.getItem('hire_request_ref'));
-        console.log('hire_request_id:', localStorage.getItem('hire_request_id'));
-        console.log('is_hirer flag:', localStorage.getItem('is_hirer'));
-        
         const navOpportunity = document.getElementById('navOpportunity');
         const navSaved = document.getElementById('navSaved');
         const saveSearchBtn = document.getElementById('saveSearchBtn');
         
         if (isHirer && !isTalent) {
-            console.log('👔 HIRER MODE - Hiding Opportunity Board and Saved');
-            
-            // HIDE these for hirers
-            if (navOpportunity) {
-                navOpportunity.style.display = 'none';
-                console.log('✓ Hidden Opportunity Board');
-            }
-            if (navSaved) {
-                navSaved.style.display = 'none';
-                console.log('✓ Hidden Saved');
-            }
+            console.log('👔 HIRER - Hiding Opportunity Board and Saved');
+            if (navOpportunity) navOpportunity.style.display = 'none';
+            if (navSaved) navSaved.style.display = 'none';
             if (saveSearchBtn) saveSearchBtn.style.display = 'none';
             
-            // Update user info with company data
+            // Update user chip with company name
             const companyData = localStorage.getItem('hire_request_data');
             if (companyData) {
                 try {
                     const parsed = JSON.parse(companyData);
                     const nameEl = document.querySelector('#navUserName, .user-info strong');
                     const companyEl = document.querySelector('#navUserCompany, .user-info span');
-                    const avatarEl = document.querySelector('#navUserAvatar, nav .avatar');
-                    
                     if (nameEl) nameEl.textContent = parsed.fullName || 'Hiring Manager';
                     if (companyEl) companyEl.textContent = parsed.company || 'Company';
-                    if (avatarEl) {
-                        const initials = (parsed.company || 'CO').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
-                        avatarEl.textContent = initials;
-                    }
-                    console.log('✓ Updated user chip with company data');
-                } catch(e) { console.error('Error:', e); }
+                } catch(e) {}
             }
-        } 
-        else if (isTalent && !isHirer) {
-            console.log('👩‍💻 TALENT MODE - Showing all navigation');
+        } else {
+            console.log('👤 TALENT/GUEST - Showing all navigation');
             if (navOpportunity) navOpportunity.style.display = '';
             if (navSaved) navSaved.style.display = '';
         }
-        else {
-            console.log('👤 GUEST MODE - No special permissions');
-        }
     }
-
-    // Run immediately and when DOM is ready
+    
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', updateNavigation);
     } else {
         updateNavigation();
     }
-    
-    // Also run after a short delay to ensure all elements exist
     setTimeout(updateNavigation, 100);
 })();
   // ── State ─────────────────────────────────────────────────
