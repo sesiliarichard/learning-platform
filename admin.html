@@ -10592,12 +10592,13 @@ function _positionOverlay(tbl) {
     _sharedOverlay.style.pointerEvents = 'none';
 }
 
-function _showOverlay(tbl) {
-    // GUARD: only show for tables inside admin editor areas
-    if (!_isInAdminEditor(tbl)) return;
-    clearTimeout(_hideTimer);
-    _activeTable = tbl;
-    _positionOverlay(tbl);
+function _isInAdminEditor(tbl) {
+    // ONLY show toolbar if table is inside an OPEN modal's editor
+    const modal = tbl.closest('.modal');
+    if (!modal) return false;
+    if (!modal.classList.contains('active')) return false;
+    if (!tbl.closest('.editor-content[contenteditable="true"]')) return false;
+    return true;
 }
 
 function _hideOverlay() {
