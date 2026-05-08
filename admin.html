@@ -2390,42 +2390,59 @@ function confirmInsertTable(editorIndex) {
 }
 
 function makeTableNavigable(editor) {
-    editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
-        cell.addEventListener('keydown', e => {
-            if (e.key === 'Tab') {
-                e.preventDefault();
-                const cells = [...editor.querySelectorAll('.editor-table td, .editor-table th')];
-                const idx = cells.indexOf(cell);
-                if (idx < cells.length - 1) {
-                    cells[idx + 1].focus();
-                } else {
-                    // Add a new row at the end
-                    const table = cell.closest('table');
-                    const colCount = table.querySelectorAll('tr:first-child th, tr:first-child td').length;
-                    const cellStyle = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
-                    const newRow = document.createElement('tr');
-                    for (let i = 0; i < colCount; i++) {
-                        const td = document.createElement('td');
-                        td.contentEditable = 'true';
-                        td.style.cssText = cellStyle;
-                        newRow.appendChild(td);
+    // Find all tables inside the editor
+    const tables = editor.querySelectorAll('table');
+    
+    tables.forEach(table => {
+        const cells = table.querySelectorAll('td, th');
+        
+        cells.forEach(cell => {
+            // Remove existing listener to avoid duplicates
+            cell.removeEventListener('keydown', cell._tabHandler);
+            cell.removeEventListener('contextmenu', cell._contextHandler);
+            
+            // Add new Tab navigation
+            const tabHandler = (e) => {
+                if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const allCells = [...table.querySelectorAll('td, th')];
+                    const idx = allCells.indexOf(cell);
+                    if (idx < allCells.length - 1) {
+                        allCells[idx + 1].focus();
+                    } else {
+                        // Add new row at bottom
+                        const lastRow = table.querySelector('tr:last-child');
+                        const colCount = lastRow.cells.length;
+                        const newRow = table.insertRow();
+                        for (let i = 0; i < colCount; i++) {
+                            const td = newRow.insertCell();
+                            td.contentEditable = 'true';
+                            td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
+                        }
+                        const newCells = [...table.querySelectorAll('td, th')];
+                        if (newCells.length > allCells.length) {
+                            newCells[allCells.length].focus();
+                        }
                     }
-                    table.querySelector('tbody').appendChild(newRow);
-                    makeTableNavigable(editor);
-                    newRow.querySelector('td').focus();
                 }
-            }
-        });
-
-        // Right-click context menu for table operations
-        cell.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            showTableContextMenu(e, cell);
+            };
+            
+            const contextHandler = (e) => {
+                e.preventDefault();
+                showTableContextMenu(e, cell);
+            };
+            
+            cell._tabHandler = tabHandler;
+            cell._contextHandler = contextHandler;
+            
+            cell.addEventListener('keydown', tabHandler);
+            cell.addEventListener('contextmenu', contextHandler);
         });
     });
 }
 
 function showTableContextMenu(e, cell) {
+    // Remove any existing menu
     document.getElementById('tableContextMenu')?.remove();
 
     const menu = document.createElement('div');
@@ -2434,7 +2451,8 @@ function showTableContextMenu(e, cell) {
         position:fixed;top:${e.clientY}px;left:${e.clientX}px;
         background:white;border:1.5px solid #e5e7eb;border-radius:10px;
         box-shadow:0 8px 30px rgba(0,0,0,0.15);z-index:99999;
-        min-width:200px;padding:6px 0;font-family:'Plus Jakarta Sans',sans-serif;`;
+        min-width:200px;padding:6px 0;font-family:'Plus Jakarta Sans',sans-serif;
+    `;
 
     const items = [
         { icon: 'fa-plus',       label: 'Add Row Above',    action: () => addTableRow(cell, 'before') },
@@ -2451,44 +2469,78 @@ function showTableContextMenu(e, cell) {
         btn.style.cssText = `
             display:flex;align-items:center;gap:10px;width:100%;padding:9px 16px;
             border:none;background:none;cursor:pointer;font-size:13px;font-weight:600;
-            color:${item.danger ? '#dc2626' : '#374151'};font-family:inherit;text-align:left;`;
+            color:${item.danger ? '#dc2626' : '#374151'};font-family:inherit;text-align:left;
+            transition:background 0.1s;
+        `;
         btn.innerHTML = `<i class="fas ${item.icon}" style="width:14px;opacity:0.7;"></i> ${item.label}`;
+        
         btn.onmouseenter = () => btn.style.background = item.danger ? '#fee2e2' : '#f5f3ff';
         btn.onmouseleave = () => btn.style.background = 'none';
-        btn.onclick = () => { item.action(); menu.remove(); };
+        btn.onclick = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            menu.remove();
+            item.action();
+        };
         menu.appendChild(btn);
     });
 
     document.body.appendChild(menu);
-    document.addEventListener('click', () => menu.remove(), { once: true });
+    
+    // Close menu when clicking outside
+    const closeMenu = (event) => {
+        if (!menu.contains(event.target)) {
+            menu.remove();
+            document.removeEventListener('click', closeMenu);
+            document.removeEventListener('contextmenu', closeMenu);
+        }
+    };
+    setTimeout(() => {
+        document.addEventListener('click', closeMenu);
+        document.addEventListener('contextmenu', closeMenu);
+    }, 10);
 }
-
+// ── TABLE OPERATIONS - FIXED VERSION ──
 function addTableRow(cell, position) {
+    const table = cell.closest('table');  // Get the actual table
+    if (!table) return;
+    
     const row = cell.closest('tr');
     const colCount = row.querySelectorAll('td, th').length;
     const newRow = document.createElement('tr');
+    
     for (let i = 0; i < colCount; i++) {
         const td = document.createElement('td');
         td.contentEditable = 'true';
         td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
         newRow.appendChild(td);
     }
+    
     if (position === 'before') {
         row.parentNode.insertBefore(newRow, row);
     } else {
         row.parentNode.insertBefore(newRow, row.nextSibling);
     }
+    
+    // Reattach event listeners to new cells
+    makeTableNavigable(table.closest('.editor-content') || document);
 }
 
 function addTableCol(cell, position) {
     const table = cell.closest('table');
+    if (!table) return;
+    
     const cellIndex = cell.cellIndex;
-    table.querySelectorAll('tr').forEach((row, rowIdx) => {
-        const newCell = rowIdx === 0 ? document.createElement('th') : document.createElement('td');
+    const rows = table.querySelectorAll('tr');
+    
+    rows.forEach((row, rowIdx) => {
+        const isHeader = rowIdx === 0 && row.closest('thead');
+        const newCell = isHeader ? document.createElement('th') : document.createElement('td');
         newCell.contentEditable = 'true';
-        newCell.style.cssText = rowIdx === 0
+        newCell.style.cssText = isHeader 
             ? 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;font-weight:700;background:#f5f3ff;'
             : 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;';
+        
         const ref = row.cells[cellIndex];
         if (position === 'before') {
             row.insertBefore(newCell, ref);
@@ -2496,28 +2548,57 @@ function addTableCol(cell, position) {
             row.insertBefore(newCell, ref?.nextSibling || null);
         }
     });
+    
+    makeTableNavigable(table.closest('.editor-content') || document);
 }
 
 function deleteTableRow(cell) {
+    const table = cell.closest('table');
+    if (!table) return;
+    
     const row = cell.closest('tr');
-    const table = row.closest('table');
-    if (table.querySelectorAll('tr').length <= 1) {
+    const allRows = table.querySelectorAll('tr');
+    
+    if (allRows.length === 1) {
         deleteTable(cell);
     } else {
         row.remove();
+        makeTableNavigable(table.closest('.editor-content') || document);
     }
 }
 
 function deleteTableCol(cell) {
     const table = cell.closest('table');
+    if (!table) return;
+    
     const cellIndex = cell.cellIndex;
-    if (table.rows[0].cells.length <= 1) {
+    const rows = table.querySelectorAll('tr');
+    
+    if (rows[0].cells.length === 1) {
         deleteTable(cell);
     } else {
-        table.querySelectorAll('tr').forEach(row => {
-            if (row.cells[cellIndex]) row.deleteCell(cellIndex);
+        rows.forEach(row => {
+            if (row.cells[cellIndex]) {
+                row.deleteCell(cellIndex);
+            }
         });
+        makeTableNavigable(table.closest('.editor-content') || document);
     }
+}
+
+function deleteTable(cell) {
+    // Find the table wrapper and remove it
+    const table = cell.closest('table');
+    const wrap = table.closest('.resizable-table-wrap') || table.closest('.wle-table-wrap') || table;
+    
+    if (wrap && wrap.parentNode) {
+        wrap.remove();
+    } else if (table && table.parentNode) {
+        table.remove();
+    }
+    
+    // Close any open modals/menus
+    document.getElementById('tableContextMenu')?.remove();
 }
 
 function deleteTable(cell) {
