@@ -10632,7 +10632,8 @@ document.querySelectorAll('.main-content').forEach(el =>
 
 function _wireTable(tbl) {
     if (tbl.dataset.wired) return;
-    // Only wire tables that are inside .editor-content (admin editors only)
+    // STRICT: only wire tables inside modals
+    if (!tbl.closest('.modal')) return;
     if (!tbl.closest('.editor-content')) return;
     tbl.dataset.wired = '1';
     tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
@@ -10641,10 +10642,9 @@ function _wireTable(tbl) {
 }
 
 function _wireAll() {
-    // SCOPED: only wire tables inside .editor-content, never bare tables in sections
-    document.querySelectorAll('.editor-content table').forEach(_wireTable);
+    // ONLY wire tables inside active MODAL editor-content, never in rendered content
+    document.querySelectorAll('.modal .editor-content table, #createChapterModal table, #editChapterModal table, #addCourseModal table').forEach(_wireTable);
 }
-
 // ── Tab key navigation — no phantom rows ──
 makeTableNavigable = function(editor) {
     editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
