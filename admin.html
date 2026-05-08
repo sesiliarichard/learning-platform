@@ -10571,9 +10571,7 @@ const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove row',      'bottom:-28px
     .forEach(b => _sharedOverlay.appendChild(b));
 
 // ── CRITICAL: append to .main-content, NOT document.body ──
-// This means it only exists inside the admin layout
-const _adminContainer = document.querySelector('.main-content') || document.body;
-_adminContainer.appendChild(_sharedOverlay);
+document.body.appendChild(_sharedOverlay);
 
 let _activeTable = null;
 let _hideTimer   = null;
@@ -10794,8 +10792,10 @@ _btnMove.addEventListener('mousedown', (e) => {
         dropRef = null;
         let closestDist = Infinity;
 
-        for (const sib of siblings) {
+       for (const sib of siblings) {
+            ghost.style.display = 'none';
             const sr   = sib.getBoundingClientRect();
+            ghost.style.display = 'block';
             const midY = sr.top + sr.height / 2;
             const dist = Math.abs(ev.clientY - midY);
 
