@@ -2601,11 +2601,6 @@ function deleteTable(cell) {
     document.getElementById('tableContextMenu')?.remove();
 }
 
-function deleteTable(cell) {
-    const wrap = cell.closest('.resizable-table-wrap') || cell.closest('table');
-    wrap?.remove();
-}
-
 // ── IMAGE INSERTION ──
 function insertImage(editorIndex) {
     const editor = document.getElementById(`editor-${editorIndex}`)
@@ -10631,6 +10626,15 @@ document.querySelectorAll('.main-content').forEach(el =>
     }, { passive: true })
 );
 
+
+function _showOverlay(tbl) {
+    if (!tbl || !_isInAdminEditor(tbl)) return; 
+    clearTimeout(_hideTimer);
+    _activeTable = tbl;
+    _positionOverlay(tbl);
+    _sharedOverlay.style.pointerEvents = 'none'; 
+}
+
 function _wireTable(tbl) {
     if (tbl.dataset.wired) return;
     // STRICT: only wire tables inside modals
@@ -10643,8 +10647,8 @@ function _wireTable(tbl) {
 }
 
 function _wireAll() {
-    // ONLY wire tables inside active MODAL editor-content, never in rendered content
-    document.querySelectorAll('.modal .editor-content table, #createChapterModal table, #editChapterModal table, #addCourseModal table').forEach(_wireTable);
+    // Wire ANY table inside an active modal that is within a contenteditable editor
+    document.querySelectorAll('.modal.active .editor-content[contenteditable="true"] table').forEach(_wireTable);
 }
 // ── Tab key navigation — no phantom rows ──
 makeTableNavigable = function(editor) {
