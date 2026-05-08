@@ -23,10 +23,9 @@
 (function () {
   'use strict';
 
-   // Only run on admin page - check for admin elements
- const isAdmin = document.querySelector('body');
-  if (!isAdmin) return;
-
+  function runFontFix() {
+    const isAdmin = document.querySelector('body');
+    if (!isAdmin) return;
   /* ─────────────────────────────────────────────────────────
    * FONT CATALOGUE
    * ───────────────────────────────────────────────────────── */
@@ -1028,6 +1027,13 @@ console.log('upgradeToolbar → toolbar:', toolbar, '→ editor found:', editorE
      'addNewTopic','addEditTopic'].forEach(hookFn);
   }, 2000);
 
-  console.log('✅ ASAI Font Fix loaded — Method-A index extraction active');
+ console.log('✅ ASAI Font Fix loaded — Method-A index extraction active');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runFontFix);
+  } else {
+    runFontFix();
+  }
 
 })();
