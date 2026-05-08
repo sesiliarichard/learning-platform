@@ -27,11 +27,8 @@
   'use strict';
 
   // Only run on admin page — check for admin-specific elements
-  const isAdminPage = document.querySelector('.admin-badge, .sidebar, [data-section="users"], .um-header');
-  if (!isAdminPage) {
-    console.log('[ASAI] Editor enhancements: Not on admin page, skipping');
-    return;
-  }
+  const isAdminPage = document.querySelector('body');
+  if (!isAdminPage) return;
 
   /* ============================================================
    * 0.  PATCH MutationObserver

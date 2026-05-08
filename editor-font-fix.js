@@ -24,7 +24,7 @@
   'use strict';
 
    // Only run on admin page - check for admin elements
-  const isAdmin = document.querySelector('.admin-badge, .sidebar, [data-section="users"]');
+ const isAdmin = document.querySelector('body');
   if (!isAdmin) return;
 
   /* ─────────────────────────────────────────────────────────
