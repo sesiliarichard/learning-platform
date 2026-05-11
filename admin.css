@@ -6050,3 +6050,22 @@ body.dark-mode .topic-list .empty-topics {
 .editor-content h2 { font-size: 24px !important; }
 .editor-content h3 { font-size: 20px !important; }
 .editor-content h4 { font-size: 18px !important; }
+
+/* Force cert tab panels to be hidden unless active */
+#certEligible,
+#certIssued,
+#certSettings {
+    display: none !important;
+    visibility: hidden;
+    height: 0;
+    overflow: hidden;
+}
+
+#certEligible.active,
+#certIssued.active,
+#certSettings.active {
+    display: block !important;
+    visibility: visible !important;
+    height: auto !important;
+    overflow: visible !important;
+}

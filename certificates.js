@@ -31,40 +31,40 @@ const _setEl  = (id,v) => { const e=document.getElementById(id); if(e) e.textCon
 let _certSectionLoaded = false;
 
 async function loadCertificateSection() {
-    // Force correct initial tab state on every load
-    const panels = ['certEligible', 'certIssued', 'certSettings'];
-    panels.forEach(id => {
+    // Always reset tab state on every entry
+    _certSectionLoaded = false;
+
+    // Force-hide all panels immediately
+    ['certEligible', 'certIssued', 'certSettings'].forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            el.classList.remove('active');
-            el.style.display = 'none';
-        }
+        if (!el) return;
+        el.classList.remove('active');
+        el.style.setProperty('display', 'none', 'important');
+        el.style.setProperty('visibility', 'hidden', 'important');
+        el.style.setProperty('height', '0', 'important');
+        el.style.setProperty('overflow', 'hidden', 'important');
     });
-    // Show only the first tab
+
+    // Activate first tab button and its panel
+    document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => t.classList.remove('active'));
+    const firstTab = document.querySelector('#certificatesSection .tabs .tab');
+    if (firstTab) firstTab.classList.add('active');
+
     const firstPanel = document.getElementById('certEligible');
     if (firstPanel) {
         firstPanel.classList.add('active');
-        firstPanel.style.display = 'block';
-    }
-    // Activate first tab button
-    const firstTab = document.querySelector('#certificatesSection .tabs .tab');
-    if (firstTab) {
-        document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => t.classList.remove('active'));
-        firstTab.classList.add('active');
+        firstPanel.style.setProperty('display', 'block', 'important');
+        firstPanel.style.setProperty('visibility', 'visible', 'important');
+        firstPanel.style.setProperty('height', 'auto', 'important');
+        firstPanel.style.setProperty('overflow', 'visible', 'important');
     }
 
-    if (_certSectionLoaded) {
-        await loadEligibleStudents();
-        await loadIssuedCerts();
-        return;
-    }
     _certSectionLoaded = true;
     await _loadCriteria();
     await populateCertCourseFilter();
     await loadEligibleStudents();
     await loadIssuedCerts();
 }
-
 async function _loadCriteria() {
     try {
         const { data } = await _certDB.from('certificate_criteria').select('*').eq('id',1).maybeSingle();
@@ -932,32 +932,40 @@ function toggleSelectAllCerts(cb) {
 }
 
 function switchCertTab(tabId, btn) {
-    // Remove active from ALL cert tabs
+    const CERT_PANELS = ['certEligible', 'certIssued', 'certSettings'];
+
+    // 1. Deactivate all tab buttons
     document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => {
         t.classList.remove('active');
     });
-
-    // Add active to clicked button
     if (btn) btn.classList.add('active');
 
-    // Hide ALL cert tab content panels
-    const panels = ['certEligible', 'certIssued', 'certSettings'];
-    panels.forEach(id => {
+    // 2. Force-hide ALL panels with both class AND inline style
+    CERT_PANELS.forEach(id => {
         const el = document.getElementById(id);
-        if (el) {
-            el.classList.remove('active');
-            el.style.display = 'none';
-        }
+        if (!el) return;
+        el.classList.remove('active');
+        el.style.setProperty('display', 'none', 'important');
+        el.style.setProperty('visibility', 'hidden', 'important');
+        el.style.setProperty('height', '0', 'important');
+        el.style.setProperty('overflow', 'hidden', 'important');
+        el.style.setProperty('padding', '0', 'important');
+        el.style.setProperty('margin', '0', 'important');
     });
 
-    // Show only the selected panel
+    // 3. Show ONLY the target panel
     const target = document.getElementById(tabId);
     if (target) {
         target.classList.add('active');
-        target.style.display = 'block';
+        target.style.setProperty('display', 'block', 'important');
+        target.style.setProperty('visibility', 'visible', 'important');
+        target.style.setProperty('height', 'auto', 'important');
+        target.style.setProperty('overflow', 'visible', 'important');
+        target.style.setProperty('padding', '', 'important');
+        target.style.setProperty('margin', '', 'important');
     }
 
-    // Load data for the selected tab
+    // 4. Load data
     if (tabId === 'certIssued')   loadIssuedCerts();
     if (tabId === 'certEligible') loadEligibleStudents();
 }
