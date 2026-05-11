@@ -74,6 +74,12 @@
   flex-shrink: 0;
 }
 
+.logo-image {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
+}
+
 .logo-icon {
   width: 36px;
   height: 36px;
@@ -1206,10 +1212,9 @@
 
 <!-- NAVBAR -->
 <nav>
-  <a class="logo" href="#">
-    <div class="logo-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
-    <div class="logo-text"><strong>Women in AI</strong><span>Africa</span></div>
-  </a>
+ <a class="logo" href="index.html">
+  <img src="images/logo-non.png" alt="Women in AI Talent Hub" class="logo-image">
+</a>
 
   <div class="nav-right">
     <button class="hamburger" id="hamburgerBtn" onclick="toggleMenu()" aria-label="Toggle menu">
@@ -1394,12 +1399,25 @@
             if (companyData) {
                 try {
                     const parsed = JSON.parse(companyData);
-                    const nameEl = document.querySelector('#navUserName, .user-info strong');
-                    const companyEl = document.querySelector('#navUserCompany, .user-info span');
+                    const nameEl = document.querySelector('#navUserName');
+                    const companyEl = document.querySelector('#navUserCompany');
                     if (nameEl) nameEl.textContent = parsed.fullName || 'Hiring Manager';
                     if (companyEl) companyEl.textContent = parsed.company || 'Company';
                 } catch(e) {}
             }
+        } else if (isTalent) {
+            const talentData = localStorage.getItem('talent_profile_data');
+            if (talentData) {
+                try {
+                    const parsed = JSON.parse(talentData);
+                    const nameEl = document.querySelector('#navUserName');
+                    const companyEl = document.querySelector('#navUserCompany');
+                    if (nameEl) nameEl.textContent = parsed.fullName || 'Talent';
+                    if (companyEl) companyEl.textContent = parsed.role || 'AI Professional';
+                } catch(e) {}
+            }
+
+            
         } else {
             console.log('👤 TALENT/GUEST - Showing all navigation');
             if (navOpportunity) navOpportunity.style.display = '';
