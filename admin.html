@@ -10734,13 +10734,6 @@ function _hideOverlay() {
     _hideTimer = setTimeout(() => {
         _sharedOverlay.style.display = 'none';
         _activeTable = null;
-    }, 200);
-}
-
-function _hideOverlay() {
-    _hideTimer = setTimeout(() => {
-        _sharedOverlay.style.display = 'none';
-        _activeTable = null;
         // Hide buttons
         [_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
             .forEach(b => b.style.display = 'none');
