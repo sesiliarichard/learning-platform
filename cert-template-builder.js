@@ -528,31 +528,49 @@
         if (bgHex) bgHex.value = bgColor;
         if (acHex) acHex.value = accentColor;
 
-       // Background
+   // Background
         if (bgType === 'image' && imageUrl) {
-            preview.style.background = `url('${imageUrl}') center/cover no-repeat`;
-            preview.style.backgroundSize = 'cover';
+            // Step 1: Set background image on preview
+            preview.style.backgroundImage    = `url('${imageUrl}')`;
+            preview.style.backgroundSize     = 'cover';
             preview.style.backgroundPosition = 'center';
-            // Add overlay element if not already present
+            preview.style.backgroundRepeat   = 'no-repeat';
+
+            // Step 2: Add dark overlay as FIRST child to cover image's own text
             let overlay = document.getElementById('prevImageOverlay');
             if (!overlay) {
                 overlay = document.createElement('div');
                 overlay.id = 'prevImageOverlay';
-                overlay.style.cssText = 'position:absolute;inset:0;background:rgba(5,10,30,0.62);z-index:0;border-radius:10px;pointer-events:none;';
                 preview.insertBefore(overlay, preview.firstChild);
             }
-            // Make all direct children sit above overlay
+            // Always re-apply style (in case it was reset)
+            overlay.style.cssText = `
+                position: absolute;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(5, 10, 30, 0.68);
+                z-index: 2;
+                pointer-events: none;
+                border-radius: 10px;
+            `;
+
+            // Step 3: Push ALL other children above the overlay (z-index 3+)
             [...preview.children].forEach(child => {
-                if (child.id !== 'prevImageOverlay') child.style.position = 'relative';
-                if (child.id !== 'prevImageOverlay') child.style.zIndex = '1';
+                if (child.id === 'prevImageOverlay') return;
+                child.style.position = 'relative';
+                child.style.zIndex   = '3';
             });
+
         } else {
-            preview.style.background = `linear-gradient(135deg, ${bgColor}, ${accentColor})`;
-            // Remove overlay if switching back to color
-            document.getElementById('prevImageOverlay')?.remove();
+            // Color background — remove overlay and reset children
+            preview.style.backgroundImage = 'none';
+            preview.style.background      = `linear-gradient(135deg, ${bgColor}, ${accentColor})`;
+
+            const overlay = document.getElementById('prevImageOverlay');
+            if (overlay) overlay.remove();
+
             [...preview.children].forEach(child => {
                 child.style.position = '';
-                child.style.zIndex = '';
+                child.style.zIndex   = '';
             });
         }
         // Inner border
