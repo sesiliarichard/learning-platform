@@ -5984,11 +5984,30 @@ let _certRows            = [];   // cached for stats + bulk
 // ENTRY POINT
 // ─────────────────────────────────────────────
 async function loadCertificateSection() {
+    // Force-hide all panels first
+    ['certEligible', 'certIssued', 'certSettings'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.classList.remove('active');
+        el.style.cssText = 'display:none!important;visibility:hidden;height:0;overflow:hidden;padding:0;margin:0;';
+    });
+
+    // Show only the first tab panel
+    const firstPanel = document.getElementById('certEligible');
+    if (firstPanel) {
+        firstPanel.classList.add('active');
+        firstPanel.style.cssText = 'display:block;visibility:visible;height:auto;overflow:visible;';
+    }
+
+    // Activate first tab button
+    document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => t.classList.remove('active'));
+    const firstTab = document.querySelector('#certificatesSection .tabs .tab');
+    if (firstTab) firstTab.classList.add('active');
+
     await populateCertCourseFilter();
     await loadEligibleStudents();
     await loadIssuedCerts();
 }
-
 // ─────────────────────────────────────────────
 // POPULATE COURSE FILTER
 // ─────────────────────────────────────────────
@@ -6752,19 +6771,28 @@ async function saveCriteria() {
 // TAB SWITCHER
 // ─────────────────────────────────────────────
 function switchCertTab(tabId, btn) {
-    // Only touch the 3 cert tabs — never touch other sections
-    const certTabs = ['certEligible', 'certIssued', 'certSettings'];
+    const CERT_PANELS = ['certEligible', 'certIssued', 'certSettings'];
 
-    document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => t.classList.remove('active'));
+    // Deactivate all tab buttons
+    document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => {
+        t.classList.remove('active');
+    });
     if (btn) btn.classList.add('active');
 
-    certTabs.forEach(id => {
+    // Force-hide ALL panels
+    CERT_PANELS.forEach(id => {
         const el = document.getElementById(id);
-        if (el) el.classList.remove('active');
+        if (!el) return;
+        el.classList.remove('active');
+        el.style.cssText = 'display:none!important;visibility:hidden;height:0;overflow:hidden;padding:0;margin:0;';
     });
 
-    const el = document.getElementById(tabId);
-    if (el) el.classList.add('active');
+    // Show ONLY the target panel
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.classList.add('active');
+        target.style.cssText = 'display:block;visibility:visible;height:auto;overflow:visible;';
+    }
 
     if (tabId === 'certIssued')   loadIssuedCerts();
     if (tabId === 'certEligible') loadEligibleStudents();
