@@ -207,7 +207,7 @@
         modal.style.cssText = 'z-index:6000;';
 
         modal.innerHTML = `
-       <div class="modal-content" style="max-width:900px;padding:0;overflow:hidden;border-radius:20px;display:flex;flex-direction:column;max-height:90vh;">
+        <div class="modal-content" style="max-width:900px;padding:0;overflow:hidden;border-radius:20px;">
 
             <!-- HEADER -->
             <div style="
@@ -238,10 +238,10 @@
             </div>
 
             <!-- BODY: two columns -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;flex:1;overflow:hidden;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:540px;">
 
                 <!-- LEFT: Controls -->
-                <div style="padding:28px;border-right:1px solid #f0f0f0;overflow-y:auto;max-height:480px;">
+                <div style="padding:28px;border-right:1px solid #f0f0f0;overflow-y:auto;max-height:600px;">
 
                     <!-- Template Name -->
                     <div style="margin-bottom:20px;">
@@ -787,21 +787,23 @@
             };
             const bc = borderColors[data.border_style || 'gold'];
 
-          return {
-    bg:     `url('${data.bg_image_url}') center/cover no-repeat`,
-    border: 'none',
-    inner:  'none',
-    title:  data.title_color  || '#ffd700',
-    name:   data.name_color   || '#ffffff',
-    nameUL: 'transparent',
-    text:   data.text_color   || '#c7d2fe',
-    sub:    data.title_color  || '#ffd700',
-    org:    data.title_color  || '#ffd700',
-    seal:   'transparent',
-    sealB:  'none',
-    sealC:  data.title_color  || '#ffd700',
-    _raw:   data
-};
+            return {
+                bg:       data.bg_image_url
+                            ? `url('${data.bg_image_url}') center/cover no-repeat`
+                            : `linear-gradient(135deg,${data.bg_color},${data.accent_color})`,
+                border:   'none',
+                inner:    `1px solid ${bc}`,
+                title:    data.title_color  || '#ffd700',
+                name:     data.name_color   || '#ffffff',
+                nameUL:   data.accent_color || '#7c3aed',
+                text:     data.text_color   || '#c7d2fe',
+                sub:      data.title_color  || '#ffd700',
+                org:      data.title_color  || '#ffd700',
+                seal:     `radial-gradient(circle, ${data.bg_color}cc, ${data.bg_color})`,
+                sealB:    `2px solid ${data.accent_color}`,
+                sealC:    data.title_color  || '#ffd700',
+                _raw:     data
+            };
         } catch (_) { return null; }
     }
 
