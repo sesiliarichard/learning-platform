@@ -6069,3 +6069,43 @@ body.dark-mode .topic-list .empty-topics {
     height: auto !important;
     overflow: visible !important;
 }
+/* Force all dashboard sections to appear properly */
+.dashboard-section {
+    display: none;
+    width: 100%;
+    min-height: auto;
+    overflow: visible;
+}
+
+.dashboard-section.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-height: 400px;
+}
+
+/* Fix main content area */
+.main-content {
+    flex: 1;
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    padding: 35px 40px;
+    background: #f8f9fa;
+    box-sizing: border-box;
+    position: relative;
+}
+
+/* Ensure all cards and content are visible */
+.card, .stats-grid, .tabs, .tab-content {
+    display: block;
+}
+
+.tab-content {
+    display: none !important;
+}
+
+.tab-content.active {
+    display: block !important;
+}
