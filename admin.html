@@ -463,37 +463,36 @@ body { visibility: hidden }
 <div id="certEligible" class="tab-content active">
     <div class="card cert-filters-card">
         <div class="cert-filters">
-<select id="certCourseFilter" onchange="loadEligibleStudents()" class="cert-filter-tab-select" 
-        aria-label="Filter by course">
-    <option value="">All Courses</option>
-</select>
-<select id="certStatusFilter" onchange="loadEligibleStudents()" class="cert-filter-tab-select" 
-        aria-label="Filter by certificate status">
-    <option value="all">All Statuses</option>
-    <option value="eligible">Eligible</option>
-    <option value="issued">Already Issued</option>
-    <option value="pending">Pending Review</option>
-</select>
- </div>
-            <button class="btn-primary bulk-issue-btn" onclick="bulkIssueCertificates()">
-                <i class="fas fa-paper-plane"></i> Bulk Issue Selected
-            </button>
+            <select id="certCourseFilter" onchange="loadEligibleStudents()" class="cert-filter-tab-select" 
+                    aria-label="Filter by course">
+                <option value="">All Courses</option>
+            </select>
+            <select id="certStatusFilter" onchange="loadEligibleStudents()" class="cert-filter-tab-select" 
+                    aria-label="Filter by certificate status">
+                <option value="all">All Statuses</option>
+                <option value="eligible">Eligible</option>
+                <option value="issued">Already Issued</option>
+                <option value="pending">Pending Review</option>
+            </select>
         </div>
+        <button class="btn-primary bulk-issue-btn" onclick="bulkIssueCertificates()">
+            <i class="fas fa-paper-plane"></i> Bulk Issue Selected
+        </button>
     </div>
     
     <div class="card cert-table-card">
-       <div class="cert-table-header">
-    <div>
-        <input type="checkbox" id="selectAllCerts" onchange="toggleSelectAllCerts(this)" 
-               aria-label="Select all certificates">
+        <div class="cert-table-header">
+            <div>
+                <input type="checkbox" id="selectAllCerts" onchange="toggleSelectAllCerts(this)" 
+                       aria-label="Select all certificates">
+            </div>
+            <div>Student</div>
+            <div>Courses Done</div>
+            <div>Avg Progress</div>
+            <div>Avg Quiz</div>
+            <div>Status</div>
+            <div>Actions</div>
         </div>
-        <div>Student</div>
-        <div>Course</div>
-        <div>Progress</div>
-       <div>Quiz Score</div>
-       <div>Status</div>
-       <div>Actions</div>
-      </div>
         <div id="eligibleStudentsList">
             <!-- populated by JS -->
         </div>
