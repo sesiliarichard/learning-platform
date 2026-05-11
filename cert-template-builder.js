@@ -528,13 +528,33 @@
         if (bgHex) bgHex.value = bgColor;
         if (acHex) acHex.value = accentColor;
 
-        // Background
+       // Background
         if (bgType === 'image' && imageUrl) {
             preview.style.background = `url('${imageUrl}') center/cover no-repeat`;
+            preview.style.backgroundSize = 'cover';
+            preview.style.backgroundPosition = 'center';
+            // Add overlay element if not already present
+            let overlay = document.getElementById('prevImageOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'prevImageOverlay';
+                overlay.style.cssText = 'position:absolute;inset:0;background:rgba(5,10,30,0.62);z-index:0;border-radius:10px;pointer-events:none;';
+                preview.insertBefore(overlay, preview.firstChild);
+            }
+            // Make all direct children sit above overlay
+            [...preview.children].forEach(child => {
+                if (child.id !== 'prevImageOverlay') child.style.position = 'relative';
+                if (child.id !== 'prevImageOverlay') child.style.zIndex = '1';
+            });
         } else {
             preview.style.background = `linear-gradient(135deg, ${bgColor}, ${accentColor})`;
+            // Remove overlay if switching back to color
+            document.getElementById('prevImageOverlay')?.remove();
+            [...preview.children].forEach(child => {
+                child.style.position = '';
+                child.style.zIndex = '';
+            });
         }
-
         // Inner border
         const innerBorder = document.getElementById('prevInnerBorder');
         if (innerBorder) {
@@ -787,20 +807,24 @@
             };
             const bc = borderColors[data.border_style || 'gold'];
 
-          return {
-    bg:     `url('${data.bg_image_url}') center/cover no-repeat`,
-    border: 'none',
-    inner:  'none',
-    title:  data.title_color  || '#ffd700',
-    name:   data.name_color   || '#ffffff',
-    nameUL: 'transparent',
-    text:   data.text_color   || '#c7d2fe',
-    sub:    data.title_color  || '#ffd700',
-    org:    data.title_color  || '#ffd700',
-    seal:   'transparent',
-    sealB:  'none',
-    sealC:  data.title_color  || '#ffd700',
-    _raw:   data
+ const hasImage = !!data.bg_image_url;
+return {
+    bg:        hasImage
+                   ? `url('${data.bg_image_url}') center/cover no-repeat`
+                   : `linear-gradient(135deg, ${data.bg_color || '#1e1b4b'}, ${data.accent_color || '#7c3aed'})`,
+    _hasImage: hasImage,
+    border:    'none',
+    inner:     hasImage ? `1px solid ${borderColors[data.border_style || 'gold']}` : 'none',
+    title:     data.title_color  || '#ffd700',
+    name:      data.name_color   || '#ffffff',
+    nameUL:    data.accent_color || '#ffd700',
+    text:      data.text_color   || '#c7d2fe',
+    sub:       data.title_color  || '#ffd700',
+    org:       data.title_color  || '#ffd700',
+    seal:      'rgba(255,255,255,0.15)',
+    sealB:     `2px solid ${data.accent_color || '#ffd700'}`,
+    sealC:     data.title_color  || '#ffd700',
+    _raw:      data
 };
         } catch (_) { return null; }
     }
@@ -835,9 +859,14 @@
                     <button class="modal-close" onclick="this.closest('.modal').remove()"><i class="fas fa-times"></i></button>
                 </div>
                 <div style="background:#e5e7eb;padding:28px;border-radius:14px;display:flex;justify-content:center;overflow:auto;">
-                    <div style="width:720px;min-height:500px;background:${t.bg};border:${t.border};padding:50px 60px;
-                                position:relative;font-family:Georgia,serif;text-align:center;
-                                box-shadow:0 24px 70px rgba(0,0,0,0.35);display:flex;flex-direction:column;align-items:center;">
+    <div style="width:720px;min-height:500px;background:${t.bg};border:${t.border};padding:50px 60px;
+                position:relative;font-family:Georgia,serif;text-align:center;
+                box-shadow:0 24px 70px rgba(0,0,0,0.35);display:flex;flex-direction:column;align-items:center;
+                background-size:cover;background-position:center;">
+
+        ${t._hasImage ? `<div style="position:absolute;inset:0;background:rgba(5,10,30,0.62);z-index:0;"></div>` : ''}
+
+        <div style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;flex:1;">
                         <div style="position:absolute;inset:14px;border:${t.inner};pointer-events:none;border-radius:2px;"></div>
                         <div style="width:60px;height:60px;background:rgba(255,255,255,0.15);border-radius:50%;
                                     display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
@@ -877,8 +906,9 @@
                         </div>
                         <div style="position:absolute;bottom:16px;right:20px;font-size:9px;color:${t.sub};
                                     font-family:'Courier New',monospace;opacity:0.7;">ID: ${certNumber || 'PREVIEW'}</div>
-                    </div>
-                </div>
+        </div><!-- closes z-index:1 content wrapper -->
+    </div><!-- closes certificate wrapper -->
+</div>
                 <div style="display:flex;gap:12px;margin-top:18px;">
                     <button class="btn-primary" onclick="showToast('PDF download — integrate html2pdf.js')" style="flex:1;">
                         <i class="fas fa-download"></i> Download PDF
