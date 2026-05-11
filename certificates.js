@@ -31,6 +31,28 @@ const _setEl  = (id,v) => { const e=document.getElementById(id); if(e) e.textCon
 let _certSectionLoaded = false;
 
 async function loadCertificateSection() {
+    // Force correct initial tab state on every load
+    const panels = ['certEligible', 'certIssued', 'certSettings'];
+    panels.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('active');
+            el.style.display = 'none';
+        }
+    });
+    // Show only the first tab
+    const firstPanel = document.getElementById('certEligible');
+    if (firstPanel) {
+        firstPanel.classList.add('active');
+        firstPanel.style.display = 'block';
+    }
+    // Activate first tab button
+    const firstTab = document.querySelector('#certificatesSection .tabs .tab');
+    if (firstTab) {
+        document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => t.classList.remove('active'));
+        firstTab.classList.add('active');
+    }
+
     if (_certSectionLoaded) {
         await loadEligibleStudents();
         await loadIssuedCerts();
@@ -910,10 +932,32 @@ function toggleSelectAllCerts(cb) {
 }
 
 function switchCertTab(tabId, btn) {
-    document.querySelectorAll('#certificatesSection .tab').forEach(t => t.classList.remove('active'));
+    // Remove active from ALL cert tabs
+    document.querySelectorAll('#certificatesSection .tabs .tab').forEach(t => {
+        t.classList.remove('active');
+    });
+
+    // Add active to clicked button
     if (btn) btn.classList.add('active');
-    document.querySelectorAll('#certificatesSection .tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById(tabId)?.classList.add('active');
+
+    // Hide ALL cert tab content panels
+    const panels = ['certEligible', 'certIssued', 'certSettings'];
+    panels.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.remove('active');
+            el.style.display = 'none';
+        }
+    });
+
+    // Show only the selected panel
+    const target = document.getElementById(tabId);
+    if (target) {
+        target.classList.add('active');
+        target.style.display = 'block';
+    }
+
+    // Load data for the selected tab
     if (tabId === 'certIssued')   loadIssuedCerts();
     if (tabId === 'certEligible') loadEligibleStudents();
 }
