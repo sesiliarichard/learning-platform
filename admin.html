@@ -10697,12 +10697,12 @@ function _mkBtn(html, bg, title, extraCss) {
     return b;
 }
 
-const _btnMove   = _mkBtn('✛', '#7c3aed', 'Drag to move',       'cursor:move;width:24px;padding:0;top:-30px;left:0;');
-const _btnDel    = _mkBtn('✕', '#dc2626', 'Delete table',        'width:24px;padding:0;top:-30px;right:0;');
-const _btnAddCol = _mkBtn('+ Col', '#2563eb', 'Add column',      'top:-30px;left:50%;transform:translateX(-50%);');
-const _btnDelCol = _mkBtn('− Col', '#ef4444', 'Remove last col', 'bottom:-30px;right:0;');
-const _btnAddRow = _mkBtn('+ Row', '#059669', 'Add row',         'bottom:-30px;left:0;');
-const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove last row', 'bottom:-30px;left:64px;');
+const _btnMove   = _mkBtn('✛', '#7c3aed', 'Drag to move',       'cursor:move;width:24px;padding:0;top:-32px;left:0;display:none;');
+const _btnDel    = _mkBtn('🗑 Delete', '#dc2626', 'Delete table','top:-32px;right:0;display:none;');
+const _btnAddCol = _mkBtn('+ Col', '#2563eb', 'Add column',      'top:-32px;left:50%;transform:translateX(-50%);display:none;');
+const _btnDelCol = _mkBtn('− Col', '#ef4444', 'Remove last col', 'bottom:-32px;right:0;display:none;');
+const _btnAddRow = _mkBtn('+ Row', '#059669', 'Add row',         'bottom:-32px;left:0;display:none;');
+const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove last row', 'bottom:-32px;left:64px;display:none;');
 
 [_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
     .forEach(b => _sharedOverlay.appendChild(b));
@@ -10737,11 +10737,14 @@ function _hideOverlay() {
     }, 200);
 }
 
-function _showOverlay(tbl) {
-    if (!tbl || !_isInAdminEditor(tbl)) return;
-    clearTimeout(_hideTimer);
-    _activeTable = tbl;
-    _positionOverlay(tbl);
+function _hideOverlay() {
+    _hideTimer = setTimeout(() => {
+        _sharedOverlay.style.display = 'none';
+        _activeTable = null;
+        // Hide buttons
+        [_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
+            .forEach(b => b.style.display = 'none');
+    }, 200);
 }
 
 // Keep overlay alive when hovering the buttons
