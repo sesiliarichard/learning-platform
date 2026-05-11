@@ -207,7 +207,7 @@
         modal.style.cssText = 'z-index:6000;';
 
         modal.innerHTML = `
-        <div class="modal-content" style="max-width:900px;padding:0;overflow:hidden;border-radius:20px;">
+       <div class="modal-content" style="max-width:900px;padding:0;overflow:hidden;border-radius:20px;display:flex;flex-direction:column;max-height:90vh;">
 
             <!-- HEADER -->
             <div style="
@@ -238,10 +238,10 @@
             </div>
 
             <!-- BODY: two columns -->
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:540px;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:0;flex:1;overflow:hidden;">
 
                 <!-- LEFT: Controls -->
-                <div style="padding:28px;border-right:1px solid #f0f0f0;overflow-y:auto;max-height:600px;">
+                <div style="padding:28px;border-right:1px solid #f0f0f0;overflow-y:auto;max-height:480px;">
 
                     <!-- Template Name -->
                     <div style="margin-bottom:20px;">
