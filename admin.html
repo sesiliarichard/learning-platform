@@ -10503,420 +10503,7 @@ async function deleteVideo(id) {
     showToast('Video deleted.');
     loadVideosSection();
 }
-// ═══════════════════════════════════════════════
-// ADMIN-ONLY TABLE UI — scoped to .editor-content
-// ═══════════════════════════════════════════════
 
-// Disable old conflicting functions
-window.makeTableDraggable    = () => {};
-window.initTableDragReorder  = () => {};
-window.addDragHandlesToTable = () => {};
-window.attachTableUI         = () => {};
-window.initAllEditorTables   = () => {};
-
-// Remove any stale overlays from previous loads
-document.querySelectorAll('#sharedTableOverlay').forEach(o => o.remove());
-
-// ── Build the ONE shared overlay ──
-const _sharedOverlay = document.createElement('div');
-_sharedOverlay.id = 'sharedTableOverlay';
-_sharedOverlay.style.cssText = `
-    position: fixed;
-    pointer-events: none;
-    z-index: 99999;
-    display: none;
-`;
-
-const _btnBase = `
-    position: absolute;
-    pointer-events: all;
-    cursor: pointer;
-    border-radius: 6px;
-    font-size: 11px;
-    font-weight: 700;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    user-select: none;
-    border: 2px solid white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    padding: 0 7px;
-    height: 24px;
-    min-width: 24px;
-    white-space: nowrap;
-`;
-
-function _mkBtn(html, bg, title, extraCss) {
-    const b = document.createElement('div');
-    b.innerHTML = html;
-    b.title = title;
-    b.style.cssText = _btnBase + `background:${bg};color:white;` + (extraCss || '');
-    return b;
-}
-
-const _btnMove   = _mkBtn('✛', '#7c3aed', 'Drag to move',       'cursor:move;width:24px;padding:0;top:-28px;left:0;');
-const _btnDel    = _mkBtn('✕', '#dc2626', 'Delete table',        'width:24px;padding:0;top:-28px;right:0;');
-const _btnAddCol = _mkBtn('+ Col', '#2563eb', 'Add column',      'top:-28px;left:50%;transform:translateX(-50%);');
-const _btnDelCol = _mkBtn('− Col', '#ef4444', 'Remove last col', 'top:-28px;right:28px;');
-const _btnAddRow = _mkBtn('+ Row', '#059669', 'Add row',         'bottom:-28px;left:0;');
-const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove row',      'bottom:-28px;left:62px;');
-
-[_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
-    .forEach(b => _sharedOverlay.appendChild(b));
-
-// ── CRITICAL: append to .main-content, NOT document.body ──
-document.body.appendChild(_sharedOverlay);
-
-let _activeTable = null;
-let _hideTimer   = null;
-
-function _isInAdminEditor(tbl) {
-    // Only show toolbar for tables inside .editor-content divs in admin modals/sections
-    return !!tbl.closest('.editor-content');
-}
-
-function _positionOverlay(tbl) {
-    const r = tbl.getBoundingClientRect();
-    if (!r.width) return;
-    _sharedOverlay.style.top    = r.top    + 'px';
-    _sharedOverlay.style.left   = r.left   + 'px';
-    _sharedOverlay.style.width  = r.width  + 'px';
-    _sharedOverlay.style.height = r.height + 'px';
-    _sharedOverlay.style.display = 'block';
-    _sharedOverlay.style.pointerEvents = 'none';
-}
-
-function _isInAdminEditor(tbl) {
-    // ONLY show toolbar if table is inside an OPEN modal's editor
-    const modal = tbl.closest('.modal');
-    if (!modal) return false;
-    if (!modal.classList.contains('active')) return false;
-    if (!tbl.closest('.editor-content[contenteditable="true"]')) return false;
-    return true;
-}
-
-function _hideOverlay() {
-    _hideTimer = setTimeout(() => {
-        _sharedOverlay.style.display = 'none';
-        _activeTable = null;
-    }, 180);
-}
-
-_sharedOverlay.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
-_sharedOverlay.addEventListener('mouseleave', _hideOverlay);
-
-document.addEventListener('mousedown', (e) => {
-    if (!_activeTable) return;
-    if (_activeTable.contains(e.target)) return;
-    if (_sharedOverlay.contains(e.target)) return;
-    clearTimeout(_hideTimer);
-    _sharedOverlay.style.display = 'none';
-    _activeTable = null;
-});
-
-['scroll', 'resize'].forEach(evt =>
-    window.addEventListener(evt, () => {
-        if (_activeTable) _positionOverlay(_activeTable);
-    }, { passive: true })
-);
-document.querySelectorAll('.main-content').forEach(el =>
-    el.addEventListener('scroll', () => {
-        if (_activeTable) _positionOverlay(_activeTable);
-    }, { passive: true })
-);
-
-
-function _showOverlay(tbl) {
-    if (!tbl || !_isInAdminEditor(tbl)) return; 
-    clearTimeout(_hideTimer);
-    _activeTable = tbl;
-    _positionOverlay(tbl);
-    _sharedOverlay.style.pointerEvents = 'none'; 
-}
-
-function _wireTable(tbl) {
-    if (tbl.dataset.wired) return;
-    // STRICT: only wire tables inside modals
-    if (!tbl.closest('.modal')) return;
-    if (!tbl.closest('.editor-content')) return;
-    tbl.dataset.wired = '1';
-    tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
-    tbl.addEventListener('mouseleave', _hideOverlay);
-    tbl.addEventListener('click',      () => _showOverlay(tbl));
-}
-
-function _wireAll() {
-    // Wire ANY table inside an active modal that is within a contenteditable editor
-    document.querySelectorAll('.modal.active .editor-content[contenteditable="true"] table').forEach(_wireTable);
-}
-// ── Tab key navigation — no phantom rows ──
-makeTableNavigable = function(editor) {
-    editor.querySelectorAll('.editor-table td, .editor-table th').forEach(cell => {
-        cell.addEventListener('keydown', e => {
-            if (e.key !== 'Tab') return;
-            e.preventDefault();
-            const cells = [...editor.querySelectorAll('.editor-table td, .editor-table th')];
-            const idx = cells.indexOf(cell);
-            if (idx < cells.length - 1) cells[idx + 1].focus();
-        });
-        cell.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            showTableContextMenu(e, cell);
-        });
-    });
-};
-
-// ── BUTTON ACTIONS ──
-
-_btnDel.addEventListener('click', () => {
-    if (!_activeTable) return;
-    if (!confirm('Delete this table?')) return;
-    const wrap = _activeTable.closest('.resizable-table-wrap')
-              || _activeTable.closest('.wle-table-wrap')
-              || _activeTable.closest('.word-table-container');
-    (wrap || _activeTable).remove();
-    _sharedOverlay.style.display = 'none';
-    _activeTable = null;
-    showToast('Table deleted ✓');
-});
-
-_btnAddRow.addEventListener('click', () => {
-    if (!_activeTable) return;
-    const rows     = [..._activeTable.querySelectorAll('tr')];
-    const lastRow  = rows[rows.length - 1];
-    const colCount = lastRow ? lastRow.cells.length : 1;
-    const tbody    = _activeTable.querySelector('tbody') || _activeTable;
-    const newRow   = tbody.insertRow();
-    for (let i = 0; i < colCount; i++) {
-        const td = newRow.insertCell();
-        td.contentEditable = 'true';
-        td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
-    }
-    setTimeout(() => _positionOverlay(_activeTable), 50);
-    showToast('Row added ✓');
-});
-
-_btnDelRow.addEventListener('click', () => {
-    if (!_activeTable) return;
-    const allRows = [..._activeTable.querySelectorAll('tr')];
-    if (allRows.length <= 1) { showToast('Cannot delete last row', 'error'); return; }
-    const active = document.activeElement?.closest('tr');
-    const target = (active && _activeTable.contains(active))
-        ? active
-        : allRows[allRows.length - 1];
-    if (target?.closest('thead') && allRows.length <= 2) {
-        showToast('Cannot delete — only header remains', 'error'); return;
-    }
-    target.remove();
-    setTimeout(() => _positionOverlay(_activeTable), 50);
-    showToast('Row deleted ✓');
-});
-
-_btnAddCol.addEventListener('click', () => {
-    if (!_activeTable) return;
-    [..._activeTable.querySelectorAll('tr')].forEach((row, i) => {
-        const isH = i === 0 && !!row.closest('thead');
-        const cell = document.createElement(isH ? 'th' : 'td');
-        cell.contentEditable = 'true';
-        cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isH ? 'background:#f5f3ff;font-weight:700;' : ''}`;
-        row.appendChild(cell);
-    });
-    setTimeout(() => _positionOverlay(_activeTable), 50);
-    showToast('Column added ✓');
-});
-
-_btnDelCol.addEventListener('click', () => {
-    if (!_activeTable) return;
-    const rows = [..._activeTable.querySelectorAll('tr')];
-    if (!rows.length || rows[0].cells.length <= 1) {
-        showToast('Cannot delete last column', 'error'); return;
-    }
-    rows.forEach(row => { if (row.cells.length > 0) row.deleteCell(row.cells.length - 1); });
-    setTimeout(() => _positionOverlay(_activeTable), 50);
-    showToast('Column deleted ✓');
-});
-
-// ── DRAG TO MOVE (fixed) ──
-_btnMove.addEventListener('mousedown', (e) => {
-    if (!_activeTable) return;
-    e.preventDefault();
-    e.stopPropagation();
-
-    const tbl        = _activeTable;
-    const nodeToMove = tbl.closest('.resizable-table-wrap')
-                    || tbl.closest('.wle-table-wrap')
-                    || tbl.closest('.word-table-container')
-                    || tbl;
-    const editor = nodeToMove.closest('.editor-content');
-    if (!editor) return;
-
-    const R = tbl.getBoundingClientRect();
-
-    // Ghost preview element
-    const ghost = document.createElement('div');
-    ghost.style.cssText = `
-        position:fixed;
-        width:${R.width}px;height:${Math.min(R.height, 120)}px;
-        border:3px dashed #7c3aed;border-radius:8px;
-        background:rgba(124,58,237,0.08);pointer-events:none;
-        z-index:999999;left:${R.left}px;top:${R.top}px;
-        transition: none;
-    `;
-    document.body.appendChild(ghost);
-
-    // Drop indicator line
-    const dropLine = document.createElement('div');
-    dropLine.style.cssText = `
-        position:fixed;height:3px;background:#7c3aed;border-radius:3px;
-        pointer-events:none;z-index:999998;display:none;
-        box-shadow:0 0 8px rgba(124,58,237,0.5);
-    `;
-    document.body.appendChild(dropLine);
-
-    // Placeholder to hold the space
-    const ph = document.createElement('div');
-    ph.style.cssText = `
-        height:${nodeToMove.offsetHeight}px;
-        border:2px dashed #c4b5fd;border-radius:8px;
-        background:#f5f3ff;margin:4px 0;box-sizing:border-box;
-    `;
-    nodeToMove.parentNode.insertBefore(ph, nodeToMove);
-    nodeToMove.style.opacity = '0.15';
-    _sharedOverlay.style.display = 'none';
-
-    let dropRef = null; // the node BEFORE which we'll insert
-
-    const onMove = (ev) => {
-        // Move ghost
-        ghost.style.left = (ev.clientX - R.width / 2) + 'px';
-        ghost.style.top  = (ev.clientY - 20) + 'px';
-
-        // Find closest drop position among editor's direct children
-        const siblings = [...editor.children].filter(el => el !== nodeToMove && el !== ph);
-        dropRef = null;
-        let closestDist = Infinity;
-
-       for (const sib of siblings) {
-            ghost.style.display = 'none';
-            const sr   = sib.getBoundingClientRect();
-            ghost.style.display = 'block';
-            const midY = sr.top + sr.height / 2;
-            const dist = Math.abs(ev.clientY - midY);
-
-            if (dist < closestDist) {
-                closestDist = dist;
-                dropRef = ev.clientY < midY ? sib : (sib.nextSibling || null);
-            }
-        }
-
-        // Show drop indicator
-        const refEl = dropRef;
-        if (refEl && refEl.getBoundingClientRect) {
-            const dr = refEl.getBoundingClientRect();
-            dropLine.style.display = 'block';
-            dropLine.style.top   = (dr.top - 2) + 'px';
-            dropLine.style.left  = dr.left + 'px';
-            dropLine.style.width = dr.width + 'px';
-        } else if (!refEl) {
-            // Drop at end — show line after last child
-            const last = editor.lastElementChild;
-            if (last && last !== nodeToMove) {
-                const lr = last.getBoundingClientRect();
-                dropLine.style.display = 'block';
-                dropLine.style.top   = (lr.bottom + 2) + 'px';
-                dropLine.style.left  = lr.left + 'px';
-                dropLine.style.width = lr.width + 'px';
-            }
-        } else {
-            dropLine.style.display = 'none';
-        }
-    };
-
-    const onUp = () => {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup',   onUp);
-
-        ghost.remove();
-        dropLine.remove();
-        nodeToMove.style.opacity = '';
-
-        // Insert at determined position
-        if (dropRef && dropRef.parentNode === editor) {
-            editor.insertBefore(nodeToMove, dropRef);
-        } else {
-            editor.appendChild(nodeToMove);
-        }
-
-        try { ph.remove(); } catch (_) {}
-        setTimeout(() => _showOverlay(tbl), 100);
-        showToast('Table moved ✓');
-    };
-
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
-});
-
-// ── INSERT TABLE (override to also wire new tables) ──
-window.confirmInsertTable = function(editorIndex) {
-    const rows = parseInt(document.getElementById('tblRows')?.value) || 3;
-    const cols = parseInt(document.getElementById('tblCols')?.value) || 3;
-    document.getElementById('tableInsertModal')?.remove();
-
-    const editor = document.getElementById(`editor-${editorIndex}`)
-                || document.getElementById(`editEditor_${editorIndex}`);
-    if (!editor) return;
-
-    const cs = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;text-align:left;vertical-align:top;font-size:14px;';
-    const html = `
-        <br>
-        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
-            <table class="editor-table" style="border-collapse:collapse;width:100%;table-layout:fixed;border:1.5px solid #374151;">
-                <colgroup>${Array(cols).fill(`<col style="width:${Math.floor(100/cols)}%">`).join('')}</colgroup>
-                <thead>
-                    <tr style="background:#f5f3ff;">
-                        ${Array(cols).fill(0).map((_,i)=>`<th contenteditable="true" style="${cs}font-weight:700;background:#f5f3ff;">Header ${i+1}</th>`).join('')}
-                    </tr>
-                </thead>
-                <tbody>
-                    ${Array(rows-1).fill(0).map(()=>`<tr>${Array(cols).fill(0).map(()=>`<td contenteditable="true" style="${cs}"></td>`).join('')}</tr>`).join('')}
-                </tbody>
-            </table>
-        </div><br>`;
-
-    editor.focus();
-    document.execCommand('insertHTML', false, html);
-    setTimeout(() => {
-        // Wire all new tables in this editor only
-        editor.querySelectorAll('table').forEach(_wireTable);
-        makeTableNavigable(editor);
-    }, 150);
-};
-
-// ── Auto-wire new tables when modals open ──
-['openCreateChapterModal','openEditChapterModal','addNewTopic','addEditTopic'].forEach(name => {
-    const orig = window[name];
-    if (!orig) return;
-    window[name] = function(...args) {
-        const r = orig.apply(this, args);
-        setTimeout(_wireAll, 600);
-        return r;
-    };
-});
-
-// ── MutationObserver: only watch .editor-content areas ──
-if (window._tblObserver) window._tblObserver.disconnect();
-window._tblObserver = new MutationObserver((mutations) => {
-    // Only react to changes inside editor-content divs
-    const affectsEditor = mutations.some(m =>
-        m.target.closest?.('.editor-content') ||
-        [...m.addedNodes].some(n => n.querySelector?.('.editor-content'))
-    );
-    if (affectsEditor) _wireAll();
-});
-window._tblObserver.observe(document.body, { childList: true, subtree: true });
-
-console.log('✅ Admin-only Table UI ready (scoped to .editor-content)');
 // ============================================
 // FIX: Editor Font Persistence
 // ============================================
@@ -11056,6 +10643,386 @@ console.log('✅ Admin-only Table UI ready (scoped to .editor-content)');
     
     console.log('✅ Editor font persistence fix loaded');
 })();
+// ═══════════════════════════════════════════════
+// ADMIN TABLE UI — Fixed version
+// ═══════════════════════════════════════════════
+
+// Clean up any existing broken overlay
+document.getElementById('sharedTableOverlay')?.remove();
+if (window._tblObserver) window._tblObserver.disconnect();
+
+// ── Shared overlay ──
+const _sharedOverlay = document.createElement('div');
+_sharedOverlay.id = 'sharedTableOverlay';
+_sharedOverlay.style.cssText = `
+    position: fixed;
+    pointer-events: none;
+    z-index: 99999;
+    display: none;
+`;
+
+const _btnBase = `
+    position: absolute;
+    pointer-events: all;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    padding: 0 7px;
+    height: 24px;
+    min-width: 24px;
+    white-space: nowrap;
+    z-index: 1;
+`;
+
+function _mkBtn(html, bg, title, extraCss) {
+    const b = document.createElement('div');
+    b.innerHTML = html;
+    b.title = title;
+    b.style.cssText = _btnBase + `background:${bg};color:white;` + (extraCss || '');
+    return b;
+}
+
+const _btnMove   = _mkBtn('✛', '#7c3aed', 'Drag to move',       'cursor:move;width:24px;padding:0;top:-30px;left:0;');
+const _btnDel    = _mkBtn('✕', '#dc2626', 'Delete table',        'width:24px;padding:0;top:-30px;right:0;');
+const _btnAddCol = _mkBtn('+ Col', '#2563eb', 'Add column',      'top:-30px;left:50%;transform:translateX(-50%);');
+const _btnDelCol = _mkBtn('− Col', '#ef4444', 'Remove last col', 'bottom:-30px;right:0;');
+const _btnAddRow = _mkBtn('+ Row', '#059669', 'Add row',         'bottom:-30px;left:0;');
+const _btnDelRow = _mkBtn('− Row', '#ef4444', 'Remove last row', 'bottom:-30px;left:64px;');
+
+[_btnMove, _btnDel, _btnAddCol, _btnDelCol, _btnAddRow, _btnDelRow]
+    .forEach(b => _sharedOverlay.appendChild(b));
+
+document.body.appendChild(_sharedOverlay);
+
+let _activeTable = null;
+let _hideTimer   = null;
+
+// ── RELAXED check: table just needs to be in a contenteditable editor ──
+function _isInAdminEditor(tbl) {
+    return !!tbl.closest('.editor-content[contenteditable="true"]');
+}
+
+function _positionOverlay(tbl) {
+    if (!tbl) return;
+    const r = tbl.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    _sharedOverlay.style.top    = r.top    + 'px';
+    _sharedOverlay.style.left   = r.left   + 'px';
+    _sharedOverlay.style.width  = r.width  + 'px';
+    _sharedOverlay.style.height = r.height + 'px';
+    _sharedOverlay.style.display = 'block';
+    _sharedOverlay.style.pointerEvents = 'none'; // container transparent
+    // buttons inside have pointer-events:all via their own style
+}
+
+function _hideOverlay() {
+    _hideTimer = setTimeout(() => {
+        _sharedOverlay.style.display = 'none';
+        _activeTable = null;
+    }, 200);
+}
+
+function _showOverlay(tbl) {
+    if (!tbl || !_isInAdminEditor(tbl)) return;
+    clearTimeout(_hideTimer);
+    _activeTable = tbl;
+    _positionOverlay(tbl);
+}
+
+// Keep overlay alive when hovering the buttons
+_sharedOverlay.addEventListener('mouseenter', () => clearTimeout(_hideTimer));
+_sharedOverlay.addEventListener('mouseleave', _hideOverlay);
+
+// Hide when clicking outside both table and overlay
+document.addEventListener('mousedown', (e) => {
+    if (!_activeTable) return;
+    if (_activeTable.contains(e.target)) return;
+    if (_sharedOverlay.contains(e.target)) return;
+    clearTimeout(_hideTimer);
+    _sharedOverlay.style.display = 'none';
+    _activeTable = null;
+});
+
+// Reposition on scroll/resize
+['scroll', 'resize'].forEach(evt =>
+    window.addEventListener(evt, () => {
+        if (_activeTable) _positionOverlay(_activeTable);
+    }, { passive: true })
+);
+document.querySelectorAll('.main-content, .modal-content').forEach(el =>
+    el.addEventListener('scroll', () => {
+        if (_activeTable) _positionOverlay(_activeTable);
+    }, { passive: true })
+);
+
+// ── Wire a single table ──
+function _wireTable(tbl) {
+    if (tbl.dataset.wired) return;
+    if (!_isInAdminEditor(tbl)) return;
+    tbl.dataset.wired = '1';
+    tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
+    tbl.addEventListener('mouseleave', _hideOverlay);
+    tbl.addEventListener('click',      () => _showOverlay(tbl));
+}
+
+// ── Wire ALL tables in all editors (no modal restriction) ──
+function _wireAll() {
+    document.querySelectorAll('.editor-content[contenteditable="true"] table').forEach(_wireTable);
+}
+
+// ── Tab navigation (clean, no phantom rows) ──
+makeTableNavigable = function(editor) {
+    editor.querySelectorAll('td, th').forEach(cell => {
+        if (cell.dataset.tabWired) return;
+        cell.dataset.tabWired = '1';
+        cell.addEventListener('keydown', e => {
+            if (e.key !== 'Tab') return;
+            e.preventDefault();
+            const cells = [...editor.querySelectorAll('td, th')];
+            const idx = cells.indexOf(cell);
+            if (idx < cells.length - 1) {
+                cells[idx + 1].focus();
+            }
+            // No phantom row added on last cell
+        });
+        cell.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (typeof showTableContextMenu === 'function') showTableContextMenu(e, cell);
+        });
+    });
+};
+
+// ═══ BUTTON ACTIONS ═══
+
+_btnDel.addEventListener('click', () => {
+    if (!_activeTable) return;
+    if (!confirm('Delete this table?')) return;
+    const wrap = _activeTable.closest('.resizable-table-wrap')
+              || _activeTable.closest('.wle-table-wrap')
+              || _activeTable;
+    wrap.remove();
+    _sharedOverlay.style.display = 'none';
+    _activeTable = null;
+    showToast('Table deleted ✓');
+});
+
+_btnAddRow.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const rows     = [..._activeTable.querySelectorAll('tr')];
+    const lastRow  = rows[rows.length - 1];
+    const colCount = lastRow ? lastRow.cells.length : 1;
+    const tbody    = _activeTable.querySelector('tbody') || _activeTable;
+    const newRow   = document.createElement('tr');
+    for (let i = 0; i < colCount; i++) {
+        const td = document.createElement('td');
+        td.contentEditable = 'true';
+        td.style.cssText = 'border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;';
+        newRow.appendChild(td);
+    }
+    tbody.appendChild(newRow);
+    setTimeout(() => {
+        _positionOverlay(_activeTable);
+        makeTableNavigable(_activeTable.closest('.editor-content'));
+    }, 50);
+    showToast('Row added ✓');
+});
+
+_btnDelRow.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const allRows = [..._activeTable.querySelectorAll('tr')];
+    if (allRows.length <= 1) { showToast('Cannot delete the last row', 'error'); return; }
+    allRows[allRows.length - 1].remove();
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Row deleted ✓');
+});
+
+_btnAddCol.addEventListener('click', () => {
+    if (!_activeTable) return;
+    [..._activeTable.querySelectorAll('tr')].forEach((row, i) => {
+        const isHeader = i === 0 && !!row.closest('thead');
+        const cell = document.createElement(isHeader ? 'th' : 'td');
+        cell.contentEditable = 'true';
+        cell.style.cssText = `border:1.5px solid #374151;padding:8px 12px;min-width:60px;vertical-align:top;${isHeader ? 'background:#f5f3ff;font-weight:700;' : ''}`;
+        row.appendChild(cell);
+    });
+    setTimeout(() => {
+        _positionOverlay(_activeTable);
+        makeTableNavigable(_activeTable.closest('.editor-content'));
+    }, 50);
+    showToast('Column added ✓');
+});
+
+_btnDelCol.addEventListener('click', () => {
+    if (!_activeTable) return;
+    const rows = [..._activeTable.querySelectorAll('tr')];
+    if (!rows.length || rows[0].cells.length <= 1) {
+        showToast('Cannot delete the last column', 'error'); return;
+    }
+    rows.forEach(row => { if (row.cells.length > 0) row.deleteCell(row.cells.length - 1); });
+    setTimeout(() => _positionOverlay(_activeTable), 50);
+    showToast('Column deleted ✓');
+});
+
+// ── Drag to move ──
+_btnMove.addEventListener('mousedown', (e) => {
+    if (!_activeTable) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    const tbl        = _activeTable;
+    const nodeToMove = tbl.closest('.resizable-table-wrap')
+                    || tbl.closest('.wle-table-wrap')
+                    || tbl;
+    const editor = nodeToMove.closest('.editor-content');
+    if (!editor) return;
+
+    const R = tbl.getBoundingClientRect();
+
+    const ghost = document.createElement('div');
+    ghost.style.cssText = `
+        position:fixed;width:${R.width}px;height:${Math.min(R.height,100)}px;
+        border:3px dashed #7c3aed;border-radius:8px;
+        background:rgba(124,58,237,0.08);pointer-events:none;
+        z-index:999999;left:${R.left}px;top:${R.top}px;`;
+    document.body.appendChild(ghost);
+
+    const dropLine = document.createElement('div');
+    dropLine.style.cssText = `position:fixed;height:3px;background:#7c3aed;border-radius:3px;pointer-events:none;z-index:999998;display:none;`;
+    document.body.appendChild(dropLine);
+
+    const ph = document.createElement('div');
+    ph.style.cssText = `height:${nodeToMove.offsetHeight}px;border:2px dashed #c4b5fd;border-radius:8px;background:#f5f3ff;margin:4px 0;`;
+    nodeToMove.parentNode.insertBefore(ph, nodeToMove);
+    nodeToMove.style.opacity = '0.2';
+    _sharedOverlay.style.display = 'none';
+
+    let dropRef = null;
+
+    const onMove = (ev) => {
+        ghost.style.left = (ev.clientX - R.width / 2) + 'px';
+        ghost.style.top  = (ev.clientY - 20) + 'px';
+
+        const siblings = [...editor.children].filter(el => el !== nodeToMove && el !== ph);
+        dropRef = null;
+        let closestDist = Infinity;
+
+        for (const sib of siblings) {
+            const sr   = sib.getBoundingClientRect();
+            const midY = sr.top + sr.height / 2;
+            const dist = Math.abs(ev.clientY - midY);
+            if (dist < closestDist) {
+                closestDist = dist;
+                dropRef = ev.clientY < midY ? sib : (sib.nextSibling || null);
+            }
+        }
+
+        if (dropRef?.getBoundingClientRect) {
+            const dr = dropRef.getBoundingClientRect();
+            dropLine.style.cssText += `display:block;top:${dr.top - 2}px;left:${dr.left}px;width:${dr.width}px;`;
+        } else {
+            dropLine.style.display = 'none';
+        }
+    };
+
+    const onUp = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+        ghost.remove();
+        dropLine.remove();
+        nodeToMove.style.opacity = '';
+        if (dropRef && dropRef.parentNode === editor) {
+            editor.insertBefore(nodeToMove, dropRef);
+        } else {
+            editor.appendChild(nodeToMove);
+        }
+        ph.remove();
+        setTimeout(() => _showOverlay(tbl), 100);
+        showToast('Table moved ✓');
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+});
+
+// ── Override confirmInsertTable to wire new tables ──
+window.confirmInsertTable = function(editorIndex) {
+    const rows = parseInt(document.getElementById('tblRows')?.value) || 3;
+    const cols = parseInt(document.getElementById('tblCols')?.value) || 3;
+    document.getElementById('tableInsertModal')?.remove();
+
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+    if (!editor) return;
+
+    const cs = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;text-align:left;vertical-align:top;font-size:14px;';
+    const html = `
+        <br>
+        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
+            <table class="editor-table" style="border-collapse:collapse;width:100%;table-layout:fixed;border:1.5px solid #374151;">
+                <colgroup>${Array(cols).fill(0).map(()=>`<col style="width:${Math.floor(100/cols)}%">`).join('')}</colgroup>
+                <thead>
+                    <tr style="background:#f5f3ff;">
+                        ${Array(cols).fill(0).map((_,i)=>`<th contenteditable="true" style="${cs}font-weight:700;background:#f5f3ff;">Header ${i+1}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Array(rows-1).fill(0).map(()=>`<tr>${Array(cols).fill(0).map(()=>`<td contenteditable="true" style="${cs}"></td>`).join('')}</tr>`).join('')}
+                </tbody>
+            </table>
+        </div><br>`;
+
+    editor.focus();
+    document.execCommand('insertHTML', false, html);
+
+    setTimeout(() => {
+        editor.querySelectorAll('table').forEach(_wireTable);
+        makeTableNavigable(editor);
+    }, 100);
+};
+
+// ── Hook modal openers to wire tables after open ──
+['openCreateChapterModal','openEditChapterModal','addNewTopic','addEditTopic'].forEach(name => {
+    const orig = window[name];
+    if (!orig || orig.__tblHooked) return;
+    window[name] = function(...args) {
+        const r = orig.apply(this, args);
+        setTimeout(_wireAll, 400);
+        setTimeout(_wireAll, 900);
+        return r;
+    };
+    window[name].__tblHooked = true;
+});
+
+// ── MutationObserver: wire any new tables added to editors ──
+window._tblObserver = new MutationObserver((mutations) => {
+    let needsWire = false;
+    for (const m of mutations) {
+        for (const node of m.addedNodes) {
+            if (node.nodeType !== 1) continue;
+            if (node.tagName === 'TABLE' || node.querySelector?.('table')) {
+                needsWire = true;
+                break;
+            }
+        }
+        if (needsWire) break;
+    }
+    if (needsWire) _wireAll();
+});
+window._tblObserver.observe(document.body, { childList: true, subtree: true });
+
+// ── Initial wire for any tables already on the page ──
+setTimeout(_wireAll, 800);
+
+console.log('✅ Table UI fixed and ready');
+
 // ============================================
 // FINAL FONT FIX - Force font on all editors
 // ============================================
