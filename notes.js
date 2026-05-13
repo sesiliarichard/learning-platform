@@ -70,6 +70,7 @@ export async function getChaptersByCourse(courseId) {
     `)
     .eq('course_id', courseId)
     .order('order_num', { ascending: true })
+    .order('created_at', { ascending: true })
 
   if (error) {
     console.error('❌ getChaptersByCourse:', error.message)
@@ -77,9 +78,11 @@ export async function getChaptersByCourse(courseId) {
   }
 
   // Sort topics inside each chapter by order_num
-  return data.map(chapter => ({
+return data.map(chapter => ({
     ...chapter,
-    topics: (chapter.topics || []).sort((a, b) => a.order_num - b.order_num)
+    topics: (chapter.topics || []).sort((a, b) =>
+        (a.order_num || 999) - (b.order_num || 999)
+    )
   }))
 }
 

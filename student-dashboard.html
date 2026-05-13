@@ -2626,24 +2626,31 @@ async function loadCourseNotes(courseId) {
             window._notesLoadingFor = null;
         }
 
-      chapters.forEach(chapter => {
-             const sorted = (chapter.topics || []).sort((a, b) => a.order_num - b.order_num);
-             sorted.forEach(topic => {
-             // Strip any leading "1. " or "2. " prefix already baked into the title
-               const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-               currentCourseNotes.push({
-                    id: topic.id,
-                     title: cleanTitle,
-                    category: topic.category || 'General',
-                    duration: (topic.duration || '15') + ' min read',
-                    updated: 'Recently',
-                    completed: false,
-                    content: topic.content || '<p>No content yet.</p>',
-                    chapterTitle: chapter.title
-                });
-            });
-        });
+     // Sort chapters by order_num
+const sortedChapters = [...chapters].sort((a, b) =>
+    (a.order_num || 999) - (b.order_num || 999)
+);
 
+sortedChapters.forEach(chapter => {
+    const sortedTopics = (chapter.topics || [])
+        .sort((a, b) => (a.order_num || 999) - (b.order_num || 999));
+
+    sortedTopics.forEach(topic => {
+        const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
+        currentCourseNotes.push({
+            id: topic.id,
+            title: cleanTitle,
+            category: topic.category || 'General',
+            duration: (topic.duration || '15') + ' min read',
+            updated: 'Recently',
+            completed: false,
+            content: topic.content || '<p>No content yet.</p>',
+            chapterTitle: chapter.title,
+            chapterOrderNum: chapter.order_num || 999,
+            weekLabel: 'Week ' + (chapter.order_num || '?')
+        });
+    });
+});
        currentNoteIndex = 0;
         loadChapterList();
 
@@ -2682,18 +2689,81 @@ async function loadCourseNotes(courseId) {
 function loadChapterList() {
     const chapterList = document.getElementById('notesChapterList');
     chapterList.innerHTML = '';
-    
+
+    // Group notes by chapter
+    const groups = {};
+    const groupOrder = [];
+
     currentCourseNotes.forEach((note, index) => {
-        const li = document.createElement('li');
-        li.className = `notes-chapter-item ${index === currentNoteIndex ? 'active' : ''} ${note.completed ? 'completed' : ''}`;
-        li.innerHTML = `
-            <span>${index + 1}. ${note.title}</span>
-        `;
-        li.onclick = () => displayNote(index);
-        chapterList.appendChild(li);
+        const key = note.chapterTitle || 'General';
+        if (!groups[key]) {
+            groups[key] = {
+                label:    key,
+                weekLabel: note.weekLabel || '',
+                orderNum: note.chapterOrderNum || 999,
+                topics:   []
+            };
+            groupOrder.push(key);
+        }
+        groups[key].topics.push({ note, index });
+    });
+
+    // Sort groups by chapter order_num
+    groupOrder.sort((a, b) =>
+        (groups[a].orderNum || 999) - (groups[b].orderNum || 999)
+    );
+
+    groupOrder.forEach(key => {
+        const group = groups[key];
+
+        // Chapter group header
+        const header = document.createElement('li');
+        header.style.cssText = `
+            padding: 10px 14px 4px;
+            list-style: none;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;`;
+        header.innerHTML = `
+            <span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;
+                         border-radius:20px;font-size:9px;font-weight:800;
+                         white-space:nowrap;">
+                ${group.weekLabel}
+            </span>
+            <span style="font-size:10px;font-weight:700;color:#374151;
+                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+                         max-width:140px;text-transform:uppercase;letter-spacing:0.5px;">
+                ${group.label}
+            </span>`;
+        chapterList.appendChild(header);
+
+        // Topics under this chapter
+        group.topics.forEach(({ note, index }) => {
+            const li = document.createElement('li');
+            li.className = [
+                'notes-chapter-item',
+                index === currentNoteIndex ? 'active' : '',
+                note.completed ? 'completed' : ''
+            ].filter(Boolean).join(' ');
+
+            li.innerHTML = `
+                <span style="padding-left:6px;display:flex;align-items:center;gap:6px;">
+                    ${note.completed
+                        ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
+                        : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        ${note.title}
+                    </span>
+                </span>`;
+
+            li.onclick = () => displayNote(index);
+            chapterList.appendChild(li);
+        });
     });
 }
-
 // Display note
 function displayNote(index) {
     if (index < 0 || index >= currentCourseNotes.length) return;

@@ -27,17 +27,16 @@ async function loadCoursesFromDB() {
 
   const db = supabaseClient;
 
-  // Try courses assigned to this teacher first
-let { data: courses, error: cErr } = await db
+  let { data: courses, error: cErr } = await db
     .from('courses')
-    .select('id, title, description, color, icon, created_at')
-    .order('created_at', { ascending: false });
+    .select('id, title, description, color, icon, created_at, order_num')
+    .order('order_num', { ascending: true })
+    .order('created_at', { ascending: true });
 
-if (cErr) {
+  if (cErr) {
     console.error('loadCoursesFromDB: courses error', cErr.message);
     return;
-}
-
+  }
 
   if (!courses?.length) {
     teacherState.courses = [];
@@ -47,19 +46,16 @@ if (cErr) {
 
   const courseIds = courses.map(c => c.id);
 
-  // Bulk fetch enrollments
   const { data: enrollments } = await db
     .from('enrollments')
     .select('course_id, progress')
     .in('course_id', courseIds);
 
-  // Bulk fetch chapters
   const { data: chapters } = await db
     .from('chapters')
     .select('course_id')
     .in('course_id', courseIds);
 
-  // Build lookup maps
   const enrollMap  = {};
   const chapterMap = {};
 
@@ -72,7 +68,6 @@ if (cErr) {
     chapterMap[ch.course_id] = (chapterMap[ch.course_id] || 0) + 1;
   });
 
-  // Assemble courses
   teacherState.courses = courses.map((c, i) => {
     const progList = enrollMap[c.id] || [];
     const avgProg  = progList.length
@@ -98,7 +93,6 @@ function renderCourseGrid() {
   const g = document.getElementById('coursesGrid');
   if (!g) return;
 
-  // ✅ Sync the Active Courses stat card
   const stCou = document.getElementById('stCou');
   if (stCou) stCou.textContent = teacherState.courses.length;
 
@@ -173,10 +167,10 @@ async function loadContentChapters() {
     .select('id, title, description, order_num')
     .eq('course_id', couId)
     .eq('published', true)
-    .order('order_num', { ascending: true });
+    .order('order_num', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (chErr) {
-    console.error('loadContentChapters: chapters error', chErr.message);
     area.innerHTML = `
       <div class="card">
         <p style="color:var(--red);font-size:12px">
@@ -198,23 +192,36 @@ async function loadContentChapters() {
     return;
   }
 
-  const chapterIds = chapters.map(ch => ch.id);
+  // Sort chapters by order_num
+  const sortedChapters = [...chapters].sort((a, b) =>
+    (a.order_num || 999) - (b.order_num || 999)
+  );
+
+  const chapterIds = sortedChapters.map(ch => ch.id);
 
   const { data: allTopics, error: tErr } = await db
     .from('topics')
     .select('id, chapter_id, title, category, duration, order_num')
     .in('chapter_id', chapterIds)
-    .order('order_num', { ascending: true });
+    .order('order_num', { ascending: true })
+    .order('created_at', { ascending: true });
 
   if (tErr) console.error('loadContentChapters: topics error', tErr.message);
 
+  // Build topic map sorted by order_num
   const topicMap = {};
   (allTopics || []).forEach(t => {
     if (!topicMap[t.chapter_id]) topicMap[t.chapter_id] = [];
     topicMap[t.chapter_id].push(t);
   });
 
-area.innerHTML = `
+  // Sort topics within each chapter
+  Object.keys(topicMap).forEach(chId => {
+    topicMap[chId].sort((a, b) => (a.order_num || 999) - (b.order_num || 999));
+  });
+
+  // Build layout: chapter sidebar on left, reader on right
+  area.innerHTML = `
     <div class="notes-reading-container">
       <div class="notes-sidebar">
         <h4><i class="fas fa-book-open"></i> Chapters</h4>
@@ -222,7 +229,8 @@ area.innerHTML = `
       </div>
       <div class="notes-reader" id="teacherNotesReader">
         <div style="padding:60px;text-align:center;color:var(--mut);">
-          <i class="fas fa-hand-point-left" style="font-size:32px;display:block;margin-bottom:12px;opacity:0.25;"></i>
+          <i class="fas fa-hand-point-left"
+             style="font-size:32px;display:block;margin-bottom:12px;opacity:0.25;"></i>
           <p style="font-size:13px;">Select a chapter to view its topics</p>
         </div>
       </div>
@@ -230,125 +238,181 @@ area.innerHTML = `
 
   const chapterListEl = document.getElementById('teacherChapterList');
 
-  chapters.forEach((chapter, chIdx) => {
+  // Render chapter list with Week badges
+  sortedChapters.forEach((chapter, chIdx) => {
     const topics = topicMap[chapter.id] || [];
     const li = document.createElement('li');
     li.className = 'notes-chapter-item' + (chIdx === 0 ? ' active' : '');
-    li.innerHTML = `<span>${chIdx + 1}. ${_esc(chapter.title)}</span>`;
+    li.dataset.chapterId = chapter.id;
+
+    li.innerHTML = `
+      <span style="display:flex;align-items:center;gap:6px;width:100%;">
+        <span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;
+                     border-radius:20px;font-size:9px;font-weight:800;
+                     white-space:nowrap;flex-shrink:0;">
+          Week ${chapter.order_num || chIdx + 1}
+        </span>
+        <span style="overflow:hidden;text-overflow:ellipsis;
+                     white-space:nowrap;font-size:12px;">
+          ${_esc(chapter.title)}
+        </span>
+      </span>`;
+
     li.onclick = () => {
-      document.querySelectorAll('.notes-chapter-item').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('#teacherChapterList .notes-chapter-item')
+        .forEach(x => x.classList.remove('active'));
       li.classList.add('active');
-      renderTeacherChapter(chapter, topics);
+      renderTeacherChapterTopics(chapter, topics, sortedChapters, topicMap);
     };
+
     chapterListEl.appendChild(li);
   });
 
-  if (chapters.length > 0) {
-    renderTeacherChapter(chapters[0], topicMap[chapters[0].id] || []);
+  // Auto-load first chapter
+  if (sortedChapters.length > 0) {
+    const firstTopics = topicMap[sortedChapters[0].id] || [];
+    renderTeacherChapterTopics(
+      sortedChapters[0],
+      firstTopics,
+      sortedChapters,
+      topicMap
+    );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// VIEW FULL TOPIC CONTENT
+// RENDER CHAPTER TOPICS IN READER
 // ─────────────────────────────────────────────────────────────
-async function viewTopicContent(chapterId, topicId, topicTitle) {
-  const area = document.getElementById('contentArea');
-  if (!area) return;
-
-  const viewerId = `topicViewer_${topicId}`;
-  const existing = document.getElementById(viewerId);
-  if (existing) { existing.remove(); return; }
-
-  const { data: topic, error } = await supabaseClient
-    .from('topics')
-    .select('id, title, content, category, duration')
-    .eq('id', topicId)
-    .maybeSingle();
-
-  if (error || !topic) { toast('Failed to load topic content', 'w'); return; }
-
-  const viewer = document.createElement('div');
-  viewer.id = viewerId;
-  viewer.style.cssText = `
-    background:var(--s1);border:1px solid var(--acc)40;
-    border-radius:10px;padding:16px;margin-bottom:12px`;
-
-  viewer.innerHTML = `
-    <div style="display:flex;align-items:center;
-                justify-content:space-between;margin-bottom:12px">
-      <div>
-        <h4 style="font-family:'Syne',sans-serif;font-size:13px;
-                   font-weight:700;margin-bottom:3px">
-          ${_esc(topic.title)}
-        </h4>
-        <span style="font-size:10px;color:var(--mut)">
-          ${_esc(topic.category || 'General')} · ${topic.duration || '—'} min read
-        </span>
-      </div>
-      <button class="btn bg"
-              onclick="document.getElementById('${viewerId}').remove()"
-              title="Close">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    <div class="topic-content"
-         style="font-size:13px;line-height:1.7;color:var(--txt)">
-      ${topic.content || '<p style="color:var(--mut)">No content available.</p>'}
-    </div>`;
-
-  // Insert after the chapter card that contains this topic's button
-  const allCards = area.querySelectorAll('.card');
-  let targetCard = null;
-  allCards.forEach(card => {
-    if (card.querySelector(`[onclick*="${topicId}"]`)) targetCard = card;
-  });
-
-  if (targetCard) targetCard.after(viewer);
-  else area.appendChild(viewer);
-
-  viewer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-function renderTeacherChapter(chapter, topics) {
+function renderTeacherChapterTopics(chapter, topics, allChapters, topicMap) {
   const reader = document.getElementById('teacherNotesReader');
   if (!reader) return;
 
-  const chapterListEl = document.getElementById('teacherChapterList');
-  if (chapterListEl) {
-    chapterListEl.innerHTML = '';
-    topics.forEach((t, i) => {
-      const li = document.createElement('li');
-      li.className = 'notes-chapter-item' + (i === 0 ? ' active' : '');
-      li.dataset.topicId = t.id;
-      li.innerHTML = `<span>${i + 1}. ${_esc(t.title)}</span>`;
-      li.onclick = () => {
-        document.querySelectorAll('#teacherChapterList .notes-chapter-item')
-          .forEach(x => x.classList.remove('active'));
-        li.classList.add('active');
-        viewTeacherTopic(chapter.id, t.id);
-      };
-      chapterListEl.appendChild(li);
-    });
-  }
-
-  if (topics.length > 0) {
-    viewTeacherTopic(chapter.id, topics[0].id);
-  } else {
+  if (!topics.length) {
     reader.innerHTML = `
       <div style="padding:60px 20px;text-align:center;color:var(--mut);">
-        <i class="fas fa-book-open" style="font-size:32px;display:block;margin-bottom:12px;opacity:0.25;color:var(--acc);"></i>
+        <i class="fas fa-book-open"
+           style="font-size:32px;display:block;margin-bottom:12px;
+                  opacity:0.25;color:var(--acc);"></i>
         <p style="font-size:13px;">No topics in this chapter yet.</p>
       </div>`;
+    return;
   }
-}
-async function viewTeacherTopic(chapterId, topicId) {
-  const reader = document.getElementById('teacherNotesReader');
-  if (!reader) return;
 
   reader.innerHTML = `
-    <div style="text-align:center;padding:40px;color:var(--mut);">
-      <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:10px;color:var(--acc);"></i>
-      <p style="font-size:12px;">Loading topic…</p>
+    <div style="padding:4px 0 12px;">
+
+      <!-- Chapter header badge -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;
+                  padding:14px 20px;background:var(--bg2);
+                  border-radius:12px;border:1.5px solid var(--bdr);">
+        <span style="background:#ede9fe;color:#7c3aed;padding:3px 12px;
+                     border-radius:20px;font-size:11px;font-weight:800;
+                     white-space:nowrap;flex-shrink:0;">
+          Week ${chapter.order_num || '?'}
+        </span>
+        <span style="font-size:15px;font-weight:700;color:var(--txt);
+                     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${_esc(chapter.title)}
+        </span>
+        <span style="margin-left:auto;font-size:11px;color:var(--mut);
+                     white-space:nowrap;flex-shrink:0;">
+          ${topics.length} topic${topics.length !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      <!-- Topic rows -->
+      <div id="topicListPanel">
+        ${topics.map((t, i) => `
+          <div class="topic-row-item"
+               id="topicRow_${t.id}"
+               style="padding:14px 16px;border:1.5px solid var(--bdr);
+                      border-radius:10px;margin-bottom:8px;cursor:pointer;
+                      background:white;transition:all 0.2s;"
+               onclick="viewTeacherTopicInline('${t.id}', this)"
+               onmouseenter="this.style.borderColor='var(--acc)';
+                             this.style.background='var(--bg2)'"
+               onmouseleave="if(!this.classList.contains('open')){
+                               this.style.borderColor='var(--bdr)';
+                               this.style.background='white';}">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span style="width:28px;height:28px;background:var(--bg2);
+                           border-radius:50%;display:flex;align-items:center;
+                           justify-content:center;font-size:11px;font-weight:700;
+                           color:var(--acc);flex-shrink:0;">
+                ${i + 1}
+              </span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:var(--txt);
+                            overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  ${_esc(t.title)}
+                </div>
+                <div style="font-size:11px;color:var(--mut);margin-top:2px;">
+                  ${_esc(t.category || 'General')} &nbsp;·&nbsp;
+                  ${t.duration || '—'} min read
+                </div>
+              </div>
+              <i class="fas fa-chevron-right"
+                 id="chevron_${t.id}"
+                 style="color:var(--mut);font-size:12px;
+                        flex-shrink:0;transition:transform 0.2s;"></i>
+            </div>
+          </div>
+        `).join('')}
+      </div>
     </div>`;
+
+  reader.scrollTop = 0;
+}
+
+// ─────────────────────────────────────────────────────────────
+// VIEW TOPIC CONTENT INLINE (click to expand / collapse)
+// ─────────────────────────────────────────────────────────────
+async function viewTeacherTopicInline(topicId, rowEl) {
+  const viewerId = 'inlineTopicViewer_' + topicId;
+  const chevron  = document.getElementById('chevron_' + topicId);
+  const existing = document.getElementById(viewerId);
+
+  // Toggle off if already open
+  if (existing) {
+    existing.remove();
+    rowEl.classList.remove('open');
+    rowEl.style.borderColor = 'var(--bdr)';
+    rowEl.style.background  = 'white';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+    return;
+  }
+
+  // Close any other open viewers
+  document.querySelectorAll('[id^="inlineTopicViewer_"]').forEach(el => el.remove());
+  document.querySelectorAll('.topic-row-item.open').forEach(el => {
+    el.classList.remove('open');
+    el.style.borderColor = 'var(--bdr)';
+    el.style.background  = 'white';
+  });
+  document.querySelectorAll('[id^="chevron_"]').forEach(el => {
+    el.style.transform = 'rotate(0deg)';
+  });
+
+  // Mark this row as open
+  rowEl.classList.add('open');
+  rowEl.style.borderColor = 'var(--acc)';
+  rowEl.style.background  = 'var(--bg2)';
+  if (chevron) chevron.style.transform = 'rotate(90deg)';
+
+  // Loading placeholder
+  const loader = document.createElement('div');
+  loader.id = viewerId;
+  loader.style.cssText = `
+    padding:16px;margin-bottom:8px;
+    background:var(--bg2);
+    border:1.5px solid var(--acc);
+    border-radius:0 0 10px 10px;
+    margin-top:-8px;`;
+  loader.innerHTML = `
+    <div style="text-align:center;padding:20px;color:var(--mut);font-size:12px;">
+      <i class="fas fa-spinner fa-spin"></i> Loading topic…
+    </div>`;
+  rowEl.insertAdjacentElement('afterend', loader);
 
   const { data: topic, error } = await supabaseClient
     .from('topics')
@@ -357,67 +421,71 @@ async function viewTeacherTopic(chapterId, topicId) {
     .maybeSingle();
 
   if (error || !topic) {
-    reader.innerHTML = `<p style="color:var(--red);padding:20px;">Failed to load topic.</p>`;
+    loader.innerHTML = `
+      <p style="color:var(--red);padding:12px;font-size:12px;">
+        <i class="fas fa-exclamation-circle"></i> Failed to load topic.
+      </p>`;
     return;
   }
 
-  // Find current index in sidebar list
-  const allItems = Array.from(
-    document.querySelectorAll('#teacherChapterList .notes-chapter-item')
-  );
-  const currentIndex = allItems.findIndex(li =>
-    li.onclick?.toString().includes(topicId) ||
-    li.dataset.topicId === topicId
-  );
-
-  // Mark active in sidebar
-  allItems.forEach((li, i) => {
-    li.classList.toggle('active', li.dataset.topicId === topicId);
-  });
-
-  const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex < allItems.length - 1;
-
-  reader.innerHTML = `
-    <div class="notes-header">
-      <div class="notes-category-badge">${_esc(topic.category || 'General')}</div>
-      <h1 class="notes-title">${_esc(topic.title)}</h1>
-      <div class="notes-meta">
-        <div class="notes-meta-item">
-          <i class="fas fa-clock"></i> ${topic.duration || '—'} min read
+  loader.innerHTML = `
+    <div style="text-align:left;">
+      <!-- Topic reader header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:14px;padding-bottom:12px;
+                  border-bottom:1px solid var(--bdr);">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--txt);">
+            ${_esc(topic.title)}
+          </div>
+          <div style="font-size:11px;color:var(--mut);margin-top:3px;">
+            ${_esc(topic.category || 'General')}
+            &nbsp;·&nbsp; ${topic.duration || '—'} min read
+          </div>
         </div>
-        <div class="notes-meta-item">
-          <i class="fas fa-sync-alt"></i> Updated Recently
-        </div>
+        <button onclick="
+          document.getElementById('${viewerId}').remove();
+          var row = document.getElementById('topicRow_${topicId}');
+          if(row){
+            row.classList.remove('open');
+            row.style.borderColor='var(--bdr)';
+            row.style.background='white';
+          }
+          var ch = document.getElementById('chevron_${topicId}');
+          if(ch) ch.style.transform='rotate(0deg)';"
+          class="btn bg"
+          title="Close"
+          style="flex-shrink:0;">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
-    </div>
-    <div class="notes-content">
-      ${topic.content || '<p style="color:var(--mut)">No content available.</p>'}
-    </div>
-    <div class="notes-navigation">
-      <button class="notes-nav-btn" id="prevTopicBtn" ${!hasPrev ? 'disabled' : ''}>
-        <i class="fas fa-arrow-left"></i> Previous
-      </button>
-      <button class="notes-nav-btn" id="nextTopicBtn" ${!hasNext ? 'disabled' : ''}>
-        Next <i class="fas fa-arrow-right"></i>
-      </button>
+
+      <!-- Topic content -->
+      <div class="notes-content"
+           style="font-size:13px;line-height:1.7;color:var(--txt);
+                  max-height:600px;overflow-y:auto;padding-right:4px;">
+        ${topic.content || '<p style="color:var(--mut)">No content available.</p>'}
+      </div>
     </div>`;
 
-  // Wire up Previous button
-  if (hasPrev) {
-    document.getElementById('prevTopicBtn').onclick = () => {
-      allItems[currentIndex - 1].click();
-    };
-  }
+  loader.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
 
-  // Wire up Next button
-  if (hasNext) {
-    document.getElementById('nextTopicBtn').onclick = () => {
-      allItems[currentIndex + 1].click();
-    };
-  }
+// ─────────────────────────────────────────────────────────────
+// KEEP OLD FUNCTION NAMES AS ALIASES (backward compatibility)
+// ─────────────────────────────────────────────────────────────
+function renderTeacherChapter(chapter, topics) {
+  renderTeacherChapterTopics(chapter, topics, [], {});
+}
 
-  reader.scrollTop = 0;
+async function viewTeacherTopic(chapterId, topicId) {
+  const row = document.getElementById('topicRow_' + topicId);
+  if (row) viewTeacherTopicInline(topicId, row);
+}
+
+async function viewTopicContent(chapterId, topicId, topicTitle) {
+  const row = document.getElementById('topicRow_' + topicId);
+  if (row) viewTeacherTopicInline(topicId, row);
 }
 
 console.log('✅ teacher-courses.js loaded');
