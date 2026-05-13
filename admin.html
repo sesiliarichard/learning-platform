@@ -6720,14 +6720,14 @@ function toggleStudentSelect(userId, cb) {
 // TEMPLATE SELECTOR
 // ─────────────────────────────────────────────
 function selectTemplate(tpl) {
-    selectedTemplate = tpl;
+    selectedTemplate = tpl; window.selectedTemplate = tpl;
+    localStorage.setItem('asai_selected_template', tpl);
     ['classic','modern','elegant'].forEach(t => {
-        const card  = document.getElementById('tpl-' + t);
-        const badge = document.getElementById('badge-' + t);
-        if (card)  card.style.borderColor = t === tpl ? '#7c3aed' : '#e5e7eb';
-        if (badge) badge.style.display    = t === tpl ? 'flex'    : 'none';
+        const card = document.getElementById('tpl-'+t), badge = document.getElementById('badge-'+t);
+        if (card)  card.style.borderColor = t===tpl ? '#7c3aed' : '#e5e7eb';
+        if (badge) badge.style.display    = t===tpl ? 'flex'    : 'none';
     });
-    showToast(`Template "${tpl.charAt(0).toUpperCase() + tpl.slice(1)}" selected`);
+    _toast(`Template "${tpl.charAt(0).toUpperCase()+tpl.slice(1)}" selected`);
 }
 
 // ─────────────────────────────────────────────

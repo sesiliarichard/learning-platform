@@ -15,32 +15,27 @@
     // ── DB helper ──────────────────────────────────────────────
     function db() { return window.supabaseClient || window.db; }
 
-    // ── SUPABASE TABLE REQUIRED ────────────────────────────────
-    // Run this SQL once in Supabase SQL editor:
-    //
-    //  CREATE TABLE IF NOT EXISTS certificate_templates (
-    //      id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    //      name         text NOT NULL,
-    //      bg_color     text DEFAULT '#1e1b4b',
-    //      title_color  text DEFAULT '#ffffff',
-    //      name_color   text DEFAULT '#ffffff',
-    //      accent_color text DEFAULT '#7c3aed',
-    //      text_color   text DEFAULT '#c7d2fe',
-    //      bg_image_url text,
-    //      created_at   timestamptz DEFAULT now(),
-    //      created_by   uuid REFERENCES profiles(id)
-    //  );
-    //  ALTER TABLE certificate_templates ENABLE ROW LEVEL SECURITY;
-    //  CREATE POLICY "Admin full access" ON certificate_templates
-    //      USING (true) WITH CHECK (true);
 
     // ══════════════════════════════════════════════════════════
     // 1. INJECT "Add Template" BUTTON into the template grid
     // ══════════════════════════════════════════════════════════
-    function injectAddTemplateButton() {
-        const grid = document.querySelector('.template-grid');
-        if (!grid || grid.dataset.customInjected) return;
-        grid.dataset.customInjected = '1';
+ function injectAddTemplateButton() {
+    const grid = document.querySelector('.template-grid');
+    if (!grid || grid.dataset.customInjected) return;
+    grid.dataset.customInjected = '1';
+
+    // Restore previously selected template
+    const saved = localStorage.getItem('asai_selected_template');
+    if (saved) {
+        setTimeout(() => {
+            if (saved.startsWith('custom-')) {
+                const tplId = saved.replace('custom-', '');
+                window.selectCustomTemplate(tplId, '');
+            } else if (typeof selectTemplate === 'function') {
+                selectTemplate(saved);
+            }
+        }, 600);
+    }
 
         // "Add New" card
         const addCard = document.createElement('div');
@@ -163,9 +158,10 @@
     // ══════════════════════════════════════════════════════════
     // 3. SELECT a custom template
     // ══════════════════════════════════════════════════════════
-    window.selectCustomTemplate = function (tplId, tplName) {
-        // Deselect all built-in badges
-        ['classic', 'modern', 'elegant'].forEach(t => {
+         window.selectCustomTemplate = function (tplId, tplName) {
+         localStorage.setItem('asai_selected_template', `custom-${tplId}`);
+         // Deselect all built-in badges
+          ['classic', 'modern', 'elegant'].forEach(t => {
             const b = document.getElementById('badge-' + t);
             if (b) b.style.display = 'none';
             const c = document.getElementById('tpl-' + t);
