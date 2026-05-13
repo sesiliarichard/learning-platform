@@ -1026,18 +1026,24 @@ window.broadcastPresence = async function() {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return;
 
+    // Remove any existing presence channel first
+    const existing = sb.getChannels().find(c => c.topic === 'realtime:online-users');
+    if (existing) await sb.removeChannel(existing);
+
     const channel = sb.channel('online-users', {
-        config: { presence: { key: 'user_id' } }
+        config: { presence: { key: user.id } }
     });
 
     await channel.subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
             await channel.track({
-                user_id:  user.id,
+                user_id: user.id,
                 online_at: new Date().toISOString()
             });
         }
     });
+
+    window._presenceChannel = channel;
 }
 
 window.loadTeacherAnnouncementsUI = async function() {
