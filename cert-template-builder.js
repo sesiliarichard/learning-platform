@@ -544,14 +544,15 @@
                 preview.insertBefore(overlay, preview.firstChild);
             }
             // Always re-apply style (in case it was reset)
-            overlay.style.cssText = `
-                position: absolute;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(5, 10, 30, 0.68);
-                z-index: 2;
-                pointer-events: none;
-                border-radius: 10px;
-            `;
+           overlay.style.cssText = `
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.82);
+        z-index: 2;
+        pointer-events: none;
+        border-radius: 10px;
+         backdrop-filter: blur(1px);
+        `;
 
             // Step 3: Push ALL other children above the overlay (z-index 3+)
             [...preview.children].forEach(child => {
@@ -626,9 +627,10 @@
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (e) => {
-            window._tplBgImageDataUrl = e.target.result;
-            window._tplBgImageFile    = file;
-            const thumb = document.getElementById('tplImagePreviewThumb');
+        window._tplBgImageDataUrl = e.target.result;
+        window._tplBgImageFile    = file;
+        window._tplBgType         = 'image';
+        const thumb = document.getElementById('tplImagePreviewThumb');
             const img   = document.getElementById('tplThumbImg');
             if (thumb) thumb.style.display = 'block';
             if (img)   img.src = e.target.result;
