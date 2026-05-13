@@ -529,51 +529,35 @@
         if (acHex) acHex.value = accentColor;
 
    // Background
-        if (bgType === 'image' && imageUrl) {
-            // Step 1: Set background image on preview
-            preview.style.backgroundImage    = `url('${imageUrl}')`;
-            preview.style.backgroundSize     = 'cover';
-            preview.style.backgroundPosition = 'center';
-            preview.style.backgroundRepeat   = 'no-repeat';
+       if (bgType === 'image' && imageUrl) {
+    // Show ONLY the image — hide all ASAI content inside preview
+    preview.style.backgroundImage    = `url('${imageUrl}')`;
+    preview.style.backgroundSize     = 'cover';
+    preview.style.backgroundPosition = 'center';
+    preview.style.backgroundRepeat   = 'no-repeat';
 
-            // Step 2: Add dark overlay as FIRST child to cover image's own text
-            let overlay = document.getElementById('prevImageOverlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'prevImageOverlay';
-                preview.insertBefore(overlay, preview.firstChild);
-            }
-            // Always re-apply style (in case it was reset)
-           overlay.style.cssText = `
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.82);
-        z-index: 2;
-        pointer-events: none;
-        border-radius: 10px;
-         backdrop-filter: blur(1px);
-        `;
+    // Remove any old overlay
+    document.getElementById('prevImageOverlay')?.remove();
 
-            // Step 3: Push ALL other children above the overlay (z-index 3+)
-            [...preview.children].forEach(child => {
-                if (child.id === 'prevImageOverlay') return;
-                child.style.position = 'relative';
-                child.style.zIndex   = '3';
-            });
+    // Hide all child elements — the image IS the certificate
+    [...preview.children].forEach(child => {
+        child.style.display = 'none';
+    });
 
-        } else {
-            // Color background — remove overlay and reset children
-            preview.style.backgroundImage = 'none';
-            preview.style.background      = `linear-gradient(135deg, ${bgColor}, ${accentColor})`;
+} else {
+    // Color background — show all ASAI content
+    preview.style.backgroundImage = 'none';
+    preview.style.background      = `linear-gradient(135deg, ${bgColor}, ${accentColor})`;
 
-            const overlay = document.getElementById('prevImageOverlay');
-            if (overlay) overlay.remove();
+    document.getElementById('prevImageOverlay')?.remove();
 
-            [...preview.children].forEach(child => {
-                child.style.position = '';
-                child.style.zIndex   = '';
-            });
-        }
+    // Restore all child elements
+    [...preview.children].forEach(child => {
+        child.style.display  = '';
+        child.style.position = '';
+        child.style.zIndex   = '';
+    });
+}
         // Inner border
         const innerBorder = document.getElementById('prevInnerBorder');
         if (innerBorder) {
