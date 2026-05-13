@@ -2628,12 +2628,12 @@ async function loadCourseNotes(courseId) {
 
      // Sort chapters by order_num
 const sortedChapters = [...chapters].sort((a, b) =>
-    (a.order_num || 999) - (b.order_num || 999)
+    (a.order_num ?? 999) - (b.order_num ?? 999)
 );
 
 sortedChapters.forEach(chapter => {
     const sortedTopics = (chapter.topics || [])
-        .sort((a, b) => (a.order_num || 999) - (b.order_num || 999));
+        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
 
     sortedTopics.forEach(topic => {
         const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
@@ -2646,7 +2646,7 @@ sortedChapters.forEach(chapter => {
             completed: false,
             content: topic.content || '<p>No content yet.</p>',
             chapterTitle: chapter.title,
-            chapterOrderNum: chapter.order_num || 999,
+            chapterOrderNum: chapter.order_num ?? 999,
             weekLabel: 'Week ' + (chapter.order_num || '?')
         });
     });
