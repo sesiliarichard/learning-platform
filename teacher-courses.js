@@ -194,7 +194,7 @@ async function loadContentChapters() {
 
   // Sort chapters by order_num
   const sortedChapters = [...chapters].sort((a, b) =>
-    (a.order_num || 999) - (b.order_num || 999)
+    (a.order_num ?? 999) - (b.order_num ?? 999)
   );
 
   const chapterIds = sortedChapters.map(ch => ch.id);
@@ -217,7 +217,7 @@ async function loadContentChapters() {
 
   // Sort topics within each chapter
   Object.keys(topicMap).forEach(chId => {
-    topicMap[chId].sort((a, b) => (a.order_num || 999) - (b.order_num || 999));
+    topicMap[chId].sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
   });
 
   // Build layout: chapter sidebar on left, reader on right

@@ -3029,7 +3029,7 @@ async function handleCreateChapter(event) {
                 content:   content,
                 duration:  durationInput?.value || '15',
                 category:  categorySelect?.value || 'basics',
-                order_num: topics.length   // sequential, no gaps
+                order_num: topics.length + 1  // sequential, no gaps
             });
         }
     });

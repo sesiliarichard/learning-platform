@@ -81,7 +81,7 @@ export async function getChaptersByCourse(courseId) {
 return data.map(chapter => ({
     ...chapter,
     topics: (chapter.topics || []).sort((a, b) =>
-        (a.order_num || 999) - (b.order_num || 999)
+       (a.order_num ?? 999) - (b.order_num ?? 999)
     )
   }))
 }
@@ -172,7 +172,7 @@ export async function createChapterWithTopics(courseId, chapterData, topicsArray
       video_url:  topic.video_url  || null,
       file_url:   topic.file_url   || null,
       duration:   topic.duration   || null,
-      order_num:  topic.order_num  || index + 1
+      order_num: topic.order_num ?? (index + 1)
     }))
 
     const { error: topicsError } = await supabase
@@ -205,7 +205,7 @@ export async function addTopicToChapter(chapterId, courseId, topicData) {
       video_url:  topicData.video_url || null,
       file_url:   topicData.file_url  || null,
       duration:   topicData.duration  || null,
-      order_num:  topicData.order_num || 1
+      order_num: topicData.order_num ?? 1
     })
     .select()
      .maybeSingle()
