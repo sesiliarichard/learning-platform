@@ -2602,7 +2602,7 @@ async function loadCourseNotes(courseId) {
     const { data: chapters, error } = await db
     .from('chapters')
     .select(`
-        id, title, description,
+        id, title, description, order_num,
         topics ( id, title, content, video_url, file_url, duration, category, order_num )
     `)
     .eq('course_id', courseId)
@@ -2700,7 +2700,7 @@ function loadChapterList() {
             groups[key] = {
                 label:    key,
                 weekLabel: note.weekLabel || '',
-                orderNum: note.chapterOrderNum || 999,
+                orderNum: note.chapterOrderNum ?? 999,
                 topics:   []
             };
             groupOrder.push(key);
@@ -2710,7 +2710,7 @@ function loadChapterList() {
 
     // Sort groups by chapter order_num
     groupOrder.sort((a, b) =>
-        (groups[a].orderNum || 999) - (groups[b].orderNum || 999)
+        (groups[a].orderNum ?? 999) - (groups[b].orderNum ?? 999)
     );
 
     groupOrder.forEach(key => {

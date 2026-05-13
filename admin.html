@@ -2062,7 +2062,7 @@ async function handleAddCourse(event) {
             title:       formData.get('title'),
             description: description,
             teacher_id:  formData.get('teacherId') || null,
-            order_num:   parseInt(formData.get('orderNum')) || 999,
+            order_num:   parseInt(formData.get('orderNum')) || 1,
         })
         .select();
 
@@ -2999,7 +2999,7 @@ async function handleCreateChapter(event) {
 
     const chapterTitle = formData.get('chapterTitle')?.trim();
     const chapterDesc  = formData.get('chapterDescription')?.trim() || '';
-    const orderNum     = parseInt(formData.get('chapterOrderNum')) || 999;
+    const orderNum     = parseInt(formData.get('chapterOrderNum')) || 1;
 
     if (!chapterTitle) {
         showToast('Please enter a chapter title (Week)', 'error');
@@ -3141,14 +3141,31 @@ async function loadChapters() {
         const chapterCard = document.createElement('div');
         chapterCard.className = 'chapter-item';
 
-        const topicsHTML = sortedTopics.map(topic => `
-            <div class="topic-item">
-                <div>
-                    <div style="font-weight:600;margin-bottom:5px;">${topic.title}</div>
-                    <div style="font-size:12px;color:#6b7280;">
-                        <span class="badge active">${topic.category || 'basics'}</span>
-                        ${topic.duration} min read
+        const topicsHTML = sortedTopics.map((topic, idx) => `
+            <div class="topic-item" data-topic-id="${topic.id}" style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                    <span style="background:#e5e7eb;color:#374151;font-weight:700;font-size:11px;
+                                 min-width:24px;height:24px;border-radius:50%;display:flex;
+                                 align-items:center;justify-content:center;flex-shrink:0;">
+                        ${idx + 1}
+                    </span>
+                    <div style="min-width:0;">
+                        <div style="font-weight:600;margin-bottom:5px;">${topic.title}</div>
+                        <div style="font-size:12px;color:#6b7280;">
+                            <span class="badge active">${topic.category || 'basics'}</span>
+                            ${topic.duration} min read
+                        </div>
                     </div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+                    <button class="action-btn" title="Move up" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;${idx === 0 ? 'opacity:0.3;pointer-events:none;' : ''}"
+                        onclick="moveTopicOrder('${chapter.id}', '${topic.id}', 'up')">
+                        <i class="fas fa-arrow-up" style="font-size:11px;"></i>
+                    </button>
+                    <button class="action-btn" title="Move down" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;${idx === sortedTopics.length - 1 ? 'opacity:0.3;pointer-events:none;' : ''}"
+                        onclick="moveTopicOrder('${chapter.id}', '${topic.id}', 'down')">
+                        <i class="fas fa-arrow-down" style="font-size:11px;"></i>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -3195,6 +3212,52 @@ async function loadChapters() {
 function loadAdminChapters(courseId) {
     document.getElementById('courseSelectNotes').value = courseId;
     loadChapters();
+}
+
+// Reorder a topic up or down within its chapter
+async function moveTopicOrder(chapterId, topicId, direction) {
+    try {
+        // Get all topics in this chapter sorted by order_num
+        const { data: topics, error } = await db
+            .from('topics')
+            .select('id, order_num')
+            .eq('chapter_id', chapterId)
+            .order('order_num', { ascending: true });
+
+        if (error) throw error;
+        if (!topics || topics.length < 2) return;
+
+        // Find the index of the topic to move
+        const idx = topics.findIndex(t => t.id === topicId);
+        if (idx === -1) return;
+        if (direction === 'up' && idx === 0) return;
+        if (direction === 'down' && idx === topics.length - 1) return;
+
+        // Swap with neighbor
+        const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+        const currentOrder = topics[idx].order_num ?? idx + 1;
+        const swapOrder = topics[swapIdx].order_num ?? swapIdx + 1;
+
+        // Update both topics in the database
+        const { error: e1 } = await db
+            .from('topics')
+            .update({ order_num: swapOrder })
+            .eq('id', topics[idx].id);
+        if (e1) throw e1;
+
+        const { error: e2 } = await db
+            .from('topics')
+            .update({ order_num: currentOrder })
+            .eq('id', topics[swapIdx].id);
+        if (e2) throw e2;
+
+        // Reload the chapter list to reflect the new order
+        await loadChapters();
+        showToast('Topic order updated');
+    } catch (err) {
+        console.error('moveTopicOrder error:', err.message);
+        showToast('Failed to reorder: ' + err.message, 'error');
+    }
 }
 
 async function togglePublishChapter(chapterId, currentlyPublished) {
