@@ -1105,8 +1105,8 @@ body { visibility: hidden }
 
     <!-- Table -->
     <div class="card table-container">
-        <div class="table-wrapper">
-            <table class="data-table hire-table">
+    <div class="table-wrapper">
+        <table class="data-table hire-table">
                 <thead>
                     <tr class="table-header-hire">
                         <th>Company</th>
@@ -9897,51 +9897,60 @@ function renderHireTable(rows) {
         const needs   = (r.talent_needs || '—').substring(0, 60) + ((r.talent_needs || '').length > 60 ? '…' : '');
         const initials = (r.company_name || '?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
 
-        return `<tr style="border-bottom:1px solid #f3f4f6;"
-                    onmouseenter="this.style.background='#fafafa'"
-                    onmouseleave="this.style.background=''">
-            <td style="padding:12px 16px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <div style="width:36px;height:36px;min-width:36px;border-radius:10px;background:${r.logo_url ? 'white' : 'linear-gradient(135deg,#2563eb,#1d4ed8)'};border:${r.logo_url ? '1.5px solid #e5e7eb' : 'none'};display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:13px;overflow:hidden;">
-                    ${r.logo_url ? `<img src="${r.logo_url}" style="width:100%;height:100%;object-fit:contain;border-radius:8px;">` : initials}
-               </div>
-                    <div style="font-weight:700;color:#1f2937;">${r.company_name || '—'}</div>
-                </div>
-            </td>
-            <td style="padding:12px 16px;">
-                <div style="font-weight:600;color:#374151;">${r.first_name || ''} ${r.last_name || ''}</div>
-                <div style="font-size:12px;color:#6b7280;">${r.email || '—'}</div>
-                <div style="font-size:12px;color:#6b7280;">${r.contact || '—'}</div>
-            </td>
-            <td style="padding:12px 16px;color:#6b7280;font-size:13px;">${r.industry || '—'}</td>
-            <td style="padding:12px 16px;color:#6b7280;font-size:13px;">${r.country || '—'}</td>
-            <td style="padding:12px 16px;color:#374151;font-size:13px;max-width:200px;">${needs}</td>
-            <td style="padding:12px 16px;text-align:center;">
-                <select onchange="updateHireStatus('${r.id}', this.value)"
-                    style="padding:5px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;font-weight:700;font-family:inherit;outline:none;background:white;cursor:pointer;">
-                    <option value="pending"   ${status==='pending'   ?'selected':''}>⏳ Pending</option>
-                    <option value="contacted" ${status==='contacted' ?'selected':''}>📞 Contacted</option>
-                    <option value="closed"    ${status==='closed'    ?'selected':''}>✅ Closed</option>
-                </select>
-            </td>
-            <td style="padding:12px 16px;">
-                <span style="font-size:11px;font-family:monospace;background:#f3f4f6;padding:3px 8px;border-radius:6px;color:#374151;">
-                    ${r.ref_number || '—'}
-                </span>
-            </td>
-            <td style="padding:12px 16px;text-align:center;">
-                <div style="display:flex;gap:5px;justify-content:center;">
-                    <button onclick="viewHireRequest('${r.id}')"
-                        style="padding:6px 10px;background:#dbeafe;color:#2563eb;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button onclick="deleteHireRequest('${r.id}')"
-                        style="padding:6px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:7px;cursor:pointer;font-size:12px;font-weight:700;">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>`;
+    return `<tr style="border-bottom:1px solid #f3f4f6;"
+            onmouseenter="this.style.background='#fafafa'"
+            onmouseleave="this.style.background=''">
+    <td style="padding:10px 12px;min-width:120px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:34px;height:34px;min-width:34px;border-radius:8px;
+                        background:linear-gradient(135deg,#2563eb,#1d4ed8);
+                        display:flex;align-items:center;justify-content:center;
+                        color:white;font-weight:800;font-size:12px;">
+                ${r.logo_url 
+                    ? `<img src="${r.logo_url}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`
+                    : initials}
+            </div>
+            <div style="font-weight:700;color:#1f2937;font-size:13px;">${r.company_name || '—'}</div>
+        </div>
+    </td>
+    <td style="padding:10px 12px;min-width:140px;">
+        <div style="font-weight:600;color:#374151;font-size:13px;">${r.first_name || ''} ${r.last_name || ''}</div>
+        <div style="font-size:11px;color:#6b7280;">${r.email || '—'}</div>
+    </td>
+    <td style="padding:10px 12px;color:#6b7280;font-size:12px;min-width:100px;">${r.industry || '—'}</td>
+    <td style="padding:10px 12px;color:#6b7280;font-size:12px;min-width:90px;">${r.country || '—'}</td>
+    <td style="padding:10px 12px;color:#374151;font-size:12px;max-width:160px;">${needs}</td>
+    <td style="padding:10px 12px;min-width:140px;">
+        <select onchange="updateHireStatus('${r.id}', this.value)"
+            style="width:100%;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;
+                   font-size:12px;font-weight:700;font-family:inherit;outline:none;
+                   background:white;cursor:pointer;">
+            <option value="pending"   ${status==='pending'   ?'selected':''}>⏳ Pending</option>
+            <option value="contacted" ${status==='contacted' ?'selected':''}>📞 Contacted</option>
+            <option value="closed"    ${status==='closed'    ?'selected':''}>✅ Closed</option>
+        </select>
+    </td>
+    <td style="padding:10px 12px;min-width:90px;">
+        <span style="font-size:11px;font-family:monospace;background:#f3f4f6;
+                     padding:3px 6px;border-radius:5px;color:#374151;">
+            ${r.ref_number || '—'}
+        </span>
+    </td>
+    <td style="padding:10px 12px;min-width:80px;text-align:center;">
+        <div style="display:flex;gap:4px;justify-content:center;">
+            <button onclick="viewHireRequest('${r.id}')"
+                style="padding:5px 8px;background:#dbeafe;color:#2563eb;border:none;
+                       border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;">
+                <i class="fas fa-eye"></i>
+            </button>
+            <button onclick="deleteHireRequest('${r.id}')"
+                style="padding:5px 8px;background:#fee2e2;color:#dc2626;border:none;
+                       border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </td>
+</tr>`;
     }).join('');
 }
 
