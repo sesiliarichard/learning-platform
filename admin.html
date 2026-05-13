@@ -2987,56 +2987,69 @@ async function handleCreateChapter(event) {
 
     const formData = new FormData(form);
 
-    const courseId = formData.get('courseId');
+  const courseId = formData.get('courseId');
     if (!courseId) { showToast('Please select a course', 'error'); return; }
 
-   // Prevent double submission
-        const submitBtn = document.querySelector('#createChapterForm button[type="submit"]');
-        if (submitBtn) {
-            if (submitBtn.dataset.saving === 'true') return;
-            submitBtn.dataset.saving = 'true';
-        }
+    // Prevent double submission
+    const submitBtn = document.querySelector('#createChapterForm button[type="submit"]');
+    if (submitBtn) {
+        if (submitBtn.dataset.saving === 'true') return;
+        submitBtn.dataset.saving = 'true';
+    }
 
-        const topicEditors = document.querySelectorAll('#topicsContainer .topic-editor');
-        const topics = [];
+    const chapterTitle = formData.get('chapterTitle')?.trim();
+    const chapterDesc  = formData.get('chapterDescription')?.trim() || '';
+    const orderNum     = parseInt(formData.get('chapterOrderNum')) || 999;
 
-        topicEditors.forEach((editor) => {
-        const idx = editor.getAttribute('data-topic-index');
-        const titleInput = editor.querySelector(`input[name="topics[${idx}][title]"]`);
-        const contentEditor = editor.querySelector(`#editor-${idx}`);
-        const durationInput = editor.querySelector(`input[name="topics[${idx}][duration]"]`);
-        const categorySelect = editor.querySelector(`select[name="topics[${idx}][category]"]`);
+    if (!chapterTitle) {
+        showToast('Please enter a chapter title (Week)', 'error');
+        form.dataset.submitting = 'false';
+        if (submitBtn) submitBtn.dataset.saving = 'false';
+        return;
+    }
 
-          let rawContent = contentEditor.innerHTML;
-          let content = rawContent.trim();
-           // Check if content is empty or just has empty paragraph tags
-           if (content === '' || content === '<p><br></p>' || content === '<p> </p>' || content === '<p></p>' || content === '<br>') {
-           content = '';
-       }
-        if (titleInput && contentEditor && titleInput.value.trim()) {
+    const topicEditors = document.querySelectorAll('#topicsContainer .topic-editor');
+    const topics = [];
+
+    topicEditors.forEach((editorDiv) => {
+        const idx = editorDiv.getAttribute('data-topic-index');
+        const titleInput     = editorDiv.querySelector(`input[name="topics[${idx}][title]"]`);
+        const contentEditor  = editorDiv.querySelector(`#editor-${idx}`);
+        const durationInput  = editorDiv.querySelector(`input[name="topics[${idx}][duration]"]`);
+        const categorySelect = editorDiv.querySelector(`select[name="topics[${idx}][category]"]`);
+
+        if (titleInput?.value?.trim() && contentEditor) {
+            let content = contentEditor.innerHTML.trim();
+            if (content === '<br>' || content === '<p><br></p>' || content === '') {
+                content = '';
+            }
+
             topics.push({
-                title: titleInput.value.trim(),
-                content: contentEditor.innerHTML,  
-                duration: durationInput?.value || '15',
-                category: categorySelect?.value || 'basics',
+                title:     titleInput.value.trim(),
+                content:   content,
+                duration:  durationInput?.value || '15',
+                category:  categorySelect?.value || 'basics',
+                order_num: topics.length   // sequential, no gaps
             });
         }
     });
 
     if (topics.length === 0) {
         showToast('Please add at least one topic', 'error');
+        form.dataset.submitting = 'false';
+        if (submitBtn) submitBtn.dataset.saving = 'false';
         return;
     }
 
     try {
         // 1. Insert chapter
-const { data: chapterData, error: chapterError } = await db
+        const { data: chapterData, error: chapterError } = await db
             .from('chapters')
             .insert({
                 course_id:   courseId,
-                title:       formData.get('chapterTitle'),
-                description: formData.get('chapterDescription') || '',
-                order_num:   parseInt(formData.get('chapterOrderNum')) || 999,
+                title:       chapterTitle,
+                description: chapterDesc,
+                order_num:   orderNum,
                 published:   false
             })
             .select('id');
@@ -5790,19 +5803,16 @@ function openAddCourseModal() {
 
 function openCreateChapterModal() {
     topicCounter = 0;
-    const container = document.getElementById('topicsContainer');
-    if (container) container.innerHTML = '';
 
     const form = document.getElementById('createChapterForm');
     if (form) {
         form.reset();
         form.dataset.submitting = 'false';
-        // Remove any old listeners and add fresh one
-        const newForm = form.cloneNode(true);
-        form.parentNode.replaceChild(newForm, form);
-        document.getElementById('createChapterForm')
-            .addEventListener('submit', handleCreateChapter);
+        form.onsubmit = handleCreateChapter;
     }
+
+    const container = document.getElementById('topicsContainer');
+    if (container) container.innerHTML = '';
 
     addNewTopic();
     document.getElementById('createChapterModal')?.classList.add('active');
