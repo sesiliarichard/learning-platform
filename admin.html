@@ -3067,14 +3067,14 @@ async function handleCreateChapter(event) {
 
         // 2. Insert topics
         const topicsToInsert = topics.map((t, i) => ({
-            chapter_id: chapter.id,
-            course_id: courseId,
-            title: t.title,
-            content: t.content,
-            duration: t.duration,
-            category: t.category,
-            order_num: i
-        }));
+    chapter_id: chapter.id,
+    course_id: courseId,
+    title: t.title,
+    content: t.content,
+    duration: t.duration,
+    category: t.category,
+    order_num: t.order_num  
+}));
 
         const { error: topicsError } = await db
             .from('topics')
@@ -3133,7 +3133,11 @@ async function loadChapters() {
     container.innerHTML = '';
 
     chapters.forEach(chapter => {
-        const sortedTopics = (chapter.topics || []).sort((a, b) => a.order_num - b.order_num);
+        const sortedTopics = (chapter.topics || []).sort((a, b) => {
+        const aNum = (a.order_num !== null && a.order_num !== undefined) ? a.order_num : 999;
+        const bNum = (b.order_num !== null && b.order_num !== undefined) ? b.order_num : 999;
+         return aNum - bNum;
+      });
         const chapterCard = document.createElement('div');
         chapterCard.className = 'chapter-item';
 
