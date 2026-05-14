@@ -118,7 +118,7 @@ async function createCourse({ title, description, durationWeeks, instructor, thu
 // ─────────────────────────────────────────────
 // 4. UPDATE COURSE (Admin only)
 // ─────────────────────────────────────────────
-async function updateCourse(courseId, { title, description, durationWeeks, instructor, status }) {
+async function updateCourse(courseId, { title, description, durationWeeks, instructor, status, orderNum }) {
     try {
         // FIX: Clean the description properly
         let cleanDescription = description || '';
@@ -154,6 +154,7 @@ async function updateCourse(courseId, { title, description, durationWeeks, instr
                 duration_weeks: durationWeeks,
                 instructor:     instructor?.trim(),
                 status:         status || 'active',
+                order_num:      orderNum,
                 updated_at:     new Date().toISOString()
             })
             .eq('id', courseId)
@@ -541,6 +542,8 @@ async function openEditCourseModal(courseId) {
     titleEl.value      = course.title || '';
     durationEl.value   = course.duration_weeks || '';
     instructorEl.value = course.instructor || '';
+    const orderEl = document.getElementById('displayOrder');
+    if (orderEl) orderEl.value = course.order_num || 1;
     
     // Clear and set description in editor
     const editor = document.getElementById('courseDescriptionEditor');
@@ -588,11 +591,12 @@ async function openEditCourseModal(courseId) {
         if (descHidden) descHidden.value = description;
         
         const fd = new FormData(e.target);
-        const r = await updateCourse(window.editingCourseId, {
+       const r = await updateCourse(window.editingCourseId, {
             title:         fd.get('title'),
             description:   description,
             durationWeeks: parseInt(fd.get('duration')) || 12,
-            instructor:    fd.get('instructor')
+            instructor:    fd.get('instructor'),
+            orderNum:      parseInt(fd.get('order_num')) || 1
         });
         
         if (!r.success) { 

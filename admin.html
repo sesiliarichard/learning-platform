@@ -1836,6 +1836,10 @@ let database = {
 window.currentQuizQuestions = [];
 let topicCounter = 1;
 
+// ── DEFAULT EDITOR FONT ──
+const EDITOR_DEFAULT_FONT = "'Plus Jakarta Sans', sans-serif";
+const EDITOR_DEFAULT_SIZE = '14px';
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -10716,15 +10720,26 @@ async function deleteVideo(id) {
                 }
             });
             
-            editor.addEventListener('paste', function() {
-                setTimeout(() => {
-                    const defaultFont = this.getAttribute('data-default-font');
-                    const defaultSize = this.getAttribute('data-default-size');
-                    if (defaultFont || defaultSize) {
-                        forceApplyFontToEditor(this, defaultFont, defaultSize);
-                    }
-                }, 10);
-            });
+          editor.addEventListener('paste', function(e) {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    const span = document.createElement('span');
+    span.style.fontFamily = EDITOR_DEFAULT_FONT;
+    span.style.fontSize   = EDITOR_DEFAULT_SIZE;
+    span.textContent = text;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(span);
+        range.setStartAfter(span);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else {
+        this.appendChild(span);
+    }
+});
         });
     }
     
