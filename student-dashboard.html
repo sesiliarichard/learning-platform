@@ -1611,17 +1611,19 @@ window.coursesData = coursesData;
 async function loadCoursesFromDB() {
     const { data: courses } = await db
         .from('courses')
-        .select('id, title, description');
+        .select('id, title, description, order_num')
+        .order('order_num', { ascending: true });
     
     if (!courses) return;
     
-    courses.forEach(course => {
+  courses.forEach(course => {
         coursesData[course.id] = {
             id: course.id,
             title: course.title,
             instructor: 'Instructor',
             description: course.description || '',
             progress: 0,
+            order_num: course.order_num ?? 999,
             notes: [],
             videos: [],
             quizzes: [],
