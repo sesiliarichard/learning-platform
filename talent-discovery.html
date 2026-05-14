@@ -1163,7 +1163,7 @@
         const fromHire = urlParams.get('from') === 'hire';
         
         // If ANY of these exist, user is a hirer
-        const isHirer = !!(hasHireRef || hasHireId || hasHireData || fromHire);
+      const isHirer = !!(fromHire || localStorage.getItem('is_hirer') === 'true');
         
         console.log('🔍 Checking if Hirer:', isHirer);
         console.log('  - hire_request_ref:', hasHireRef);
@@ -1373,7 +1373,7 @@
     const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
     
     // User is Hirer if ANY of these are true
-    const isHirer = isHirerFromUrl || hasHireRef || hasHireId || hasHireData || isHirerFlag;
+   const isHirer = isHirerFromUrl || isHirerFlag;
     
     // User is Talent only if explicitly set and not a hirer
     const isTalent = !isHirer && (localStorage.getItem('talent_profile_id') || localStorage.getItem('is_talent') === 'true');

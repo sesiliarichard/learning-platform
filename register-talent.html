@@ -914,8 +914,13 @@
       }
   // Save profile ID so they never see the form again
       if (data?.id) {
-        localStorage.setItem('talent_profile_id', data.id);
-      }
+    localStorage.setItem('talent_profile_id', data.id);
+    localStorage.setItem('is_talent', 'true');
+    localStorage.removeItem('is_hirer');
+    localStorage.removeItem('hire_request_ref');
+    localStorage.removeItem('hire_request_id');
+    localStorage.removeItem('hire_request_data');
+}
 
       document.getElementById('formContainer').style.display = 'none';
       document.getElementById('profilePreview').style.display  = 'block';
