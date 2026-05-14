@@ -1283,18 +1283,33 @@ function loadEditMode() {
 }
 
 // Add this function - it checks for existing profile and shows preview
-function showExistingProfileIfAny() {
+async function showExistingProfileIfAny() {
   console.log('=== showExistingProfileIfAny called ===');
   const savedRef = localStorage.getItem('hire_request_ref');
   const savedData = localStorage.getItem('hire_request_data');
+  const savedId = localStorage.getItem('hire_request_id');
   const editingIdValue = document.getElementById('editingId').value;
-  
-  console.log('savedRef:', savedRef);
-  console.log('savedData exists:', !!savedData);
-  console.log('editingIdValue:', editingIdValue);
-  
-  // Check if we have saved data AND no active editing
+
   if (savedRef && savedData && !editingIdValue) {
+    // Verify record still exists in database
+    let query = window.supabaseClient.from('hire_requests').select('id');
+    if (savedId) {
+      query = query.eq('id', savedId);
+    } else {
+      query = query.eq('ref_number', savedRef);
+    }
+    const { data: dbRecord } = await query.maybeSingle();
+
+    if (!dbRecord) {
+      // Record deleted from DB — clear localStorage and show form
+      localStorage.removeItem('hire_request_ref');
+      localStorage.removeItem('hire_request_data');
+      localStorage.removeItem('hire_request_id');
+      localStorage.removeItem('hire_logo_url');
+      localStorage.removeItem('is_hirer');
+      console.log('Record not found in DB - cleared localStorage');
+      return false;
+    }
     try {
       const prev = JSON.parse(savedData);
       console.log('Parsed data - fullName:', prev.fullName);
