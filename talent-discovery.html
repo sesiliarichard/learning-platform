@@ -1463,10 +1463,7 @@
     const expLabel = EXP_LABELS[talent.experience] || talent.experience;
 
     // Extract skill keywords from role + bio (simple heuristic)
-    const SKILL_WORDS = ['Python','Machine Learning','Deep Learning','TensorFlow','NLP','PyTorch',
-      'SQL','Data Analysis','Scikit-learn','Research','AI','Computer Vision','Data Science'];
-    const combined = `${talent.role} ${talent.bio}`.toLowerCase();
-    const skills = SKILL_WORDS.filter(s => combined.includes(s.toLowerCase())).slice(0, 5);
+    const skills = [];
 
 
     return `
