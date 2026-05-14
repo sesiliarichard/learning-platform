@@ -599,6 +599,31 @@
   .hidden {
     display: none;
 }
+/* ===== SKILLS TAGS PREVIEW ===== */
+.skills-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+    min-height: 28px;
+}
+
+.skill-preview-tag {
+    background: #e8f4ff;
+    color: #0077cc;
+    border: 1px solid rgba(0,153,255,0.2);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 10px;
+}
+
+.skills-hint {
+    font-size: 11px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
 </style>
 </head>
 <body>
@@ -651,6 +676,13 @@
       <div class="form-group">
         <label>Expertise / Short Bio <span class="required">*</span></label>
         <textarea placeholder="Briefly describe your skills, background, and what you bring to the table..." id="bio"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Key Skills</label>
+        <input type="text" id="skills" placeholder="e.g. Python, Machine Learning, NLP, Data Analysis"/>
+        <div class="skills-hint">Separate skills with commas</div>
+        <div class="skills-preview" id="skillsPreview"></div>
       </div>
 
       <div class="form-group">
@@ -734,9 +766,13 @@
           <div class="preview-value"><span class="exp-chip" id="previewExp">—</span></div>
         </div>
       </div>
-      <div class="preview-section">
+     <div class="preview-section">
         <div class="preview-section-title">Bio / Expertise</div>
         <div class="preview-value" id="previewBio">—</div>
+      </div>
+      <div class="preview-section" id="previewSkillsSection" >
+        <div class="preview-section-title">Skills</div>
+        <div class="preview-value" id="previewSkills"></div>
       </div>
       <div class="preview-row">
         <div class="preview-section" id="projectSection" >
@@ -786,7 +822,15 @@
     }
    
 
-    document.getElementById('headshot').addEventListener('change', function () {
+   document.getElementById('skills').addEventListener('input', function() {
+    const preview = document.getElementById('skillsPreview');
+    const tags = this.value.split(',').map(s => s.trim()).filter(Boolean);
+    preview.innerHTML = tags.map(t =>
+        `<span class="skill-preview-tag">${t}</span>`
+    ).join('');
+});
+
+document.getElementById('headshot').addEventListener('change', function () {
       const el = document.getElementById('headshotName');
       if (this.files[0]) { el.textContent = '✔ ' + this.files[0].name; el.style.display = 'block'; }
       // Live avatar preview
@@ -856,8 +900,9 @@
       const experience   = expEl.value;
       const expText      = expEl.selectedOptions[0]?.text || '';
       const headshotFile  = document.getElementById('headshot').files[0];
+      const skills        = document.getElementById('skills').value.trim();
 
-      if (!name || !email || !countryCode || !role || !bio || !experience || !headshotFile) {
+      if (!name || !email || !countryCode || !role || !bio || !experience || !headshotFile || !skills) {
         showAlert('error', 'Please fill in all required fields and upload your headshot.');
         return;
       }
@@ -866,7 +911,7 @@
 
  // ── Get project data & call Supabase via talent-hub.js ─
       const projectData = getProjectData();
-      const { data, error } = await TalentHub.submitTalentProfile({
+     const { data, error } = await TalentHub.submitTalentProfile({
         full_name:    name,
         email,
         country_code: countryCode,
@@ -874,6 +919,7 @@
         role,
         bio,
         experience,
+        skills:       skills || null,
         headshot_file: headshotFile,
         project_value: projectData.value || null,
       });
@@ -894,6 +940,13 @@
       document.getElementById('previewExp').textContent      = expText;
       document.getElementById('previewBio').textContent      = bio;
       document.getElementById('previewHeadshot').textContent = headshotFile.name;
+
+      if (skills) {
+        const tags = skills.split(',').map(s => s.trim()).filter(Boolean);
+        document.getElementById('previewSkills').innerHTML = tags
+            .map(t => `<span class="skill-preview-tag">${t}</span>`).join('');
+        document.getElementById('previewSkillsSection').style.display = 'block';
+      }
 
       const initials = name.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
       const avatarEl = document.getElementById('previewAvatar');
@@ -1014,6 +1067,7 @@ async function updateTalentProfile(profileId) {
   
   setLoading(true);
   
+const skillsVal = document.getElementById('skills').value.trim();
   const updates = {
     full_name: name,
     email: email,
@@ -1021,7 +1075,8 @@ async function updateTalentProfile(profileId) {
     bio: bio,
     experience: experience,
     country_code: countryCode,
-    country_name: countryName
+    country_name: countryName,
+    skills: skillsVal || null
   };
   
   const headshotFile = document.getElementById('headshot').files[0];
@@ -1137,6 +1192,12 @@ async function updateTalentProfile(profileId) {
   document.getElementById('role').value = profile.role || '';
   document.getElementById('bio').value = profile.bio || '';
   document.getElementById('experience').value = profile.experience || '';
+  document.getElementById('skills').value = profile.skills || '';
+  if (profile.skills) {
+    const tags = profile.skills.split(',').map(s => s.trim()).filter(Boolean);
+    document.getElementById('skillsPreview').innerHTML = tags
+        .map(t => `<span class="skill-preview-tag">${t}</span>`).join('');
+  }
   
   // Set country in dropdown - SAFER VERSION
   const countrySelect = document.getElementById('country');

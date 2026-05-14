@@ -11,24 +11,42 @@
   const BUCKET        = 'asai-resources';
   const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
 
-  const ALLOWED_MIME = {
+const ALLOWED_MIME = {
     pdfs:     ['application/pdf'],
-    datasets: ['text/csv', 'application/vnd.ms-excel',
-               'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-               'application/json', 'text/plain'],
-    code:     ['application/zip', 'application/x-zip-compressed',
-               'application/octet-stream', 'text/plain',
-               'application/javascript', 'text/x-python'],
+    datasets: [
+      'text/csv',
+      'text/plain',
+      'application/json',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/octet-stream'
+    ],
+    code:     [
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/octet-stream',
+      'text/plain',
+      'application/javascript',
+      'text/x-python',
+      'text/x-r',
+      'text/x-r-source',
+      'application/json'
+    ],
+    notebooks: [
+      'application/json',
+      'application/octet-stream',
+      'text/plain'
+    ],
     links:    []
   };
 
   const TYPE_META = {
-    pdfs:     { icon: 'fa-file-pdf',          color: '#ef4444', label: 'PDF'     },
-    datasets: { icon: 'fa-database',          color: '#3b82f6', label: 'Dataset' },
-    code:     { icon: 'fa-code',              color: '#10b981', label: 'Code'    },
-    links:    { icon: 'fa-external-link-alt', color: '#f59e0b', label: 'Link'    }
+    pdfs:      { icon: 'fa-file-pdf',          color: '#ef4444', label: 'PDF'      },
+    datasets:  { icon: 'fa-database',          color: '#3b82f6', label: 'Dataset'  },
+    code:      { icon: 'fa-code',              color: '#10b981', label: 'Code'     },
+    notebooks: { icon: 'fa-book-open',         color: '#7c3aed', label: 'Notebook' },
+    links:     { icon: 'fa-external-link-alt', color: '#f59e0b', label: 'Link'     }
   };
-
   // ─── HELPERS ─────────────────────────────────────────────────
 
   async function getClient() {

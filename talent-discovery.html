@@ -1020,10 +1020,17 @@
     fill: none;
     stroke-width: 2;
   }
-  .skill-tag--more {
+ .skill-tag--more {
     background: var(--blue-bg);
     color: var(--blue-mid);
     border-color: rgba(0,153,255,0.3);
+}
+
+.modal-skills-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 4px;
 }
 @media (max-width: 1024px) {
   .page {
@@ -1462,9 +1469,9 @@
 
     const expLabel = EXP_LABELS[talent.experience] || talent.experience;
 
-    // Extract skill keywords from role + bio (simple heuristic)
-    const skills = [];
-
+   const skills = talent.skills
+        ? talent.skills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5)
+        : [];
 
     return `
       <div class="card" style="animation-delay:${index * 0.07}s">
@@ -1671,6 +1678,15 @@ async function viewProfile(id) {
               <div class="modal-field-value" style="display:flex;align-items:center;gap:6px;">${countryFlag(data.country_code)} ${escHtml(data.country_name || data.country_code)}</div>
             </div>
           </div>
+
+         <!-- Skills -->
+          ${data.skills ? `
+          <div class="modal-field">
+            <div class="modal-field-label">Skills</div>
+            <div class="modal-skills-tags">
+              ${data.skills.split(',').map(s => `<span class="skill-tag">${s.trim()}</span>`).join('')}
+            </div>
+          </div>` : ''}
 
           <!-- Bio -->
           <div class="modal-field">
