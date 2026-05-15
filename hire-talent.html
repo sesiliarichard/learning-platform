@@ -972,7 +972,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // If not in edit mode, check for existing profile to show preview
   if (!isEditing) {
     console.log('Not in edit mode, checking for existing profile...');
-    const hasProfile = showExistingProfileIfAny();
+    const hasProfile = await showExistingProfileIfAny();
     console.log('showExistingProfileIfAny returned:', hasProfile);
     
     if (!hasProfile) {
@@ -1290,11 +1290,10 @@ async function showExistingProfileIfAny() {
       console.log('Parsed data - company:', prev.company);
       
       // Populate preview
-      document.getElementById('previewFullName').textContent = prev.fullName || '—';
       document.getElementById('previewEmail').textContent = prev.email || '—';
       document.getElementById('previewPhone').textContent = prev.contact || '—';
       document.getElementById('previewCompany').textContent = prev.company || '—';
-      document.getElementById('previewContactName').textContent = prev.fullName || '—';
+      document.getElementById('previewContactName').textContent = prev.email || '—';
       document.getElementById('previewIndustry').textContent = prev.industry || '—';
       document.getElementById('previewCountry').textContent = prev.country || 'Not specified';
       document.getElementById('previewNeeds').textContent = prev.needs || '—';
@@ -1519,11 +1518,10 @@ async function validateAndLoadSavedRequest() {
         const prev = JSON.parse(savedData);
         console.log('Force showing preview for:', prev.company);
         
-        document.getElementById('previewFullName').textContent = prev.fullName || '—';
         document.getElementById('previewEmail').textContent = prev.email || '—';
         document.getElementById('previewPhone').textContent = prev.contact || '—';
         document.getElementById('previewCompany').textContent = prev.company || '—';
-        document.getElementById('previewContactName').textContent = prev.fullName || '—';
+        document.getElementById('previewContactName').textContent = prev.email || '—';
         document.getElementById('previewIndustry').textContent = prev.industry || '—';
         document.getElementById('previewCountry').textContent = prev.country || 'Not specified';
         document.getElementById('previewNeeds').textContent = prev.needs || '—';
