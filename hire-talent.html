@@ -1103,6 +1103,18 @@ async function submitHire() {
     return;
   }
    localStorage.setItem('is_hirer', 'true');
+localStorage.removeItem('is_talent');
+localStorage.removeItem('talent_profile_id');
+localStorage.setItem('hire_request_ref', refNumber);
+if (newId) localStorage.setItem('hire_request_id', newId);
+localStorage.setItem('hire_request_data', JSON.stringify({
+    fullName: `${firstname} ${lastname}`,
+    email, contact, company, industry, country, needs,
+    jobTitle, jobType, locationType: locType,
+    applicationLink: appLink,
+    logoUrl: logoUrl || localStorage.getItem('hire_logo_url') || null,
+}));
+
   // VERIFY: Check if application_link was saved
   if (newId || editingId) {
     const checkId = newId || editingId;
@@ -1325,10 +1337,11 @@ async function showExistingProfileIfAny() {
   sessionStorage.removeItem('is_editing_mode');
   
   // Clear all localStorage
-  localStorage.removeItem('hire_request_ref');
+ localStorage.removeItem('hire_request_ref');
   localStorage.removeItem('hire_request_data');
   localStorage.removeItem('hire_request_id');
   localStorage.removeItem('hire_logo_url');
+  localStorage.removeItem('is_hirer');
   
   // Clear form fields
   const fields = ['firstname', 'lastname', 'email', 'contact', 'company', 'needs', 'jobTitle', 'applicationLink'];
