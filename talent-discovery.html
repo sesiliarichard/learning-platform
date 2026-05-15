@@ -1323,7 +1323,15 @@
     const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
     
     // User is Hirer if ANY of these are true
-   const isHirer = isHirerFromUrl || isHirerFlag;
+   // ✅ If talent flag is set, wipe any stale hirer data first
+if (localStorage.getItem('is_talent') === 'true') {
+    localStorage.removeItem('is_hirer');
+    localStorage.removeItem('hire_request_ref');
+    localStorage.removeItem('hire_request_id');
+    localStorage.removeItem('hire_request_data');
+}
+
+const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirerFlag);
     
     // User is Talent only if explicitly set and not a hirer
     const hasTalentId = !!localStorage.getItem('talent_profile_id');
