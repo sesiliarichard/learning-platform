@@ -1239,6 +1239,64 @@ const skillsVal = document.getElementById('skills').value.trim();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
    
+// Cross-device: show "returning?" banner if no localStorage
+async function checkReturningTalent() {
+  const savedId = localStorage.getItem('talent_profile_id');
+  if (savedId) return; // already handled by existing logic
+
+  // Show a small banner
+  document.getElementById('formContainer').insertAdjacentHTML('afterbegin', `
+    <div id="returningBanner" style="background:#f0f6ff;border:1.5px solid #b0d4f1;
+      border-radius:12px;padding:14px 18px;margin-bottom:20px;">
+      <p style="font-size:13px;font-weight:600;margin-bottom:10px;">
+        👋 Registered before? Enter your email to restore your profile on this device.
+      </p>
+      <div style="display:flex;gap:8px;">
+        <input type="email" id="returningEmail" placeholder="your@email.com"
+          style="flex:1;padding:8px 12px;border:1.5px solid #e0e4f0;border-radius:8px;
+          font-family:inherit;font-size:13px;outline:none;">
+        <button onclick="lookupTalentByEmail()" 
+          style="padding:8px 16px;background:#0099ff;color:white;border:none;
+          border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;
+          font-family:'Syne',sans-serif;">
+          Find →
+        </button>
+        <button onclick="document.getElementById('returningBanner').remove()"
+          style="padding:8px 12px;background:none;border:1.5px solid #e0e4f0;
+          border-radius:8px;font-size:13px;cursor:pointer;color:#6b7280;">
+          Skip
+        </button>
+      </div>
+      <div id="returningMsg" style="font-size:12px;margin-top:8px;color:#6b7280;"></div>
+    </div>
+  `);
+}
+
+async function lookupTalentByEmail() {
+  const email = document.getElementById('returningEmail').value.trim();
+  const msg = document.getElementById('returningMsg');
+  if (!email) return;
+
+  msg.textContent = 'Looking up…';
+  const { data, error } = await window.supabaseClient
+    .from('talent_profiles')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+
+  if (!data || error) {
+    msg.style.color = '#e53e3e';
+    msg.textContent = 'No profile found for that email.';
+    return;
+  }
+
+  // Restore to localStorage and show profile
+  localStorage.setItem('talent_profile_id', data.id);
+  localStorage.setItem('is_talent', 'true');
+  document.getElementById('returningBanner').remove();
+  document.getElementById('formContainer').style.display = 'none';
+  showExistingProfile(data);
+}
   </script>
 
 </body>
