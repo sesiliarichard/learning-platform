@@ -11273,7 +11273,55 @@ console.log('✅ Table UI fixed and ready');
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
     };
-
+async function _loadCustomTemplatesIntoForceModal() {
+        const grid    = document.getElementById('forceIssueTemplateGrid');
+        const loading = document.getElementById('forceIssueTemplateLoading');
+        if (!grid) return;
+        try {
+            const sb = window.supabaseClient || window.db;
+            const { data: templates, error } = await sb
+                .from('certificate_templates')
+                .select('*')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            if (!templates || templates.length === 0) {
+                if (loading) loading.style.display = 'none';
+                return;
+            }
+            if (loading) loading.style.display = 'none';
+            templates.forEach((tpl) => {
+                const previewBg = tpl.bg_image_url
+                    ? `url('${tpl.bg_image_url}') center/cover no-repeat`
+                    : `linear-gradient(135deg, ${tpl.bg_color || '#1e1b4b'}, ${tpl.accent_color || '#7c3aed'})`;
+                const card = document.createElement('div');
+                card.dataset.tpl = `custom-${tpl.id}`;
+                card.style.cssText = 'border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;';
+                card.innerHTML = `
+                    <div style="height:44px;background:${previewBg};display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-certificate" style="color:${tpl.title_color || '#fff'};font-size:18px;opacity:0.9;"></i>
+                    </div>
+                    <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tpl.name}">
+                        ${tpl.name} <span style="color:#f59e0b;font-size:9px;">★</span>
+                    </div>`;
+                card.onclick = function() {
+                    grid.querySelectorAll('[data-tpl]').forEach(c => {
+                        c.style.borderColor = '#e5e7eb';
+                        c.style.transform   = '';
+                    });
+                    card.style.borderColor = '#f59e0b';
+                    card.style.transform   = 'scale(1.04)';
+                    window._approvalTemplate     = `custom-${tpl.id}`;
+                    window.selectedCustomTplId   = tpl.id;
+                    window.selectedCustomTplName = tpl.name;
+                };
+                grid.appendChild(card);
+            });
+        } catch (err) {
+            console.warn('Could not load custom templates:', err.message);
+            if (loading) loading.innerHTML = '<span style="color:#ef4444;font-size:11px;">Could not load custom templates</span>';
+        }
+    }
     const _origRender = window.renderEligibleStudentsFixed;
     window.renderEligibleStudentsFixed = function(rows) {
         _origRender(rows);

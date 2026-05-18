@@ -416,7 +416,9 @@ function certPreview(studentName, _courseName, certNumber, template) {
     `;
 
     document.body.appendChild(modal);
-    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+ modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+// Load custom templates from Supabase into the grid
+_loadCustomTemplatesIntoForceModal();
 }
 
 function _downloadCertPng(dataUrl, studentName) {
@@ -485,26 +487,29 @@ async function approveCertificate(studentId, studentName, email) {
                         (preview updates automatically)
                     </span>
                 </label>
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                    <div onclick="selectApproveTemplate('classic',this,'${_esc(studentName)}','${certNumber}')"
-                        data-tpl="classic"
-                        style="border:2px solid #7c3aed;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-                        <div style="height:46px;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);display:flex;align-items:center;justify-content:center;font-size:18px;">🏅</div>
-                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Classic</div>
-                    </div>
-                    <div onclick="selectApproveTemplate('modern',this,'${_esc(studentName)}','${certNumber}')"
-                        data-tpl="modern"
-                        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-                        <div style="height:46px;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
-                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Modern</div>
-                    </div>
-                    <div onclick="selectApproveTemplate('elegant',this,'${_esc(studentName)}','${certNumber}')"
-                        data-tpl="elegant"
-                        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-                        <div style="height:46px;background:linear-gradient(135deg,#0f2027,#2c5364);display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
-                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Elegant</div>
-                    </div>
-                </div>
+<div id="forceIssueTemplateGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+     max-height:220px;overflow-y:auto;padding-right:2px;">
+    <!-- Built-ins always shown first -->
+    <div onclick="selectApprovalTemplate('classic',this)" data-tpl="classic"
+        style="border:2px solid #f59e0b;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+        <div style="height:44px;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);display:flex;align-items:center;justify-content:center;font-size:18px;">🏅</div>
+        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Classic</div>
+    </div>
+    <div onclick="selectApprovalTemplate('modern',this)" data-tpl="modern"
+        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+        <div style="height:44px;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
+        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Modern</div>
+    </div>
+    <div onclick="selectApprovalTemplate('elegant',this)" data-tpl="elegant"
+        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+        <div style="height:44px;background:linear-gradient(135deg,#0f2027,#2c5364);display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
+        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Elegant</div>
+    </div>
+    <!-- Custom templates loaded below by JS -->
+</div>
+<div id="forceIssueTemplateLoading" style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center;">
+    <i class="fas fa-spinner fa-spin"></i> Loading custom templates...
+</div>
             </div>
 
             <!-- Live preview -->
