@@ -13,7 +13,7 @@ let _criteria = { minQuizScore: 70, minCompletion: 80, requireAssignments: false
 
 const _genNum = () => `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
 const _toast  = (m, t='success') => typeof showToast === 'function' ? showToast(m, t) : alert(m);
-const _esc    = s => (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+const _esc = s => (String(s||'')).replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 const _setEl  = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
 
 // ============================================================
@@ -433,16 +433,21 @@ function _drawCornerOrnaments(ctx, color, W, H) {
 // ============================================================
 // PREVIEW MODAL — canvas-rendered certificate
 // ============================================================
-function certPreview(studentName, _courseName, certNumber, template) {
+async function certPreview(studentName, _courseName, certNumber, template) {
     document.getElementById('certPreviewModal')?.remove();
+
+    // Guard against non-string inputs
+    studentName = String(studentName || 'Student');
+    certNumber  = String(certNumber  || '');
+    template    = String(template    || _certTpl || 'classic');
 
     const modal = document.createElement('div');
     modal.id = 'certPreviewModal';
     modal.className = 'modal active';
     modal.style.zIndex = '5500';
 
-    // Generate the certificate image
-    const dataUrl = _renderCertificateCanvas(studentName, certNumber, template || _certTpl);
+    // Generate the certificate image (now awaited since _renderCertificateCanvas is async)
+    const dataUrl = await _renderCertificateCanvas(studentName, certNumber, template);
 
     modal.innerHTML = `
         <div class="modal-content" style="max-width:900px;">
@@ -1171,6 +1176,12 @@ async function loadIssuedCerts() {
     const container = document.getElementById('issuedCertsList');
     if (!container) return;
 
+    container.innerHTML = `
+        <div style="padding:40px;text-align:center;color:#6b7280;">
+            <i class="fas fa-spinner fa-spin" style="font-size:24px;display:block;margin-bottom:12px;"></i>
+            Loading certificates...
+        </div>`;
+
     const db = getCertDB();
     let certs = [];
 
@@ -1470,7 +1481,13 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectApproveTemplate    = selectApproveTemplate;
 
     // Legacy aliases used in admin.html inline code
-    window.previewCert       = (id, sN, cN, num, tpl) => certPreview(sN, cN, num, tpl);
+   window.previewCert = (id, sN, cN, num, tpl) => {
+    const safeSN  = String(sN  || 'Student');
+    const safeCN  = String(cN  || 'ASAI Full Program Certificate');
+    const safeNum = String(num || '');
+    const safeTpl = String(tpl || 'classic');
+    certPreview(safeSN, safeCN, safeNum, safeTpl);
+};
     window.revokeCert        = certRevoke;
     window.openIssueCertModal = () => {
         const firstTab = document.querySelector('#certificatesSection .tabs .tab');
