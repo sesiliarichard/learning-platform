@@ -6465,20 +6465,22 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
 
     const certNumber = `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
 
-    const { error } = await db
-        .from('certificates')
-        .insert({
-            student_id:  studentId,
-            user_id:     studentId,
-            course_id:   courseId,
-            course_name: courseName,
-            cert_number: certNumber,
-            template:    _approvalTemplate,
-            published:   false,   // still a draft — admin publishes separately
-            revoked:     false,
-            admin_notes: notes || null,
-            issued_at:   new Date().toISOString()
-        });
+   const { error } = await db
+    .from('certificates')
+    .insert({
+        student_id:    studentId,
+        user_id:       studentId,
+        course_id:     courseId,
+        course_name:   courseName,
+        cert_number:   certNumber,
+        template:      _approvalTemplate,
+        published:     false,
+        revoked:       false,
+        admin_notes:   notes || null,
+        issued_at:     new Date().toISOString(),
+        admin_approved: false,
+        approved_at:   null,
+    });
 
     if (error) {
         showToast('Error: ' + error.message, 'error');
