@@ -11231,23 +11231,33 @@ console.log('✅ Table UI fixed and ready');
                         <div style="font-size:12px;color:#92400e;margin-top:3px;font-weight:600;"><i class="fas fa-book" style="margin-right:4px;"></i>${courseName}</div>
                     </div>
                 </div>
-                <div style="margin-bottom:16px;">
+        <div style="margin-bottom:16px;">
                     <label style="display:block;font-weight:700;color:#374151;font-size:13px;margin-bottom:10px;">
                         <i class="fas fa-palette" style="color:#f59e0b;margin-right:6px;"></i>Certificate Template
                     </label>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-                        <div onclick="selectApprovalTemplate('classic',this)" data-tpl="classic" style="border:2px solid #f59e0b;border-radius:10px;overflow:hidden;cursor:pointer;">
+                    <div id="forceIssueTemplateGrid"
+                         style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+                                max-height:220px;overflow-y:auto;padding-right:2px;">
+                        <div onclick="selectApprovalTemplate('classic',this)" data-tpl="classic"
+                             style="border:2px solid #f59e0b;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;transform:scale(1.03);">
                             <div style="height:44px;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);display:flex;align-items:center;justify-content:center;font-size:18px;">🏅</div>
                             <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Classic</div>
                         </div>
-                        <div onclick="selectApprovalTemplate('modern',this)" data-tpl="modern" style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;">
+                        <div onclick="selectApprovalTemplate('modern',this)" data-tpl="modern"
+                             style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
                             <div style="height:44px;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
                             <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Modern</div>
                         </div>
-                        <div onclick="selectApprovalTemplate('elegant',this)" data-tpl="elegant" style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;">
+                        <div onclick="selectApprovalTemplate('elegant',this)" data-tpl="elegant"
+                             style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
                             <div style="height:44px;background:linear-gradient(135deg,#0f2027,#2c5364);display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
                             <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Elegant</div>
                         </div>
+                        <!-- custom templates appended here by JS -->
+                    </div>
+                    <div id="forceIssueTemplateLoading"
+                         style="font-size:12px;color:#9ca3af;margin-top:8px;text-align:center;">
+                        <i class="fas fa-spinner fa-spin"></i> Loading custom templates…
                     </div>
                 </div>
                 <div style="margin-bottom:18px;">
@@ -11270,8 +11280,9 @@ console.log('✅ Table UI fixed and ready');
                 </div>
             </div>
         `;
-        document.body.appendChild(modal);
+     document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        _loadCustomTemplatesIntoForceModal();  
     };
 async function _loadCustomTemplatesIntoForceModal() {
         const grid    = document.getElementById('forceIssueTemplateGrid');
