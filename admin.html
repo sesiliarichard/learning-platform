@@ -11317,17 +11317,32 @@ async function _loadCustomTemplatesIntoForceModal() {
                                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tpl.name}">
                         ${tpl.name} <span style="color:#f59e0b;font-size:9px;">★</span>
                     </div>`;
-                card.onclick = function() {
-                    grid.querySelectorAll('[data-tpl]').forEach(c => {
-                        c.style.borderColor = '#e5e7eb';
-                        c.style.transform   = '';
-                    });
-                    card.style.borderColor = '#f59e0b';
-                    card.style.transform   = 'scale(1.04)';
-                    window._approvalTemplate     = `custom-${tpl.id}`;
-                    window.selectedCustomTplId   = tpl.id;
-                    window.selectedCustomTplName = tpl.name;
-                };
+               card.onclick = async function() {
+    // Highlight selected card
+    grid.querySelectorAll('[data-tpl]').forEach(c => {
+        c.style.borderColor = '#e5e7eb';
+        c.style.transform   = '';
+    });
+    card.style.borderColor = '#f59e0b';
+    card.style.transform   = 'scale(1.04)';
+
+    // Set the selected template
+    window._approvalTemplate     = `custom-${tpl.id}`;
+    window.selectedCustomTplId   = tpl.id;
+    window.selectedCustomTplName = tpl.name;
+    _certTpl = `custom-${tpl.id}`;
+
+    // Refresh live preview if open
+    const previewImg = document.getElementById('approvePreviewImg');
+    if (previewImg) {
+        const studentName = previewImg.dataset.studentName || 'Student Name';
+        const certNumber  = previewImg.dataset.certNumber  || 'PREVIEW';
+        previewImg.style.opacity = '0.4';
+        const newDataUrl = await _renderCertificateCanvas(studentName, certNumber, `custom-${tpl.id}`);
+        previewImg.src = newDataUrl;
+        previewImg.style.opacity = '1';
+    }
+};
                 grid.appendChild(card);
             });
         } catch (err) {

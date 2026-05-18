@@ -16,11 +16,21 @@ const _toast  = (m, t='success') => typeof showToast === 'function' ? showToast(
 const _esc    = s => (s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 const _setEl  = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
 
-
 // ============================================================
 // BOOT
 // ============================================================
 async function loadCertificateSection() {
+    // ── Pre-load custom templates into cache ──
+    try {
+        const db = getCertDB();
+        const { data: customTpls } = await db
+            .from('certificate_templates')
+            .select('*')
+            .order('created_at', { ascending: true });
+        window._customTemplatesCache = customTpls || [];
+    } catch(_) {
+        window._customTemplatesCache = [];
+    }
     // Reset tab state
     ['certEligible','certIssued','certSettings'].forEach(id => {
         const el = document.getElementById(id);
@@ -154,7 +164,7 @@ async function _fetchAllStudents() {
 // CANVAS — RENDER CERTIFICATE TO DATA URL
 // Width 1200 x Height 848  (A4 landscape ratio ~1.41)
 // ============================================================
-function _renderCertificateCanvas(studentName, certNumber, template) {
+async function _renderCertificateCanvas(studentName, certNumber, template) {
     const W = 1200, H = 848;
     const canvas = document.createElement('canvas');
     canvas.width  = W;
@@ -166,39 +176,94 @@ function _renderCertificateCanvas(studentName, certNumber, template) {
 
     // ── Theme definitions ──
     const themes = {
-        classic: {
-            bg1: '#fdf6e3', bg2: '#f5e6c8',
-            borderColor: '#b45309', innerBorder: '#d97706',
-            titleColor: '#78350f', nameColor: '#1f2937', nameUnderline: '#d97706',
-            textColor: '#78350f', subColor: '#92400e', orgColor: '#78350f',
-            sealBg1: '#fef3c7', sealBg2: '#fde68a', sealBorder: '#d97706', sealIcon: '#78350f',
-            logoGrad1: '#7c3aed', logoGrad2: '#6d28d9',
-        },
-        modern: {
-            bg1: '#1e1b4b', bg2: '#312e81',
-            borderColor: null, innerBorder: 'rgba(165,180,252,0.25)',
-            titleColor: '#a5b4fc', nameColor: '#ffffff', nameUnderline: '#6366f1',
-            textColor: '#c7d2fe', subColor: '#a5b4fc', orgColor: '#c7d2fe',
-            sealBg1: '#312e81', sealBg2: '#1e1b4b', sealBorder: '#6366f1', sealIcon: '#a5b4fc',
-            logoGrad1: '#6366f1', logoGrad2: '#4f46e5',
-        },
-        elegant: {
-            bg1: '#0f2027', bg2: '#2c5364',
-            borderColor: null, innerBorder: 'rgba(255,215,0,0.35)',
-            titleColor: '#ffd700', nameColor: '#ffffff', nameUnderline: '#ffd700',
-            textColor: '#b0c4ce', subColor: '#b0c4ce', orgColor: '#ffd700',
-            sealBg1: '#203a43', sealBg2: '#0f2027', sealBorder: '#ffd700', sealIcon: '#ffd700',
-            logoGrad1: '#b45309', logoGrad2: '#92400e',
-        },
-    };
-    const T = themes[tpl] || themes.classic;
+    classic: {
+        bg1: '#fdf6e3', bg2: '#f5e6c8',
+        borderColor: '#b45309', innerBorder: '#d97706',
+        titleColor: '#78350f', nameColor: '#1f2937', nameUnderline: '#d97706',
+        textColor: '#78350f', subColor: '#92400e', orgColor: '#78350f',
+        sealBg1: '#fef3c7', sealBg2: '#fde68a', sealBorder: '#d97706', sealIcon: '#78350f',
+        logoGrad1: '#7c3aed', logoGrad2: '#6d28d9',
+    },
+    modern: {
+        bg1: '#1e1b4b', bg2: '#312e81',
+        borderColor: null, innerBorder: 'rgba(165,180,252,0.25)',
+        titleColor: '#a5b4fc', nameColor: '#ffffff', nameUnderline: '#6366f1',
+        textColor: '#c7d2fe', subColor: '#a5b4fc', orgColor: '#c7d2fe',
+        sealBg1: '#312e81', sealBg2: '#1e1b4b', sealBorder: '#6366f1', sealIcon: '#a5b4fc',
+        logoGrad1: '#6366f1', logoGrad2: '#4f46e5',
+    },
+    elegant: {
+        bg1: '#0f2027', bg2: '#2c5364',
+        borderColor: null, innerBorder: 'rgba(255,215,0,0.35)',
+        titleColor: '#ffd700', nameColor: '#ffffff', nameUnderline: '#ffd700',
+        textColor: '#b0c4ce', subColor: '#b0c4ce', orgColor: '#ffd700',
+        sealBg1: '#203a43', sealBg2: '#0f2027', sealBorder: '#ffd700', sealIcon: '#ffd700',
+        logoGrad1: '#b45309', logoGrad2: '#92400e',
+    },
+};
+
+// ── Handle custom templates ──
+let T = themes[tpl] || null;
+
+if (!T && tpl && tpl.startsWith('custom-')) {
+    // Look up from globally cached custom templates
+    const customTplData = window._customTemplatesCache?.find(
+        ct => `custom-${ct.id}` === tpl
+    );
+    if (customTplData) {
+        T = {
+            bg1:          customTplData.bg_color      || '#1e1b4b',
+            bg2:          customTplData.accent_color  || '#312e81',
+            borderColor:  customTplData.border_color  || null,
+            innerBorder:  customTplData.accent_color  || 'rgba(255,255,255,0.2)',
+            titleColor:   customTplData.title_color   || '#ffffff',
+            nameColor:    customTplData.name_color    || '#ffffff',
+            nameUnderline: customTplData.accent_color || '#6366f1',
+            textColor:    customTplData.text_color    || '#e5e7eb',
+            subColor:     customTplData.text_color    || '#9ca3af',
+            orgColor:     customTplData.title_color   || '#ffffff',
+            sealBg1:      customTplData.bg_color      || '#1e1b4b',
+            sealBg2:      customTplData.accent_color  || '#312e81',
+            sealBorder:   customTplData.accent_color  || '#6366f1',
+            sealIcon:     customTplData.title_color   || '#ffffff',
+            logoGrad1:    customTplData.accent_color  || '#7c3aed',
+            logoGrad2:    customTplData.bg_color      || '#6d28d9',
+            bgImageUrl:   customTplData.bg_image_url  || null,
+        };
+    }
+}
+
+// Final fallback
+if (!T) T = themes.classic;
 
     // ── Background gradient ──
+   // Support background image for custom templates
+if (T.bgImageUrl) {
+    await new Promise((resolve) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            ctx.drawImage(img, 0, 0, W, H);
+            resolve();
+        };
+        img.onerror = () => {
+            // Fallback to gradient if image fails
+            const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+            bgGrad.addColorStop(0, T.bg1);
+            bgGrad.addColorStop(1, T.bg2);
+            ctx.fillStyle = bgGrad;
+            ctx.fillRect(0, 0, W, H);
+            resolve();
+        };
+        img.src = T.bgImageUrl;
+    });
+} else {
     const bgGrad = ctx.createLinearGradient(0, 0, W, H);
     bgGrad.addColorStop(0, T.bg1);
     bgGrad.addColorStop(1, T.bg2);
     ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
+}
 
     // ── Outer border ──
     if (T.borderColor) {
@@ -517,8 +582,10 @@ async function approveCertificate(studentId, studentName, email) {
                 <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;
                             letter-spacing:1px;margin-bottom:10px;">Live Preview</div>
                 <img id="approvePreviewImg" src="${previewDataUrl}"
-                     style="max-width:100%;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);"
-                     alt="Certificate preview">
+            data-student-name="${_esc(studentName)}"
+            data-cert-number="${certNumber}"
+           style="max-width:100%;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.2);transition:opacity 0.2s;"
+          alt="Certificate preview">
             </div>
 
             <!-- Admin notes -->
