@@ -11400,6 +11400,141 @@ async function _loadCustomTemplatesIntoForceModal() {
 
     console.log('✅ Force-issue patch loaded');
 })();
+
+// ── FIX: Expose _loadCustomTemplatesIntoForceModal globally ──
+window._loadCustomTemplatesIntoForceModal = async function() {
+    const grid    = document.getElementById('forceIssueTemplateGrid');
+    const loading = document.getElementById('forceIssueTemplateLoading');
+    if (!grid) return;
+    try {
+        const sb = window.supabaseClient || window.db;
+        const { data: templates, error } = await sb
+            .from('certificate_templates')
+            .select('*')
+            .order('created_at', { ascending: true });
+        if (error) throw error;
+        if (!loading) return;
+        loading.style.display = 'none';
+        if (!templates || templates.length === 0) return;
+
+        templates.forEach((tpl) => {
+            const previewBg = tpl.bg_image_url
+                ? `url('${tpl.bg_image_url}') center/cover no-repeat`
+                : `linear-gradient(135deg, ${tpl.bg_color || '#1e1b4b'}, ${tpl.accent_color || '#7c3aed'})`;
+            const card = document.createElement('div');
+            card.dataset.tpl = `custom-${tpl.id}`;
+            card.style.cssText = 'border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;';
+            card.innerHTML = `
+                <div style="height:44px;background:${previewBg};display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-certificate" style="color:${tpl.title_color || '#fff'};font-size:18px;opacity:0.9;"></i>
+                </div>
+                <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tpl.name}">
+                    ${tpl.name} <span style="color:#f59e0b;font-size:9px;">★</span>
+                </div>`;
+            card.onclick = function() {
+                grid.querySelectorAll('[data-tpl]').forEach(c => {
+                    c.style.borderColor = '#e5e7eb';
+                    c.style.transform   = '';
+                });
+                card.style.borderColor = '#7c3aed';
+                card.style.transform   = 'scale(1.04)';
+                // Sync ALL template variables
+                window._approvalTemplate   = `custom-${tpl.id}`;
+                window._approveTemplate    = `custom-${tpl.id}`;
+                window._certTpl            = `custom-${tpl.id}`;
+                window.selectedTemplate    = `custom-${tpl.id}`;
+            };
+            grid.appendChild(card);
+        });
+    } catch (err) {
+        console.warn('Could not load custom templates:', err.message);
+        if (loading) loading.innerHTML = '<span style="color:#ef4444;font-size:11px;">Could not load custom templates</span>';
+    }
+};
+
+// ── FIX: Make selectApprovalTemplate sync ALL variables ──
+window.selectApprovalTemplate = function(tpl, el) {
+    window._approvalTemplate = tpl;
+    window._approveTemplate  = tpl;
+    window._certTpl          = tpl;
+    window.selectedTemplate  = tpl;
+
+    // Highlight all template cards across any open modal
+    document.querySelectorAll('[data-tpl]').forEach(card => {
+        card.style.borderColor = card.dataset.tpl === tpl ? '#7c3aed' : '#e5e7eb';
+        card.style.transform   = card.dataset.tpl === tpl ? 'scale(1.04)' : 'scale(1)';
+    });
+
+    // Refresh live preview in approveCertificate modal if open
+    const previewImg = document.getElementById('approvePreviewImg');
+    if (previewImg && typeof _renderCertificateCanvas === 'function') {
+        const sName = previewImg.dataset.studentName || 'Student Name';
+        const cNum  = previewImg.dataset.certNumber  || 'PREVIEW';
+        previewImg.style.opacity = '0.4';
+        _renderCertificateCanvas(sName, cNum, tpl).then(url => {
+            previewImg.src = url;
+            previewImg.style.opacity = '1';
+        });
+    }
+};
+
+// ── FIX: confirmIssueCert reads the correct template ──
+const _originalConfirmIssueCert = window.confirmIssueCert;
+window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
+    // Read from whichever variable was set
+    const tpl = window._approvalTemplate
+             || window._approveTemplate
+             || window._certTpl
+             || window.selectedTemplate
+             || 'classic';
+    
+    // Temporarily lock it so nothing overwrites during the async save
+    window._approvalTemplate = tpl;
+
+    const notes = document.getElementById('certApprovalNotes')?.value?.trim() || '';
+    const certNumber = `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
+
+    const { data: existing } = await db
+        .from('certificates')
+        .select('id')
+        .eq('student_id', studentId)
+        .eq('course_id', courseId)
+        .eq('revoked', false)
+        .maybeSingle();
+
+    if (existing) {
+        showToast('Certificate already exists for this student', 'error');
+        document.getElementById('certApprovalModal')?.remove();
+        return;
+    }
+
+    const { error } = await db.from('certificates').insert({
+        student_id:    studentId,
+        user_id:       studentId,
+        course_id:     courseId,
+        course_name:   courseName,
+        cert_number:   certNumber,
+        template:      tpl,   // ← uses the resolved template
+        published:     false,
+        revoked:       false,
+        admin_notes:   notes || null,
+        issued_at:     new Date().toISOString(),
+        admin_approved: false,
+        approved_at:   null,
+    });
+
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    document.getElementById('certApprovalModal')?.remove();
+    showToast(`✅ Certificate (${tpl} template) approved for ${studentName}!`);
+    
+    // Reset template to default for next use
+    window._approvalTemplate = 'classic';
+    
+    await loadEligibleStudents();
+    await loadIssuedCerts();
+};
 </script>
 
 </body>
