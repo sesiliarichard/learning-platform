@@ -279,65 +279,40 @@ if (!T) T = themes.classic;
         ctx.fillRect(0, 0, W, H);
     }
 
-// ── If custom template with background image, only overlay student data ──
+// ── If custom template with background image, overlay name at exact position ──
     if (T.bgImageUrl) {
-        // Dark overlay to make text readable over the background image
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-        ctx.fillRect(0, 0, W, H);
-
         const cx = W / 2;
-        const DATE = new Date().toLocaleDateString('en-US', {
-            month: 'long', day: 'numeric', year: 'numeric'
-        });
 
-        // ── Student Name (large, centered) ──
-        ctx.fillStyle = T.nameColor || '#ffffff';
-        ctx.font      = 'bold 64px Georgia';
+        // ── Cover the "Name Surname" placeholder area with a rectangle ──
+        // This paints over the original placeholder text cleanly
+        ctx.fillStyle = 'rgba(15, 20, 35, 0.85)';
+        ctx.fillRect(cx - 380, 330, 760, 100);
+
+        // ── Student Name — same style/position as original "Name Surname" ──
+        ctx.fillStyle = '#c9a84c'; // gold color matching original script font color
+        ctx.font      = 'bold italic 62px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        let nameSize = 64;
-        while (ctx.measureText(studentName).width > W - 160 && nameSize > 28) {
+        // Scale down if name is too long
+        let nameSize = 62;
+        while (ctx.measureText(studentName).width > 740 && nameSize > 24) {
             nameSize -= 2;
-            ctx.font = `bold ${nameSize}px Georgia`;
+            ctx.font = `bold italic ${nameSize}px Georgia`;
         }
-        ctx.fillText(studentName, cx, H / 2 - 20);
+        ctx.fillText(studentName, cx, 382);
 
-        // Name underline
-        const nameW = ctx.measureText(studentName).width;
-        ctx.strokeStyle = T.nameUnderline || '#ffd700';
-        ctx.lineWidth   = 3;
-        ctx.beginPath();
-        ctx.moveTo(cx - nameW / 2, H / 2 + 16);
-        ctx.lineTo(cx + nameW / 2, H / 2 + 16);
-        ctx.stroke();
-
-        // ── Program name below ──
-        ctx.fillStyle = T.titleColor || '#ffffff';
-        ctx.font      = 'bold 26px Georgia';
-        ctx.fillText('ASAI Full Program Certificate', cx, H / 2 + 65);
-
-        // ── Date bottom right ──
-        ctx.fillStyle = T.textColor || 'rgba(255,255,255,0.85)';
-        ctx.font      = 'bold 18px Arial';
-        ctx.textAlign = 'right';
-        ctx.fillText(DATE, W - 100, H - 80);
-        ctx.font = '14px Arial';
-        ctx.fillStyle = T.subColor || 'rgba(255,255,255,0.6)';
-        ctx.fillText('Issue Date', W - 100, H - 58);
-
-        // ── Cert ID watermark ──
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.globalAlpha = 0.55;
-        ctx.font = '12px Courier New';
+        // ── Cert ID bottom right (small, subtle) ──
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.globalAlpha = 0.6;
+        ctx.font = '11px Courier New';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
-        ctx.fillText('ID: ' + (certNumber || 'PREVIEW'), W - 50, H - 20);
+        ctx.fillText('ID: ' + (certNumber || 'PREVIEW'), W - 40, H - 15);
         ctx.globalAlpha = 1;
 
         return canvas.toDataURL('image/png');
     }
-
     // ── Standard templates (classic / modern / elegant) — full render below ──
 
     // ── Outer border ──
