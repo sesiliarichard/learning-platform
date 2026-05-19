@@ -6439,8 +6439,11 @@ function issueSingleCert(studentId, courseId, courseName, studentName, email) {
 let _approvalTemplate = 'classic';
 function selectApprovalTemplate(tpl, el) {
     _approvalTemplate = tpl;
-    document.querySelectorAll('#certApprovalModal [data-tpl]').forEach(card => {
+    window._approveTemplate = tpl;   // ← sync to certificates.js variable
+    window._certTpl = tpl;           // ← sync to certificates.js global
+    document.querySelectorAll('#certApprovalModal [data-tpl], #certApproveModal [data-tpl]').forEach(card => {
         card.style.borderColor = card.dataset.tpl === tpl ? '#7c3aed' : '#e5e7eb';
+        card.style.transform   = card.dataset.tpl === tpl ? 'scale(1.04)' : 'scale(1)';
     });
 }
 
@@ -6473,7 +6476,7 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
         course_id:     courseId,
         course_name:   courseName,
         cert_number:   certNumber,
-        template:      _approvalTemplate,
+        template:      _approvalTemplate || window._approveTemplate || window._certTpl || 'classic',
         published:     false,
         revoked:       false,
         admin_notes:   notes || null,

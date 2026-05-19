@@ -513,8 +513,8 @@ async function approveCertificate(studentId, studentName, email) {
     const certNumber = _genNum();   // preview number (will be regenerated on save if needed)
     const initials   = studentName.split(' ').map(n=>n[0]).join('').toUpperCase().substring(0,2);
 
-    // Render initial preview with current template
-    const previewDataUrl = _renderCertificateCanvas(studentName, certNumber, _certTpl);
+    // Render initial preview with current template — must await (async function)
+    const previewDataUrl = await _renderCertificateCanvas(studentName, certNumber, _certTpl);
 
     modal.innerHTML = `
         <div class="modal-content" style="max-width:680px;max-height:90vh;overflow-y:auto;">
@@ -654,6 +654,7 @@ let _approveTemplate = 'classic';
 
 function selectApproveTemplate(tpl, el, studentName, certNumber) {
     _approveTemplate = tpl;
+    window._approveTemplate = tpl;  // sync with admin.html variable
 
     // Highlight selected card
     document.querySelectorAll('#certApproveModal [data-tpl]').forEach(card => {
@@ -661,17 +662,22 @@ function selectApproveTemplate(tpl, el, studentName, certNumber) {
         card.style.transform   = card.dataset.tpl === tpl ? 'scale(1.04)' : 'scale(1)';
     });
 
-    // Update live preview
+    // Update live preview — must await since _renderCertificateCanvas is async
     const previewImg = document.getElementById('approvePreviewImg');
     if (previewImg) {
+        const sName = previewImg.dataset.studentName || studentName || 'Student';
+        const cNum  = previewImg.dataset.certNumber  || certNumber  || '';
         previewImg.style.opacity = '0.5';
-        setTimeout(() => {
-            previewImg.src     = _renderCertificateCanvas(studentName, certNumber, tpl);
+        _renderCertificateCanvas(sName, cNum, tpl).then(url => {
+            previewImg.src = url;
             previewImg.style.opacity = '1';
-        }, 80);
+        });
     }
 }
-
+// Keep alias so admin.html onclick="selectApprovalTemplate(...)" also works
+window.selectApprovalTemplate = function(tpl, el) {
+    selectApproveTemplate(tpl, el);
+};
 async function confirmApprove(studentId, studentName, email, sendNow, certNumber) {
     const notes    = document.getElementById('approveNotes')?.value?.trim() || '';
     const usedTpl  = _approveTemplate || _certTpl;
