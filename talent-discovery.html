@@ -1701,7 +1701,7 @@ async function viewProfile(id) {
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     loadAllCountries();
     document.getElementById('mainSearch').addEventListener('keyup', e => {
       if (e.key === 'Enter') applyFilters();
@@ -1711,6 +1711,7 @@ async function viewProfile(id) {
     });
     loadTalents();
   });
+  
 function countryFlag(code) {
   if (!code || code.length !== 2) return '📍';
   return `<img 

@@ -958,28 +958,17 @@
     }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('=== PAGE LOADED ===');
   await loadAllCountries();
-  
-  // Check if there's an editing ID first
-  const editingId = document.getElementById('editingId').value;
-  console.log('Current editingId value:', editingId);
-  
-  // First try to load edit mode (if user clicked Edit)
+
   const isEditing = loadEditMode();
-  console.log('isEditing:', isEditing);
-  
-  // If not in edit mode, check for existing profile to show preview
+
   if (!isEditing) {
-    console.log('Not in edit mode, checking for existing profile...');
     const hasProfile = await showExistingProfileIfAny();
-    console.log('showExistingProfileIfAny returned:', hasProfile);
-    
+
     if (!hasProfile) {
-      console.log('No profile found, showing form');
+      // No localStorage profile — show cross-device lookup banner
+      checkReturningHirer();
     }
-  } else {
-    console.log('In edit mode, showing form with data');
   }
 });
      function showAlert(type, msg) {

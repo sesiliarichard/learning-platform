@@ -1033,23 +1033,29 @@ function editProfile() {
   document.getElementById('formContainer').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-    // ── Check on load if already registered ──────────────────
-    document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async () => {
       loadAllCountries();
 
       const savedId = localStorage.getItem('talent_profile_id');
-      if (!savedId) return;
+      if (savedId) {
+        const { data, error } = await window.supabaseClient
+          .from('talent_profiles')
+          .select('*')
+          .eq('id', savedId)
+          .maybeSingle();
 
-      const { data, error } = await window.supabaseClient
-        .from('talent_profiles')
-        .select('*')
-        .eq('id', savedId)
-        .maybeSingle();
+        if (data && !error) {
+          document.getElementById('formContainer').style.display = 'none';
+          showExistingProfile(data);
+          return;
+        } else {
+          // ID no longer valid, clear it
+          localStorage.removeItem('talent_profile_id');
+        }
+      }
 
-      if (!data || error) return;
-
-      document.getElementById('formContainer').style.display = 'none';
-      showExistingProfile(data);
+      // No localStorage — show returning banner for cross-device lookup
+      checkReturningTalent();
     });
 
 async function updateTalentProfile(profileId) {
@@ -1244,9 +1250,8 @@ const skillsVal = document.getElementById('skills').value.trim();
 // Cross-device: show "returning?" banner if no localStorage
 async function checkReturningTalent() {
   const savedId = localStorage.getItem('talent_profile_id');
-  if (savedId) return; // already handled by existing logic
+  if (savedId) return; // existing logic handles it
 
-  // Show a small banner
   document.getElementById('formContainer').insertAdjacentHTML('afterbegin', `
     <div id="returningBanner" style="background:#f0f6ff;border:1.5px solid #b0d4f1;
       border-radius:12px;padding:14px 18px;margin-bottom:20px;">
