@@ -11535,6 +11535,125 @@ window.confirmIssueCert = async function(studentId, courseId, courseName, studen
     await loadEligibleStudents();
     await loadIssuedCerts();
 };
+// ══════════════════════════════════════════
+// DEFINITIVE TEMPLATE FIX
+// Overrides certificates.js certPreview to
+// always use the currently selected template
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+
+        // Step 1: Sync selectTemplate so Settings tab updates ALL variables
+        const _origSelectTemplate = window.selectTemplate;
+        window.selectTemplate = function(tpl) {
+            // Update every possible variable
+            window._certTpl          = tpl;
+            window._approvalTemplate = tpl;
+            window._approveTemplate  = tpl;
+            window.selectedTemplate  = tpl;
+
+            // Call original to update UI badges
+            if (_origSelectTemplate) _origSelectTemplate(tpl);
+
+            // Also update the cards in Settings tab
+            ['classic','modern','elegant'].forEach(t => {
+                const card  = document.getElementById('tpl-' + t);
+                const badge = document.getElementById('badge-' + t);
+                if (card)  card.style.borderColor = t === tpl ? '#7c3aed' : '#e5e7eb';
+                if (badge) badge.style.display    = t === tpl ? 'flex'    : 'none';
+            });
+
+            showToast(`Template "${tpl.charAt(0).toUpperCase() + tpl.slice(1)}" selected`);
+            console.log('✅ Template set to:', tpl);
+        };
+
+        // Step 2: Override certPreview to ALWAYS read the current template
+        window.certPreview = async function(studentName, courseName, certNumber, templateArg) {
+            // Resolution order — first one that is set wins
+            const resolvedTpl = window._approvalTemplate
+                             || window._approveTemplate
+                             || window._certTpl
+                             || window.selectedTemplate
+                             || templateArg   // fallback to what was passed
+                             || 'classic';
+
+            console.log('🎨 certPreview using template:', resolvedTpl, '| arg was:', templateArg);
+
+            document.getElementById('certPreviewModal')?.remove();
+
+            studentName = String(studentName || 'Student');
+            certNumber  = String(certNumber  || '');
+
+            const modal = document.createElement('div');
+            modal.id = 'certPreviewModal';
+            modal.className = 'modal active';
+            modal.style.zIndex = '5500';
+
+            // Use _renderCertificateCanvas from certificates.js
+            let dataUrl = '';
+            if (typeof _renderCertificateCanvas === 'function') {
+                dataUrl = await _renderCertificateCanvas(studentName, certNumber, resolvedTpl);
+            }
+
+            const _esc = s => String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width:900px;">
+                    <div class="modal-header">
+                        <h2>
+                            <i class="fas fa-certificate" style="color:#7c3aed;margin-right:8px;"></i>
+                            Certificate Preview — ${studentName}
+                            <span style="font-size:13px;font-weight:400;color:#9ca3af;margin-left:8px;">(${resolvedTpl})</span>
+                        </h2>
+                        <button class="modal-close" onclick="document.getElementById('certPreviewModal').remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div style="background:#e5e7eb;padding:24px;border-radius:14px;text-align:center;margin-bottom:16px;">
+                        ${dataUrl
+                            ? `<img src="${dataUrl}" style="max-width:100%;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,0.35);" alt="Certificate preview">`
+                            : `<div style="padding:40px;color:#6b7280;">Preview not available</div>`
+                        }
+                    </div>
+                    <div style="display:flex;gap:12px;">
+                        ${dataUrl ? `
+                        <button onclick="_downloadCertPng('${_esc(dataUrl)}','${_esc(studentName)}')"
+                            style="flex:1;padding:13px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                                   border:none;border-radius:12px;color:white;font-weight:700;cursor:pointer;
+                                   font-family:inherit;font-size:14px;display:flex;align-items:center;
+                                   justify-content:center;gap:8px;">
+                            <i class="fas fa-download"></i> Download PNG
+                        </button>` : ''}
+                        <button onclick="document.getElementById('certPreviewModal').remove()"
+                            style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
+                                   background:white;color:#6b7280;font-weight:700;cursor:pointer;
+                                   font-family:inherit;font-size:14px;">
+                            Close
+                        </button>
+                    </div>
+                </div>`;
+
+            document.body.appendChild(modal);
+            modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        };
+
+        // Step 3: Override previewCert (the legacy alias used in table rows)
+        window.previewCert = function(certId, studentName, courseName, certNumber, templateArg) {
+            // templateArg from table rows is the SAVED template in DB
+            // But if admin has selected a different one in Settings, use that
+            const resolvedTpl = window._approvalTemplate
+                             || window._approveTemplate
+                             || window._certTpl
+                             || window.selectedTemplate
+                             || templateArg
+                             || 'classic';
+            window.certPreview(studentName, courseName, certNumber, resolvedTpl);
+        };
+
+        console.log('✅ Template fix v2 applied — certPreview overridden');
+
+    }, 800); // wait for certificates.js to load first
+});
 </script>
 
 </body>
