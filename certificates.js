@@ -283,10 +283,14 @@ if (!T) T = themes.classic;
     if (T.bgImageUrl) {
         const cx = W / 2;
 
-        // ── Cover the "Name Surname" placeholder area with a rectangle ──
-        // This paints over the original placeholder text cleanly
-        ctx.fillStyle = 'rgba(15, 20, 35, 0.85)';
-        ctx.fillRect(cx - 380, 330, 760, 100);
+       // ── Cover the "Name Surname" placeholder area completely ──
+        // Sample the background color of that area exactly
+        ctx.fillStyle = '#0d1b2e';  // dark navy matching template background
+        ctx.fillRect(cx - 420, 290, 840, 120);
+        
+        // Second layer to fully kill the script font
+        ctx.fillStyle = 'rgba(8, 15, 28, 0.98)';
+        ctx.fillRect(cx - 420, 290, 840, 120);
 
         // ── Student Name — same style/position as original "Name Surname" ──
         ctx.fillStyle = '#c9a84c'; // gold color matching original script font color
