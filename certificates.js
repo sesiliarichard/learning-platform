@@ -28,7 +28,9 @@ async function loadCertificateSection() {
             .select('*')
             .order('created_at', { ascending: true });
         window._customTemplatesCache = customTpls || [];
-    } catch(_) {
+        console.log('✅ Loaded', (customTpls||[]).length, 'custom templates into cache');
+    } catch(err) {
+        console.warn('Could not pre-load custom templates:', err.message);
         window._customTemplatesCache = [];
     }
     // Reset tab state
@@ -207,9 +209,26 @@ let T = themes[tpl] || null;
 
 if (!T && tpl && tpl.startsWith('custom-')) {
     // Look up from globally cached custom templates
-    const customTplData = window._customTemplatesCache?.find(
+    let customTplData = window._customTemplatesCache?.find(
         ct => `custom-${ct.id}` === tpl
     );
+    // If not in cache, fetch directly from DB
+    if (!customTplData) {
+        try {
+            const tplId = tpl.replace('custom-', '');
+            const { data } = await getCertDB()
+                .from('certificate_templates')
+                .select('*')
+                .eq('id', tplId)
+                .single();
+            if (data) {
+                customTplData = data;
+                // Add to cache
+                if (!window._customTemplatesCache) window._customTemplatesCache = [];
+                window._customTemplatesCache.push(data);
+            }
+        } catch(_) {}
+    }
     if (customTplData) {
         T = {
             bg1:          customTplData.bg_color      || '#1e1b4b',

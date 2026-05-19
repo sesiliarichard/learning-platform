@@ -1893,8 +1893,16 @@ if (mc) {
 }
         // Load section-specific data
 if (item.dataset.section === 'certificates') {
-            loadCertificateSection();
-        }
+    // Refresh custom template cache before loading section
+    (async () => {
+        try {
+            const sb = window.supabaseClient || window.db;
+            const { data } = await sb.from('certificate_templates').select('*').order('created_at', { ascending: true });
+            window._customTemplatesCache = data || [];
+        } catch(_) {}
+    })();
+    loadCertificateSection();
+}
         if (item.dataset.section === 'adminResources') {
             loadAdminResourcesSection();
         }
@@ -11432,19 +11440,23 @@ window._loadCustomTemplatesIntoForceModal = async function() {
                             white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${tpl.name}">
                     ${tpl.name} <span style="color:#f59e0b;font-size:9px;">★</span>
                 </div>`;
-            card.onclick = function() {
-                grid.querySelectorAll('[data-tpl]').forEach(c => {
-                    c.style.borderColor = '#e5e7eb';
-                    c.style.transform   = '';
-                });
-                card.style.borderColor = '#7c3aed';
-                card.style.transform   = 'scale(1.04)';
-                // Sync ALL template variables
-                window._approvalTemplate   = `custom-${tpl.id}`;
-                window._approveTemplate    = `custom-${tpl.id}`;
-                window._certTpl            = `custom-${tpl.id}`;
-                window.selectedTemplate    = `custom-${tpl.id}`;
-            };
+          card.onclick = function() {
+    grid.querySelectorAll('[data-tpl]').forEach(c => {
+        c.style.borderColor = '#e5e7eb';
+        c.style.transform   = '';
+    });
+    card.style.borderColor = '#f59e0b';
+    card.style.transform   = 'scale(1.04)';
+    const tplKey = `custom-${tpl.id}`;
+    // Sync ALL template variables
+    window._approvalTemplate        = tplKey;
+    window._approveTemplate         = tplKey;
+    window._certTpl                 = tplKey;
+    window.selectedTemplate         = tplKey;
+    window._selectedGlobalTemplate  = tplKey;
+    localStorage.setItem('asai_selected_template', tplKey);
+    console.log('✅ Custom template selected in modal:', tplKey, tpl.name);
+};
             grid.appendChild(card);
         });
     } catch (err) {
@@ -11554,12 +11566,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // selectApprovalTemplate (in modals) — sync all variables  
-        window.selectApprovalTemplate = function(tpl, el) {
-            window._selectedGlobalTemplate = tpl;
-            window._certTpl          = tpl;
-            window._approvalTemplate = tpl;
-            window._approveTemplate  = tpl;
-            window.selectedTemplate  = tpl;
+       window.selectApprovalTemplate = function(tpl, el) {
+    window._selectedGlobalTemplate = tpl;
+    window._certTpl          = tpl;
+    window._approvalTemplate = tpl;
+    window._approveTemplate  = tpl;
+    window.selectedTemplate  = tpl;
+    // Also store in localStorage for persistence
+    localStorage.setItem('asai_selected_template', tpl);
+    console.log('✅ Template selected:', tpl);
 
             document.querySelectorAll('[data-tpl]').forEach(card => {
                 card.style.borderColor = card.dataset.tpl === tpl ? '#7c3aed' : '#e5e7eb';
@@ -11734,10 +11749,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // confirmIssueCert — reads the correct template
         window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
-            const tpl = window._selectedGlobalTemplate
-                     || window._approvalTemplate
-                     || window._certTpl
-                     || 'classic';
+    // Read from whichever variable was set — check localStorage as final fallback
+    const tpl = window._selectedGlobalTemplate
+             || window._approvalTemplate
+             || window._certTpl
+             || localStorage.getItem('asai_selected_template')
+             || 'classic';
+    console.log('🎓 Issuing certificate with template:', tpl);
 
             const notes      = document.getElementById('certApprovalNotes')?.value?.trim() || '';
             const certNumber = `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
