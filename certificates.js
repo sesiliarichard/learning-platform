@@ -255,34 +255,90 @@ if (!T && tpl && tpl.startsWith('custom-')) {
 // Final fallback
 if (!T) T = themes.classic;
 
-    // ── Background gradient ──
-   // Support background image for custom templates
-if (T.bgImageUrl) {
-    await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, W, H);
-            resolve();
-        };
-        img.onerror = () => {
-            // Fallback to gradient if image fails
-            const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-            bgGrad.addColorStop(0, T.bg1);
-            bgGrad.addColorStop(1, T.bg2);
-            ctx.fillStyle = bgGrad;
-            ctx.fillRect(0, 0, W, H);
-            resolve();
-        };
-        img.src = T.bgImageUrl;
-    });
-} else {
-    const bgGrad = ctx.createLinearGradient(0, 0, W, H);
-    bgGrad.addColorStop(0, T.bg1);
-    bgGrad.addColorStop(1, T.bg2);
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
-}
+    // ── Draw background first (image or gradient) ──
+    if (T.bgImageUrl) {
+        await new Promise((resolve) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => { ctx.drawImage(img, 0, 0, W, H); resolve(); };
+            img.onerror = () => {
+                const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+                bgGrad.addColorStop(0, T.bg1 || '#1e1b4b');
+                bgGrad.addColorStop(1, T.bg2 || '#312e81');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, W, H);
+                resolve();
+            };
+            img.src = T.bgImageUrl;
+        });
+    } else {
+        const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+        bgGrad.addColorStop(0, T.bg1);
+        bgGrad.addColorStop(1, T.bg2);
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, W, H);
+    }
+
+// ── If custom template with background image, only overlay student data ──
+    if (T.bgImageUrl) {
+        // Dark overlay to make text readable over the background image
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+        ctx.fillRect(0, 0, W, H);
+
+        const cx = W / 2;
+        const DATE = new Date().toLocaleDateString('en-US', {
+            month: 'long', day: 'numeric', year: 'numeric'
+        });
+
+        // ── Student Name (large, centered) ──
+        ctx.fillStyle = T.nameColor || '#ffffff';
+        ctx.font      = 'bold 64px Georgia';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let nameSize = 64;
+        while (ctx.measureText(studentName).width > W - 160 && nameSize > 28) {
+            nameSize -= 2;
+            ctx.font = `bold ${nameSize}px Georgia`;
+        }
+        ctx.fillText(studentName, cx, H / 2 - 20);
+
+        // Name underline
+        const nameW = ctx.measureText(studentName).width;
+        ctx.strokeStyle = T.nameUnderline || '#ffd700';
+        ctx.lineWidth   = 3;
+        ctx.beginPath();
+        ctx.moveTo(cx - nameW / 2, H / 2 + 16);
+        ctx.lineTo(cx + nameW / 2, H / 2 + 16);
+        ctx.stroke();
+
+        // ── Program name below ──
+        ctx.fillStyle = T.titleColor || '#ffffff';
+        ctx.font      = 'bold 26px Georgia';
+        ctx.fillText('ASAI Full Program Certificate', cx, H / 2 + 65);
+
+        // ── Date bottom right ──
+        ctx.fillStyle = T.textColor || 'rgba(255,255,255,0.85)';
+        ctx.font      = 'bold 18px Arial';
+        ctx.textAlign = 'right';
+        ctx.fillText(DATE, W - 100, H - 80);
+        ctx.font = '14px Arial';
+        ctx.fillStyle = T.subColor || 'rgba(255,255,255,0.6)';
+        ctx.fillText('Issue Date', W - 100, H - 58);
+
+        // ── Cert ID watermark ──
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.globalAlpha = 0.55;
+        ctx.font = '12px Courier New';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('ID: ' + (certNumber || 'PREVIEW'), W - 50, H - 20);
+        ctx.globalAlpha = 1;
+
+        return canvas.toDataURL('image/png');
+    }
+
+    // ── Standard templates (classic / modern / elegant) — full render below ──
 
     // ── Outer border ──
     if (T.borderColor) {
@@ -309,7 +365,6 @@ if (T.bgImageUrl) {
     ctx.arc(cx, logoY, 50, 0, Math.PI*2);
     ctx.fillStyle = logoGrad;
     ctx.fill();
-    // Graduation cap emoji approximation using text
     ctx.fillStyle = '#ffffff';
     ctx.font      = 'bold 38px Arial';
     ctx.textAlign = 'center';
@@ -336,7 +391,6 @@ if (T.bgImageUrl) {
     // ── STUDENT NAME ──
     ctx.fillStyle = T.nameColor;
     ctx.font      = 'bold 58px Georgia';
-    // Measure and scale if too long
     let nameSize = 58;
     while (ctx.measureText(studentName).width > W - 200 && nameSize > 28) {
         nameSize -= 2;
@@ -420,7 +474,7 @@ if (T.bgImageUrl) {
     ctx.textBaseline = 'middle';
     ctx.fillText('★', cx, 690);
 
-    // ── CERT ID watermark ──
+   // ── CERT ID watermark ──
     ctx.fillStyle = T.subColor;
     ctx.globalAlpha = 0.55;
     ctx.font = '12px Courier New';
@@ -431,7 +485,6 @@ if (T.bgImageUrl) {
 
     return canvas.toDataURL('image/png');
 }
-
 function _drawCornerOrnaments(ctx, color, W, H) {
     const size = 40, pad = 46;
     ctx.strokeStyle = color;
