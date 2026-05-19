@@ -11580,14 +11580,8 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('✅ Approval template set to:', tpl);
         };
 
-        // certPreview — ALWAYS uses the template passed in (from DB)
-        // unless admin explicitly selected a different one THIS SESSION
-        window.certPreview = async function(studentName, courseName, certNumber, templateFromDB) {
-            // Use the globally selected template ONLY if admin changed it this session
-            // Otherwise use the template saved in the database
+      window.certPreview = async function(studentName, courseName, certNumber, templateFromDB) {
             const resolvedTpl = window._selectedGlobalTemplate || templateFromDB || 'classic';
-            
-            console.log('🎨 certPreview:', { resolvedTpl, templateFromDB, globalSelected: window._selectedGlobalTemplate });
 
             document.getElementById('certPreviewModal')?.remove();
 
@@ -11604,7 +11598,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataUrl = await _renderCertificateCanvas(studentName, certNumber, resolvedTpl);
             }
 
-            const _esc2 = s => String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+            const _esc2 = s => String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+            const builtinCards = ['classic', 'modern', 'elegant'].map(t => {
+                const icons = { classic: '🏅', modern: '⭐', elegant: '💎' };
+                const bgs   = {
+                    classic: 'linear-gradient(135deg,#fdf6e3,#f5e6c8)',
+                    modern:  'linear-gradient(135deg,#1e1b4b,#312e81)',
+                    elegant: 'linear-gradient(135deg,#0f2027,#2c5364)'
+                };
+                const selected = resolvedTpl === t;
+                return `
+                <div data-tpl="${t}"
+                     onclick="switchPreviewTemplate('${_esc2(studentName)}','${_esc2(certNumber)}','${t}')"
+                     style="border:2px solid ${selected ? '#7c3aed' : '#e5e7eb'};
+                            transform:${selected ? 'scale(1.04)' : 'scale(1)'};
+                            border-radius:10px;overflow:hidden;cursor:pointer;
+                            transition:all 0.2s;flex-shrink:0;width:90px;">
+                    <div style="height:44px;background:${bgs[t]};display:flex;align-items:center;
+                                justify-content:center;font-size:18px;">${icons[t]}</div>
+                    <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;
+                                color:#374151;">${t.charAt(0).toUpperCase() + t.slice(1)}</div>
+                </div>`;
+            }).join('');
 
             modal.innerHTML = `
                 <div class="modal-content" style="max-width:900px;">
@@ -11612,44 +11628,57 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h2>
                             <i class="fas fa-certificate" style="color:#7c3aed;margin-right:8px;"></i>
                             Certificate Preview — ${studentName}
-                            <span style="font-size:12px;font-weight:400;color:#9ca3af;margin-left:8px;">${resolvedTpl}</span>
+                            <span style="font-size:12px;font-weight:400;color:#9ca3af;margin-left:8px;"
+                                  id="previewTplLabel">${resolvedTpl}</span>
                         </h2>
-                        <button class="modal-close" onclick="document.getElementById('certPreviewModal').remove()">
+                        <button class="modal-close"
+                                onclick="document.getElementById('certPreviewModal').remove()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
-                    <div style="background:#e5e7eb;padding:24px;border-radius:14px;text-align:center;margin-bottom:16px;">
-                        ${dataUrl
-                            ? `<img src="${dataUrl}" style="max-width:100%;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,0.35);" alt="Certificate">`
-                            : `<div style="padding:40px;color:#6b7280;">Preview unavailable</div>`
-                        }
+
+                    <div style="background:#e5e7eb;padding:24px;border-radius:14px;
+                                text-align:center;margin-bottom:16px;">
+                        <img id="previewCertImg"
+                             src="${dataUrl}"
+                             style="max-width:100%;border-radius:8px;
+                                    box-shadow:0 16px 48px rgba(0,0,0,0.35);"
+                             alt="Certificate preview">
                     </div>
-                    <!-- Template switcher inside preview -->
+
                     <div style="margin-bottom:16px;">
-                        <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                        <label style="display:block;font-size:12px;font-weight:700;
+                                       color:#6b7280;text-transform:uppercase;
+                                       letter-spacing:1px;margin-bottom:10px;">
                             Switch template to preview:
                         </label>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="previewTemplateSwitcher">
-                            ${['classic','modern','elegant'].map(t => `
-                                <button onclick="switchPreviewTemplate('${_esc2(studentName)}','${_esc2(certNumber)}','${t}')"
-                                    style="padding:6px 14px;border:2px solid ${resolvedTpl===t?'#7c3aed':'#e5e7eb'};border-radius:8px;
-                                           background:${resolvedTpl===t?'#ede9fe':'white'};color:${resolvedTpl===t?'#7c3aed':'#6b7280'};
-                                           font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;">
-                                    ${t.charAt(0).toUpperCase()+t.slice(1)}
-                                </button>`).join('')}
+                        <div id="previewTemplateSwitcher"
+                             style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;">
+                            ${builtinCards}
+                            <div id="previewCustomTemplates"
+                                 style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <div style="font-size:12px;color:#9ca3af;
+                                            display:flex;align-items:center;gap:6px;padding:6px 0;">
+                                    <i class="fas fa-spinner fa-spin"></i> Loading custom…
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div style="display:flex;gap:12px;">
                         ${dataUrl ? `
-                        <button onclick="_downloadCertPng('${_esc2(dataUrl)}','${_esc2(studentName)}')"
-                            style="flex:1;padding:13px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
-                                   border:none;border-radius:12px;color:white;font-weight:700;cursor:pointer;
-                                   font-family:inherit;font-size:14px;">
+                        <button id="previewDownloadBtn"
+                                onclick="_downloadCertPng('${_esc2(dataUrl)}','${_esc2(studentName)}')"
+                            style="flex:1;padding:13px;
+                                   background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                                   border:none;border-radius:12px;color:white;font-weight:700;
+                                   cursor:pointer;font-family:inherit;font-size:14px;">
                             <i class="fas fa-download"></i> Download PNG
                         </button>` : ''}
                         <button onclick="document.getElementById('certPreviewModal').remove()"
-                            style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
-                                   background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
+                            style="flex:1;padding:13px;border:2px solid #e5e7eb;
+                                   border-radius:12px;background:white;color:#6b7280;
+                                   font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
                             Close
                         </button>
                     </div>
@@ -11657,18 +11686,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.body.appendChild(modal);
             modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        };
 
-        // Switch template INSIDE the preview modal
-        window.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
-            // Update global selection
+            _loadCustomTemplatesIntoPreview(studentName, certNumber, resolvedTpl);
+        };
+       window.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
             window._selectedGlobalTemplate = tpl;
-            window._certTpl = tpl;
+            window._certTpl          = tpl;
             window._approvalTemplate = tpl;
 
-            // Re-open with new template
-            document.getElementById('certPreviewModal')?.remove();
-            await window.certPreview(studentName, 'ASAI Full Program Certificate', certNumber, tpl);
+            document.querySelectorAll(
+                '#certPreviewModal [data-tpl], #previewTemplateSwitcher [data-tpl]'
+            ).forEach(card => {
+                const isSelected = card.dataset.tpl === tpl;
+                const isCustom   = tpl.startsWith('custom-');
+                card.style.borderColor = isSelected ? (isCustom ? '#f59e0b' : '#7c3aed') : '#e5e7eb';
+                card.style.transform   = isSelected ? 'scale(1.04)' : 'scale(1)';
+            });
+
+            const lbl = document.getElementById('previewTplLabel');
+            if (lbl) lbl.textContent = tpl;
+
+            const img = document.getElementById('previewCertImg');
+            if (img && typeof _renderCertificateCanvas === 'function') {
+                img.style.opacity = '0.4';
+                const newUrl = await _renderCertificateCanvas(studentName, certNumber, tpl);
+                img.src = newUrl;
+                img.style.opacity = '1';
+
+                const dlBtn = document.getElementById('previewDownloadBtn');
+                if (dlBtn) {
+                    const safe = s => String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    dlBtn.setAttribute('onclick',
+                        `_downloadCertPng('${safe(newUrl)}','${safe(studentName)}')`);
+                }
+            }
         };
 
         // previewCert (legacy alias from table rows) — passes DB template
@@ -11726,6 +11777,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log('✅ Template fix v3 — preview uses DB template, switcher inside modal');
 
+        async function _loadCustomTemplatesIntoPreview(studentName, certNumber, currentTpl) {
+            const container = document.getElementById('previewCustomTemplates');
+            if (!container) return;
+            try {
+                const sb = window.supabaseClient || window.db;
+                const { data: templates, error } = await sb
+                    .from('certificate_templates')
+                    .select('*')
+                    .order('created_at', { ascending: true });
+
+                if (error) throw error;
+
+                if (!templates || templates.length === 0) {
+                    container.innerHTML = '';
+                    return;
+                }
+
+                container.innerHTML = templates.map(tpl => {
+                    const tplKey   = `custom-${tpl.id}`;
+                    const selected = currentTpl === tplKey;
+                    const bg       = tpl.bg_image_url
+                        ? `url('${tpl.bg_image_url}') center/cover no-repeat`
+                        : `linear-gradient(135deg, ${tpl.bg_color || '#1e1b4b'}, ${tpl.accent_color || '#7c3aed'})`;
+                    return `
+                    <div data-tpl="${tplKey}"
+                         onclick="switchPreviewTemplate('${studentName.replace(/'/g,"\\'")}','${certNumber}','${tplKey}')"
+                         style="border:2px solid ${selected ? '#f59e0b' : '#e5e7eb'};
+                                transform:${selected ? 'scale(1.04)' : 'scale(1)'};
+                                border-radius:10px;overflow:hidden;cursor:pointer;
+                                transition:all 0.2s;flex-shrink:0;width:90px;">
+                        <div style="height:44px;background:${bg};display:flex;align-items:center;
+                                    justify-content:center;">
+                            <i class="fas fa-certificate"
+                               style="color:${tpl.title_color || '#fff'};font-size:18px;opacity:0.9;"></i>
+                        </div>
+                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;
+                                    color:#374151;white-space:nowrap;overflow:hidden;
+                                    text-overflow:ellipsis;" title="${tpl.name}">
+                            ${tpl.name}
+                            <span style="color:#f59e0b;font-size:9px;">★</span>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            } catch (err) {
+                container.innerHTML = `<span style="font-size:11px;color:#ef4444;">Could not load custom templates</span>`;
+                console.warn('_loadCustomTemplatesIntoPreview error:', err.message);
+            }
+        }
     }, 1000);
 });
 </script>
