@@ -11740,15 +11740,92 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // previewCert (legacy alias from table rows) — passes DB template
-        window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
-            window.certPreview(
-                String(studentName || 'Student'),
-                String(courseName  || 'ASAI Full Program Certificate'),
-                String(certNumber  || ''),
-                String(templateFromDB || 'classic')
-            );
+   window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
+    // Store certId globally so Save button can update the right record
+    window._previewCertId = certId;
+    window._previewCertNumber = certNumber;
+    window._selectedGlobalTemplate = templateFromDB || 'classic';
+    window._approvalTemplate = templateFromDB || 'classic';
+
+    window.certPreview(
+        String(studentName || 'Student'),
+        String(courseName  || 'ASAI Full Program Certificate'),
+        String(certNumber  || ''),
+        String(templateFromDB || 'classic')
+    );
+
+    // After modal opens, inject Save button
+    setTimeout(() => {
+        const modal = document.getElementById('certPreviewModal');
+        if (!modal) return;
+
+        // Find the button row
+        const btnRow = modal.querySelector('div[style*="display:flex;gap:12px"]');
+        if (!btnRow) return;
+
+        // Check Save button not already added
+        if (modal.querySelector('#adminSaveTemplateBtn')) return;
+
+        const saveBtn = document.createElement('button');
+        saveBtn.id = 'adminSaveTemplateBtn';
+        saveBtn.style.cssText = `
+            flex:2;min-width:180px;padding:13px;
+            background:linear-gradient(135deg,#7c3aed,#6d28d9);
+            border:none;border-radius:12px;color:white;font-weight:800;
+            cursor:pointer;font-family:inherit;font-size:14px;
+            display:flex;align-items:center;justify-content:center;gap:8px;
+            box-shadow:0 4px 14px rgba(124,58,237,0.4);order:-1;`;
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
+
+        saveBtn.onclick = async () => {
+            const tpl = window._selectedGlobalTemplate
+                     || window._approvalTemplate
+                     || window._certTpl
+                     || 'classic';
+
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                const sb = window.supabaseClient || window.db;
+
+                // Update by cert_number if we have it, otherwise by id
+                let error;
+                if (window._previewCertNumber) {
+                    ({ error } = await sb
+                        .from('certificates')
+                        .update({ template: tpl })
+                        .eq('cert_number', window._previewCertNumber));
+                } else if (window._previewCertId) {
+                    ({ error } = await sb
+                        .from('certificates')
+                        .update({ template: tpl })
+                        .eq('id', window._previewCertId));
+                }
+
+                if (error) throw error;
+
+                saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                saveBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+                showToast('✅ Template "' + tpl + '" saved successfully!');
+
+                setTimeout(() => {
+                    document.getElementById('certPreviewModal')?.remove();
+                    loadIssuedCerts();
+                    loadEligibleStudents();
+                }, 1200);
+
+            } catch(err) {
+                showToast('Error saving: ' + err.message, 'error');
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
+            }
         };
+
+        // Insert Save button before Download button
+        btnRow.insertBefore(saveBtn, btnRow.firstChild);
+    }, 300);
+};
 
         // confirmIssueCert — reads the correct template
   window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
