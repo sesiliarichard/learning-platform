@@ -518,18 +518,30 @@ async function certPreview(studentName, _courseName, certNumber, template) {
                      alt="Certificate preview">
             </div>
 
-            <div style="display:flex;gap:12px;">
-                <button onclick="_downloadCertPng('${_esc(dataUrl)}','${_esc(studentName)}')"
-                    style="flex:1;padding:13px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
-                           border:none;border-radius:12px;color:white;font-weight:700;cursor:pointer;
-                           font-family:inherit;font-size:14px;display:flex;align-items:center;
-                           justify-content:center;gap:8px;">
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                ${dataUrl ? `
+                <button id="previewDownloadBtn"
+                        onclick="_downloadCertPng('${_esc(dataUrl)}','${_esc(studentName)}')"
+                    style="flex:1;min-width:140px;padding:13px;
+                           background:linear-gradient(135deg,#6b7280,#4b5563);
+                           border:none;border-radius:12px;color:white;font-weight:700;
+                           cursor:pointer;font-family:inherit;font-size:14px;">
                     <i class="fas fa-download"></i> Download PNG
+                </button>` : ''}
+                <button id="saveIssueBtn"
+                    onclick="saveChosenTemplate('${_esc(studentName)}','${certNumber}')"
+                    style="flex:2;min-width:180px;padding:13px;
+                           background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:12px;color:white;font-weight:800;
+                           cursor:pointer;font-family:inherit;font-size:14px;
+                           display:flex;align-items:center;justify-content:center;gap:8px;
+                           box-shadow:0 4px 14px rgba(124,58,237,0.4);">
+                    <i class="fas fa-save"></i> Save Template Choice
                 </button>
                 <button onclick="document.getElementById('certPreviewModal').remove()"
-                    style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
-                           background:white;color:#6b7280;font-weight:700;cursor:pointer;
-                           font-family:inherit;font-size:14px;">
+                    style="flex:1;min-width:120px;padding:13px;border:2px solid #e5e7eb;
+                           border-radius:12px;background:white;color:#6b7280;
+                           font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
                     Close
                 </button>
             </div>
@@ -1513,7 +1525,52 @@ async function viewEmailLog() {
     document.body.appendChild(modal);
 }
 
+async function saveChosenTemplate(studentName, certNumber) {
+    const tpl = window._selectedGlobalTemplate
+             || window._approvalTemplate
+             || window._certTpl
+             || 'classic';
 
+    const btn = document.getElementById('saveIssueBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    }
+
+    try {
+        const db = getCertDB();
+
+        // Find the certificate by cert_number and update its template
+        const { error } = await db
+            .from('certificates')
+            .update({ template: tpl })
+            .eq('cert_number', certNumber);
+
+        if (error) throw error;
+
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+            btn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
+        }
+
+        _toast(`✅ Template "${tpl}" saved for ${studentName}!`);
+
+        setTimeout(() => {
+            document.getElementById('certPreviewModal')?.remove();
+            loadIssuedCerts();
+            loadEligibleStudents();
+        }, 1200);
+
+    } catch(err) {
+        _toast('Error saving: ' + err.message, 'error');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
+        }
+    }
+}
+
+window.saveChosenTemplate = saveChosenTemplate;
 // ============================================================
 // EXPOSE GLOBALS
 // ============================================================
