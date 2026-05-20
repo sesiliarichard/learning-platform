@@ -11740,12 +11740,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-   window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
-    // Store certId globally so Save button can update the right record
+ window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
+    // Store ALL needed values globally BEFORE opening modal
     window._previewCertId = certId;
     window._previewCertNumber = certNumber;
     window._selectedGlobalTemplate = templateFromDB || 'classic';
     window._approvalTemplate = templateFromDB || 'classic';
+    window._certTpl = templateFromDB || 'classic';
 
     window.certPreview(
         String(studentName || 'Student'),
@@ -11754,60 +11755,43 @@ document.addEventListener('DOMContentLoaded', () => {
         String(templateFromDB || 'classic')
     );
 
-    // After modal opens, inject Save button
     setTimeout(() => {
         const modal = document.getElementById('certPreviewModal');
-        if (!modal) return;
+        if (!modal || modal.querySelector('#adminSaveTemplateBtn')) return;
 
-        // Find the button row
-        const btnRow = modal.querySelector('div[style*="display:flex;gap:12px"]');
+        const btnRow = modal.querySelector('div[style*="gap:12px"]');
         if (!btnRow) return;
-
-        // Check Save button not already added
-        if (modal.querySelector('#adminSaveTemplateBtn')) return;
 
         const saveBtn = document.createElement('button');
         saveBtn.id = 'adminSaveTemplateBtn';
-        saveBtn.style.cssText = `
-            flex:2;min-width:180px;padding:13px;
-            background:linear-gradient(135deg,#7c3aed,#6d28d9);
-            border:none;border-radius:12px;color:white;font-weight:800;
-            cursor:pointer;font-family:inherit;font-size:14px;
-            display:flex;align-items:center;justify-content:center;gap:8px;
-            box-shadow:0 4px 14px rgba(124,58,237,0.4);order:-1;`;
+        saveBtn.style.cssText = `flex:2;padding:13px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;`;
         saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
 
         saveBtn.onclick = async () => {
+            // Read the CURRENT template — whatever was last switched to
             const tpl = window._selectedGlobalTemplate
                      || window._approvalTemplate
                      || window._certTpl
+                     || templateFromDB  // ← closure captures original
                      || 'classic';
+
+            const certNum = window._previewCertNumber || certNumber; // ← closure fallback
 
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
 
             try {
                 const sb = window.supabaseClient || window.db;
-
-                // Update by cert_number if we have it, otherwise by id
-                let error;
-                if (window._previewCertNumber) {
-                    ({ error } = await sb
-                        .from('certificates')
-                        .update({ template: tpl })
-                        .eq('cert_number', window._previewCertNumber));
-                } else if (window._previewCertId) {
-                    ({ error } = await sb
-                        .from('certificates')
-                        .update({ template: tpl })
-                        .eq('id', window._previewCertId));
-                }
+                const { error } = await sb
+                    .from('certificates')
+                    .update({ template: tpl })
+                    .eq('cert_number', certNum);
 
                 if (error) throw error;
 
                 saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
                 saveBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                showToast('✅ Template "' + tpl + '" saved successfully!');
+                showToast(`✅ Template "${tpl}" saved!`);
 
                 setTimeout(() => {
                     document.getElementById('certPreviewModal')?.remove();
@@ -11822,11 +11806,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        // Insert Save button before Download button
         btnRow.insertBefore(saveBtn, btnRow.firstChild);
     }, 300);
 };
-
         // confirmIssueCert — reads the correct template
   window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
     // Read from ALL possible variable sources
