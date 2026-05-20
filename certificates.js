@@ -790,7 +790,7 @@ async function confirmApprove(studentId, studentName, email, sendNow, certNumber
 
         if (sendNow) {
             // Generate the certificate PNG to embed/attach in email
-            const certPng = _renderCertificateCanvas(studentName, usedNum, usedTpl);
+            const certPng = await _renderCertificateCanvas(studentName, usedNum, usedTpl);
             await _sendCertEmail({ studentName, email, courseName, certNumber: usedNum, certPng });
             _toast(`🎓 Certificate approved & sent to ${studentName}!`);
         } else {
@@ -817,7 +817,7 @@ async function publishApprovedCert(certId, studentName, email, certNumber, templ
     }).eq('id', certId);
     if (error) { _toast('Error: ' + error.message, 'error'); return; }
 
-    const certPng = _renderCertificateCanvas(studentName, certNumber, template || _certTpl);
+    const certPng = await _renderCertificateCanvas(studentName, certNumber, template || _certTpl);
     await _sendCertEmail({
         studentName, email,
         courseName:  'ASAI Full Program Certificate',
@@ -935,7 +935,7 @@ async function bulkIssueCertificates() {
                 if (error) continue;
             }
 
-            const certPng = _renderCertificateCanvas(cb.dataset.studentname, certNumber, _certTpl);
+            const certPng = await _renderCertificateCanvas(cb.dataset.studentname, certNumber, _certTpl);
             await _sendCertEmail({
                 studentName: cb.dataset.studentname,
                 email:       cb.dataset.email,
