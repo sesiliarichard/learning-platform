@@ -11707,7 +11707,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             _loadCustomTemplatesIntoPreview(studentName, certNumber, resolvedTpl);
         };
-       wwindow.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
+       window.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
             // Sync ALL global variables so Save button reads correctly
             window._selectedGlobalTemplate = tpl;
             window._certTpl                = tpl;
