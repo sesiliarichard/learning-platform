@@ -11707,10 +11707,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             _loadCustomTemplatesIntoPreview(studentName, certNumber, resolvedTpl);
         };
-       window.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
+       wwindow.switchPreviewTemplate = async function(studentName, certNumber, tpl) {
+            // Sync ALL global variables so Save button reads correctly
             window._selectedGlobalTemplate = tpl;
-            window._certTpl          = tpl;
-            window._approvalTemplate = tpl;
+            window._certTpl                = tpl;
+            window._approvalTemplate       = tpl;
+            window._approveTemplate        = tpl;
+            window._previewCertNumber      = certNumber; // ← CRITICAL addition
 
             document.querySelectorAll(
                 '#certPreviewModal [data-tpl], #previewTemplateSwitcher [data-tpl]'
@@ -11731,22 +11734,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.src = newUrl;
                 img.style.opacity = '1';
 
+                // Update download button with new image
                 const dlBtn = document.getElementById('previewDownloadBtn');
                 if (dlBtn) {
                     const safe = s => String(s || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     dlBtn.setAttribute('onclick',
                         `_downloadCertPng('${safe(newUrl)}','${safe(studentName)}')`);
                 }
+
+                // Update Save button onclick with refreshed values
+                const saveBtn = document.getElementById('adminSaveTemplateBtn');
+                if (saveBtn) {
+                    const safeName = String(studentName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    saveBtn.setAttribute('onclick',
+                        `saveChosenTemplate('${safeName}','${certNumber}')`);
+                }
             }
         };
-
  window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
-    // Store ALL needed values globally BEFORE opening modal
-    window._previewCertId = certId;
-    window._previewCertNumber = certNumber;
-    window._selectedGlobalTemplate = templateFromDB || 'classic';
-    window._approvalTemplate = templateFromDB || 'classic';
-    window._certTpl = templateFromDB || 'classic';
+    // Store ALL values globally BEFORE opening modal
+    window._previewCertId            = certId;
+    window._previewCertNumber        = certNumber;
+    window._selectedGlobalTemplate   = templateFromDB || 'classic';
+    window._approvalTemplate         = templateFromDB || 'classic';
+    window._certTpl                  = templateFromDB || 'classic';
+    window._approveTemplate          = templateFromDB || 'classic';
+
+    console.log('👁 Opening preview | cert:', certNumber, '| template:', templateFromDB);
 
     window.certPreview(
         String(studentName || 'Student'),

@@ -492,6 +492,12 @@ async function certPreview(studentName, _courseName, certNumber, template) {
     certNumber  = String(certNumber  || '');
     template    = String(template    || _certTpl || 'classic');
 
+    // Store globally so Save button can always find them
+    window._previewCertNumber        = certNumber;
+    window._selectedGlobalTemplate   = template;
+    window._certTpl                  = template;
+    window._approvalTemplate         = template;
+
     const modal = document.createElement('div');
     modal.id = 'certPreviewModal';
     modal.className = 'modal active';
@@ -1526,12 +1532,26 @@ async function viewEmailLog() {
 }
 
 async function saveChosenTemplate(studentName, certNumber) {
+    // Read template from globals — set when modal opened or template switched
     const tpl = window._selectedGlobalTemplate
              || window._approvalTemplate
              || window._certTpl
              || 'classic';
 
-    const btn = document.getElementById('saveIssueBtn');
+    // Read cert number from globals first, fall back to parameter
+    const certNum = window._previewCertNumber
+                 || certNumber
+                 || '';
+
+    console.log('💾 Saving template:', tpl, '| cert:', certNum);
+
+    if (!certNum) {
+        _toast('Cannot save: certificate number is missing', 'error');
+        return;
+    }
+
+    const btn = document.getElementById('adminSaveTemplateBtn')
+             || document.getElementById('saveIssueBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -1540,13 +1560,16 @@ async function saveChosenTemplate(studentName, certNumber) {
     try {
         const db = getCertDB();
 
-        // Find the certificate by cert_number and update its template
         const { error } = await db
             .from('certificates')
             .update({ template: tpl })
-            .eq('cert_number', certNumber);
+            .eq('cert_number', certNum);
 
         if (error) throw error;
+
+        // Update local cache so re-opening preview shows correct template
+        const row = (_allRows || []).find(r => r.certNumber === certNum);
+        if (row) row.template = tpl;
 
         if (btn) {
             btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
