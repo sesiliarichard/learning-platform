@@ -1532,21 +1532,24 @@ async function viewEmailLog() {
 }
 
 async function saveChosenTemplate(studentName, certNumber) {
-    // Read template from globals — set when modal opened or template switched
+    // Resolve cert number from ALL possible sources
+    const certNum = window._previewCertNumber
+                 || certNumber
+                 || document.querySelector('#certPreviewModal')?.dataset?.certNumber
+                 || '';
+
     const tpl = window._selectedGlobalTemplate
              || window._approvalTemplate
              || window._certTpl
              || 'classic';
 
-    // Read cert number from globals first, fall back to parameter
-    const certNum = window._previewCertNumber
-                 || certNumber
-                 || '';
-
-    console.log('💾 Saving template:', tpl, '| cert:', certNum);
+    console.log('=== SAVE DEBUG ===');
+    console.log('certNum:', certNum);
+    console.log('tpl:', tpl);
+    console.log('window._previewCertNumber:', window._previewCertNumber);
 
     if (!certNum) {
-        _toast('Cannot save: certificate number is missing', 'error');
+        _toast('Cannot save: certificate number not found. Try closing and reopening the preview.', 'error');
         return;
     }
 
@@ -1567,7 +1570,7 @@ async function saveChosenTemplate(studentName, certNumber) {
 
         if (error) throw error;
 
-        // Update local cache so re-opening preview shows correct template
+        // Update local cache
         const row = (_allRows || []).find(r => r.certNumber === certNum);
         if (row) row.template = tpl;
 
@@ -1577,6 +1580,7 @@ async function saveChosenTemplate(studentName, certNumber) {
         }
 
         _toast(`✅ Template "${tpl}" saved for ${studentName}!`);
+        window._previewCertNumber = null; // clear after save
 
         setTimeout(() => {
             document.getElementById('certPreviewModal')?.remove();
@@ -1618,12 +1622,21 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectApproveTemplate    = selectApproveTemplate;
 
     // Legacy aliases used in admin.html inline code
-   window.previewCert = (id, sN, cN, num, tpl) => {
-    const safeSN  = String(sN  || 'Student');
-    const safeCN  = String(cN  || 'ASAI Full Program Certificate');
-    const safeNum = String(num || '');
-    const safeTpl = String(tpl || 'classic');
-    certPreview(safeSN, safeCN, safeNum, safeTpl);
+  window.previewCert = function(certId, sN, cN, num, tpl) {
+    // Store EVERYTHING globally before opening modal
+    window._previewCertNumber      = String(num || '');
+    window._selectedGlobalTemplate = String(tpl || 'classic');
+    window._certTpl                = String(tpl || 'classic');
+    window._approvalTemplate       = String(tpl || 'classic');
+
+    console.log('previewCert called | certNumber:', num, '| template:', tpl);
+
+    certPreview(
+        String(sN  || 'Student'),
+        String(cN  || 'ASAI Full Program Certificate'),
+        String(num || ''),
+        String(tpl || 'classic')
+    );
 };
     window.revokeCert        = certRevoke;
     window.openIssueCertModal = () => {
