@@ -6340,7 +6340,10 @@ function updateCertStats(rows) {
 // ─────────────────────────────────────────────
 // ISSUE SINGLE CERT (creates draft in Supabase)
 // ─────────────────────────────────────────────
-function issueSingleCert(studentId, courseId, courseName, studentName, email) {
+function issueSingleCert(studentId, courseId, courseName, studentName, email, existingTemplate = 'classic') {
+    window._selectedGlobalTemplate = existingTemplate;
+    window._approvalTemplate = existingTemplate;
+    window._certTpl = existingTemplate;
     // Remove any existing modal
     document.getElementById('certApprovalModal')?.remove();
 
@@ -9462,7 +9465,7 @@ function renderEligibleStudentsFixed(rows) {
             // Action button
             let actionBtn = '';
             if (r.certStatus === 'completed') {
-                actionBtn = `<button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="issueSingleCert('${r.studentId}','${r.courseId}','${sCourse}','${sName}','${sEmail}')"><i class="fas fa-award"></i> Issue</button>`;
+                actionBtn = `  <button class="btn-primary" style="padding:6px 12px;font-size:12px;" onclick="issueSingleCert('${r.studentId}','${r.courseId}','${sCourse}','${sName}','${sEmail}','${r.template || 'classic'}')"><i class="fas fa-award"></i> Issue</button>`;
             } else if (r.certStatus === 'published') {
                 actionBtn = `<div style="display:flex;gap:5px;">
                     <button class="action-btn view" onclick="previewCert('${r.certId}','${sName}','${sCourse}','${r.certNumber}','${r.template}')"><i class="fas fa-eye"></i></button>
@@ -11748,15 +11751,18 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // confirmIssueCert — reads the correct template
-        window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
-    // Read from whichever variable was set — check localStorage as final fallback
+  window.confirmIssueCert = async function(studentId, courseId, courseName, studentName, email) {
+    // Read from ALL possible variable sources
     const tpl = window._selectedGlobalTemplate
              || window._approvalTemplate
              || window._certTpl
+             || window.selectedTemplate
              || localStorage.getItem('asai_selected_template')
              || 'classic';
     console.log('🎓 Issuing certificate with template:', tpl);
-
+    // Lock it before async operations
+    window._selectedGlobalTemplate = tpl;
+    window._approvalTemplate = tpl;
             const notes      = document.getElementById('certApprovalNotes')?.value?.trim() || '';
             const certNumber = `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
 
@@ -11787,7 +11793,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showToast(`✅ Certificate (${tpl}) approved for ${studentName}!`);
 
             // Reset for next use
+            // Reset for next use
             window._selectedGlobalTemplate = null;
+            window._approvalTemplate = 'classic';
+            window._certTpl = 'classic';
+            localStorage.removeItem('asai_selected_template');
 
             await loadEligibleStudents();
             await loadIssuedCerts();
