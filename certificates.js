@@ -490,21 +490,21 @@ async function certPreview(studentName, _courseName, certNumber, template) {
     // Guard against non-string inputs
     studentName = String(studentName || 'Student');
     certNumber  = String(certNumber  || '');
-    template    = String(template    || _certTpl || 'classic');
+    let selectedTpl = String(template || _certTpl || 'classic');
 
     // Store globally so Save button can always find them
     window._previewCertNumber        = certNumber;
-    window._selectedGlobalTemplate   = template;
-    window._certTpl                  = template;
-    window._approvalTemplate         = template;
+    window._selectedGlobalTemplate   = selectedTpl;
+    window._certTpl                  = selectedTpl;
+    window._approvalTemplate         = selectedTpl;
 
     const modal = document.createElement('div');
     modal.id = 'certPreviewModal';
     modal.className = 'modal active';
     modal.style.zIndex = '5500';
 
-    // Generate the certificate image (now awaited since _renderCertificateCanvas is async)
-    const dataUrl = await _renderCertificateCanvas(studentName, certNumber, template);
+    // Generate the certificate image with the SELECTED template
+    const dataUrl = await _renderCertificateCanvas(studentName, certNumber, selectedTpl);
 
     modal.innerHTML = `
         <div class="modal-content" style="max-width:900px;">
@@ -518,31 +518,47 @@ async function certPreview(studentName, _courseName, certNumber, template) {
                 </button>
             </div>
 
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px;">
+                    SWITCH TEMPLATE TO PREVIEW:
+                </label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;" id="previewTemplateButtons">
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','classic')" 
+                         style="border:2px solid ${selectedTpl === 'classic' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);">
+                        🏅 Classic
+                    </div>
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','modern')" 
+                         style="border:2px solid ${selectedTpl === 'modern' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#1e1b4b,#312e81);color:white;">
+                        ⭐ Modern
+                    </div>
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','elegant')" 
+                         style="border:2px solid ${selectedTpl === 'elegant' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#0f2027,#2c5364);color:white;">
+                        💎 Elegant
+                    </div>
+                </div>
+            </div>
+
             <div style="background:#e5e7eb;padding:24px;border-radius:14px;text-align:center;margin-bottom:16px;">
-                <img src="${dataUrl}"
+                <img id="previewCertImage" src="${dataUrl}"
                      style="max-width:100%;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,0.35);"
                      alt="Certificate preview">
             </div>
 
             <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                ${dataUrl ? `
-                <button id="previewDownloadBtn"
-                        onclick="_downloadCertPng('${_esc(dataUrl)}','${_esc(studentName)}')"
+                <button id="saveTemplateBtn"
+                        onclick="saveChosenTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}')"
+                    style="flex:2;min-width:180px;padding:13px;
+                           background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:12px;color:white;font-weight:800;
+                           cursor:pointer;font-family:inherit;font-size:14px;">
+                    <i class="fas fa-save"></i> Save Template Choice
+                </button>
+                <button onclick="downloadCertPng()"
                     style="flex:1;min-width:140px;padding:13px;
                            background:linear-gradient(135deg,#6b7280,#4b5563);
                            border:none;border-radius:12px;color:white;font-weight:700;
                            cursor:pointer;font-family:inherit;font-size:14px;">
                     <i class="fas fa-download"></i> Download PNG
-                </button>` : ''}
-                <button id="saveIssueBtn"
-                    onclick="saveChosenTemplate('${_esc(studentName)}','${certNumber}')"
-                    style="flex:2;min-width:180px;padding:13px;
-                           background:linear-gradient(135deg,#7c3aed,#6d28d9);
-                           border:none;border-radius:12px;color:white;font-weight:800;
-                           cursor:pointer;font-family:inherit;font-size:14px;
-                           display:flex;align-items:center;justify-content:center;gap:8px;
-                           box-shadow:0 4px 14px rgba(124,58,237,0.4);">
-                    <i class="fas fa-save"></i> Save Template Choice
                 </button>
                 <button onclick="document.getElementById('certPreviewModal').remove()"
                     style="flex:1;min-width:120px;padding:13px;border:2px solid #e5e7eb;
@@ -555,9 +571,7 @@ async function certPreview(studentName, _courseName, certNumber, template) {
     `;
 
     document.body.appendChild(modal);
- modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-// Load custom templates from Supabase into the grid
-_loadCustomTemplatesIntoForceModal();
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 function _downloadCertPng(dataUrl, studentName) {
@@ -1631,6 +1645,173 @@ async function saveChosenTemplate(studentName, certNumber) {
 }
 
 window.saveChosenTemplate = saveChosenTemplate;
+// ============================================================
+// PREVIEW TEMPLATE SWITCHER - GLOBAL FUNCTIONS
+// ============================================================
+
+window.switchPreviewTemplate = async function(studentName, certNumber, template) {
+    console.log('🔄 switchPreviewTemplate called with:', { studentName, certNumber, template });
+    
+    // Update global variables
+    window._selectedGlobalTemplate = template;
+    window._certTpl = template;
+    window._approvalTemplate = template;
+    window._previewCertNumber = certNumber;
+    
+    // Update button highlighting
+    const buttons = document.querySelectorAll('#previewTemplateButtons > div, [onclick*="switchPreviewTemplate"]');
+    buttons.forEach(btn => {
+        const btnText = btn.textContent.toLowerCase();
+        if (btnText.includes(template.toLowerCase())) {
+            btn.style.borderColor = '#7c3aed';
+            btn.style.borderWidth = '2px';
+            btn.style.borderStyle = 'solid';
+            btn.style.transform = 'scale(1.02)';
+        } else if (btnText.includes('classic') || btnText.includes('modern') || btnText.includes('elegant')) {
+            btn.style.borderColor = '#e5e7eb';
+            btn.style.borderWidth = '2px';
+            btn.style.borderStyle = 'solid';
+            btn.style.transform = 'scale(1)';
+        }
+    });
+    
+    // Regenerate certificate with new template
+    const previewImg = document.getElementById('previewCertImage');
+    if (previewImg && typeof _renderCertificateCanvas === 'function') {
+        previewImg.style.opacity = '0.5';
+        try {
+            const newDataUrl = await _renderCertificateCanvas(studentName, certNumber, template);
+            previewImg.src = newDataUrl;
+            previewImg.style.opacity = '1';
+            console.log('✅ Preview updated to template:', template);
+        } catch(err) {
+            console.error('Failed to update preview:', err);
+            previewImg.style.opacity = '1';
+        }
+    }
+    
+    // Update save button
+    const saveBtn = document.getElementById('saveTemplateBtn');
+    if (saveBtn) {
+        const escapedName = String(studentName || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        saveBtn.setAttribute('onclick', `saveChosenTemplate('${escapedName}','${certNumber}')`);
+    }
+};
+
+window.downloadCertPng = function() {
+    const img = document.getElementById('previewCertImage');
+    if (img && img.src && img.src !== '') {
+        const a = document.createElement('a');
+        a.href = img.src;
+        a.download = `certificate_${Date.now()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        console.log('✅ Download started');
+    } else {
+        if (typeof _toast === 'function') {
+            _toast('No certificate image to download', 'error');
+        } else {
+            alert('No certificate image to download');
+        }
+    }
+};
+
+// Override the certPreview function to ensure it's globally accessible
+const originalCertPreview = window.certPreview || certPreview;
+window.certPreview = async function(studentName, _courseName, certNumber, template) {
+    console.log('🎨 Opening certPreview with template:', template);
+    
+    document.getElementById('certPreviewModal')?.remove();
+
+    studentName = String(studentName || 'Student');
+    certNumber = String(certNumber || '');
+    
+    let selectedTpl = template || _certTpl || 'classic';
+    
+    window._previewCertNumber = certNumber;
+    window._selectedGlobalTemplate = selectedTpl;
+    window._certTpl = selectedTpl;
+    window._approvalTemplate = selectedTpl;
+
+    const modal = document.createElement('div');
+    modal.id = 'certPreviewModal';
+    modal.className = 'modal active';
+    modal.style.zIndex = '5500';
+
+    const dataUrl = await _renderCertificateCanvas(studentName, certNumber, selectedTpl);
+
+    modal.innerHTML = `
+        <div class="modal-content" style="max-width:900px;">
+            <div class="modal-header">
+                <h2>
+                    <i class="fas fa-certificate" style="color:#7c3aed;margin-right:8px;"></i>
+                    Certificate Preview — ${studentName}
+                </h2>
+                <button class="modal-close" onclick="document.getElementById('certPreviewModal').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block;font-size:12px;font-weight:700;color:#6b7280;margin-bottom:10px;">
+                    SWITCH TEMPLATE TO PREVIEW:
+                </label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;" id="previewTemplateButtons">
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','classic')" 
+                         style="border:2px solid ${selectedTpl === 'classic' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);">
+                        🏅 Classic
+                    </div>
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','modern')" 
+                         style="border:2px solid ${selectedTpl === 'modern' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#1e1b4b,#312e81);color:white;">
+                        ⭐ Modern
+                    </div>
+                    <div onclick="switchPreviewTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}','elegant')" 
+                         style="border:2px solid ${selectedTpl === 'elegant' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;padding:8px 15px;cursor:pointer;transition:all 0.2s;background:linear-gradient(135deg,#0f2027,#2c5364);color:white;">
+                        💎 Elegant
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#e5e7eb;padding:24px;border-radius:14px;text-align:center;margin-bottom:16px;">
+                <img id="previewCertImage" src="${dataUrl}"
+                     style="max-width:100%;border-radius:8px;box-shadow:0 16px 48px rgba(0,0,0,0.35);"
+                     alt="Certificate preview">
+            </div>
+
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                <button id="saveTemplateBtn"
+                        onclick="saveChosenTemplate('${studentName.replace(/'/g, "\\'")}','${certNumber}')"
+                    style="flex:2;min-width:180px;padding:13px;
+                           background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:12px;color:white;font-weight:800;
+                           cursor:pointer;font-family:inherit;font-size:14px;">
+                    <i class="fas fa-save"></i> Save Template Choice
+                </button>
+                <button onclick="downloadCertPng()"
+                    style="flex:1;min-width:140px;padding:13px;
+                           background:linear-gradient(135deg,#6b7280,#4b5563);
+                           border:none;border-radius:12px;color:white;font-weight:700;
+                           cursor:pointer;font-family:inherit;font-size:14px;">
+                    <i class="fas fa-download"></i> Download PNG
+                </button>
+                <button onclick="document.getElementById('certPreviewModal').remove()"
+                    style="flex:1;min-width:120px;padding:13px;border:2px solid #e5e7eb;
+                           border-radius:12px;background:white;color:#6b7280;
+                           font-weight:700;cursor:pointer;font-family:inherit;font-size:14px;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    
+    console.log('✅ CertPreview modal opened with template:', selectedTpl);
+};
+
+console.log('✅ Template switcher functions loaded globally');
 // ============================================================
 // EXPOSE GLOBALS
 // ============================================================
