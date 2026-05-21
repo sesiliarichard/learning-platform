@@ -3201,15 +3201,15 @@ async function loadCertificates() {
     }
 }
 // Preview Certificate
-// Preview Certificate
-function previewCertificate(certId) {
+// Preview Certificate - Supports Built-in + Custom Templates
+async function previewCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
     if (!cert) return;
     
     const canvas = document.getElementById('certPreviewCanvas');
     
-    // Complete themes for all three templates
-    const themes = {
+    // Complete themes for built-in templates
+    const builtinThemes = {
         classic: {
             bg: 'linear-gradient(160deg,#fdf6e3 0%,#fef9ef 60%,#f5e6c8 100%)',
             border: '3px solid #b45309',
@@ -3263,61 +3263,109 @@ function previewCertificate(certId) {
         }
     };
     
-    const t = themes[cert.template] || themes.classic;
+    let theme;
+    
+    // Check if it's a custom template (starts with 'custom-')
+    if (cert.template && cert.template.startsWith('custom-')) {
+        try {
+            const templateId = cert.template.replace('custom-', '');
+            const { data: tpl, error } = await supabaseClient
+                .from('certificate_templates')
+                .select('*')
+                .eq('id', templateId)
+                .maybeSingle();
+            
+            if (!error && tpl) {
+                // Build theme from custom template data
+                theme = {
+                    bg: tpl.bg_image_url ? null : `linear-gradient(135deg, ${tpl.bg_color || '#1e1b4b'}, ${tpl.accent_color || '#312e81'})`,
+                    bgImageUrl: tpl.bg_image_url || null,
+                    border: tpl.border_color ? `3px solid ${tpl.border_color}` : 'none',
+                    innerBorder: `1px solid ${tpl.accent_color || 'rgba(255,255,255,0.2)'}`,
+                    titleColor: tpl.title_color || '#ffffff',
+                    nameColor: tpl.name_color || '#ffffff',
+                    nameUnderline: tpl.accent_color || '#6366f1',
+                    textColor: tpl.text_color || '#e5e7eb',
+                    subColor: tpl.text_color || '#9ca3af',
+                    orgColor: tpl.title_color || '#ffffff',
+                    sealBg1: tpl.bg_color || '#1e1b4b',
+                    sealBg2: tpl.accent_color || '#312e81',
+                    sealBorder: `3px solid ${tpl.accent_color || '#6366f1'}`,
+                    sealColor: tpl.title_color || '#ffffff',
+                    logoGrad1: tpl.accent_color || '#7c3aed',
+                    logoGrad2: tpl.bg_color || '#6d28d9'
+                };
+            } else {
+                theme = builtinThemes.classic;
+            }
+        } catch (err) {
+            console.warn('Could not load custom template:', err);
+            theme = builtinThemes.classic;
+        }
+    } else {
+        // Built-in template
+        theme = builtinThemes[cert.template] || builtinThemes.classic;
+    }
+    
     const date = new Date(cert.issuedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     
-    canvas.innerHTML = `
-        <div style="width:700px;min-height:490px;background:${t.bg};border:${t.border};padding:45px 55px;position:relative;font-family:Georgia,serif;text-align:center;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-            <!-- Outer decorative border -->
-            <div style="position:absolute;inset:12px;border:${t.innerBorder};pointer-events:none;border-radius:2px;"></div>
-            
-            <!-- Logo -->
-            <div style="width:56px;height:56px;background:linear-gradient(135deg,${t.logoGrad1},${t.logoGrad2});border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-                <i class="fas fa-graduation-cap" style="color:white;font-size:22px;"></i>
-            </div>
-            
-            <!-- Organization name -->
-            <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${t.orgColor};margin-bottom:18px;font-family:'Plus Jakarta Sans',sans-serif;">ASAI — African School of AI</div>
-            
-            <!-- Title -->
-            <div style="font-size:36px;font-weight:700;color:${t.titleColor};line-height:1.1;margin-bottom:8px;">Certificate of Completion</div>
-            
-            <!-- Subtitle -->
-            <div style="font-size:12px;color:${t.subColor};letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;font-family:'Plus Jakarta Sans',sans-serif;">This is to certify that</div>
-            
-            <!-- Student name -->
-            <div style="font-size:34px;font-weight:700;color:${t.nameColor};border-bottom:2px solid ${t.nameUnderline};padding-bottom:6px;margin-bottom:16px;min-width:280px;display:inline-block;">${cert.studentName}</div>
-            
-            <!-- Completion text -->
-            <div style="font-size:12px;color:${t.textColor};font-style:italic;margin-bottom:6px;">has successfully completed the course</div>
-            
-            <!-- Course name -->
-            <div style="font-size:19px;font-weight:600;color:${t.nameColor};margin-bottom:20px;">${cert.courseName}</div>
-            
-            <!-- Description -->
-            <div style="font-size:13px;color:${t.subColor};font-style:italic;max-width:450px;line-height:1.6;margin:0 auto 24px;">demonstrating knowledge, dedication, and commitment to excellence in AI education.</div>
-            
-            <!-- Signature and seal row -->
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;width:100%;margin-top:auto;padding-top:16px;">
-                <div style="text-align:center;">
-                    <div style="width:130px;height:1px;background:${t.subColor};margin:0 auto 5px;"></div>
-                    <div style="font-size:12px;font-weight:600;color:${t.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Dr. Amina Mohammed</div>
-                    <div style="font-size:10px;color:${t.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Program Director</div>
-                </div>
-                <div style="width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,${t.sealBg1},${t.sealBg2});border:${t.sealBorder};display:flex;align-items:center;justify-content:center;">
-                    <i class="fas fa-star" style="color:${t.sealColor};font-size:20px;"></i>
-                </div>
-                <div style="text-align:center;">
-                    <div style="width:130px;height:1px;background:${t.subColor};margin:0 auto 5px;"></div>
-                    <div style="font-size:12px;font-weight:600;color:${t.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Date: ${date}</div>
-                    <div style="font-size:10px;color:${t.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Issue Date</div>
+    // If custom template has a background image, use simplified render
+    if (theme.bgImageUrl) {
+        canvas.innerHTML = `
+            <div style="width:700px;min-height:490px;position:relative;font-family:Georgia,serif;text-align:center;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;border-radius:8px;">
+                <img src="${theme.bgImageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+                <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:490px;padding:45px 55px;background:rgba(0,0,0,0.4);">
+                    <div style="font-size:42px;font-weight:800;color:${theme.nameColor};margin-bottom:16px;">${escapeHtml(cert.studentName)}</div>
+                    <div style="font-size:18px;color:${theme.textColor};">Certificate of Completion</div>
+                    <div style="font-size:16px;color:${theme.subColor};margin:10px 0;">${escapeHtml(cert.courseName)}</div>
+                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${theme.subColor};">ID: ${cert.id}</div>
                 </div>
             </div>
-            
-            <!-- Certificate ID -->
-            <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${t.subColor};font-family:'Courier New',monospace;">ID: ${cert.id}</div>
-        </div>
-    `;
+        `;
+    } else {
+        // Standard render for built-in templates
+        canvas.innerHTML = `
+            <div style="width:700px;min-height:490px;background:${theme.bg};border:${theme.border};padding:45px 55px;position:relative;font-family:Georgia,serif;text-align:center;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="position:absolute;inset:12px;border:${theme.innerBorder};pointer-events:none;border-radius:2px;"></div>
+                
+                <div style="width:56px;height:56px;background:linear-gradient(135deg,${theme.logoGrad1},${theme.logoGrad2});border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                    <i class="fas fa-graduation-cap" style="color:white;font-size:22px;"></i>
+                </div>
+                
+                <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${theme.orgColor};margin-bottom:18px;font-family:'Plus Jakarta Sans',sans-serif;">ASAI — African School of AI</div>
+                
+                <div style="font-size:36px;font-weight:700;color:${theme.titleColor};line-height:1.1;margin-bottom:8px;">Certificate of Completion</div>
+                
+                <div style="font-size:12px;color:${theme.subColor};letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;font-family:'Plus Jakarta Sans',sans-serif;">This is to certify that</div>
+                
+                <div style="font-size:34px;font-weight:700;color:${theme.nameColor};border-bottom:2px solid ${theme.nameUnderline};padding-bottom:6px;margin-bottom:16px;min-width:280px;display:inline-block;">${escapeHtml(cert.studentName)}</div>
+                
+                <div style="font-size:12px;color:${theme.textColor};font-style:italic;margin-bottom:6px;">has successfully completed the course</div>
+                
+                <div style="font-size:19px;font-weight:600;color:${theme.nameColor};margin-bottom:20px;">${escapeHtml(cert.courseName)}</div>
+                
+                <div style="font-size:13px;color:${theme.subColor};font-style:italic;max-width:450px;line-height:1.6;margin:0 auto 24px;">demonstrating knowledge, dedication, and commitment to excellence in AI education.</div>
+                
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;width:100%;margin-top:auto;padding-top:16px;">
+                    <div style="text-align:center;">
+                        <div style="width:130px;height:1px;background:${theme.subColor};margin:0 auto 5px;"></div>
+                        <div style="font-size:12px;font-weight:600;color:${theme.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Dr. Amina Mohammed</div>
+                        <div style="font-size:10px;color:${theme.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Program Director</div>
+                    </div>
+                    <div style="width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,${theme.sealBg1},${theme.sealBg2});border:${theme.sealBorder};display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-star" style="color:${theme.sealColor};font-size:20px;"></i>
+                    </div>
+                    <div style="text-align:center;">
+                        <div style="width:130px;height:1px;background:${theme.subColor};margin:0 auto 5px;"></div>
+                        <div style="font-size:12px;font-weight:600;color:${theme.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Date: ${date}</div>
+                        <div style="font-size:10px;color:${theme.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Issue Date</div>
+                    </div>
+                </div>
+                
+                <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${theme.subColor};font-family:'Courier New',monospace;">ID: ${cert.id}</div>
+            </div>
+        `;
+    }
     
     document.getElementById('certPreviewModal').classList.add('active');
 }
