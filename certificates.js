@@ -722,8 +722,14 @@ async function approveCertificate(studentId, studentName, email) {
 let _approveTemplate = 'classic';
 
 function selectApproveTemplate(tpl, el, studentName, certNumber) {
+    // Sync ALL global variables
     _approveTemplate = tpl;
-    window._approveTemplate = tpl;  // sync with admin.html variable
+    window._approveTemplate = tpl;
+    window._approvalTemplate = tpl;
+    window._certTpl = tpl;
+    window._selectedGlobalTemplate = tpl;
+    
+    console.log('Template selected:', tpl);
 
     // Highlight selected card
     document.querySelectorAll('#certApproveModal [data-tpl]').forEach(card => {
@@ -731,7 +737,7 @@ function selectApproveTemplate(tpl, el, studentName, certNumber) {
         card.style.transform   = card.dataset.tpl === tpl ? 'scale(1.04)' : 'scale(1)';
     });
 
-    // Update live preview — must await since _renderCertificateCanvas is async
+    // Update live preview
     const previewImg = document.getElementById('approvePreviewImg');
     if (previewImg) {
         const sName = previewImg.dataset.studentName || studentName || 'Student';
@@ -749,10 +755,13 @@ window.selectApprovalTemplate = function(tpl, el) {
 };
 async function confirmApprove(studentId, studentName, email, sendNow, certNumber) {
     const notes    = document.getElementById('approveNotes')?.value?.trim() || '';
-    const usedTpl  = _approveTemplate || _certTpl;
+    // IMPORTANT: Capture the template from ALL possible global variables
+    const usedTpl  = window._approveTemplate || window._approvalTemplate || _approveTemplate || _certTpl || 'classic';
     const usedNum  = certNumber || _genNum();
     const courseName = 'ASAI Full Program Certificate';
 
+    console.log('confirmApprove - using template:', usedTpl);
+    
     document.getElementById('certApproveModal')?.remove();
 
     const db = getCertDB();
@@ -812,16 +821,40 @@ async function publishApprovedCert(certId, studentName, email, certNumber, templ
     if (!confirm(`Send certificate to ${studentName}?\n\nA congratulations email will be sent to:\n${email}`)) return;
 
     const db = getCertDB();
+    
+    // FIRST: Get the current certificate data including template
+    const { data: certData, error: fetchError } = await db
+        .from('certificates')
+        .select('template, cert_number')
+        .eq('id', certId)
+        .maybeSingle();
+    
+    if (fetchError) {
+        _toast('Error fetching certificate: ' + fetchError.message, 'error');
+        return;
+    }
+    
+    // Use the template from the database if available, otherwise fallback
+    const actualTemplate = certData?.template || template || _certTpl || 'classic';
+    const actualCertNumber = certData?.cert_number || certNumber;
+    
+    // Update the certificate to published
     const { error } = await db.from('certificates').update({
-        published: true, published_at: new Date().toISOString()
+        published: true, 
+        published_at: new Date().toISOString(),
+        template: actualTemplate
     }).eq('id', certId);
-    if (error) { _toast('Error: ' + error.message, 'error'); return; }
+    
+    if (error) { 
+        _toast('Error: ' + error.message, 'error'); 
+        return; 
+    }
 
-    const certPng = await _renderCertificateCanvas(studentName, certNumber, template || _certTpl);
+    const certPng = await _renderCertificateCanvas(studentName, actualCertNumber, actualTemplate);
     await _sendCertEmail({
         studentName, email,
         courseName:  'ASAI Full Program Certificate',
-        certNumber:  certNumber || '',
+        certNumber:  actualCertNumber || '',
         certPng,
     });
     _toast(`🎓 Certificate sent to ${studentName}!`);
