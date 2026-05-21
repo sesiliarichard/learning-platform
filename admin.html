@@ -6842,19 +6842,23 @@ function toggleStudentSelect(userId, cb) {
 // TEMPLATE SELECTOR
 // ─────────────────────────────────────────────
 function selectTemplate(tpl) {
-    selectedTemplate = tpl; 
+    _certTpl = tpl;
     window.selectedTemplate = tpl;
-    window._certTpl = tpl;          
-    localStorage.setItem('asai_selected_template', tpl);
+    window._selectedGlobalTemplate = tpl;
+    window._approvalTemplate = tpl;
+    window._certTpl = tpl;
+    window._approveTemplate = tpl;
+    
     ['classic','modern','elegant'].forEach(t => {
-        const card = document.getElementById('tpl-'+t), badge = document.getElementById('badge-'+t);
-        if (card)  card.style.borderColor = t===tpl ? '#7c3aed' : '#e5e7eb';
-        if (badge) badge.style.display    = t===tpl ? 'flex'    : 'none';
+        const card  = document.getElementById('tpl-' + t);
+        const badge = document.getElementById('badge-' + t);
+        if (card)  card.style.borderColor = t === tpl ? '#7c3aed' : '#e5e7eb';
+        if (badge) badge.style.display    = t === tpl ? 'flex'    : 'none';
     });
-    _toast?.(`Template "${tpl.charAt(0).toUpperCase()+tpl.slice(1)}" selected`) 
-        || showToast?.(`Template "${tpl.charAt(0).toUpperCase()+tpl.slice(1)}" selected`);
+    
+    console.log('Template selected in settings:', tpl);
+    _toast(`Template "${tpl.charAt(0).toUpperCase() + tpl.slice(1)}" selected`);
 }
-
 // ─────────────────────────────────────────────
 // SAVE CRITERIA
 // ─────────────────────────────────────────────

@@ -593,11 +593,26 @@ async function approveCertificate(studentId, studentName, email) {
     modal.className = 'modal active';
     modal.style.zIndex = '5000';
 
-    const certNumber = _genNum();   // preview number (will be regenerated on save if needed)
+    const certNumber = _genNum();
     const initials   = studentName.split(' ').map(n=>n[0]).join('').toUpperCase().substring(0,2);
 
-    // Render initial preview with current template — must await (async function)
-    const previewDataUrl = await _renderCertificateCanvas(studentName, certNumber, _certTpl);
+    // IMPORTANT: Use the currently selected template from the settings tab
+    // Get the selected template from the Settings tab
+    let currentTemplate = _certTpl;
+    
+    // Also check if there's a highlighted template in the settings
+    const activeTemplateCard = document.querySelector('#certSettings .cert-template-card.active, #certSettings [style*="border-color: #7c3aed"]');
+    if (activeTemplateCard && activeTemplateCard.id) {
+        const tplId = activeTemplateCard.id.replace('tpl-', '');
+        if (tplId === 'classic' || tplId === 'modern' || tplId === 'elegant') {
+            currentTemplate = tplId;
+        }
+    }
+    
+    console.log('approveCertificate using template:', currentTemplate);
+
+    // Render initial preview with the SELECTED template (not _certTpl which might be classic)
+    const previewDataUrl = await _renderCertificateCanvas(studentName, certNumber, currentTemplate);
 
     modal.innerHTML = `
         <div class="modal-content" style="max-width:680px;max-height:90vh;overflow-y:auto;">
@@ -640,29 +655,27 @@ async function approveCertificate(studentId, studentName, email) {
                         (preview updates automatically)
                     </span>
                 </label>
-<div id="forceIssueTemplateGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
-     max-height:220px;overflow-y:auto;padding-right:2px;">
-    <!-- Built-ins always shown first -->
-    <div onclick="selectApprovalTemplate('classic',this)" data-tpl="classic"
-        style="border:2px solid #f59e0b;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-        <div style="height:44px;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);display:flex;align-items:center;justify-content:center;font-size:18px;">🏅</div>
-        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Classic</div>
-    </div>
-    <div onclick="selectApprovalTemplate('modern',this)" data-tpl="modern"
-        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-        <div style="height:44px;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
-        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Modern</div>
-    </div>
-    <div onclick="selectApprovalTemplate('elegant',this)" data-tpl="elegant"
-        style="border:2px solid #e5e7eb;border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
-        <div style="height:44px;background:linear-gradient(135deg,#0f2027,#2c5364);display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
-        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Elegant</div>
-    </div>
-    <!-- Custom templates loaded below by JS -->
-</div>
-<div id="forceIssueTemplateLoading" style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center;">
-    <i class="fas fa-spinner fa-spin"></i> Loading custom templates...
-</div>
+                <div id="forceIssueTemplateGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+                     max-height:220px;overflow-y:auto;padding-right:2px;">
+                    <div onclick="selectApprovalTemplate('classic',this)" data-tpl="classic"
+                        style="border:2px solid ${currentTemplate === 'classic' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+                        <div style="height:44px;background:linear-gradient(135deg,#fdf6e3,#f5e6c8);display:flex;align-items:center;justify-content:center;font-size:18px;">🏅</div>
+                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Classic</div>
+                    </div>
+                    <div onclick="selectApprovalTemplate('modern',this)" data-tpl="modern"
+                        style="border:2px solid ${currentTemplate === 'modern' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+                        <div style="height:44px;background:linear-gradient(135deg,#1e1b4b,#312e81);display:flex;align-items:center;justify-content:center;font-size:18px;">⭐</div>
+                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Modern</div>
+                    </div>
+                    <div onclick="selectApprovalTemplate('elegant',this)" data-tpl="elegant"
+                        style="border:2px solid ${currentTemplate === 'elegant' ? '#7c3aed' : '#e5e7eb'};border-radius:10px;overflow:hidden;cursor:pointer;transition:all 0.2s;">
+                        <div style="height:44px;background:linear-gradient(135deg,#0f2027,#2c5364);display:flex;align-items:center;justify-content:center;font-size:18px;">💎</div>
+                        <div style="padding:5px;text-align:center;font-size:11px;font-weight:700;color:#374151;">Elegant</div>
+                    </div>
+                </div>
+                <div id="forceIssueTemplateLoading" style="font-size:12px;color:#9ca3af;margin-top:6px;text-align:center;">
+                    <i class="fas fa-spinner fa-spin"></i> Loading custom templates...
+                </div>
             </div>
 
             <!-- Live preview -->
@@ -731,8 +744,10 @@ async function approveCertificate(studentId, studentName, email) {
 
     // Store cert number in modal so confirmApprove can use it
     modal.dataset.certNumber = certNumber;
+    
+    // Load custom templates
+    _loadCustomTemplatesIntoForceModal();
 }
-
 let _approveTemplate = 'classic';
 
 function selectApproveTemplate(tpl, el, studentName, certNumber) {
