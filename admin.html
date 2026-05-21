@@ -11769,22 +11769,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         };
- window.previewCert = function(certId, studentName, courseName, certNumber, templateFromDB) {
+window.previewCert = async function(certId, studentName, courseName, certNumber, templateFromDB) {
+    console.log('👁 previewCert called with:', { certId, studentName, courseName, certNumber, templateFromDB });
+    
+    // FIRST: Fetch the actual template from the database for this certificate
+    let actualTemplate = templateFromDB || 'classic';
+    
+    try {
+        const sb = window.supabaseClient || window.db;
+        const { data: certData, error } = await sb
+            .from('certificates')
+            .select('template')
+            .eq('id', certId)
+            .maybeSingle();
+        
+        if (!error && certData && certData.template) {
+            actualTemplate = certData.template;
+            console.log('✅ Found template in database:', actualTemplate);
+        } else {
+            console.log('⚠️ Using passed template:', actualTemplate);
+        }
+    } catch(err) {
+        console.warn('Could not fetch template from DB:', err);
+    }
+    
     // Store ALL values globally BEFORE opening modal
     window._previewCertId            = certId;
     window._previewCertNumber        = certNumber;
-    window._selectedGlobalTemplate   = templateFromDB || 'classic';
-    window._approvalTemplate         = templateFromDB || 'classic';
-    window._certTpl                  = templateFromDB || 'classic';
-    window._approveTemplate          = templateFromDB || 'classic';
+    window._selectedGlobalTemplate   = actualTemplate;
+    window._approvalTemplate         = actualTemplate;
+    window._certTpl                  = actualTemplate;
+    window._approveTemplate          = actualTemplate;
 
-    console.log('👁 Opening preview | cert:', certNumber, '| template:', templateFromDB);
+    console.log('👁 Opening preview | cert:', certNumber, '| template from DB:', actualTemplate);
 
     window.certPreview(
         String(studentName || 'Student'),
         String(courseName  || 'ASAI Full Program Certificate'),
         String(certNumber  || ''),
-        String(templateFromDB || 'classic')
+        String(actualTemplate)
     );
 
     setTimeout(() => {
@@ -11794,20 +11817,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnRow = modal.querySelector('div[style*="gap:12px"]');
         if (!btnRow) return;
 
+        // Remove any existing save button to avoid duplicates
+        const existingBtn = modal.querySelector('#adminSaveTemplateBtn');
+        if (existingBtn) existingBtn.remove();
+
         const saveBtn = document.createElement('button');
         saveBtn.id = 'adminSaveTemplateBtn';
         saveBtn.style.cssText = `flex:2;padding:13px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;`;
         saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
 
         saveBtn.onclick = async () => {
-            // Read the CURRENT template — whatever was last switched to
+            // Read the CURRENT template from the preview (what user switched to)
             const tpl = window._selectedGlobalTemplate
                      || window._approvalTemplate
                      || window._certTpl
-                     || templateFromDB  // ← closure captures original
+                     || actualTemplate
                      || 'classic';
-
-            const certNum = window._previewCertNumber || certNumber; // ← closure fallback
 
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -11817,13 +11842,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { error } = await sb
                     .from('certificates')
                     .update({ template: tpl })
-                    .eq('cert_number', certNum);
+                    .eq('id', certId);  // Use ID instead of cert_number for reliability
 
                 if (error) throw error;
 
                 saveBtn.innerHTML = '<i class="fas fa-check"></i> Saved!';
                 saveBtn.style.background = 'linear-gradient(135deg,#10b981,#059669)';
-                showToast(`✅ Template "${tpl}" saved!`);
+                showToast(`✅ Template "${tpl}" saved for ${studentName}!`);
 
                 setTimeout(() => {
                     document.getElementById('certPreviewModal')?.remove();
@@ -11838,6 +11863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
+        // Insert at the beginning of the button row
         btnRow.insertBefore(saveBtn, btnRow.firstChild);
     }, 300);
 };
