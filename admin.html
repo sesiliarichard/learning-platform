@@ -6447,19 +6447,32 @@ function issueSingleCert(studentId, courseId, courseName, studentName, email, ex
 }
 
 // Template selector inside approval modal
+// Template selector inside approval modal
 let _approvalTemplate = 'classic';
 function selectApprovalTemplate(tpl, el) {
     _approvalTemplate = tpl;
-    window._approveTemplate = tpl;   // ← sync to certificates.js variable
-    window._certTpl = tpl;           // ← sync to certificates.js global
+    window._approvalTemplate        = tpl;
+    window._approveTemplate         = tpl;
+    window._certTpl                 = tpl;
+    window._selectedGlobalTemplate  = tpl;
+    window.selectedTemplate         = tpl;
+    localStorage.setItem('asai_selected_template', tpl);
     document.querySelectorAll('#certApprovalModal [data-tpl], #certApproveModal [data-tpl]').forEach(card => {
         card.style.borderColor = card.dataset.tpl === tpl ? '#7c3aed' : '#e5e7eb';
         card.style.transform   = card.dataset.tpl === tpl ? 'scale(1.04)' : 'scale(1)';
     });
 }
-
+// Actually creates the cert after admin approves
 // Actually creates the cert after admin approves
 async function confirmIssueCert(studentId, courseId, courseName, studentName, email) {
+    // Capture template NOW before any await gap
+    const tpl = window._selectedGlobalTemplate
+             || window._approvalTemplate
+             || window._certTpl
+             || window.selectedTemplate
+             || localStorage.getItem('asai_selected_template')
+             || 'classic';
+
     const notes = document.getElementById('certApprovalNotes')?.value?.trim() || '';
 
     // Check not already issued
@@ -6479,22 +6492,22 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
 
     const certNumber = `ASAI-${new Date().getFullYear()}-${Math.floor(Math.random()*99999).toString().padStart(5,'0')}`;
 
-   const { error } = await db
-    .from('certificates')
-    .insert({
-        student_id:    studentId,
-        user_id:       studentId,
-        course_id:     courseId,
-        course_name:   courseName,
-        cert_number:   certNumber,
-        template:      _approvalTemplate || window._approveTemplate || window._certTpl || 'classic',
-        published:     false,
-        revoked:       false,
-        admin_notes:   notes || null,
-        issued_at:     new Date().toISOString(),
-        admin_approved: false,
-        approved_at:   null,
-    });
+    const { error } = await db
+        .from('certificates')
+        .insert({
+            student_id:    studentId,
+            user_id:       studentId,
+            course_id:     courseId,
+            course_name:   courseName,
+            cert_number:   certNumber,
+            template:      tpl,
+            published:     false,
+            revoked:       false,
+            admin_notes:   notes || null,
+            issued_at:     new Date().toISOString(),
+            admin_approved: false,
+            approved_at:   null,
+        });
 
     if (error) {
         showToast('Error: ' + error.message, 'error');
@@ -6502,7 +6515,7 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
     }
 
     document.getElementById('certApprovalModal')?.remove();
-    showToast(`✅ Certificate approved for ${studentName}! Click Publish to send it.`);
+    showToast(`✅ Certificate (${tpl}) approved for ${studentName}! Click Publish to send it.`);
     await loadEligibleStudents();
     await loadIssuedCerts();
 }
@@ -6510,39 +6523,40 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
 // PUBLISH / UNPUBLISH CERT
 // ─────────────────────────────────────────────
 async function togglePublishCert(certId, currentlyPublished, studentName, email, courseName, certNumber) {
-    const action = currentlyPublished ? 'unpublish' : 'publish';
     const confirmMsg = currentlyPublished
-        ? `Unpublish this certificate?\n\n${studentName} will no longer see it in their dashboard.`
+        ? `Unpublish this certificate?\n\n${studentName} will no longer see it.`
         : `Publish this certificate?\n\nA congratulations email will be sent to:\n${email}`;
-
     if (!confirm(confirmMsg)) return;
+
+    const { data: certRow } = await db
+        .from('certificates')
+        .select('template')
+        .eq('id', certId)
+        .maybeSingle();
+
+    const tpl = certRow?.template || 'classic';
 
     const updates = currentlyPublished
         ? { published: false }
-        : { published: true, published_at: new Date().toISOString() };
+        : { published: true, published_at: new Date().toISOString(), template: tpl };
 
     const { error } = await db
         .from('certificates')
         .update(updates)
         .eq('id', certId);
 
-    if (error) {
-        showToast('Error: ' + error.message, 'error');
-        return;
-    }
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
     if (!currentlyPublished) {
-        // Send email on publish
         sendCertificateEmail({ studentName, email, courseName, certNumber });
         showToast(`✅ Certificate published! Email sent to ${email}`);
     } else {
-        showToast(`Certificate unpublished. Student can no longer see it.`);
+        showToast('Certificate unpublished.');
     }
 
     await loadEligibleStudents();
     await loadIssuedCerts();
 }
-
 // ─────────────────────────────────────────────
 // BULK ISSUE (creates drafts for selected)
 // ─────────────────────────────────────────────
@@ -11928,6 +11942,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }, 1000);
+    // Ensure template is always captured before async gaps
+(function() {
+    const _origSelectTemplate = window.selectTemplate;
+    window.selectTemplate = function(tpl) {
+        window._selectedGlobalTemplate = tpl;
+        window._certTpl          = tpl;
+        window._approvalTemplate = tpl;
+        window._approveTemplate  = tpl;
+        window.selectedTemplate  = tpl;
+        localStorage.setItem('asai_selected_template', tpl);
+        if (_origSelectTemplate) _origSelectTemplate.call(this, tpl);
+    };
+})();
 });
 </script>
 
