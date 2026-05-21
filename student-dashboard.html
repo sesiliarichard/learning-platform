@@ -3201,47 +3201,132 @@ async function loadCertificates() {
     }
 }
 // Preview Certificate
+// Preview Certificate
 function previewCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
     if (!cert) return;
     
     const canvas = document.getElementById('certPreviewCanvas');
     
+    // Complete themes for all three templates
     const themes = {
         classic: {
             bg: 'linear-gradient(160deg,#fdf6e3 0%,#fef9ef 60%,#f5e6c8 100%)',
             border: '3px solid #b45309',
+            innerBorder: '1px solid #d97706',
             titleColor: '#78350f',
-            nameColor: '#1f2937'
+            nameColor: '#1f2937',
+            nameUnderline: '#d97706',
+            textColor: '#78350f',
+            subColor: '#92400e',
+            orgColor: '#78350f',
+            sealBg1: '#fef3c7',
+            sealBg2: '#fde68a',
+            sealBorder: '#d97706',
+            sealColor: '#78350f',
+            logoGrad1: '#7c3aed',
+            logoGrad2: '#6d28d9'
+        },
+        modern: {
+            bg: 'linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)',
+            border: 'none',
+            innerBorder: '1px solid rgba(165,180,252,0.2)',
+            titleColor: '#a5b4fc',
+            nameColor: '#ffffff',
+            nameUnderline: '#6366f1',
+            textColor: '#c7d2fe',
+            subColor: '#a5b4fc',
+            orgColor: '#c7d2fe',
+            sealBg1: '#312e81',
+            sealBg2: '#1e1b4b',
+            sealBorder: '3px solid #6366f1',
+            sealColor: '#a5b4fc',
+            logoGrad1: '#6366f1',
+            logoGrad2: '#4f46e5'
+        },
+        elegant: {
+            bg: 'linear-gradient(160deg,#0f2027 0%,#203a43 50%,#2c5364 100%)',
+            border: 'none',
+            innerBorder: '1px solid rgba(255,215,0,0.3)',
+            titleColor: '#ffd700',
+            nameColor: '#ffffff',
+            nameUnderline: '#ffd700',
+            textColor: '#b0c4ce',
+            subColor: '#b0c4ce',
+            orgColor: '#ffd700',
+            sealBg1: '#203a43',
+            sealBg2: '#0f2027',
+            sealBorder: '3px solid #ffd700',
+            sealColor: '#ffd700',
+            logoGrad1: '#b45309',
+            logoGrad2: '#92400e'
         }
     };
     
     const t = themes[cert.template] || themes.classic;
+    const date = new Date(cert.issuedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     
     canvas.innerHTML = `
-        <div style="width:700px;min-height:490px;background:${t.bg};border:${t.border};padding:45px 55px;position:relative;font-family:'Georgia',serif;text-align:center;margin:0 auto;">
-            <div style="width:56px;height:56px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+        <div style="width:700px;min-height:490px;background:${t.bg};border:${t.border};padding:45px 55px;position:relative;font-family:Georgia,serif;text-align:center;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <!-- Outer decorative border -->
+            <div style="position:absolute;inset:12px;border:${t.innerBorder};pointer-events:none;border-radius:2px;"></div>
+            
+            <!-- Logo -->
+            <div style="width:56px;height:56px;background:linear-gradient(135deg,${t.logoGrad1},${t.logoGrad2});border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
                 <i class="fas fa-graduation-cap" style="color:white;font-size:22px;"></i>
             </div>
-            <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#78350f;margin-bottom:18px;">ASAI — African School of AI</div>
-            <div style="font-size:36px;font-weight:700;color:${t.titleColor};margin-bottom:8px;">Certificate of Completion</div>
-            <div style="font-size:12px;color:#92400e;letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;">This is to certify that</div>
-            <div style="font-size:34px;font-weight:700;color:${t.nameColor};border-bottom:2px solid #d97706;padding-bottom:6px;margin-bottom:16px;">${cert.studentName}</div>
-            <div style="font-size:12px;color:#78350f;font-style:italic;margin-bottom:6px;">has successfully completed the course</div>
+            
+            <!-- Organization name -->
+            <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:${t.orgColor};margin-bottom:18px;font-family:'Plus Jakarta Sans',sans-serif;">ASAI — African School of AI</div>
+            
+            <!-- Title -->
+            <div style="font-size:36px;font-weight:700;color:${t.titleColor};line-height:1.1;margin-bottom:8px;">Certificate of Completion</div>
+            
+            <!-- Subtitle -->
+            <div style="font-size:12px;color:${t.subColor};letter-spacing:2px;text-transform:uppercase;margin-bottom:22px;font-family:'Plus Jakarta Sans',sans-serif;">This is to certify that</div>
+            
+            <!-- Student name -->
+            <div style="font-size:34px;font-weight:700;color:${t.nameColor};border-bottom:2px solid ${t.nameUnderline};padding-bottom:6px;margin-bottom:16px;min-width:280px;display:inline-block;">${cert.studentName}</div>
+            
+            <!-- Completion text -->
+            <div style="font-size:12px;color:${t.textColor};font-style:italic;margin-bottom:6px;">has successfully completed the course</div>
+            
+            <!-- Course name -->
             <div style="font-size:19px;font-weight:600;color:${t.nameColor};margin-bottom:20px;">${cert.courseName}</div>
-            <div style="font-size:13px;color:#92400e;font-style:italic;max-width:450px;line-height:1.6;margin:0 auto 24px;">demonstrating knowledge, dedication, and commitment to excellence in AI education.</div>
-            <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:#92400e;">ID: ${cert.id}</div>
+            
+            <!-- Description -->
+            <div style="font-size:13px;color:${t.subColor};font-style:italic;max-width:450px;line-height:1.6;margin:0 auto 24px;">demonstrating knowledge, dedication, and commitment to excellence in AI education.</div>
+            
+            <!-- Signature and seal row -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;width:100%;margin-top:auto;padding-top:16px;">
+                <div style="text-align:center;">
+                    <div style="width:130px;height:1px;background:${t.subColor};margin:0 auto 5px;"></div>
+                    <div style="font-size:12px;font-weight:600;color:${t.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Dr. Amina Mohammed</div>
+                    <div style="font-size:10px;color:${t.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Program Director</div>
+                </div>
+                <div style="width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,${t.sealBg1},${t.sealBg2});border:${t.sealBorder};display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-star" style="color:${t.sealColor};font-size:20px;"></i>
+                </div>
+                <div style="text-align:center;">
+                    <div style="width:130px;height:1px;background:${t.subColor};margin:0 auto 5px;"></div>
+                    <div style="font-size:12px;font-weight:600;color:${t.textColor};font-family:'Plus Jakarta Sans',sans-serif;">Date: ${date}</div>
+                    <div style="font-size:10px;color:${t.subColor};font-family:'Plus Jakarta Sans',sans-serif;">Issue Date</div>
+                </div>
+            </div>
+            
+            <!-- Certificate ID -->
+            <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${t.subColor};font-family:'Courier New',monospace;">ID: ${cert.id}</div>
         </div>
     `;
     
     document.getElementById('certPreviewModal').classList.add('active');
 }
-
 // Close Certificate Preview
 function closeCertPreview() {
     document.getElementById('certPreviewModal').classList.remove('active');
 }
 
+// Download Certificate
 // Download Certificate
 function downloadCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
