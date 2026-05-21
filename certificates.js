@@ -1594,29 +1594,24 @@ async function viewEmailLog() {
 }
 
 async function saveChosenTemplate(studentName, certNumber) {
-    // Resolve cert number from ALL possible sources
-    const certNum = window._previewCertNumber
-                 || certNumber
-                 || document.querySelector('#certPreviewModal')?.dataset?.certNumber
-                 || '';
-
     const tpl = window._selectedGlobalTemplate
              || window._approvalTemplate
              || window._certTpl
              || 'classic';
-
+    
+    const certId = window._previewCertId;
+    
     console.log('=== SAVE DEBUG ===');
-    console.log('certNum:', certNum);
+    console.log('certId:', certId);
+    console.log('certNumber:', certNumber);
     console.log('tpl:', tpl);
-    console.log('window._previewCertNumber:', window._previewCertNumber);
 
-    if (!certNum) {
-        _toast('Cannot save: certificate number not found. Try closing and reopening the preview.', 'error');
+    if (!certId && !certNumber) {
+        _toast('Cannot save: certificate not found.', 'error');
         return;
     }
 
-    const btn = document.getElementById('adminSaveTemplateBtn')
-             || document.getElementById('saveIssueBtn');
+    const btn = document.getElementById('saveTemplateBtn') || document.getElementById('saveIssueBtn');
     if (btn) {
         btn.disabled = true;
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -1624,17 +1619,16 @@ async function saveChosenTemplate(studentName, certNumber) {
 
     try {
         const db = getCertDB();
-
-        const { error } = await db
-            .from('certificates')
-            .update({ template: tpl })
-            .eq('cert_number', certNum);
-
+        let query;
+        
+        if (certId) {
+            query = db.from('certificates').update({ template: tpl }).eq('id', certId);
+        } else {
+            query = db.from('certificates').update({ template: tpl }).eq('cert_number', certNumber);
+        }
+        
+        const { error } = await query;
         if (error) throw error;
-
-        // Update local cache
-        const row = (_allRows || []).find(r => r.certNumber === certNum);
-        if (row) row.template = tpl;
 
         if (btn) {
             btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
@@ -1642,7 +1636,6 @@ async function saveChosenTemplate(studentName, certNumber) {
         }
 
         _toast(`✅ Template "${tpl}" saved for ${studentName}!`);
-        window._previewCertNumber = null; // clear after save
 
         setTimeout(() => {
             document.getElementById('certPreviewModal')?.remove();
@@ -1658,7 +1651,6 @@ async function saveChosenTemplate(studentName, certNumber) {
         }
     }
 }
-
 window.saveChosenTemplate = saveChosenTemplate;
 // ============================================================
 // PREVIEW TEMPLATE SWITCHER - GLOBAL FUNCTIONS
@@ -1850,21 +1842,44 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleCourseBreakdown    = toggleCourseBreakdown;
     window.selectApproveTemplate    = selectApproveTemplate;
 
-    // Legacy aliases used in admin.html inline code
-  window.previewCert = function(certId, sN, cN, num, tpl) {
-    // Store EVERYTHING globally before opening modal
+ window.previewCert = async function(certId, sN, cN, num, tpl) {
+    console.log('previewCert called with params:', { certId, sN, cN, num, tpl });
+    
+    // FIRST: Fetch the actual template from the database for this certificate
+    let actualTemplate = tpl || 'classic';
+    
+    try {
+        const db = getCertDB();
+        const { data: certData, error } = await db
+            .from('certificates')
+            .select('template')
+            .eq('id', certId)
+            .maybeSingle();
+        
+        if (!error && certData && certData.template) {
+            actualTemplate = certData.template;
+            console.log('✅ Found template in database:', actualTemplate);
+        } else {
+            console.log('⚠️ Using passed template:', actualTemplate);
+        }
+    } catch(err) {
+        console.warn('Could not fetch template from DB:', err);
+    }
+    
+    // Store globally before opening modal
     window._previewCertNumber      = String(num || '');
-    window._selectedGlobalTemplate = String(tpl || 'classic');
-    window._certTpl                = String(tpl || 'classic');
-    window._approvalTemplate       = String(tpl || 'classic');
+    window._selectedGlobalTemplate = String(actualTemplate);
+    window._certTpl                = String(actualTemplate);
+    window._approvalTemplate       = String(actualTemplate);
+    window._previewCertId          = certId;
 
-    console.log('previewCert called | certNumber:', num, '| template:', tpl);
+    console.log('Opening preview | certNumber:', num, '| template from DB:', actualTemplate);
 
     certPreview(
         String(sN  || 'Student'),
         String(cN  || 'ASAI Full Program Certificate'),
         String(num || ''),
-        String(tpl || 'classic')
+        String(actualTemplate)
     );
 };
     window.revokeCert        = certRevoke;
