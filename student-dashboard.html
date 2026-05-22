@@ -3376,7 +3376,6 @@ function closeCertPreview() {
 }
 
 // Download Certificate
-// Download Certificate - Fixed Version
 async function downloadCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
     if (!cert) {
@@ -3394,39 +3393,151 @@ async function downloadCertificate(certId) {
         tempDiv.style.top = '-9999px';
         document.body.appendChild(tempDiv);
         
-        // Render certificate HTML
+        // Render certificate HTML with INLINE SVG icons (no external dependencies)
         const date = new Date(cert.issuedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        
         tempDiv.innerHTML = `
-            <div style="width:800px;background:linear-gradient(160deg,#fdf6e3 0%,#fef9ef 60%,#f5e6c8 100%);border:3px solid #b45309;padding:60px 80px;font-family:Georgia,serif;text-align:center;">
-                <div style="border:1px solid #d97706;padding:20px;">
-                    <div style="width:70px;height:70px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                        <i class="fas fa-graduation-cap" style="color:white;font-size:28px;"></i>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                    body { 
+                        font-family: 'Georgia', 'Times New Roman', serif;
+                        background: white;
+                    }
+                    .cert-container {
+                        width: 900px;
+                        margin: 0 auto;
+                        background: linear-gradient(160deg, #fdf6e3 0%, #fef9ef 60%, #f5e6c8 100%);
+                        border: 3px solid #b45309;
+                        padding: 50px 70px;
+                    }
+                    .cert-inner {
+                        border: 1px solid #d97706;
+                        padding: 30px;
+                        text-align: center;
+                    }
+                    .seal {
+                        width: 80px;
+                        height: 80px;
+                        background: linear-gradient(135deg, #7c3aed, #6d28d9);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        margin: 0 auto 20px;
+                        color: white;
+                        font-size: 40px;
+                    }
+                    .org-name {
+                        font-size: 11px;
+                        font-weight: 700;
+                        letter-spacing: 3px;
+                        color: #78350f;
+                        text-transform: uppercase;
+                    }
+                    .cert-title {
+                        font-size: 42px;
+                        font-weight: 700;
+                        color: #78350f;
+                        margin: 20px 0;
+                    }
+                    .cert-label {
+                        font-size: 14px;
+                        color: #92400e;
+                        margin-top: 10px;
+                    }
+                    .student-name {
+                        font-size: 38px;
+                        font-weight: 700;
+                        color: #1f2937;
+                        border-bottom: 2px solid #d97706;
+                        padding-bottom: 10px;
+                        margin: 15px auto;
+                        display: inline-block;
+                    }
+                    .course-label {
+                        font-size: 16px;
+                        color: #78350f;
+                        margin: 20px 0 10px;
+                    }
+                    .course-name {
+                        font-size: 24px;
+                        font-weight: 600;
+                        color: #1f2937;
+                        margin-bottom: 30px;
+                    }
+                    .signatures {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-top: 40px;
+                    }
+                    .sign-line {
+                        width: 180px;
+                        height: 1px;
+                        background: #78350f;
+                        margin-bottom: 8px;
+                    }
+                    .sign-text {
+                        font-size: 11px;
+                        color: #78350f;
+                    }
+                    .cert-id {
+                        margin-top: 20px;
+                        font-size: 9px;
+                        color: #92400e;
+                        font-family: monospace;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="cert-container">
+                    <div class="cert-inner">
+                        <div class="seal">🎓</div>
+                        <div class="org-name">ASAI — AFRICAN SCHOOL OF AI</div>
+                        <div class="cert-title">Certificate of Completion</div>
+                        <div class="cert-label">This is to certify that</div>
+                        <div class="student-name">${escapeHtml(cert.studentName)}</div>
+                        <div class="course-label">has successfully completed the course</div>
+                        <div class="course-name">${escapeHtml(cert.courseName)}</div>
+                        <div class="signatures">
+                            <div>
+                                <div class="sign-line"></div>
+                                <div class="sign-text">Program Director</div>
+                            </div>
+                            <div>
+                                <div class="sign-line"></div>
+                                <div class="sign-text">Date: ${date}</div>
+                            </div>
+                        </div>
+                        <div class="cert-id">Certificate ID: ${cert.id}</div>
                     </div>
-                    <div style="font-size:12px;font-weight:700;letter-spacing:3px;color:#78350f;">ASAI — African School of AI</div>
-                    <div style="font-size:42px;font-weight:700;color:#78350f;margin:20px 0;">Certificate of Completion</div>
-                    <div style="font-size:14px;color:#92400e;">This is to certify that</div>
-                    <div style="font-size:38px;font-weight:700;color:#1f2937;border-bottom:2px solid #d97706;padding-bottom:10px;margin:15px auto;display:inline-block;">${escapeHtml(cert.studentName)}</div>
-                    <div style="font-size:16px;color:#78350f;margin:20px 0;">has successfully completed the course</div>
-                    <div style="font-size:22px;font-weight:600;color:#1f2937;margin-bottom:30px;">${escapeHtml(cert.courseName)}</div>
-                    <div style="display:flex;justify-content:space-between;margin-top:40px;">
-                        <div><div style="width:150px;height:1px;background:#78350f;margin-bottom:5px;"></div><div style="font-size:12px;">Program Director</div></div>
-                        <div><div style="width:150px;height:1px;background:#78350f;margin-bottom:5px;"></div><div style="font-size:12px;">Date: ${date}</div></div>
-                    </div>
-                    <div style="margin-top:20px;font-size:10px;color:#92400e;">Certificate ID: ${cert.id}</div>
                 </div>
-            </div>
+            </body>
+            </html>
         `;
         
-        // Use html2pdf if available, or provide download link
+        // Use html2pdf with proper settings
         if (typeof html2pdf !== 'undefined') {
             const opt = {
                 margin: [0.5, 0.5, 0.5, 0.5],
                 filename: `certificate_${cert.courseName.replace(/\s+/g, '_')}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                html2canvas: { 
+                    scale: 2, 
+                    useCORS: true,
+                    logging: false,
+                    letterRendering: true
+                },
+                jsPDF: { 
+                    unit: 'in', 
+                    format: 'letter', 
+                    orientation: 'landscape' 
+                }
             };
-            html2pdf().set(opt).from(tempDiv).save();
+            await html2pdf().set(opt).from(tempDiv).save();
         } else {
             // Fallback: save as HTML
             const blob = new Blob([tempDiv.innerHTML], { type: 'text/html' });
@@ -3438,15 +3549,15 @@ async function downloadCertificate(certId) {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('Certificate saved as HTML. Install html2pdf for PDF export.', 'info');
+            showToast('Certificate saved as HTML. Please install html2pdf for PDF export.', 'info');
         }
         
         document.body.removeChild(tempDiv);
-        showToast('Certificate downloaded!', 'success');
+        showToast('Certificate downloaded successfully!', 'success');
         
     } catch (err) {
         console.error('Download error:', err);
-        showToast('Error generating certificate', 'error');
+        showToast('Error generating certificate: ' + err.message, 'error');
     }
 }
 
