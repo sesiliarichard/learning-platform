@@ -3505,15 +3505,13 @@ async function downloadAllCertificates() {
         return;
     }
     
-    showToast(`Downloading ${myCertificates.length} certificates...`, 'success');
+    showToast(`Opening ${myCertificates.length} certificates. Save each as PDF.`, 'success');
     
-    for (const cert of myCertificates) {
-        await downloadCertificate(cert.id);
-        // Small delay between downloads
-        await new Promise(resolve => setTimeout(resolve, 500));
+    for (let i = 0; i < myCertificates.length; i++) {
+        setTimeout(() => {
+            downloadCertificate(myCertificates[i].id);
+        }, i * 2000);
     }
-    
-    showToast('All certificates downloaded!', 'success');
 }
 
 
