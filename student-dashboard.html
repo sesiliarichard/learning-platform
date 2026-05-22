@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
        <!-- Favicon - Multiple sizes for better display -->
 <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
 <link rel="shortcut icon" href="images/favicon-32x32.png">
@@ -3375,24 +3376,89 @@ function closeCertPreview() {
 }
 
 // Download Certificate
-// Download Certificate
-function downloadCertificate(certId) {
+// Download Certificate - Fixed Version
+async function downloadCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
-    if (!cert) return;
+    if (!cert) {
+        showToast('Certificate not found', 'error');
+        return;
+    }
     
-    showToast('Downloading certificate...', 'success');
+    showToast('Generating certificate PDF...', 'success');
     
-    // In production, generate actual PDF
-    setTimeout(() => {
+    try {
+        // Create a temporary div to render the certificate for PDF generation
+        const tempDiv = document.createElement('div');
+        tempDiv.style.position = 'absolute';
+        tempDiv.style.left = '-9999px';
+        tempDiv.style.top = '-9999px';
+        document.body.appendChild(tempDiv);
+        
+        // Render certificate HTML
+        const date = new Date(cert.issuedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        tempDiv.innerHTML = `
+            <div style="width:800px;background:linear-gradient(160deg,#fdf6e3 0%,#fef9ef 60%,#f5e6c8 100%);border:3px solid #b45309;padding:60px 80px;font-family:Georgia,serif;text-align:center;">
+                <div style="border:1px solid #d97706;padding:20px;">
+                    <div style="width:70px;height:70px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+                        <i class="fas fa-graduation-cap" style="color:white;font-size:28px;"></i>
+                    </div>
+                    <div style="font-size:12px;font-weight:700;letter-spacing:3px;color:#78350f;">ASAI — African School of AI</div>
+                    <div style="font-size:42px;font-weight:700;color:#78350f;margin:20px 0;">Certificate of Completion</div>
+                    <div style="font-size:14px;color:#92400e;">This is to certify that</div>
+                    <div style="font-size:38px;font-weight:700;color:#1f2937;border-bottom:2px solid #d97706;padding-bottom:10px;margin:15px auto;display:inline-block;">${escapeHtml(cert.studentName)}</div>
+                    <div style="font-size:16px;color:#78350f;margin:20px 0;">has successfully completed the course</div>
+                    <div style="font-size:22px;font-weight:600;color:#1f2937;margin-bottom:30px;">${escapeHtml(cert.courseName)}</div>
+                    <div style="display:flex;justify-content:space-between;margin-top:40px;">
+                        <div><div style="width:150px;height:1px;background:#78350f;margin-bottom:5px;"></div><div style="font-size:12px;">Program Director</div></div>
+                        <div><div style="width:150px;height:1px;background:#78350f;margin-bottom:5px;"></div><div style="font-size:12px;">Date: ${date}</div></div>
+                    </div>
+                    <div style="margin-top:20px;font-size:10px;color:#92400e;">Certificate ID: ${cert.id}</div>
+                </div>
+            </div>
+        `;
+        
+        // Use html2pdf if available, or provide download link
+        if (typeof html2pdf !== 'undefined') {
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5],
+                filename: `certificate_${cert.courseName.replace(/\s+/g, '_')}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+            };
+            html2pdf().set(opt).from(tempDiv).save();
+        } else {
+            // Fallback: save as HTML
+            const blob = new Blob([tempDiv.innerHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate_${cert.courseName.replace(/\s+/g, '_')}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Certificate saved as HTML. Install html2pdf for PDF export.', 'info');
+        }
+        
+        document.body.removeChild(tempDiv);
         showToast('Certificate downloaded!', 'success');
-    }, 1500);
+        
+    } catch (err) {
+        console.error('Download error:', err);
+        showToast('Error generating certificate', 'error');
+    }
 }
 
 // Download Current Certificate from Preview
 let currentPreviewCertId = null;
 
 function downloadCurrentCert() {
-    showToast('Downloading certificate...', 'success');
+    if (currentPreviewCertId) {
+        downloadCertificate(currentPreviewCertId);
+    } else {
+        showToast('No certificate selected', 'warning');
+    }
 }
 
 // Share on LinkedIn
@@ -3403,13 +3469,21 @@ function shareOnLinkedIn() {
 }
 
 // Download All Certificates
-function downloadAllCertificates() {
+async function downloadAllCertificates() {
     if (myCertificates.length === 0) {
         showToast('No certificates to download', 'warning');
         return;
     }
     
-    showToast('Downloading all certificates...', 'success');
+    showToast(`Downloading ${myCertificates.length} certificates...`, 'success');
+    
+    for (const cert of myCertificates) {
+        await downloadCertificate(cert.id);
+        // Small delay between downloads
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    showToast('All certificates downloaded!', 'success');
 }
 
 
