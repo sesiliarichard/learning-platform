@@ -3376,78 +3376,195 @@ function closeCertPreview() {
 }
 
 // Download Certificate
-async function downloadCertificate(certId) {
-    const cert = myCertificates.find(c => c.id === certId);
-    if (!cert) {
-        showToast('Certificate not found', 'error');
-        return;
-    }
-    
-    showToast('Generating certificate PDF...', 'success');
-    
-    try {
-        // Create a temporary div to render the certificate for PDF generation
-        const tempDiv = document.createElement('div');
-        tempDiv.style.position = 'absolute';
-        tempDiv.style.left = '-9999px';
-        tempDiv.style.top = '-9999px';
-        document.body.appendChild(tempDiv);
-        
-        // Render certificate HTML with INLINE SVG icons (no external dependencies)
-        const date = new Date(cert.issuedDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-        
-       // Build cert as real DOM element (not HTML string)
-        const certEl = document.createElement('div');
-        certEl.style.cssText = `
-            width: 900px;
-            background: linear-gradient(160deg, #fdf6e3 0%, #fef9ef 60%, #f5e6c8 100%);
-            border: 3px solid #b45309;
-            padding: 50px 70px;
-            font-family: Georgia, 'Times New Roman', serif;
-            box-sizing: border-box;
-        `;
+// ── Shared render: used by BOTH preview AND download ──────────
+async function renderCertificateHTML(cert, targetEl, date) {
+    const builtinThemes = {
+        classic: {
+            bg: 'linear-gradient(160deg,#fdf6e3 0%,#fef9ef 60%,#f5e6c8 100%)',
+            border: '3px solid #b45309',
+            innerBorder: '1px solid #d97706',
+            titleColor: '#78350f', nameColor: '#1f2937',
+            nameUnderline: '#d97706', textColor: '#78350f',
+            subColor: '#92400e', orgColor: '#78350f',
+            sealBg1: '#fef3c7', sealBg2: '#fde68a',
+            sealBorder: '#d97706', sealColor: '#78350f',
+            logoGrad1: '#7c3aed', logoGrad2: '#6d28d9'
+        },
+        modern: {
+            bg: 'linear-gradient(135deg,#1e1b4b 0%,#312e81 100%)',
+            border: 'none', innerBorder: '1px solid rgba(165,180,252,0.2)',
+            titleColor: '#a5b4fc', nameColor: '#ffffff',
+            nameUnderline: '#6366f1', textColor: '#c7d2fe',
+            subColor: '#a5b4fc', orgColor: '#c7d2fe',
+            sealBg1: '#312e81', sealBg2: '#1e1b4b',
+            sealBorder: '3px solid #6366f1', sealColor: '#a5b4fc',
+            logoGrad1: '#6366f1', logoGrad2: '#4f46e5'
+        },
+        elegant: {
+            bg: 'linear-gradient(160deg,#0f2027 0%,#203a43 50%,#2c5364 100%)',
+            border: 'none', innerBorder: '1px solid rgba(255,215,0,0.3)',
+            titleColor: '#ffd700', nameColor: '#ffffff',
+            nameUnderline: '#ffd700', textColor: '#b0c4ce',
+            subColor: '#b0c4ce', orgColor: '#ffd700',
+            sealBg1: '#203a43', sealBg2: '#0f2027',
+            sealBorder: '3px solid #ffd700', sealColor: '#ffd700',
+            logoGrad1: '#b45309', logoGrad2: '#92400e'
+        }
+    };
 
-        certEl.innerHTML = `
-            <div style="border:1px solid #d97706;padding:30px;text-align:center;">
-                <div style="font-size:48px;margin-bottom:16px;">🎓</div>
-                <div style="font-size:11px;font-weight:700;letter-spacing:3px;color:#78350f;
-                            text-transform:uppercase;margin-bottom:16px;">
-                    ASAI — AFRICAN SCHOOL OF AI
+    let theme;
+
+    if (cert.template && cert.template.startsWith('custom-')) {
+        try {
+            const templateId = cert.template.replace('custom-', '');
+            const { data: tpl, error } = await supabaseClient
+                .from('certificate_templates')
+                .select('*')
+                .eq('id', templateId)
+                .maybeSingle();
+
+            if (!error && tpl) {
+                theme = {
+                    bg: tpl.bg_image_url ? null
+                        : `linear-gradient(135deg,${tpl.bg_color||'#1e1b4b'},${tpl.accent_color||'#312e81'})`,
+                    bgImageUrl:   tpl.bg_image_url || null,
+                    border:       tpl.border_color ? `3px solid ${tpl.border_color}` : 'none',
+                    innerBorder:  `1px solid ${tpl.accent_color||'rgba(255,255,255,0.2)'}`,
+                    titleColor:   tpl.title_color  || '#ffffff',
+                    nameColor:    tpl.name_color   || '#ffffff',
+                    nameUnderline: tpl.accent_color || '#6366f1',
+                    textColor:    tpl.text_color   || '#e5e7eb',
+                    subColor:     tpl.text_color   || '#9ca3af',
+                    orgColor:     tpl.title_color  || '#ffffff',
+                    sealBg1:      tpl.bg_color     || '#1e1b4b',
+                    sealBg2:      tpl.accent_color || '#312e81',
+                    sealBorder:   `3px solid ${tpl.accent_color||'#6366f1'}`,
+                    sealColor:    tpl.title_color  || '#ffffff',
+                    logoGrad1:    tpl.accent_color || '#7c3aed',
+                    logoGrad2:    tpl.bg_color     || '#6d28d9'
+                };
+            } else {
+                theme = builtinThemes.classic;
+            }
+        } catch (err) {
+            theme = builtinThemes.classic;
+        }
+    } else {
+        theme = builtinThemes[cert.template] || builtinThemes.classic;
+    }
+
+    if (theme.bgImageUrl) {
+        targetEl.innerHTML = `
+            <div style="width:700px;min-height:490px;position:relative;font-family:Georgia,serif;
+                        text-align:center;overflow:hidden;border-radius:8px;">
+                <img src="${theme.bgImageUrl}"
+                     style="position:absolute;top:0;left:0;width:100%;height:100%;
+                            object-fit:cover;z-index:0;" crossorigin="anonymous">
+                <div style="position:relative;z-index:1;display:flex;flex-direction:column;
+                            align-items:center;justify-content:center;min-height:490px;
+                            padding:45px 55px;background:rgba(0,0,0,0.4);">
+                    <div style="font-size:42px;font-weight:800;color:${theme.nameColor};margin-bottom:16px;">
+                        ${escapeHtml(cert.studentName)}
+                    </div>
+                    <div style="font-size:18px;color:${theme.textColor};">Certificate of Completion</div>
+                    <div style="font-size:16px;color:${theme.subColor};margin:10px 0;">
+                        ${escapeHtml(cert.courseName)}
+                    </div>
+                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${theme.subColor};">
+                        ID: ${cert.id}
+                    </div>
                 </div>
-                <div style="font-size:42px;font-weight:700;color:#78350f;margin-bottom:12px;">
+            </div>`;
+    } else {
+        targetEl.innerHTML = `
+            <div style="width:700px;min-height:490px;background:${theme.bg};border:${theme.border};
+                        padding:45px 55px;position:relative;font-family:Georgia,serif;text-align:center;">
+                <div style="position:absolute;inset:12px;border:${theme.innerBorder};
+                            pointer-events:none;border-radius:2px;"></div>
+                <div style="width:56px;height:56px;
+                            background:linear-gradient(135deg,${theme.logoGrad1},${theme.logoGrad2});
+                            border-radius:50%;display:flex;align-items:center;justify-content:center;
+                            margin:0 auto 12px;">
+                    <span style="color:white;font-size:22px;">🎓</span>
+                </div>
+                <div style="font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;
+                            color:${theme.orgColor};margin-bottom:18px;">
+                    ASAI — African School of AI
+                </div>
+                <div style="font-size:36px;font-weight:700;color:${theme.titleColor};
+                            line-height:1.1;margin-bottom:8px;">
                     Certificate of Completion
                 </div>
-                <div style="font-size:14px;color:#92400e;margin-bottom:10px;">
+                <div style="font-size:12px;color:${theme.subColor};letter-spacing:2px;
+                            text-transform:uppercase;margin-bottom:22px;">
                     This is to certify that
                 </div>
-                <div style="font-size:38px;font-weight:700;color:#1f2937;
-                            border-bottom:2px solid #d97706;padding-bottom:10px;
-                            margin:0 auto 16px;display:inline-block;min-width:300px;">
+                <div style="font-size:34px;font-weight:700;color:${theme.nameColor};
+                            border-bottom:2px solid ${theme.nameUnderline};padding-bottom:6px;
+                            margin-bottom:16px;display:inline-block;min-width:280px;">
                     ${escapeHtml(cert.studentName)}
                 </div>
-                <div style="font-size:16px;color:#78350f;margin-bottom:10px;">
+                <div style="font-size:12px;color:${theme.textColor};font-style:italic;margin-bottom:6px;">
                     has successfully completed the course
                 </div>
-                <div style="font-size:24px;font-weight:600;color:#1f2937;margin-bottom:30px;">
+                <div style="font-size:19px;font-weight:600;color:${theme.nameColor};margin-bottom:24px;">
                     ${escapeHtml(cert.courseName)}
                 </div>
-                <div style="display:flex;justify-content:space-between;margin-top:40px;">
+                <div style="display:flex;justify-content:space-between;align-items:flex-end;
+                            width:100%;margin-top:auto;padding-top:16px;">
                     <div style="text-align:center;">
-                        <div style="width:180px;height:1px;background:#78350f;margin:0 auto 8px;"></div>
-                        <div style="font-size:12px;color:#78350f;font-weight:600;">Program Director</div>
+                        <div style="width:130px;height:1px;background:${theme.subColor};
+                                    margin:0 auto 5px;"></div>
+                        <div style="font-size:12px;font-weight:600;color:${theme.textColor};">
+                            Program Director
+                        </div>
+                    </div>
+                    <div style="width:70px;height:70px;border-radius:50%;
+                                background:radial-gradient(circle,${theme.sealBg1},${theme.sealBg2});
+                                border:${theme.sealBorder};display:flex;align-items:center;
+                                justify-content:center;">
+                        <span style="color:${theme.sealColor};font-size:20px;">★</span>
                     </div>
                     <div style="text-align:center;">
-                        <div style="width:180px;height:1px;background:#78350f;margin:0 auto 8px;"></div>
-                        <div style="font-size:12px;color:#78350f;font-weight:600;">Date: ${date}</div>
+                        <div style="width:130px;height:1px;background:${theme.subColor};
+                                    margin:0 auto 5px;"></div>
+                        <div style="font-size:12px;font-weight:600;color:${theme.textColor};">
+                            Date: ${date}
+                        </div>
                     </div>
                 </div>
-                <div style="margin-top:20px;font-size:10px;color:#92400e;font-family:monospace;">
-                    Certificate ID: ${cert.id}
+                <div style="position:absolute;bottom:14px;right:18px;font-size:9px;
+                            color:${theme.subColor};font-family:monospace;">
+                    ID: ${cert.id}
                 </div>
-            </div>
-        `;
+            </div>`;
+    }
+}
 
-        tempDiv.appendChild(certEl);
+// Download Certificate
+async function downloadCertificate(certId) {
+    const cert = myCertificates.find(c => c.id === certId);
+    if (!cert) { showToast('Certificate not found', 'error'); return; }
+
+    showToast('Generating certificate PDF...', 'success');
+
+    try {
+        const date = new Date(cert.issuedDate).toLocaleDateString('en-US',
+            { month: 'long', day: 'numeric', year: 'numeric' });
+
+        const tempCanvas = document.createElement('div');
+        tempCanvas.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+        document.body.appendChild(tempCanvas);
+
+        // Use the SAME render function as preview
+        await renderCertificateHTML(cert, tempCanvas, date);
+
+        const certEl = tempCanvas.firstElementChild;
+        if (!certEl) {
+            showToast('Could not render certificate', 'error');
+            document.body.removeChild(tempCanvas);
+            return;
+        }
 
         if (typeof html2pdf !== 'undefined') {
             const opt = {
@@ -3468,12 +3585,11 @@ async function downloadCertificate(certId) {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showToast('Certificate saved as HTML.', 'info');
         }
-        
-        document.body.removeChild(tempDiv);
+
+        document.body.removeChild(tempCanvas);
         showToast('Certificate downloaded successfully!', 'success');
-        
+
     } catch (err) {
         console.error('Download error:', err);
         showToast('Error generating certificate: ' + err.message, 'error');
