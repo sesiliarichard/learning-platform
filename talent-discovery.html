@@ -1342,6 +1342,16 @@ const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirer
     window._isHirer = isHirer;
     
     console.log('🔐 PERMISSIONS:', { isHirer, isTalent, isHirerFromUrl, hasHireRef });
+
+// Guard: block talent users from this page
+if (isTalent && !isHirer) {
+    window.location.href = 'career-support.html';
+    return;
+}
+if (!isTalent && !isHirer) {
+    window.location.href = 'hire-talent.html';
+    return;
+}
     
     function updateNavigation() {
         const navOpportunity = document.getElementById('navOpportunity');
