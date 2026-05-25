@@ -7176,3 +7176,14 @@ body.dark-mode #discussionsSection .message-input-area {
 .wle-img-wrap::before {
     display: none !important;
 }
+.thumb { 
+    display:flex;
+    align-items:center; 
+    justify-content:center; 
+    flex-direction:column; 
+    position:relative; 
+}
+.thumb.purple { background:#7F77DD; }
+.thumb.orange { background:#BA7517; }
+.thumb.violet { background:#378ADD; }
+.thumb.green  { background:#1D9E75; }

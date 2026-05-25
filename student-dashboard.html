@@ -1691,9 +1691,9 @@ function renderCourseCards() {
             const fullStars = Math.floor(rating);
             let starsHTML = '';
             for (let i = 0; i < 5; i++) {
-                starsHTML += i < fullStars
-                    ? '<i class="fas fa-star" style="color:#fbbf24;font-size:12px;"></i>'
-                    : '<i class="far fa-star" style="color:#d1d5db;font-size:12px;"></i>';
+               starsHTML += i < fullStars
+             ? '<i class="fas fa-star" style="color:#BA7517;font-size:11px;"></i>'
+             : '<i class="far fa-star" style="color:#d1d5db;font-size:11px;"></i>';
             }
 
             // Button
@@ -1718,77 +1718,61 @@ function renderCourseCards() {
             `;
 
             card.innerHTML = `
-                <!-- THUMBNAIL -->
-                <div class="course-thumbnail ${theme}" style="position:relative; height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
-                    
-                    <!-- Lesson pill TOP LEFT -->
-                    <span style="position:absolute; top:12px; left:12px; background:rgba(0,0,0,0.45); color:white; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; display:flex; align-items:center; gap:4px; z-index:2;">
-                        <i class="fas fa-play-circle"></i> ${lessons}x Lesson
-                    </span>
+    <div class="thumb ${theme}" style="position:relative;height:150px;display:flex;align-items:center;justify-content:center;flex-direction:column;">
+        <span style="position:absolute;top:11px;left:11px;background:rgba(0,0,0,0.38);color:#fff;font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px;">
+            <i class="ti ti-player-play" style="font-size:10px;"></i> ${lessons}x lesson
+        </span>
+        <span style="position:absolute;top:11px;right:11px;background:rgba(255,255,255,0.22);color:#fff;font-size:10px;font-weight:500;padding:3px 9px;border-radius:20px;border:0.5px solid rgba(255,255,255,0.3);">
+            ${category}
+        </span>
+        <i class="fas ${icon}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
+    </div>
 
-                    <!-- Category pill TOP RIGHT -->
-                    <span style="position:absolute; top:12px; right:12px; background:rgba(255,255,255,0.2); color:white; font-size:10px; font-weight:800; padding:4px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.3); z-index:2; text-transform:uppercase; letter-spacing:0.3px;">
-                        ${category}
-                    </span>
+    <div style="padding:14px 14px 16px;">
+        <div style="font-size:14px;font-weight:600;color:#1f2937;line-height:1.4;margin-bottom:12px;">
+            ${escapeHtml(course.title)}
+        </div>
 
-                    <!-- Icon -->
-                    <i class="fas ${icon}" style="font-size:3.5rem; color:rgba(255,255,255,0.92); position:relative; z-index:1; text-shadow:0 4px 16px rgba(0,0,0,0.2);"></i>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:30px;height:30px;border-radius:8px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-user" style="font-size:13px;color:#378ADD;"></i>
                 </div>
-
-                <!-- CARD BODY -->
-                <div style="padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px; flex:1;">
-
-                    <!-- TITLE -->
-                    <div style="font-size:15px; font-weight:800; color:#1f2937; line-height:1.4; letter-spacing:-0.1px;">
-                        ${escapeHtml(course.title)}
+                <div>
+                    <div style="font-size:12px;font-weight:600;color:#1f2937;line-height:1.2;">
+                        ${escapeHtml(instructor)}
                     </div>
-
-                    <!-- INSTRUCTOR ROW -->
-                    <div style="display:flex; align-items:center; justify-content:space-between;">
-                        
-                        <!-- Left: avatar + name + role -->
-                        <div style="display:flex; align-items:center; gap:8px;">
-                            <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#ec4899); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:800; flex-shrink:0;">
-                                ${initials}
-                            </div>
-                            <div style="display:flex; flex-direction:column;">
-                                <span style="font-size:12px; font-weight:700; color:#374151; line-height:1.2;">
-                                    ${escapeHtml(instructor)}
-                                </span>
-                                <span style="font-size:10px; color:#9ca3af; font-weight:500;">
-                                    ${role}
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Right: student count -->
-                        <div style="display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#6b7280;">
-                            <i class="fas fa-users" style="font-size:10px; color:#7c3aed;"></i>
-                            ${students} Student
-                        </div>
-
-                    </div>
-
-                    <!-- BOTTOM ROW: stars LEFT, enroll button RIGHT -->
-                    <div style="display:flex; align-items:center; justify-content:space-between; padding-top:8px; border-top:1px solid #f3f4f6; margin-top:auto;">
-                        
-                        <!-- Stars -->
-                        <div style="display:flex; align-items:center; gap:2px;">
-                            ${starsHTML}
-                            <span style="font-size:11px; font-weight:700; color:#6b7280; margin-left:4px;">${rating}</span>
-                        </div>
-
-                        <!-- Enroll Now button -->
-                        <button style="padding:6px 16px; background:transparent; border:1.5px solid ${btnColor}; border-radius:20px; color:${btnColor}; font-size:12px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.25s ease;"
-                            onmouseover="this.style.background='${btnColor}'; this.style.color='white';"
-                            onmouseout="this.style.background='transparent'; this.style.color='${btnColor}';">
-                            ${btnLabel}
-                        </button>
-
+                    <div style="font-size:10px;color:#6b7280;">
+                        ${role}
                     </div>
                 </div>
-            `;
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280;">
+                <i class="fas fa-users" style="font-size:11px;color:#7F77DD;"></i>
+                ${students} students
+            </div>
+        </div>
 
+        <div style="height:5px;background:#f3f4f6;border-radius:99px;overflow:hidden;margin-bottom:4px;">
+            <div style="height:5px;border-radius:99px;background:${btnColor};width:${progress}%;transition:width 0.5s ease;"></div>
+        </div>
+        <div style="font-size:10px;color:${progress >= 100 ? '#1D9E75' : '#6b7280'};margin-bottom:10px;">
+            ${progress >= 100 ? '✓ Completed!' : progress > 0 ? progress + '% complete' : 'Not started'}
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid #f3f4f6;">
+            <div style="display:flex;align-items:center;gap:2px;font-size:11px;color:#6b7280;">
+                ${starsHTML}
+                <span style="margin-left:4px;">${rating}</span>
+            </div>
+            <button style="padding:5px 14px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid ${btnColor};color:${btnColor};background:transparent;font-family:'Plus Jakarta Sans',sans-serif;transition:all 0.2s;"
+                onmouseover="this.style.background='${btnColor}';this.style.color='white';"
+                onmouseout="this.style.background='transparent';this.style.color='${btnColor}';">
+                ${btnLabel}
+            </button>
+        </div>
+    </div>
+`;
             // Hover effect
             card.addEventListener('mouseenter', () => {
                 card.style.transform = 'translateY(-6px)';
