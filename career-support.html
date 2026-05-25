@@ -410,11 +410,20 @@
     .feature-list { display: flex; flex-direction: column; gap: 1.4rem; }
     .feature-item { display: flex; gap: 1rem; align-items: flex-start; }
    .feature-icon {
-      width: 36px; height: 36px; border-radius: 50%;
-      background: transparent; border: none;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.6rem; flex-shrink: 0;
-    }
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #e8f4ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.feature-icon i {
+  font-size: 22px;
+  color: #0099ff;
+}
     .feature-item h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: #111; margin-bottom: 0.25rem; }
     .feature-item p { font-size: 0.82rem; color: var(--gray-text); line-height: 1.6; }
  
@@ -753,29 +762,35 @@ html {
     <div class="sec2-left">
       <h2>Supporting Talent & Companies to Grow and Succeed</h2>
       <p>We provide the tools both sides need to connect, communicate, and close opportunities efficiently.</p>
-      <div class="feature-list">
-        <div class="feature-item">
-          <div class="feature-icon">🏆</div>
-          <div>
-            <h4>Quality Talent for Every Role</h4>
-            <p>Browse verified professionals with rated skills and proven experience across all industries.</p>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">👥</div>
-          <div>
-            <h4>Expert Team of Recruiters</h4>
-            <p>Our support team helps companies and talent navigate the platform and find the best match.</p>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-icon">⚡</div>
-          <div>
-            <h4>Fast & Responsive Support</h4>
-           <p>Get assistance quickly — we're here to make sure every connection on Women in AI Talent Hub counts.</p>
-          </div>
-        </div>
+     <div class="feature-list">
+  <div class="feature-item">
+    <div class="feature-icon">
+      <i class="ti ti-award"></i>
+    </div>
+    <div>
+      <h4>Quality Talent for Every Role</h4>
+      <p>Browse verified professionals with rated skills and proven experience across all industries.</p>
+    </div>
+  </div>
+  <div class="feature-item">
+    <div class="feature-icon">
+      <i class="ti ti-users"></i>
+    </div>
+    <div>
+      <h4>Expert Team of Recruiters</h4>
+      <p>Our support team helps companies and talent navigate the platform and find the best match.</p>
+    </div>
+  </div>
+  <div class="feature-item">
+    <div class="feature-icon">
+      <i class="ti ti-headset"></i>
+    </div>
+    <div>
+      <h4>Fast & Responsive Support</h4>
+      <p>Get assistance quickly — we're here to make sure every connection on Women in AI Talent Hub counts.</p>
       </div>
+     </div>
+    </div>
     </div>
 
     <div class="img-collage2">
