@@ -335,8 +335,21 @@ async function loadStudentDashboardCourses() {
 
 // Renders cards into BOTH grids on the student dashboard
 function renderStudentCourseCards(courses, progressMap = {}) {
-    const colors = ['purple', 'orange', 'violet', 'green', 'blue', 'pink'];
-    const icons  = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain', 'fa-chart-bar', 'fa-laptop'];
+
+    const colorThemes = ['purple', 'orange', 'violet', 'green'];
+    const icons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
+    const categories  = ['AI', 'Data Science', 'Coding', 'ML'];
+    const lessonCounts= [12, 10, 15, 8];
+    const studentNums = ['120+', '98+', '145+', '76+'];
+    const ratings     = [4.8, 4.6, 4.9, 4.7];
+    const roles       = ['AI Instructor', 'Data Instructor', 'Code Instructor', 'ML Instructor'];
+
+    const thumbColors = {
+        purple: '#7F77DD',
+        orange: '#BA7517',
+        violet: '#378ADD',
+        green:  '#1D9E75'
+    };
 
     const grids = [
         document.getElementById('courseSelection'),
@@ -345,67 +358,182 @@ function renderStudentCourseCards(courses, progressMap = {}) {
 
     grids.forEach(grid => {
         if (!grid) return;
-
         grid.innerHTML = '';
 
         courses.forEach((course, index) => {
-            const color    = course.thumbnail_color || colors[index % colors.length];
-            const icon     = course.icon            || icons[index % icons.length];
-            const progress = progressMap[course.id] || 0;
-            const weeks    = course.duration_weeks  || 12;
+            const progress   = progressMap[course.id] || 0;
+            const theme      = colorThemes[index % colorThemes.length];
+            const icon       = course.icon || icons[index % icons.length];
+            const category   = categories[index % categories.length];
+            const lessons    = lessonCounts[index % lessonCounts.length];
+            const students   = studentNums[index % studentNums.length];
+            const rating     = ratings[index % ratings.length];
+            const role       = roles[index % roles.length];
+            const instructor = course.instructor || 'ASAI Instructor';
+            const thumbColor = thumbColors[course.thumbnail_color] || thumbColors[theme] || '#7F77DD';
+
+            // button state
+            const isCompleted = progress >= 90;
+            const isStarted   = progress > 0 && !isCompleted;
+            const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Enroll Now';
+            const btnColor    = isCompleted ? '#1D9E75'     : isStarted ? '#378ADD'  : '#7F77DD';
+
+            // progress label
+            const progLabel = isCompleted
+                ? '<span style="color:#1D9E75;">✓ Completed!</span>'
+                : isStarted
+                    ? progress + '% complete'
+                    : 'Not started';
+
+            // stars
+            const fullStars = Math.floor(rating);
+            let starsHTML = '';
+            for (let i = 0; i < 5; i++) {
+                starsHTML += i < fullStars
+                    ? '<i class="fas fa-star" style="color:#BA7517;font-size:11px;"></i>'
+                    : '<i class="far fa-star" style="color:#d1d5db;font-size:11px;"></i>';
+            }
 
             const card = document.createElement('div');
-            card.className = 'course-card';
-            // ★ KEY: store the real UUID
             card.setAttribute('data-course', course.id);
-            card.style.cursor = 'pointer';
+            card.style.cssText = `
+                background:white;
+                border-radius:16px;
+                overflow:hidden;
+                border:1px solid #e5e7eb;
+                cursor:pointer;
+                transition:transform 0.25s ease, box-shadow 0.25s ease;
+                display:flex;
+                flex-direction:column;
+                padding:0;
+            `;
 
             card.innerHTML = `
-                <div class="course-thumbnail ${color}">
-                    <i class="fas ${icon} course-icon-large"></i>
+                <div style="
+                    height:150px;
+                    background:${thumbColor};
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    position:relative;
+                    overflow:hidden;
+                    flex-shrink:0;
+                ">
+                    <span style="
+                        position:absolute;top:11px;left:11px;
+                        background:rgba(0,0,0,0.38);color:#fff;
+                        font-size:10px;font-weight:600;
+                        padding:3px 9px;border-radius:20px;
+                        display:flex;align-items:center;gap:4px;
+                    ">
+                        <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessons}x lesson
+                    </span>
+                    <span style="
+                        position:absolute;top:11px;right:11px;
+                        background:rgba(255,255,255,0.22);color:#fff;
+                        font-size:10px;font-weight:600;
+                        padding:3px 9px;border-radius:20px;
+                        border:0.5px solid rgba(255,255,255,0.3);
+                        text-transform:uppercase;letter-spacing:0.3px;
+                    ">${category}</span>
+                    <i class="fas ${icon}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
                 </div>
-                <div class="course-title">${course.title}</div>
-                <div class="course-meta">
-                    <div class="meta-row">
-                        <span>👨‍🏫</span>
-                        <span>${course.instructor || 'ASAI Instructor'}</span>
+
+                <div style="padding:14px 14px 16px;display:flex;flex-direction:column;flex:1;">
+
+                    <div style="font-size:14px;font-weight:700;color:#1f2937;line-height:1.4;margin-bottom:12px;">
+                        ${escapeHtml(course.title)}
                     </div>
-                    <div class="meta-row">
-                        <span>⏱️</span>
-                        <span>${weeks} weeks</span>
+
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <div style="
+                                width:30px;height:30px;border-radius:8px;
+                                background:#E6F1FB;
+                                display:flex;align-items:center;justify-content:center;
+                                flex-shrink:0;
+                            ">
+                                <i class="fas fa-user" style="font-size:13px;color:#378ADD;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;font-weight:600;color:#1f2937;line-height:1.2;">
+                                    ${escapeHtml(instructor)}
+                                </div>
+                                <div style="font-size:10px;color:#6b7280;">${role}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#6b7280;">
+                            <i class="fas fa-users" style="font-size:11px;color:#7F77DD;"></i>
+                            ${students}
+                        </div>
                     </div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-circle" data-progress="${progress}">
-                        <span>${progress}%</span>
+
+                    <div style="height:5px;background:#f3f4f6;border-radius:99px;overflow:hidden;margin-bottom:4px;">
+                        <div style="height:5px;border-radius:99px;background:${btnColor};width:${progress}%;transition:width 0.5s ease;"></div>
                     </div>
-                    <div class="next-class">
-                        ${progress === 0 ? 'Not started' : progress >= 100 ? '✅ Completed!' : `${progress}% complete`}
+                    <div style="font-size:10px;color:#6b7280;margin-bottom:12px;">${progLabel}</div>
+
+                    <div style="
+                        display:flex;align-items:center;justify-content:space-between;
+                        padding-top:10px;
+                        border-top:1px solid #f3f4f6;
+                        margin-top:auto;
+                    ">
+                        <div style="display:flex;align-items:center;gap:2px;">
+                            ${starsHTML}
+                            <span style="font-size:11px;color:#6b7280;margin-left:4px;">${rating}</span>
+                        </div>
+                        <button
+                            style="
+                                padding:5px 14px;border-radius:20px;
+                                font-size:11px;font-weight:700;cursor:pointer;
+                                border:1.5px solid ${btnColor};
+                                color:${btnColor};background:transparent;
+                                font-family:'Plus Jakarta Sans',sans-serif;
+                                transition:all 0.2s;
+                            "
+                            onmouseover="this.style.background='${btnColor}';this.style.color='white';"
+                            onmouseout="this.style.background='transparent';this.style.color='${btnColor}';"
+                        >${btnLabel}</button>
                     </div>
+
                 </div>
             `;
 
-            // ★ Single, clean click handler
+            // hover
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-5px)';
+                card.style.boxShadow = '0 16px 40px rgba(0,0,0,0.10)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = 'none';
+            });
+
+            // click → open course
             card.addEventListener('click', function () {
                 const id = this.getAttribute('data-course');
-                console.log('🖱️ Course card clicked, id =', id);
-                if (!id) { console.error('No course id on card!'); return; }
-
-                // Call the inline script's selectCourse()
+                if (!id) return;
                 if (typeof selectCourse === 'function') {
                     selectCourse(id);
                 } else {
-                    console.error('selectCourse() not found! Check inline script loaded.');
+                    // fallback: switch section then select
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    const nav = document.querySelector('.nav-item[data-section="courses"]');
+                    if (nav) nav.classList.add('active');
+                    document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
+                    const sec = document.getElementById('coursesSection');
+                    if (sec) sec.classList.add('active');
+                    setTimeout(() => selectCourse(id), 50);
                 }
             });
 
             grid.appendChild(card);
         });
 
-        console.log('✅ Rendered', courses.length, 'cards into grid:', grid.id || grid.className);
+        console.log('✅ renderStudentCourseCards: rendered', courses.length, 'cards into', grid.id || grid.className);
     });
 }
-
 // ─────────────────────────────────────────────
 // ADMIN DASHBOARD FUNCTIONS
 // ─────────────────────────────────────────────
