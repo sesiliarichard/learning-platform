@@ -344,13 +344,13 @@ function renderStudentCourseCards(courses, progressMap = {}) {
     const roles        = ['AI Instructor', 'Data Instructor', 'Code Instructor', 'ML Instructor'];
 
     const gradients = {
-        purple: 'linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)',
-        orange: 'linear-gradient(135deg,#92400e 0%,#d97706 100%)',
-        violet: 'linear-gradient(135deg,#0099ff 0%,#0077cc 100%)',
-        green:  'linear-gradient(135deg,#065f46 0%,#10b981 100%)',
-        blue:   'linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)',
-        pink:   'linear-gradient(135deg,#831843 0%,#ec4899 100%)'
-    };
+    purple: 'linear-gradient(135deg,#667eea 0%,#764ba2 100%)',
+    orange: 'linear-gradient(135deg,#fa709a 0%,#fee140 100%)',
+    violet: 'linear-gradient(135deg,#a18cd1 0%,#fbc2eb 100%)',
+    green:  'linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)',
+    blue:   'linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)',
+    pink:   'linear-gradient(135deg,#f093fb 0%,#f5576c 100%)'
+};
 
     // Only target courseSelection — dashboard has its own layout now
     const grid = document.getElementById('courseSelection');
