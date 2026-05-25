@@ -14,6 +14,8 @@
   <!-- Generate your favicon free at: https://favicon.io -->
  
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <style>
  
     /* ===== RESET & BASE ===== */
@@ -663,40 +665,40 @@ html {
     </div>
   </section>
 
-  <!-- ==================== STATS BAR ==================== -->
-  <div class="stats">
-    <!-- <div class="stat-item">
-      <div class="stat-icon">👩‍💻</div>
-      <div>
-        <h3>5,000+</h3>
-        <p>Skilled Professionals</p>
-      </div>
+ <!-- ==================== STATS BAR ==================== -->
+<div class="stats">
+  <div class="stat-item">
+    <div class="stat-icon">👩‍💻</div>
+    <div>
+      <h3 id="statTalent">—</h3>
+      <p>Registered Talents</p>
     </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-icon">🏢</div>
-      <div>
-        <h3>300+</h3>
-        <p>Partner Companies</p>
-      </div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-icon">🤝</div>
-      <div>
-        <h3>1,200+</h3>
-        <p>Matches Made</p>
-      </div>
-    </div>
-    <div class="stat-divider"></div>
-    <div class="stat-item">
-      <div class="stat-icon">🏅</div>
-      <div>
-        <h3>95%</h3>
-        <p>Satisfaction Rate</p>
-      </div>
-    </div> -->
   </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-icon">🏢</div>
+    <div>
+      <h3 id="statCompanies">—</h3>
+      <p>Companies Hiring</p>
+    </div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-icon">🌍</div>
+    <div>
+      <h3 id="statCountries">—</h3>
+      <p>African Countries</p>
+    </div>
+  </div>
+  <div class="stat-divider"></div>
+  <div class="stat-item">
+    <div class="stat-icon">💼</div>
+    <div>
+      <h3 id="statJobs">—</h3>
+      <p>Open Opportunities</p>
+    </div>
+  </div>
+</div>
 
   <!-- ==================== SECTION 1 — Platform Info ==================== -->
   <section class="section1">
@@ -825,20 +827,65 @@ html {
 <button id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 <script>
   window.addEventListener('scroll', () => {
-    document.getElementById('scrollTop').style.display = 
+    document.getElementById('scrollTop').style.display =
       window.scrollY > 400 ? 'block' : 'none';
   });
-    // Check if hire profile exists and update link if needed
-  document.addEventListener('DOMContentLoaded', function() {
+
+  document.addEventListener('DOMContentLoaded', function () {
+    // Hire button check
     const hasHireProfile = localStorage.getItem('hire_request_ref');
     const hireBtn = document.getElementById('hireTalentBtn');
-    
     if (hireBtn) {
-      // The link already goes to hire-talent.html
-      // The hire-talent.html page will handle showing preview vs form
       console.log('Hire profile exists:', hasHireProfile ? 'Yes' : 'No');
     }
+
+    // Load live stats
+    loadStats();
   });
+
+  async function loadStats() {
+    // Total registered talents
+    const { count: talentCount } = await window.supabaseClient
+      .from('talent_profiles')
+      .select('*', { count: 'exact', head: true });
+
+    // Total companies hiring
+    const { count: companyCount } = await window.supabaseClient
+      .from('hire_requests')
+      .select('*', { count: 'exact', head: true });
+
+    // Unique countries from talent profiles
+    const { data: countryData } = await window.supabaseClient
+      .from('talent_profiles')
+      .select('country_code');
+
+    const uniqueCountries = new Set(
+      countryData?.map(r => r.country_code).filter(Boolean)
+    ).size;
+
+    // Total open jobs
+    const { count: jobCount } = await window.supabaseClient
+      .from('hire_requests')
+      .select('*', { count: 'exact', head: true });
+
+    // Animate numbers
+    animateCount('statTalent',    talentCount     || 0);
+    animateCount('statCompanies', companyCount    || 0);
+    animateCount('statCountries', uniqueCountries || 0);
+    animateCount('statJobs',      jobCount        || 0);
+  }
+
+  function animateCount(id, target) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    let start = 0;
+    const step = Math.max(1, Math.ceil(target / 60));
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      el.textContent = start.toLocaleString() + '+';
+      if (start >= target) clearInterval(timer);
+    }, 16);
+  }
 </script>
 </body>
 </html>
