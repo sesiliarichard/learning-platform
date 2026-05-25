@@ -335,75 +335,204 @@ async function loadStudentDashboardCourses() {
 
 // Renders cards into BOTH grids on the student dashboard
 function renderStudentCourseCards(courses, progressMap = {}) {
-    const colors = ['purple', 'orange', 'violet', 'green', 'blue', 'pink'];
-    const icons  = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain', 'fa-chart-bar', 'fa-laptop'];
+    const colorThemes  = ['purple', 'orange', 'violet', 'green'];
+    const icons        = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
+    const categories   = ['AI', 'Data Science', 'Coding', 'ML'];
+    const lessonCounts = [12, 10, 15, 8];
+    const studentNums  = ['120+', '98+', '145+', '76+'];
+    const ratings      = [4.8, 4.6, 4.9, 4.7];
+    const roles        = ['AI Instructor', 'Data Instructor', 'Code Instructor', 'ML Instructor'];
 
-    const grids = [
-        document.getElementById('courseSelection'),
-        document.querySelector('#dashboardSection .courses-grid')
-    ];
+    const gradients = {
+        purple: 'linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)',
+        orange: 'linear-gradient(135deg,#92400e 0%,#d97706 100%)',
+        violet: 'linear-gradient(135deg,#0099ff 0%,#0077cc 100%)',
+        green:  'linear-gradient(135deg,#065f46 0%,#10b981 100%)',
+        blue:   'linear-gradient(135deg,#1e3a8a 0%,#3b82f6 100%)',
+        pink:   'linear-gradient(135deg,#831843 0%,#ec4899 100%)'
+    };
 
-    grids.forEach(grid => {
-        if (!grid) return;
+    // Only target courseSelection — dashboard has its own layout now
+    const grid = document.getElementById('courseSelection');
+    if (!grid) return;
 
-        grid.innerHTML = '';
+    grid.innerHTML = '';
 
-        courses.forEach((course, index) => {
-            const color    = course.thumbnail_color || colors[index % colors.length];
-            const icon     = course.icon            || icons[index % icons.length];
-            const progress = progressMap[course.id] || 0;
-            const weeks    = course.duration_weeks  || 12;
+    courses.forEach((course, index) => {
+        const progress   = progressMap[course.id] || 0;
+        const theme      = course.thumbnail_color || colorThemes[index % colorThemes.length];
+        const icon       = course.icon            || icons[index % icons.length];
+        const category   = categories[index % categories.length];
+        const lessons    = lessonCounts[index % lessonCounts.length];
+        const students   = studentNums[index % studentNums.length];
+        const rating     = ratings[index % ratings.length];
+        const role       = roles[index % roles.length];
+        const instructor = course.instructor || 'ASAI Instructor';
+        const initials   = instructor.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const gradient   = gradients[theme] || gradients.purple;
 
-            const card = document.createElement('div');
-            card.className = 'course-card';
-            // ★ KEY: store the real UUID
-            card.setAttribute('data-course', course.id);
-            card.style.cursor = 'pointer';
+        // Stars
+        const fullStars = Math.floor(rating);
+        let starsHTML = '';
+        for (let i = 0; i < 5; i++) {
+            starsHTML += i < fullStars
+                ? '<i class="fas fa-star" style="color:#fbbf24;font-size:11px;"></i>'
+                : '<i class="far fa-star" style="color:#d1d5db;font-size:11px;"></i>';
+        }
 
-            card.innerHTML = `
-                <div class="course-thumbnail ${color}">
-                    <i class="fas ${icon} course-icon-large"></i>
+        // Button
+        const isCompleted = progress >= 90;
+        const isStarted   = progress > 0 && !isCompleted;
+        const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Enroll Now';
+        const btnColor    = isCompleted ? '#059669'     : isStarted ? '#1d4ed8'  : '#7c3aed';
+
+        const card = document.createElement('div');
+        card.setAttribute('data-course', course.id);
+        card.style.cssText = `
+            background: white;
+            border-radius: 18px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+        `;
+
+        card.innerHTML = `
+            <div style="
+                background: ${gradient};
+                height: 160px;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                flex-shrink: 0;
+            ">
+                <div style="position:absolute;top:-20px;right:-20px;width:80px;height:80px;background:rgba(255,255,255,0.07);border-radius:50%;"></div>
+                <div style="position:absolute;bottom:-10px;left:-10px;width:50px;height:50px;background:rgba(255,255,255,0.05);border-radius:50%;"></div>
+
+                <span style="
+                    position:absolute; top:12px; left:12px;
+                    background:rgba(0,0,0,0.40); color:white;
+                    font-size:10px; font-weight:700;
+                    padding:4px 10px; border-radius:20px;
+                    display:flex; align-items:center; gap:4px;
+                    z-index:2; font-family:'Plus Jakarta Sans',sans-serif;
+                ">
+                    <i class="fas fa-play-circle"></i> ${lessons}x Lesson
+                </span>
+
+                <span style="
+                    position:absolute; top:12px; right:12px;
+                    background:rgba(255,255,255,0.18); color:white;
+                    font-size:10px; font-weight:800;
+                    padding:4px 11px; border-radius:20px;
+                    border:1px solid rgba(255,255,255,0.3);
+                    z-index:2; text-transform:uppercase; letter-spacing:0.5px;
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                ">
+                    ${category}
+                </span>
+
+                <i class="fas ${icon}" style="
+                    font-size:3.5rem;
+                    color:rgba(255,255,255,0.92);
+                    position:relative; z-index:1;
+                    text-shadow:0 4px 16px rgba(0,0,0,0.2);
+                "></i>
+            </div>
+
+            <div style="
+                padding:16px 16px 14px;
+                display:flex; flex-direction:column; gap:10px;
+                flex:1; background:white;
+            ">
+                <div style="
+                    font-size:15px; font-weight:800; color:#1f2937;
+                    line-height:1.4; letter-spacing:-0.1px;
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                ">${course.title}</div>
+
+                <div style="display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <div style="
+                            width:28px; height:28px; border-radius:50%;
+                            background:linear-gradient(135deg,#7c3aed,#ec4899);
+                            display:flex; align-items:center; justify-content:center;
+                            color:white; font-size:10px; font-weight:800; flex-shrink:0;
+                            font-family:'Plus Jakarta Sans',sans-serif;
+                        ">${initials}</div>
+                        <div style="display:flex; flex-direction:column;">
+                            <span style="font-size:12px; font-weight:700; color:#374151; line-height:1.2; font-family:'Plus Jakarta Sans',sans-serif;">
+                                ${instructor}
+                            </span>
+                            <span style="font-size:10px; color:#9ca3af; font-weight:500; font-family:'Plus Jakarta Sans',sans-serif;">
+                                ${role}
+                            </span>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#6b7280; font-family:'Plus Jakarta Sans',sans-serif;">
+                        <i class="fas fa-users" style="font-size:10px; color:#7c3aed;"></i>
+                        ${students} Student
+                    </div>
                 </div>
-                <div class="course-title">${course.title}</div>
-                <div class="course-meta">
-                    <div class="meta-row">
-                        <span>👨‍🏫</span>
-                        <span>${course.instructor || 'ASAI Instructor'}</span>
+
+                <div style="
+                    display:flex; align-items:center; justify-content:space-between;
+                    padding-top:8px; border-top:1px solid #f3f4f6; margin-top:auto;
+                ">
+                    <div style="display:flex; align-items:center; gap:2px;">
+                        ${starsHTML}
+                        <span style="font-size:11px; font-weight:700; color:#6b7280; margin-left:4px; font-family:'Plus Jakarta Sans',sans-serif;">${rating}</span>
                     </div>
-                    <div class="meta-row">
-                        <span>⏱️</span>
-                        <span>${weeks} weeks</span>
-                    </div>
+
+                    <button style="
+                        padding:6px 16px;
+                        background:transparent;
+                        border:1.5px solid ${btnColor};
+                        border-radius:20px;
+                        color:${btnColor};
+                        font-size:12px; font-weight:700;
+                        cursor:pointer;
+                        font-family:'Plus Jakarta Sans',sans-serif;
+                        transition:all 0.25s ease;
+                        white-space:nowrap;
+                    "
+                    onmouseover="this.style.background='${btnColor}';this.style.color='white';"
+                    onmouseout="this.style.background='transparent';this.style.color='${btnColor}';">
+                        ${btnLabel}
+                    </button>
                 </div>
-                <div class="progress-container">
-                    <div class="progress-circle" data-progress="${progress}">
-                        <span>${progress}%</span>
-                    </div>
-                    <div class="next-class">
-                        ${progress === 0 ? 'Not started' : progress >= 100 ? '✅ Completed!' : `${progress}% complete`}
-                    </div>
-                </div>
-            `;
+            </div>
+        `;
 
-            // ★ Single, clean click handler
-            card.addEventListener('click', function () {
-                const id = this.getAttribute('data-course');
-                console.log('🖱️ Course card clicked, id =', id);
-                if (!id) { console.error('No course id on card!'); return; }
-
-                // Call the inline script's selectCourse()
-                if (typeof selectCourse === 'function') {
-                    selectCourse(id);
-                } else {
-                    console.error('selectCourse() not found! Check inline script loaded.');
-                }
-            });
-
-            grid.appendChild(card);
+        // Hover on card
+        card.addEventListener('mouseenter', () => {
+            card.style.transform   = 'translateY(-6px)';
+            card.style.boxShadow   = '0 20px 40px rgba(0,0,0,0.12)';
+            card.style.borderColor = '#d1d5db';
+        });
+        card.addEventListener('mouseleave', () => {
+            card.style.transform   = 'translateY(0)';
+            card.style.boxShadow   = 'none';
+            card.style.borderColor = '#e5e7eb';
         });
 
-        console.log('✅ Rendered', courses.length, 'cards into grid:', grid.id || grid.className);
+        // Click to open course
+        card.addEventListener('click', function () {
+            const id = this.getAttribute('data-course');
+            if (!id) return;
+            if (typeof selectCourse === 'function') {
+                selectCourse(id);
+            }
+        });
+
+        grid.appendChild(card);
     });
+
+    console.log('✅ Rendered', courses.length, 'Image-1 style cards');
 }
 
 // ─────────────────────────────────────────────
