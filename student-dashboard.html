@@ -1677,30 +1677,54 @@ function renderCourseCards() {
             card.dataset.course = course.id;
             card.style.cursor = 'pointer';
 
-            card.innerHTML = `
-                <div class="course-thumbnail ${colors[index % colors.length]}">
-                    <i class="fas ${icons[index % icons.length]} course-icon-large"></i>
-                </div>
-                <div class="course-title">${course.title}</div>
-                <div class="course-meta">
-                    <div class="meta-row"><span>📚</span><span>Course Materials</span></div>
-                    <div class="meta-row"><span>⏱️</span><span>12 weeks</span></div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-circle" data-progress="${progress}">
-                        <span>${progress}%</span>
-                    </div>
-                    <div class="next-class">
-                        ${progress === 0 ? 'Not started' : progress >= 100 ? 'Completed!' : progress + '% complete'}
-                    </div>
-                </div>
-            `;
+            const sortedCourses = Object.values(window.coursesData)
+    .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+const courseIndex = sortedCourses.findIndex(c => c.id === course.id);
+const prevCourse  = courseIndex > 0 ? sortedCourses[courseIndex - 1] : null;
+const isLocked    = prevCourse && (prevCourse.progress || 0) < 90;
 
-            card.addEventListener('click', function () {
-                const courseId = this.dataset.course;
-                if (!courseId) return;
+card.innerHTML = `
+    <div class="course-thumbnail ${colors[index % colors.length]}"
+         style="${isLocked ? 'filter:grayscale(1);opacity:0.6;' : ''}">
+        <i class="fas ${isLocked ? 'fa-lock' : icons[index % icons.length]} course-icon-large"></i>
+    </div>
+    <div class="course-title">${course.title}</div>
+    <div class="course-meta">
+        <div class="meta-row"><span>📚</span><span>Course Materials</span></div>
+        <div class="meta-row"><span>⏱️</span><span>12 weeks</span></div>
+    </div>
+    <div class="progress-container">
+        <div class="progress-circle" data-progress="${progress}">
+            <span>${progress}%</span>
+        </div>
+        <div class="next-class">
+            ${isLocked
+                ? '🔒 Complete "' + prevCourse.title.substring(0, 20) + '..." first'
+                : progress === 0 ? 'Not started'
+                : progress >= 100 ? 'Completed!'
+                : progress + '% complete'}
+        </div>
+    </div>
+`;
+card.addEventListener('click', function () {
+    const courseId = this.dataset.course;
+    if (!courseId) return;
 
-                console.log('✅ Dashboard card clicked, navigating to course:', courseId);
+    // Check if locked
+    const sortedCourses = Object.values(window.coursesData)
+        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+    const courseIndex = sortedCourses.findIndex(c => c.id === courseId);
+    const prevCourse  = courseIndex > 0 ? sortedCourses[courseIndex - 1] : null;
+
+    if (prevCourse && (prevCourse.progress || 0) < 90) {
+        showToast(
+            '🔒 Complete "' + prevCourse.title + '" (90%+) to unlock this course.',
+            'warning'
+        );
+        return;
+    }
+
+    console.log('✅ Dashboard card clicked, navigating to course:', courseId);
 
                 // ── Step 1: highlight Cohort Courses in sidebar ──
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
