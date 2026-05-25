@@ -185,26 +185,46 @@
       margin-bottom: 2rem;
       max-width: 400px;
     }
-    .hero-btns { display: flex; gap: 1rem; }
-    .btn-hero-main {
-      background: var(--cyan);
-      color: var(--blue-dark);
-      padding: 0.8rem 2rem;
-      border-radius: 7px;
-      font-weight: 700;
-      font-size: 0.9rem;
-    }
-    .btn-hero-out {
-      background: transparent;
-      color: #fff;
-      padding: 0.8rem 2rem;
-      border-radius: 7px;
-      font-weight: 500;
-      font-size: 0.9rem;
-      border: 1.5px solid rgba(255,255,255,0.4);
-    }
-    .btn-hero-out:hover { background: rgba(255,255,255,0.1); }
- 
+   .hero-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 2rem;
+}
+
+.btn-hero-main,
+.btn-hero-out {
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.btn-hero-main {
+  background: var(--cyan);
+  color: var(--blue-dark);
+}
+
+.btn-hero-main:hover {
+  background: #fff;
+  color: var(--blue-dark);
+  transform: translateY(-2px);
+}
+
+.btn-hero-out {
+  background: transparent;
+  color: #fff;
+  border: 1.5px solid rgba(255, 255, 255, 0.5);
+}
+
+.btn-hero-out:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.8);
+  transform: translateY(-2px);
+}
     /* Hero right — person image */
     .hero-right {
       z-index: 2;
@@ -528,8 +548,20 @@ html {
   }
   .hero h1 { font-size: 2rem; }
   .hero p { max-width: 100%; margin-left: auto; margin-right: auto; }
-  .hero-btns { justify-content: center; flex-wrap: wrap; }
-  .hero-right { justify-content: center; margin-top: 2rem; }
+  .hero-btns {
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.btn-hero-main,
+.btn-hero-out {
+  font-size: 0.82rem;
+  padding: 0.6rem 1.1rem;
+}
+  .hero-right { 
+    justify-content: center; 
+    margin-top: 2rem;
+   }
   .hero-img { max-width: 280px; }
 
   /* Stats */
@@ -613,11 +645,11 @@ html {
       <h1>We Connect Great Talent With  Companies.</h1>
       <p>Our platform bridges the gap between skilled professionals and leading employers. Register your talent or post your opportunity — we handle the matching.</p>
       <div class="hero-btns">
-       <a href="register-talent.html" class="btn-hero-main">Join the Hub</a>
-       <a href="hire-talent.html" class="btn-hero-out" id="hireTalentBtn">Hire Talent</a>
-       <a href="view-talent.html" class="btn-hero-out">View Talent</a>
-      <a href="view-opportunity.html" class="btn-hero-out">View Opportunity</a>
-      </div>
+     <a href="register-talent.html" class="btn-hero-main">Join the Hub</a>
+     <a href="hire-talent.html" class="btn-hero-out" id="hireTalentBtn">Hire Talent</a>
+     <a href="view-talent.html" class="btn-hero-out">View Talent</a>
+    <a href="view-opportunity.html" class="btn-hero-out">View Opportunity</a>
+</div>
     </div>
 
     <div class="hero-right">
