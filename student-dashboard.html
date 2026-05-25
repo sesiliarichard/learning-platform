@@ -1663,60 +1663,156 @@ function renderCourseCards() {
         document.querySelector('#dashboardSection .courses-grid')
     ];
 
-    const icons = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
-    const colors = ['purple', 'orange', 'violet', 'green'];
+    const colorThemes  = ['purple', 'orange', 'violet', 'green'];
+    const icons        = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
+    const categories   = ['AI', 'Data Science', 'Coding', 'ML'];
+    const lessonCounts = [12, 10, 15, 8];
+    const studentNums  = ['120+', '98+', '145+', '76+'];
+    const ratings      = [4.8, 4.6, 4.9, 4.7];
+    const roles        = ['AI Instructor', 'Data Instructor', 'Code Instructor', 'ML Instructor'];
 
     grids.forEach(grid => {
         if (!grid) return;
         grid.innerHTML = '';
 
         Object.values(coursesData).forEach((course, index) => {
-            const progress = course.progress || 0;
+            const progress   = course.progress || 0;
+            const theme      = colorThemes[index % colorThemes.length];
+            const icon       = icons[index % icons.length];
+            const category   = categories[index % categories.length];
+            const lessons    = lessonCounts[index % lessonCounts.length];
+            const students   = studentNums[index % studentNums.length];
+            const rating     = ratings[index % ratings.length];
+            const role       = roles[index % roles.length];
+            const instructor = course.instructor || 'ASAI Instructor';
+            const initials   = instructor.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+
+            // Stars
+            const fullStars = Math.floor(rating);
+            let starsHTML = '';
+            for (let i = 0; i < 5; i++) {
+                starsHTML += i < fullStars
+                    ? '<i class="fas fa-star" style="color:#fbbf24;font-size:12px;"></i>'
+                    : '<i class="far fa-star" style="color:#d1d5db;font-size:12px;"></i>';
+            }
+
+            // Button
+            const isCompleted = progress >= 90;
+            const isStarted   = progress > 0 && !isCompleted;
+            const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Enroll Now';
+            const btnColor    = isCompleted ? '#059669' : isStarted ? '#1d4ed8' : '#7c3aed';
+
             const card = document.createElement('div');
             card.className = 'course-card';
             card.dataset.course = course.id;
-            card.style.cursor = 'pointer';
+            card.style.cssText = `
+                background: white;
+                border-radius: 16px;
+                overflow: hidden;
+                border: 1px solid #e5e7eb;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                padding: 0;
+            `;
 
             card.innerHTML = `
-                <div class="course-thumbnail ${colors[index % colors.length]}">
-                    <i class="fas ${icons[index % icons.length]} course-icon-large"></i>
+                <!-- THUMBNAIL -->
+                <div class="course-thumbnail ${theme}" style="position:relative; height:160px; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+                    
+                    <!-- Lesson pill TOP LEFT -->
+                    <span style="position:absolute; top:12px; left:12px; background:rgba(0,0,0,0.45); color:white; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; display:flex; align-items:center; gap:4px; z-index:2;">
+                        <i class="fas fa-play-circle"></i> ${lessons}x Lesson
+                    </span>
+
+                    <!-- Category pill TOP RIGHT -->
+                    <span style="position:absolute; top:12px; right:12px; background:rgba(255,255,255,0.2); color:white; font-size:10px; font-weight:800; padding:4px 11px; border-radius:20px; border:1px solid rgba(255,255,255,0.3); z-index:2; text-transform:uppercase; letter-spacing:0.3px;">
+                        ${category}
+                    </span>
+
+                    <!-- Icon -->
+                    <i class="fas ${icon}" style="font-size:3.5rem; color:rgba(255,255,255,0.92); position:relative; z-index:1; text-shadow:0 4px 16px rgba(0,0,0,0.2);"></i>
                 </div>
-                <div class="course-title">${course.title}</div>
-                <div class="course-meta">
-                    <div class="meta-row"><span>📚</span><span>Course Materials</span></div>
-                    <div class="meta-row"><span>⏱️</span><span>12 weeks</span></div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-circle" data-progress="${progress}">
-                        <span>${progress}%</span>
+
+                <!-- CARD BODY -->
+                <div style="padding:16px 16px 14px; display:flex; flex-direction:column; gap:10px; flex:1;">
+
+                    <!-- TITLE -->
+                    <div style="font-size:15px; font-weight:800; color:#1f2937; line-height:1.4; letter-spacing:-0.1px;">
+                        ${escapeHtml(course.title)}
                     </div>
-                    <div class="next-class">
-                        ${progress === 0 ? 'Not started' : progress >= 100 ? 'Completed!' : progress + '% complete'}
+
+                    <!-- INSTRUCTOR ROW -->
+                    <div style="display:flex; align-items:center; justify-content:space-between;">
+                        
+                        <!-- Left: avatar + name + role -->
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <div style="width:28px; height:28px; border-radius:50%; background:linear-gradient(135deg,#7c3aed,#ec4899); display:flex; align-items:center; justify-content:center; color:white; font-size:10px; font-weight:800; flex-shrink:0;">
+                                ${initials}
+                            </div>
+                            <div style="display:flex; flex-direction:column;">
+                                <span style="font-size:12px; font-weight:700; color:#374151; line-height:1.2;">
+                                    ${escapeHtml(instructor)}
+                                </span>
+                                <span style="font-size:10px; color:#9ca3af; font-weight:500;">
+                                    ${role}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Right: student count -->
+                        <div style="display:flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:#6b7280;">
+                            <i class="fas fa-users" style="font-size:10px; color:#7c3aed;"></i>
+                            ${students} Student
+                        </div>
+
+                    </div>
+
+                    <!-- BOTTOM ROW: stars LEFT, enroll button RIGHT -->
+                    <div style="display:flex; align-items:center; justify-content:space-between; padding-top:8px; border-top:1px solid #f3f4f6; margin-top:auto;">
+                        
+                        <!-- Stars -->
+                        <div style="display:flex; align-items:center; gap:2px;">
+                            ${starsHTML}
+                            <span style="font-size:11px; font-weight:700; color:#6b7280; margin-left:4px;">${rating}</span>
+                        </div>
+
+                        <!-- Enroll Now button -->
+                        <button style="padding:6px 16px; background:transparent; border:1.5px solid ${btnColor}; border-radius:20px; color:${btnColor}; font-size:12px; font-weight:700; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.25s ease;"
+                            onmouseover="this.style.background='${btnColor}'; this.style.color='white';"
+                            onmouseout="this.style.background='transparent'; this.style.color='${btnColor}';">
+                            ${btnLabel}
+                        </button>
+
                     </div>
                 </div>
             `;
 
+            // Hover effect
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-6px)';
+                card.style.boxShadow = '0 20px 40px rgba(0,0,0,0.12)';
+            });
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0)';
+                card.style.boxShadow = 'none';
+            });
+
+            // Click to open course
             card.addEventListener('click', function () {
                 const courseId = this.dataset.course;
                 if (!courseId) return;
 
-                console.log('✅ Dashboard card clicked, navigating to course:', courseId);
-
-                // ── Step 1: highlight Cohort Courses in sidebar ──
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 const coursesNav = document.querySelector('.nav-item[data-section="courses"]');
                 if (coursesNav) coursesNav.classList.add('active');
 
-                // ── Step 2: hide all sections, show coursesSection ──
                 document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
                 const coursesSection = document.getElementById('coursesSection');
                 if (coursesSection) coursesSection.classList.add('active');
 
-                // ── Step 3: open the specific course ──
-                // Small delay ensures the section is visible before selectCourse runs
-                setTimeout(() => {
-                    selectCourse(courseId);
-                }, 50);
+                setTimeout(() => selectCourse(courseId), 50);
             });
 
             grid.appendChild(card);
