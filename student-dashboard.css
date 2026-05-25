@@ -7187,3 +7187,12 @@ body.dark-mode #discussionsSection .message-input-area {
 .thumb.orange { background:#BA7517; }
 .thumb.violet { background:#378ADD; }
 .thumb.green  { background:#1D9E75; }
+.thumb {
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
