@@ -291,7 +291,16 @@
       border-bottom: 1px solid #eef0f8;
     }
     .stat-item { display: flex; align-items: center; gap: 1rem; }
-    .stat-icon { font-size: 1.8rem; }
+    .stat-icon {
+  width: 48px;
+  height: 48px;
+  background: #e8f4ff;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
     .stat-item h3 {
       font-family: 'Syne', sans-serif;
       font-size: 2rem;
@@ -666,40 +675,43 @@ html {
   </section>
 
  <!-- ==================== STATS BAR ==================== -->
-<div class="stats">
-  <div class="stat-item">
-    <div class="stat-icon">👩‍💻</div>
-    <div>
-      <h3 id="statTalent">—</h3>
-      <p>Registered Talents</p>
-    </div>
-  </div>
-  <div class="stat-divider"></div>
-  <div class="stat-item">
-    <div class="stat-icon">🏢</div>
-    <div>
-      <h3 id="statCompanies">—</h3>
-      <p>Companies Hiring</p>
-    </div>
-  </div>
-  <div class="stat-divider"></div>
-  <div class="stat-item">
-    <div class="stat-icon">🌍</div>
-    <div>
-      <h3 id="statCountries">—</h3>
-      <p>African Countries</p>
-    </div>
-  </div>
-  <div class="stat-divider"></div>
-  <div class="stat-item">
-    <div class="stat-icon">💼</div>
-    <div>
-      <h3 id="statJobs">—</h3>
-      <p>Open Opportunities</p>
-    </div>
-  </div>
+<!-- Registered Talents -->
+<div class="stat-icon">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0099ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+    <circle cx="9" cy="7" r="4"/>
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+  </svg>
 </div>
 
+<!-- Companies Hiring -->
+<div class="stat-icon">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0099ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2"/>
+    <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+    <line x1="12" y1="12" x2="12" y2="12"/>
+    <path d="M2 12h20"/>
+  </svg>
+</div>
+
+<!-- African Countries -->
+<div class="stat-icon">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0099ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <line x1="2" y1="12" x2="22" y2="12"/>
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+  </svg>
+</div>
+
+<!-- Open Opportunities -->
+<div class="stat-icon">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0099ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="2" y="3" width="20" height="14" rx="2"/>
+    <path d="M8 21h8"/>
+    <path d="M12 17v4"/>
+  </svg>
+</div>
   <!-- ==================== SECTION 1 — Platform Info ==================== -->
   <section class="section1">
     <div class="img-collage">
