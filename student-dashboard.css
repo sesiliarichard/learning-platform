@@ -7246,3 +7246,91 @@ body.dark-mode #discussionsSection .message-input-area {
     min-width: 0;
     overflow: hidden;
 }
+/* Fix for long chapter headings */
+.notes-chapter-list {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+.notes-chapter-item {
+    width: 100%;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    padding: 10px 12px;
+}
+
+.notes-chapter-item span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    word-break: break-word;
+    white-space: normal !important;
+}
+
+.notes-chapter-item span span {
+    flex: 1;
+    min-width: 0; /* Important for text truncation */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap !important;
+}
+
+/* For the sidebar container */
+.notes-sidebar {
+    width: 260px;
+    min-width: 200px;
+    overflow-x: hidden;
+}
+
+/* For the chapter group headers */
+.notes-chapter-list > li:first-child {
+    white-space: normal;
+    word-break: break-word;
+}
+
+/* Make sure the week label doesn't break */
+.notes-chapter-list li span[style*="background:#ede9fe"] {
+    flex-shrink: 0;
+}
+
+/* Responsive fix for mobile */
+@media (max-width: 768px) {
+    .notes-reading-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .notes-sidebar {
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .notes-chapter-item span span {
+        white-space: normal !important;
+        line-height: 1.4;
+    }
+}
+/* Prevent layout shift from long chapter headings */
+.notes-chapter-item span span {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+}
+
+.notes-chapter-item:hover span span {
+    white-space: normal;
+    word-break: break-word;
+    background: white;
+    position: relative;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+body.dark-mode .notes-chapter-item:hover span span {
+    background: #1f2937;
+}

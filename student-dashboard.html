@@ -2806,7 +2806,13 @@ function loadChapterList() {
 
     groupOrder.forEach(key => {
         const group = groups[key];
-
+        
+        // Truncate long chapter titles
+        let truncatedLabel = group.label;
+        if (truncatedLabel.length > 30) {
+            truncatedLabel = truncatedLabel.substring(0, 27) + '...';
+        }
+        
         // Chapter group header
         const header = document.createElement('li');
         header.style.cssText = `
@@ -2826,8 +2832,8 @@ function loadChapterList() {
             </span>
             <span style="font-size:10px;font-weight:700;color:#374151;
                          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-                         max-width:140px;text-transform:uppercase;letter-spacing:0.5px;">
-                ${group.label}
+                         max-width:180px;text-transform:uppercase;letter-spacing:0.5px;">
+                ${escapeHtml(truncatedLabel)}
             </span>`;
         chapterList.appendChild(header);
 
@@ -2840,13 +2846,19 @@ function loadChapterList() {
                 note.completed ? 'completed' : ''
             ].filter(Boolean).join(' ');
 
+            // Truncate topic titles
+            let truncatedTitle = note.title;
+            if (truncatedTitle.length > 40) {
+                truncatedTitle = truncatedTitle.substring(0, 37) + '...';
+            }
+
             li.innerHTML = `
-                <span style="padding-left:6px;display:flex;align-items:center;gap:6px;">
+                <span style="padding-left:6px;display:flex;align-items:center;gap:6px;width:100%;">
                     ${note.completed
                         ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
                         : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        ${note.title}
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
+                        ${escapeHtml(truncatedTitle)}
                     </span>
                 </span>`;
 
