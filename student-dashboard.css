@@ -1982,24 +1982,32 @@ body.dark-mode .course-empty-state i {
 }
 
 /* Enhanced Notes Reading Interface */
+
 .notes-reading-container {
     display: grid;
-    grid-template-columns: 250px 1fr;
+    grid-template-columns: 260px 1fr;
     gap: 25px;
     min-height: 600px;
+    height: auto;
+    align-items: flex-start;
 }
-
 /* Notes Navigation Sidebar */
 .notes-sidebar {
     background: white;
     border: 1px solid #e5e7eb;
     border-radius: 14px;
     padding: 10px;
-    height: fit-content;
     position: sticky;
     top: 20px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+    align-self: flex-start;
 }
 
+body.dark-mode .notes-sidebar {
+    background: #1f2937;
+    border-color: #374151;
+}
 body.dark-mode .notes-sidebar {
     background: #1f2937;
     border-color: #374151;
@@ -2076,6 +2084,13 @@ body.dark-mode .notes-chapter-item:hover {
     border-radius: 14px;
     padding: 40px;
     min-height: 600px;
+    max-height: calc(100vh - 150px);
+    overflow-y: auto;
+}
+
+body.dark-mode .notes-reader {
+    background: #1f2937;
+    border-color: #374151;
 }
 
 body.dark-mode .notes-reader {
@@ -7333,4 +7348,56 @@ body.dark-mode #discussionsSection .message-input-area {
 
 body.dark-mode .notes-chapter-item:hover span span {
     background: #1f2937;
+}
+/* Ensure proper scrolling behavior */
+.main-content {
+    overflow-y: auto;
+    height: 100vh;
+    scroll-behavior: smooth;
+}
+
+.notes-reading-container {
+    position: relative;
+}
+
+/* Fix for sticky sidebar */
+.notes-sidebar {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 20px;
+    scrollbar-width: thin;
+}
+
+/* Custom scrollbar for sidebar */
+.notes-sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.notes-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.notes-sidebar::-webkit-scrollbar-thumb {
+    background: #0099ff;
+    border-radius: 10px;
+}
+
+/* Custom scrollbar for reader */
+.notes-reader::-webkit-scrollbar {
+    width: 8px;
+}
+
+.notes-reader::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.notes-reader::-webkit-scrollbar-thumb {
+    background: #0099ff;
+    border-radius: 10px;
+}
+
+.notes-reader::-webkit-scrollbar-thumb:hover {
+    background: #0077cc;
 }

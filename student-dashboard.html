@@ -2868,6 +2868,7 @@ function loadChapterList() {
     });
 }
 // Display note
+
 function displayNote(index) {
     if (index < 0 || index >= currentCourseNotes.length) return;
     
@@ -2875,23 +2876,28 @@ function displayNote(index) {
     const note = currentCourseNotes[index];
     
     const reader = document.getElementById('notesReader');
+    
+    // Ensure reader has proper overflow
+    reader.style.overflow = 'auto';
+    reader.style.maxHeight = 'calc(100vh - 150px)';
+    
     reader.innerHTML = `
         <div class="notes-header">
-            <div class="notes-category-badge">${note.category}</div>
-            <h1 class="notes-title">${note.title}</h1>
+            <div class="notes-category-badge">${escapeHtml(note.category)}</div>
+            <h1 class="notes-title" style="word-break: break-word; white-space: normal;">${escapeHtml(note.title)}</h1>
             <div class="notes-meta">
                 <div class="notes-meta-item">
                     <i class="fas fa-clock"></i>
-                    ${note.duration}
+                    ${escapeHtml(note.duration)}
                 </div>
                 <div class="notes-meta-item">
                     <i class="fas fa-sync-alt"></i>
-                    Updated ${note.updated}
+                    Updated ${escapeHtml(note.updated)}
                 </div>
             </div>
         </div>
         
-        <div class="notes-content">
+        <div class="notes-content" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
             ${note.content}
         </div>
         
@@ -2912,10 +2918,18 @@ function displayNote(index) {
         </div>
     `;
     
-    // Update sidebar
+    // Update sidebar to show active item
     loadChapterList();
     
-    // Scroll to top
+    // Scroll the active chapter item into view in the sidebar
+    setTimeout(() => {
+        const activeItem = document.querySelector('.notes-chapter-item.active');
+        if (activeItem && activeItem.scrollIntoView) {
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 100);
+    
+    // Reset scroll position of reader to top
     reader.scrollTop = 0;
 }
 
