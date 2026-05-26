@@ -1678,11 +1678,16 @@ function renderCourseCards() {
         Object.values(coursesData).forEach((course, index) => {
             const progress    = course.progress || 0;
             const thumbColor  = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
-            const icon        = course.icon || 'fa-book';
-            const category    = course.category || '';
-            const lessonCount = course.lesson_count || null;
-            const studentNum  = course.student_count || null;
-            const instructor  = course.instructor || 'ASAI Instructor';
+            const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
+const fallbackCategories  = ['AI', 'Data Science', 'Coding', 'ML'];
+const fallbackLessons     = [24, 18, 20, 16];
+const fallbackStudents    = ['45+', '30+', '28+', '22+'];
+
+const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
+const category    = course.category      || fallbackCategories[index % fallbackCategories.length];
+const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
+const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
+const instructor  = course.instructor    || 'ASAI Instructor';
 
             const isCompleted = progress >= 90;
             const isStarted   = progress > 0 && !isCompleted;
