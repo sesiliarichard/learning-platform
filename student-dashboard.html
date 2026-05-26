@@ -2703,6 +2703,12 @@ async function loadCourseNotes(courseId) {
         if (error) throw error;
 
         console.log('Chapters found:', chapters?.length);
+        // Build chapter_id → title map for week linking
+        window._chapterMap = {};
+        (chapters || []).forEach(ch => { window._chapterMap[ch.id] = ch.title; });
+
+        // Load quizzes & assignments linked to chapters
+        await loadWeekQuizzesAndAssignments(courseId);
 
         if (!chapters || chapters.length === 0) {
             chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No notes published yet</li>';
@@ -2900,6 +2906,8 @@ function displayNote(index) {
         <div class="notes-content" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
             ${note.content}
         </div>
+
+        ${buildWeekExtrasHTML(note.chapterTitle)}
         
         <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
             <i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i>
@@ -2931,6 +2939,26 @@ function displayNote(index) {
     
     // Reset scroll position of reader to top
     reader.scrollTop = 0;
+}
+
+// Call this after building the chapter sidebar to also show week quizzes/assignments
+async function loadWeekQuizzesAndAssignments(courseId) {
+    const [quizzesRes, assignmentsRes, subsRes] = await Promise.all([
+        supabaseClient.from('quizzes')
+            .select('id, title, chapter_id, time_limit, passing_score')
+            .eq('course_id', courseId)
+            .eq('published', true),
+        supabaseClient.from('assignments')
+            .select('id, title, chapter_id, due_date, max_points, instructions')
+            .eq('course_id', courseId),
+        supabaseClient.from('quiz_submissions')
+            .select('quiz_id, score')
+            .eq('student_id', (await supabaseClient.auth.getUser()).data.user?.id)
+    ]);
+
+    window._weekQuizzes     = quizzesRes.data     || [];
+    window._weekAssignments = assignmentsRes.data  || [];
+    window._quizSubmissions = subsRes.data         || [];
 }
 
 // Toggle note completion
@@ -2965,7 +2993,109 @@ async function toggleNoteComplete(index) {
         await syncCourseProgressToDB(user.id, courseId);
     }
 }
+function buildWeekExtrasHTML(chapterTitle) {
+    const allQ = window._weekQuizzes     || [];
+    const allA = window._weekAssignments || [];
+    const subs = window._quizSubmissions || [];
 
+    if (!window._chapterMap) return '';
+
+    // Find the chapter_id whose title matches this note's chapter
+    const chapterId = Object.keys(window._chapterMap).find(
+        id => window._chapterMap[id] === chapterTitle
+    );
+    if (!chapterId) return '';
+
+    const weekQuizzes     = allQ.filter(q => q.chapter_id === chapterId);
+    const weekAssignments = allA.filter(a => a.chapter_id === chapterId);
+
+    if (!weekQuizzes.length && !weekAssignments.length) return '';
+
+    const submittedIds = new Set(subs.map(s => s.quiz_id));
+
+    const quizCards = weekQuizzes.map(q => {
+        const done  = submittedIds.has(q.id);
+        const score = subs.find(s => s.quiz_id === q.id)?.score;
+        return `
+        <div style="background:white;border:1.5px solid ${done ? '#d1fae5' : '#ddd6fe'};
+                    border-radius:12px;padding:14px 16px;
+                    display:flex;align-items:center;justify-content:space-between;
+                    flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+            <div>
+                <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
+                    <i class="fas fa-question-circle" style="color:#7c3aed;margin-right:6px;"></i>
+                    ${escapeHtml(q.title)}
+                </div>
+                <div style="font-size:12px;color:#6b7280;">
+                    ${q.time_limit ? q.time_limit + ' mins' : 'No time limit'}
+                    ${q.passing_score ? ' · ' + q.passing_score + '% to pass' : ''}
+                    ${done ? ` · <span style="color:#10b981;font-weight:700;">Score: ${score}%</span>` : ''}
+                </div>
+            </div>
+            ${done
+                ? `<button onclick="viewQuizResults('${q.id}')"
+                    style="padding:7px 14px;background:#d1fae5;color:#065f46;border:none;
+                           border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-chart-bar"></i> View Results
+                   </button>`
+                : `<button onclick="window.startQuiz('${q.id}')"
+                    style="padding:7px 14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           color:white;border:none;border-radius:8px;font-size:12px;
+                           font-weight:700;cursor:pointer;">
+                    <i class="fas fa-play"></i> Start Quiz
+                   </button>`
+            }
+        </div>`;
+    }).join('');
+
+    const assignCards = weekAssignments.map(a => {
+        const due = a.due_date
+            ? new Date(a.due_date).toLocaleDateString('en-US',
+                { month:'short', day:'numeric', year:'numeric' })
+            : 'No deadline';
+        return `
+        <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
+                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+                    flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+            <div>
+                <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
+                    <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
+                    ${escapeHtml(a.title)}
+                </div>
+                <div style="font-size:12px;color:#6b7280;">
+                    Due: ${due}
+                    ${a.max_points ? ' · ' + a.max_points + ' points' : ''}
+                </div>
+            </div>
+            <button onclick="submitAssignmentModal && submitAssignmentModal('${a.id}')"
+                style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
+                       color:white;border:none;border-radius:8px;font-size:12px;
+                       font-weight:700;cursor:pointer;">
+                <i class="fas fa-upload"></i> Submit
+            </button>
+        </div>`;
+    }).join('');
+
+    return `
+    <div style="margin:28px 0 20px;padding:20px;background:linear-gradient(135deg,#fafaf9,#f5f3ff);
+                border-radius:16px;border:1.5px solid #e5e7eb;">
+        <div style="font-size:15px;font-weight:800;color:#1f2937;margin-bottom:14px;
+                    display:flex;align-items:center;gap:8px;">
+            <span style="background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;
+                         width:28px;height:28px;border-radius:8px;display:inline-flex;
+                         align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">
+                <i class="fas fa-layer-group"></i>
+            </span>
+            This Week's Activities
+            <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:4px;">
+                ${weekQuizzes.length} quiz${weekQuizzes.length !== 1 ? 'zes' : ''}
+                · ${weekAssignments.length} assignment${weekAssignments.length !== 1 ? 's' : ''}
+            </span>
+        </div>
+        ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this week.</p>'}
+        ${assignCards || '<p style="font-size:13px;color:#9ca3af;">No assignments linked to this week.</p>'}
+    </div>`;
+}
 // Update progress bar
 function updateNotesProgress() {
     const completed = currentCourseNotes.filter(n => n.completed).length;

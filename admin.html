@@ -3123,31 +3123,35 @@ async function handleCreateChapter(event) {
         if (btn) btn.dataset.saving = 'false';
     }
 }
-
 async function loadChapters() {
     const courseId = document.getElementById('courseSelectNotes')?.value;
     const container = document.getElementById('chaptersContainer');
     if (!container) return;
 
-    if (!courseId) {
-        container.innerHTML = '';
-        return;
-    }
+    if (!courseId) { container.innerHTML = ''; return; }
 
     container.innerHTML = '<div class="card"><p style="color:#6b7280;">Loading chapters...</p></div>';
 
-    const { data: chapters, error } = await db
-        .from('chapters')
-        .select(`id, title, description, published, order_num, topics ( id, title, category, duration, order_num )`)
-        .eq('course_id', courseId)
-        .order('order_num', { ascending: true });
+    // Load chapters, quizzes and assignments for this course in parallel
+    const [chaptersRes, quizzesRes, assignmentsRes] = await Promise.all([
+        db.from('chapters')
+          .select(`id, title, description, published, order_num,
+                   topics(id, title, category, duration, order_num)`)
+          .eq('course_id', courseId)
+          .order('order_num', { ascending: true }),
+        db.from('quizzes')
+          .select('id, title, chapter_id, published')
+          .eq('course_id', courseId),
+        db.from('assignments')
+          .select('id, title, chapter_id, due_date')
+          .eq('course_id', courseId)
+    ]);
 
-    if (error) {
-        container.innerHTML = `<div class="card"><p style="color:#ef4444;">Error: ${error.message}</p></div>`;
-        return;
-    }
+    const chapters    = chaptersRes.data    || [];
+    const quizzes     = quizzesRes.data     || [];
+    const assignments = assignmentsRes.data || [];
 
-    if (!chapters || chapters.length === 0) {
+    if (!chapters.length) {
         container.innerHTML = '<div class="card"><p style="color:#6b7280;">No chapters yet. Create one!</p></div>';
         return;
     }
@@ -3155,79 +3159,185 @@ async function loadChapters() {
     container.innerHTML = '';
 
     chapters.forEach(chapter => {
-        const sortedTopics = (chapter.topics || []).sort((a, b) => {
-        const aNum = (a.order_num !== null && a.order_num !== undefined) ? a.order_num : 999;
-        const bNum = (b.order_num !== null && b.order_num !== undefined) ? b.order_num : 999;
-         return aNum - bNum;
-      });
-        const chapterCard = document.createElement('div');
-        chapterCard.className = 'chapter-item';
+        const sortedTopics = (chapter.topics || [])
+            .sort((a,b) => (a.order_num??999)-(b.order_num??999));
+
+        // Quizzes/assignments linked to this chapter
+        const linkedQuizzes     = quizzes.filter(q => q.chapter_id === chapter.id);
+        const linkedAssignments = assignments.filter(a => a.chapter_id === chapter.id);
+        // Unlinked (not yet assigned to any chapter in this course)
+        const unlinkedQuizzes     = quizzes.filter(q => !q.chapter_id);
+        const unlinkedAssignments = assignments.filter(a => !a.chapter_id);
 
         const topicsHTML = sortedTopics.map((topic, idx) => `
-            <div class="topic-item" data-topic-id="${topic.id}" style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
-                    <span style="background:#e5e7eb;color:#374151;font-weight:700;font-size:11px;
+            <div class="topic-item" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+                <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                    <span style="background:#ede9fe;color:#7c3aed;font-weight:700;font-size:11px;
                                  min-width:24px;height:24px;border-radius:50%;display:flex;
-                                 align-items:center;justify-content:center;flex-shrink:0;">
-                        ${idx + 1}
-                    </span>
-                    <div style="min-width:0;">
-                        <div style="font-weight:600;margin-bottom:5px;">${topic.title}</div>
+                                 align-items:center;justify-content:center;flex-shrink:0;">${idx+1}</span>
+                    <div>
+                        <div style="font-weight:600;margin-bottom:3px;">${escapeHtml(topic.title)}</div>
                         <div style="font-size:12px;color:#6b7280;">
-                            <span class="badge active">${topic.category || 'basics'}</span>
+                            <span class="badge active">${topic.category||'basics'}</span>
                             ${topic.duration} min read
                         </div>
                     </div>
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
-                    <button class="action-btn" title="Move up" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;${idx === 0 ? 'opacity:0.3;pointer-events:none;' : ''}"
-                        onclick="moveTopicOrder('${chapter.id}', '${topic.id}', 'up')">
+                    <button title="Move up" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;${idx===0?'opacity:0.3;pointer-events:none;':''}"
+                        onclick="moveTopicOrder('${chapter.id}','${topic.id}','up')">
                         <i class="fas fa-arrow-up" style="font-size:11px;"></i>
                     </button>
-                    <button class="action-btn" title="Move down" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;${idx === sortedTopics.length - 1 ? 'opacity:0.3;pointer-events:none;' : ''}"
-                        onclick="moveTopicOrder('${chapter.id}', '${topic.id}', 'down')">
+                    <button title="Move down" style="width:28px;height:28px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;cursor:pointer;${idx===sortedTopics.length-1?'opacity:0.3;pointer-events:none;':''}"
+                        onclick="moveTopicOrder('${chapter.id}','${topic.id}','down')">
                         <i class="fas fa-arrow-down" style="font-size:11px;"></i>
                     </button>
                 </div>
-            </div>
-        `).join('');
+            </div>`).join('');
 
-  chapterCard.innerHTML = `
-            <div class="chapter-header">
+        // Build linked quizzes pills
+        const linkedQuizPills = linkedQuizzes.map(q => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#ede9fe;color:#5b21b6;
+                         padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:3px;">
+                <i class="fas fa-question-circle"></i> ${escapeHtml(q.title)}
+                <button onclick="unlinkItem('quiz','${q.id}','${chapter.id}')"
+                    style="background:none;border:none;cursor:pointer;color:#7c3aed;font-size:11px;padding:0;margin-left:2px;" title="Unlink">✕</button>
+            </span>`).join('');
+
+        const linkedAssignPills = linkedAssignments.map(a => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#d1fae5;color:#065f46;
+                         padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;margin:3px;">
+                <i class="fas fa-tasks"></i> ${escapeHtml(a.title)}
+                <button onclick="unlinkItem('assignment','${a.id}','${chapter.id}')"
+                    style="background:none;border:none;cursor:pointer;color:#065f46;font-size:11px;padding:0;margin-left:2px;" title="Unlink">✕</button>
+            </span>`).join('');
+
+        // Link dropdowns HTML (only show unlinked items)
+        const quizOptions = unlinkedQuizzes.map(q =>
+            `<option value="${q.id}">${escapeHtml(q.title)}</option>`).join('');
+        const assignOptions = unlinkedAssignments.map(a =>
+            `<option value="${a.id}">${escapeHtml(a.title)}</option>`).join('');
+
+        const chapterCard = document.createElement('div');
+        chapterCard.className = 'card';
+        chapterCard.style.marginBottom = '20px';
+
+        chapterCard.innerHTML = `
+            <div class="card-header">
                 <div>
-                    <div class="chapter-title">${chapter.title}</div>
-                    <div style="font-size:14px;color:rgba(31,41,55,0.7);margin-top:5px;">
-                        ${chapter.description || ''}
+                    <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+                        <span style="background:#ede9fe;color:#7c3aed;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">
+                            Order ${chapter.order_num??'?'}
+                        </span>
+                        ${escapeHtml(chapter.title)}
                     </div>
-                    <span class="badge ${chapter.published ? 'active' : 'pending'}" style="margin-top:6px;display:inline-block;">
+                    <div style="font-size:13px;color:rgba(31,41,55,0.6);margin-top:4px;">${chapter.description||''}</div>
+                    <span class="badge ${chapter.published?'active':'pending'}" style="margin-top:6px;display:inline-block;">
                         ${chapter.published ? '✓ Published' : '⏳ Unpublished'}
                     </span>
                 </div>
                 <div class="action-buttons">
-    <button class="btn-primary" style="padding:8px 16px;font-size:12px;"
-        onclick="togglePublishChapter('${chapter.id}', ${chapter.published})">
-        <i class="fas fa-${chapter.published ? 'eye-slash' : 'eye'}"></i>
-        ${chapter.published ? 'Unpublish' : 'Publish to Students'}
-    </button>
-    <button class="action-btn edit" onclick="openEditChapterModal('${chapter.id}')" title="Edit chapter">
-        <i class="fas fa-edit"></i>
-    </button>
-    <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
-        <i class="fas fa-trash"></i>
-    </button>
-</div>
-            </div>
-            <div class="topic-list">
-                <div style="font-weight:600;margin-bottom:10px;color:#1f2937;">
-                    Topics (${sortedTopics.length}):
+                    <button class="btn-primary" style="padding:8px 14px;font-size:12px;"
+                        onclick="togglePublishChapter('${chapter.id}',${chapter.published})">
+                        <i class="fas fa-${chapter.published?'eye-slash':'eye'}"></i>
+                        ${chapter.published ? 'Unpublish' : 'Publish'}
+                    </button>
+                    <button class="action-btn edit" onclick="openEditChapterModal('${chapter.id}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
-                ${topicsHTML}
             </div>
-        `;
 
-        
+            <!-- Topics list -->
+            <div style="margin:12px 0;">
+                <div style="font-weight:700;color:#1f2937;margin-bottom:8px;font-size:13px;">
+                    <i class="fas fa-book-open" style="color:#7c3aed;margin-right:6px;"></i>
+                    Topics (${sortedTopics.length})
+                </div>
+                ${topicsHTML || '<p style="color:#9ca3af;font-size:13px;padding:8px 0;">No topics yet.</p>'}
+            </div>
+
+            <!-- Linked quizzes & assignments -->
+            <div style="background:#f8f7ff;border-radius:12px;padding:14px;margin-top:12px;">
+                <div style="font-weight:700;color:#374151;margin-bottom:10px;font-size:13px;">
+                    <i class="fas fa-link" style="color:#7c3aed;margin-right:6px;"></i>
+                    Linked to This Week
+                </div>
+
+                <!-- Quizzes row -->
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:12px;font-weight:700;color:#5b21b6;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-question-circle"></i> Quizzes
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+                        ${linkedQuizPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
+                        ${quizOptions ? `
+                        <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
+                            <select id="quizLink_${chapter.id}"
+                                style="padding:4px 8px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+                                <option value="">+ Link a quiz…</option>
+                                ${quizOptions}
+                            </select>
+                            <button onclick="linkItem('quiz','${chapter.id}','${courseId}')"
+                                style="padding:4px 10px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                                Link
+                            </button>
+                        </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all quizzes linked)</span>'}
+                    </div>
+                </div>
+
+                <!-- Assignments row -->
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#065f46;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-tasks"></i> Assignments
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
+                        ${linkedAssignPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
+                        ${assignOptions ? `
+                        <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
+                            <select id="assignLink_${chapter.id}"
+                                style="padding:4px 8px;border:1.5px solid #bbf7d0;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+                                <option value="">+ Link an assignment…</option>
+                                ${assignOptions}
+                            </select>
+                            <button onclick="linkItem('assignment','${chapter.id}','${courseId}')"
+                                style="padding:4px 10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                                Link
+                            </button>
+                        </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
+                    </div>
+                </div>
+            </div>`;
+
         container.appendChild(chapterCard);
     });
+}
+
+// Link a quiz or assignment to a chapter
+async function linkItem(type, chapterId, courseId) {
+    const selectId = type === 'quiz' ? `quizLink_${chapterId}` : `assignLink_${chapterId}`;
+    const itemId   = document.getElementById(selectId)?.value;
+    if (!itemId) { showToast('Please select an item to link', 'error'); return; }
+
+    const table = type === 'quiz' ? 'quizzes' : 'assignments';
+    const { error } = await db.from(table).update({ chapter_id: chapterId }).eq('id', itemId);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to this week!`);
+    loadChapters(); // Refresh
+}
+
+// Unlink a quiz or assignment from a chapter
+async function unlinkItem(type, itemId, chapterId) {
+    const table = type === 'quiz' ? 'quizzes' : 'assignments';
+    const { error } = await db.from(table).update({ chapter_id: null }).eq('id', itemId);
+    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+
+    showToast(`${type === 'quiz' ? 'Quiz' : 'Assignment'} unlinked`);
+    loadChapters();
 }
 
 // Helper used by handleCreateChapter after save
