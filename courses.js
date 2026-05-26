@@ -8,9 +8,9 @@
 async function getAllCourses() {
     try {
        const { data, error } = await supabaseClient
-            .from('courses')
-            .select('id, title, description, duration_weeks, instructor, thumbnail_color, icon, status, created_at, order_num')
-            .order('order_num', { ascending: true });
+        .from('courses')
+        .select('id, title, description, duration_weeks, instructor, thumbnail_color, icon, status, created_at, order_num, lesson_count, student_count, category')
+        .order('order_num', { ascending: true });
 
         if (error) throw error;
         return { success: true, courses: data || [] };
