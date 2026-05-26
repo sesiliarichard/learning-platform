@@ -1878,6 +1878,12 @@ const instructor  = course.instructor    || 'ASAI Instructor';
 }
         // Initialize Dashboard
 async function initDashboard() {
+     // FORCE close coding environment modal on page load
+    const codingModal = document.getElementById('codingEnvironmentModal');
+    if (codingModal) {
+        codingModal.classList.remove('active');
+        codingModal.style.display = 'none';
+    }
     await loadCoursesFromDB();   
     renderCourseCards();          
      broadcastPresence();
@@ -5975,8 +5981,16 @@ function renderCourseProgress(enrollments) {
 let currentCodingAssignment = null;
 
 function openCodingEnvironment(assignmentId = null, prompt = null) {
+    // ONLY open if called with an assignment ID
+    if (!assignmentId) {
+        console.log('Coding environment: No assignment ID - not opening');
+        return;
+    }
+    
     const modal = document.getElementById('codingEnvironmentModal');
     const linkDiv = document.getElementById('codingAssignmentLink');
+    
+    if (!modal) return;
     
     if (assignmentId && prompt) {
         currentCodingAssignment = { id: assignmentId, prompt: prompt };
@@ -5988,17 +6002,20 @@ function openCodingEnvironment(assignmentId = null, prompt = null) {
     }
     
     modal.classList.add('active');
+    modal.style.display = 'flex';
     
-    // Set default code based on language
     const lang = document.getElementById('codingLanguage').value;
     setDefaultCode(lang);
 }
 
 function closeCodingEnvironment() {
-    document.getElementById('codingEnvironmentModal').classList.remove('active');
+    const modal = document.getElementById('codingEnvironmentModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
     currentCodingAssignment = null;
 }
-
 function switchCodingLanguage() {
     const lang = document.getElementById('codingLanguage').value;
     const editor = document.getElementById('codeEditor');
@@ -6511,6 +6528,15 @@ async function downloadFile(url, filename) {
     };
     
     console.log('✅ Admin UI elements blocked on student page');
+})();
+// Ensure coding modal is hidden on page load
+(function() {
+    const modal = document.getElementById('codingEnvironmentModal');
+    if (modal) {
+        modal.classList.remove('active');
+        modal.style.display = 'none';
+    }
+    console.log('✅ Coding environment modal hidden on page load');
 })();
     </script>
 </body>

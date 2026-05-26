@@ -7540,3 +7540,16 @@ body.dark-mode .notes-chapter-item:hover span span {
     font-size: 13px;
     color: #92400e;
 }
+/* Make sure coding modal is hidden by default */
+.modal {
+    display: none;
+}
+.modal.active {
+    display: flex;
+}
+#codingEnvironmentModal {
+    display: none;
+}
+#codingEnvironmentModal.active {
+    display: flex;
+}
