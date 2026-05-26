@@ -7196,3 +7196,15 @@ body.dark-mode #discussionsSection .message-input-area {
     position: relative;
     overflow: hidden;
 }
+.notes-reader {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow: hidden;
+    min-width: 0; /* critical for grid children */
+}
+
+.notes-content {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
