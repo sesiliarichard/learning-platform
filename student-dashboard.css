@@ -7208,3 +7208,41 @@ body.dark-mode #discussionsSection .message-input-area {
     overflow-wrap: break-word;
     word-break: break-word;
 }
+.notes-reader {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.notes-content {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+}
+
+.notes-content * {
+    max-width: 100%;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.notes-content table {
+    table-layout: fixed;
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+.notes-content pre, 
+.notes-content code {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.notes-reading-container {
+    min-width: 0;
+    overflow: hidden;
+}
