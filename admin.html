@@ -1646,6 +1646,13 @@ body { visibility: hidden }
                 </select>
             </div>
 
+            <div class="form-group">
+    <label>
+        <input type="checkbox" id="assignmentIsCoding">
+        This is a coding assignment (opens coding environment)
+    </label>
+</div>
+
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('createAssignmentModal')">Cancel</button>
                 <button type="submit" class="btn-primary">
@@ -12096,6 +12103,74 @@ window.previewCert = async function(certId, studentName, courseName, certNumber,
     };
 })();
 });
+// ============================================
+// FIXED: getAllQuizSubmissions with proper joins
+// ============================================
+async function getAllQuizSubmissions() {
+    try {
+        const sb = window.supabaseClient || window.db;
+        
+        const { data, error } = await sb
+            .from('quiz_submissions')
+            .select(`
+                id,
+                score,
+                submitted_at,
+                time_spent,
+                student_id,
+                course_id,
+                quizzes (
+                    id,
+                    title,
+                    course_id
+                )
+            `)
+            .order('submitted_at', { ascending: false });
+
+        if (error) throw error;
+        
+        const studentIds = [...new Set((data || []).map(s => s.student_id).filter(Boolean))];
+        let profileMap = {};
+        
+        if (studentIds.length > 0) {
+            const { data: profiles } = await sb
+                .from('profiles')
+                .select('id, first_name, last_name, email, role')
+                .in('id', studentIds);
+            (profiles || []).forEach(p => { profileMap[p.id] = p; });
+        }
+        
+        const courseIds = [...new Set((data || []).map(s => s.course_id).filter(Boolean))];
+        let courseMap = {};
+        if (courseIds.length > 0) {
+            const { data: courses } = await sb
+                .from('courses')
+                .select('id, title')
+                .in('id', courseIds);
+            (courses || []).forEach(c => { courseMap[c.id] = c.title; });
+        }
+        
+        const submissions = (data || []).map(sub => {
+            const profile = profileMap[sub.student_id] || {};
+            const quiz = sub.quizzes || {};
+            return {
+                id: sub.id,
+                studentName: `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Unknown',
+                studentEmail: profile.email || '—',
+                quizTitle: quiz.title || 'Quiz',
+                courseTitle: courseMap[sub.course_id] || quiz.course_id || '—',
+                score: sub.score || 0,
+                submittedAt: sub.submitted_at,
+                timeSpent: sub.time_spent || null
+            };
+        });
+        
+        return { success: true, submissions };
+    } catch (error) {
+        console.error('getAllQuizSubmissions error:', error);
+        return { success: false, error: error.message, submissions: [] };
+    }
+}
 </script>
 
 </body>

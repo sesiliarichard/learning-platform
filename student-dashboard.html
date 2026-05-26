@@ -1398,6 +1398,70 @@
         </div>
     </div>
 </div>
+
+<!-- Coding Environment Component -->
+<div class="modal" id="codingEnvironmentModal">
+    <div class="modal-content coding-modal">
+        <div class="modal-header">
+            <h2>
+                <i class="fas fa-code" style="color:#7c3aed;"></i> 
+                Coding Environment
+            </h2>
+            <div class="coding-language-selector">
+                <select id="codingLanguage" onchange="switchCodingLanguage()">
+                    <option value="python">Python 3</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="html">HTML/CSS</option>
+                </select>
+            </div>
+            <button class="modal-close" onclick="closeCodingEnvironment()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <div class="coding-container">
+            <div class="code-editor-panel">
+                <div class="panel-header">
+                    <i class="fas fa-edit"></i> Code Editor
+                    <div class="editor-actions">
+                        <button class="small-btn" onclick="resetCode()" title="Reset">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="small-btn" onclick="clearCode()" title="Clear">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="codeEditor" class="code-editor" placeholder="Write your code here..."></textarea>
+                <div class="editor-footer">
+                    <button class="run-btn" onclick="runCode()">
+                        <i class="fas fa-play"></i> Run Code
+                    </button>
+                </div>
+            </div>
+            
+            <div class="code-output-panel">
+                <div class="panel-header">
+                    <i class="fas fa-terminal"></i> Output
+                </div>
+                <div id="codeOutput" class="code-output"></div>
+                <div class="panel-footer" id="executionTime"></div>
+            </div>
+        </div>
+        
+        <div class="coding-assignment-link" id="codingAssignmentLink" style="display: none;">
+            <hr>
+            <div class="assignment-prompt">
+                <i class="fas fa-tasks"></i>
+                <span id="codingAssignmentPrompt"></span>
+                <button class="small-btn" onclick="submitCodingAssignment()">
+                    <i class="fas fa-paper-plane"></i> Submit Solution
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
   
 <!-- ============================================================
   STUDENT DASHBOARD — Updated Resources Section
@@ -2332,12 +2396,11 @@ function createQuizCard(quiz, index) {
 
         // Create assignment card
 function createAssignmentCard(assignment) {
-    const status     = assignment.status || 'due';
+    const status = assignment.status || 'due';
     const courseName = (typeof currentCourseName !== 'undefined' && currentCourseName)
                         ? currentCourseName
                         : (coursesData[currentCourse]?.title || 'Course');
 
-    // card variant class
     const cardVariant = {
         urgent:    'urgent-card',
         submitted: 'submitted-card',
@@ -2354,82 +2417,54 @@ function createAssignmentCard(assignment) {
     };
     const s = statusMap[status] || statusMap.due;
 
-    // meta items
     const meta1 = (status === 'graded' || status === 'submitted')
-        ? `<div class="assign-meta-item">
-               <i class="fas fa-star"></i>
-               ${assignment.grade ? 'Grade: ' + assignment.grade : 'Awaiting grade'}
-           </div>`
-        : `<div class="assign-meta-item">
-               <i class="fas fa-star"></i>
-               Weight: ${assignment.weight
-                   ? assignment.weight
-                   : (assignment.max_points ? assignment.max_points + ' pts' : '--')}
-           </div>`;
+        ? `<div class="assign-meta-item"><i class="fas fa-star"></i> ${assignment.grade ? 'Grade: ' + assignment.grade : 'Awaiting grade'}</div>`
+        : `<div class="assign-meta-item"><i class="fas fa-star"></i> Weight: ${assignment.weight || (assignment.max_points ? assignment.max_points + ' pts' : '--')}</div>`;
 
     const dateLabel = (status === 'submitted' || status === 'graded')
         ? `Submitted: ${assignment.submitted_at || assignment.submitted || '—'}`
-        : `Due: ${assignment.due_date
-            ? new Date(assignment.due_date).toLocaleDateString('en-US',
-                { month: 'short', day: 'numeric', year: 'numeric' })
-            : (assignment.due || 'TBD')}`;
+        : `Due: ${assignment.due_date ? new Date(assignment.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : (assignment.due || 'TBD')}`;
 
-    // action button
     let btnHtml = '';
     if (status === 'submitted' || status === 'graded') {
         btnHtml = `
-            <button class="assignment-btn feedback-btn"
-                    onclick="viewAssignmentFeedback('${assignment.id || 0}')">
-                <i class="fas fa-comment-dots"></i>
-                ${assignment.grade ? 'Grade: ' + assignment.grade + ' — ' : ''}View Feedback
+            <button class="assignment-btn feedback-btn" onclick="viewAssignmentFeedback('${assignment.id || 0}')">
+                <i class="fas fa-comment-dots"></i> ${assignment.grade ? 'Grade: ' + assignment.grade + ' — ' : ''}View Feedback
             </button>`;
     } else {
         const btnCls = (status === 'urgent' || status === 'late') ? 'urgent-btn' : '';
         btnHtml = `
-            <button class="assignment-btn ${btnCls}"
-                    onclick="submitAssignmentModal && submitAssignmentModal('${assignment.id || 0}')">
-                <i class="fas fa-upload"></i>
-                ${status === 'urgent' ? 'Submit Now' : 'Submit Assignment'}
-            </button>`;
+            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                <button class="assignment-btn ${btnCls}" onclick="submitAssignmentModal && submitAssignmentModal('${assignment.id || 0}')">
+                    <i class="fas fa-upload"></i> ${status === 'urgent' ? 'Submit Now' : 'Submit Assignment'}
+                </button>
+                ${assignment.is_coding ? `
+                <button class="assignment-btn" style="background:#7c3aed;" onclick="openCodingEnvironment('${assignment.id}', '${escapeHtml(assignment.instructions || 'Write code to solve this problem')}')">
+                    <i class="fas fa-code"></i> Open Coding Environment
+                </button>` : ''}
+            </div>`;
     }
 
-    const description = (assignment.instructions || assignment.description ||
-        'Complete this assignment to apply your learning.').substring(0, 110);
+    const description = (assignment.instructions || assignment.description || 'Complete this assignment to apply your learning.').substring(0, 110);
     const hasMore = (assignment.instructions || assignment.description || '').length > 110;
 
     return `
         <div class="course-assignment-card ${cardVariant}">
-            <!-- Coloured gradient header -->
             <div class="assign-card-header">
-                <span class="assign-course-pill">
-                    <i class="fas fa-book"></i> ${escapeHtml(courseName)}
-                </span>
+                <span class="assign-course-pill"><i class="fas fa-book"></i> ${escapeHtml(courseName)}</span>
                 <h4>${escapeHtml(assignment.title)}</h4>
             </div>
-
-            <!-- Card body -->
             <div class="assign-card-body">
-                <span class="assignment-status ${s.cls}">
-                    <i class="fas ${s.icon}"></i> ${s.text}
-                </span>
-
+                <span class="assignment-status ${s.cls}"><i class="fas ${s.icon}"></i> ${s.text}</span>
                 <div class="assign-meta-row">
                     ${meta1}
-                    <div class="assign-meta-item">
-                        <i class="fas fa-calendar-alt"></i>${dateLabel}
-                    </div>
+                    <div class="assign-meta-item"><i class="fas fa-calendar-alt"></i>${dateLabel}</div>
                 </div>
-
-                <p class="assign-desc">
-                    ${escapeHtml(description)}${hasMore ? '…' : ''}
-                </p>
-
+                <p class="assign-desc">${escapeHtml(description)}${hasMore ? '…' : ''}</p>
                 ${btnHtml}
             </div>
         </div>`;
 }
-
-
         // Create empty state
         function createEmptyState(type) {
             const icons = {
@@ -5933,6 +5968,293 @@ function renderCourseProgress(enrollments) {
         `;
     }).join('');
 }
+// ============================================
+// CODING ENVIRONMENT
+// ============================================
+
+let currentCodingAssignment = null;
+
+function openCodingEnvironment(assignmentId = null, prompt = null) {
+    const modal = document.getElementById('codingEnvironmentModal');
+    const linkDiv = document.getElementById('codingAssignmentLink');
+    
+    if (assignmentId && prompt) {
+        currentCodingAssignment = { id: assignmentId, prompt: prompt };
+        document.getElementById('codingAssignmentPrompt').innerHTML = prompt;
+        linkDiv.style.display = 'block';
+    } else {
+        currentCodingAssignment = null;
+        linkDiv.style.display = 'none';
+    }
+    
+    modal.classList.add('active');
+    
+    // Set default code based on language
+    const lang = document.getElementById('codingLanguage').value;
+    setDefaultCode(lang);
+}
+
+function closeCodingEnvironment() {
+    document.getElementById('codingEnvironmentModal').classList.remove('active');
+    currentCodingAssignment = null;
+}
+
+function switchCodingLanguage() {
+    const lang = document.getElementById('codingLanguage').value;
+    const editor = document.getElementById('codeEditor');
+    
+    // Save current code before switching? optional
+    setDefaultCode(lang);
+}
+
+function setDefaultCode(lang) {
+    const editor = document.getElementById('codeEditor');
+    
+    const defaults = {
+        python: `# Python 3 Code Example
+def greet(name):
+    return f"Hello, {name}!"
+
+# Try your own code here
+result = greet("Student")
+print(result)
+
+# You can also write functions, loops, and more
+numbers = [1, 2, 3, 4, 5]
+squared = [x**2 for x in numbers]
+print(f"Squares: {squared}")`,
+        
+        javascript: `// JavaScript Code
+function greet(name) {
+    return \`Hello, \${name}!\`;
+}
+
+// Try your own code here
+const result = greet("Student");
+console.log(result);
+
+// Arrays and loops
+const numbers = [1, 2, 3, 4, 5];
+const squares = numbers.map(x => x * x);
+console.log("Squares:", squares);`,
+        
+        html: `<!-- HTML/CSS Example -->
+<div style="font-family: Arial; padding: 20px;">
+    <h1 style="color: #7c3aed;">Welcome to the Coding Environment!</h1>
+    <p>Write HTML, CSS, and JavaScript here.</p>
+    <button onclick="alert('Hello!')">Click me</button>
+</div>
+
+<style>
+    button {
+        background: #7c3aed;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    button:hover {
+        background: #6d28d9;
+    }
+</style>`
+    };
+    
+    editor.value = defaults[lang] || defaults.python;
+    document.getElementById('codeOutput').innerHTML = '<span style="color: #888;">Click "Run Code" to see output...</span>';
+}
+
+function resetCode() {
+    const lang = document.getElementById('codingLanguage').value;
+    setDefaultCode(lang);
+}
+
+function clearCode() {
+    document.getElementById('codeEditor').value = '';
+}
+
+async function runCode() {
+    const code = document.getElementById('codeEditor').value;
+    const language = document.getElementById('codingLanguage').value;
+    const outputDiv = document.getElementById('codeOutput');
+    const timeEl = document.getElementById('executionTime');
+    
+    outputDiv.innerHTML = '<span style="color: #888;"><i class="fas fa-spinner fa-spin"></i> Executing...</span>';
+    
+    const startTime = performance.now();
+    
+    try {
+        let result;
+        
+        if (language === 'python') {
+            result = await runPythonCode(code);
+        } else if (language === 'javascript') {
+            result = await runJavaScriptCode(code);
+        } else if (language === 'html') {
+            result = await runHtmlCode(code);
+        } else {
+            result = { output: 'Unknown language', error: null };
+        }
+        
+        const endTime = performance.now();
+        const execTime = ((endTime - startTime) / 1000).toFixed(2);
+        timeEl.textContent = `Execution time: ${execTime} seconds`;
+        
+        if (result.error) {
+            outputDiv.innerHTML = `<span style="color: #ef4444;">Error:\n${escapeHtml(result.error)}</span>`;
+        } else {
+            outputDiv.innerHTML = `<span style="color: #a0e0a0;">${escapeHtml(result.output) || '(No output)'}</span>`;
+        }
+        
+    } catch (error) {
+        outputDiv.innerHTML = `<span style="color: #ef4444;">Runtime Error:\n${escapeHtml(error.message)}</span>`;
+        timeEl.textContent = '';
+    }
+}
+
+async function runPythonCode(code) {
+    // Using Piston API (free code execution API)
+    try {
+        const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language: 'python',
+                version: '3.10.0',
+                files: [{ content: code }]
+            })
+        });
+        
+        const data = await response.json();
+        return {
+            output: data.run?.output || data.run?.stdout || '',
+            error: data.run?.stderr || null
+        };
+    } catch (err) {
+        // Fallback: client-side simulation for demo
+        return simulatePythonExecution(code);
+    }
+}
+
+function simulatePythonExecution(code) {
+    // Client-side simulation (for demo only)
+    let output = '';
+    let error = null;
+    
+    try {
+        // This is a SIMULATION — not real Python execution
+        // In production, you MUST use a server-side API
+        output = `[Simulated Output]\n`;
+        
+        if (code.includes('print')) {
+            const matches = code.match(/print\(["'](.+?)["']\)/g);
+            if (matches) {
+                matches.forEach(m => {
+                    const content = m.match(/print\(["'](.+?)["']\)/);
+                    if (content) output += content[1] + '\n';
+                });
+            }
+        }
+        
+        if (output === '[Simulated Output]\n') {
+            output += 'Code executed successfully!\n(Note: This is simulated output. Use an external API for real Python execution.)';
+        }
+        
+    } catch (err) {
+        error = err.message;
+    }
+    
+    return { output, error };
+}
+
+async function runJavaScriptCode(code) {
+    return new Promise((resolve) => {
+        let output = '';
+        let error = null;
+        
+        // Capture console.log
+        const originalLog = console.log;
+        console.log = (...args) => {
+            output += args.map(a => String(a)).join(' ') + '\n';
+            originalLog(...args);
+        };
+        
+        try {
+            // Create a Function to run the code safely
+            const runnable = new Function(code);
+            const result = runnable();
+            if (result !== undefined && output === '') {
+                output = String(result);
+            }
+        } catch (err) {
+            error = err.message;
+        } finally {
+            console.log = originalLog;
+        }
+        
+        resolve({ output: output || '(No output)', error });
+    });
+}
+
+async function runHtmlCode(code) {
+    // For HTML, we'll create an iframe preview
+    const outputDiv = document.getElementById('codeOutput');
+    const iframe = document.createElement('iframe');
+    iframe.style.cssText = 'width:100%;height:100%;border:none;background:white;';
+    
+    outputDiv.innerHTML = '';
+    outputDiv.appendChild(iframe);
+    
+    const blob = new Blob([code], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    iframe.src = url;
+    
+    return { output: 'HTML preview loaded in iframe above', error: null };
+}
+
+async function submitCodingAssignment() {
+    if (!currentCodingAssignment) {
+        showToast('No assignment linked', 'error');
+        return;
+    }
+    
+    const code = document.getElementById('codeEditor').value;
+    const language = document.getElementById('codingLanguage').value;
+    
+    // Submit to Supabase
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        const { error } = await supabaseClient
+            .from('coding_submissions')
+            .insert({
+                assignment_id: currentCodingAssignment.id,
+                student_id: user.id,
+                code: code,
+                language: language,
+                submitted_at: new Date().toISOString()
+            });
+        
+        if (error) throw error;
+        
+        showToast('✅ Coding assignment submitted successfully!');
+        closeCodingEnvironment();
+        
+    } catch (err) {
+        showToast('Error submitting: ' + err.message, 'error');
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
  
 /* ── Achievements ── */
 function renderAchievements(enrollments, quizSubs) {

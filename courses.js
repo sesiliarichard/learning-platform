@@ -710,6 +710,11 @@ async function openEditCourseModal(courseId) {
     };
 
 }
+// Helper function to escape HTML for attributes
+function escapeHtmlForAttr(str) {
+    if (!str) return '';
+    return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
 function openAddCourseModal() {
     // Reset form for new course
     const editor = document.getElementById('courseDescriptionEditor');

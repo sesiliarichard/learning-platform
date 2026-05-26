@@ -484,6 +484,9 @@ async function handleDeleteAssignment(assignmentId, title) {
 async function handleCreateAssignmentDB(event) {
     event.preventDefault();
     const formData = new FormData(event.target);
+    
+    // Get is_coding checkbox value
+    const isCoding = document.getElementById('assignmentIsCoding')?.checked || false;
 
     const result = await createAssignment({
         title:          formData.get('title'),
@@ -491,7 +494,8 @@ async function handleCreateAssignmentDB(event) {
         instructions:   formData.get('instructions'),
         dueDate:        formData.get('dueDate'),
         maxPoints:      parseInt(formData.get('maxPoints')) || 100,
-        submissionType: formData.get('submissionType')
+        submissionType: formData.get('submissionType'),
+        isCoding:       isCoding  
     });
 
     if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
@@ -593,7 +597,7 @@ function renderAssignmentsInUI(assignments) {
                 ? new Date(assignment.due_date).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
                 : 'TBD'}`;
 
-        let btnHtml = '';
+               let btnHtml = '';
         if (status === 'submitted' || status === 'graded') {
             btnHtml = `
                 <button class="assignment-btn feedback-btn"
@@ -609,11 +613,19 @@ function renderAssignmentsInUI(assignments) {
                         onclick="openAssignmentDetail('${assignment.id}')">
                     <i class="fas fa-eye"></i> View Assignment
                 </button>
+                ${assignment.is_coding ? `
+                <button class="assignment-btn" style="background:#7c3aed;margin-bottom:8px;"
+                        onclick="openCodingEnvironment('${assignment.id}', '${escapeHtml(assignment.instructions || 'Write code to solve this problem')}')">
+                    <i class="fas fa-code"></i> Open Coding Environment
+                </button>
+                ` : `
                 <button class="assignment-btn ${btnCls}"
                         onclick="window.submitAssignmentModal('${assignment.id}')">
                     <i class="fas fa-upload"></i>
                     ${status === 'urgent' ? 'Submit Now' : 'Submit Assignment'}
-                </button>`;
+                </button>
+                `}
+            `;
         }
 
         const rawDesc = assignment.instructions || assignment.description || 'Complete this assignment to apply your learning.';
@@ -1044,7 +1056,97 @@ if (typeof escapeHtml === 'undefined') {
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     };
 }
+// ============================================
+// CODING ASSIGNMENT SUPPORT
+// ============================================
 
+// Add is_coding field to createAssignment function
+// REPLACE your existing createAssignment function with this one:
+async function createAssignment({ title, courseId, instructions, dueDate, maxPoints, submissionType, isCoding = false }) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        if (!title?.trim())        throw new Error('Assignment title is required');
+        if (!courseId)             throw new Error('Course is required');
+        if (!instructions?.trim()) throw new Error('Instructions are required');
+        if (!dueDate)              throw new Error('Due date is required');
+
+        const { data, error } = await supabaseClient
+            .from('assignments')
+            .insert({
+                course_id:       courseId,
+                title:           title.trim(),
+                instructions:    instructions.trim(),
+                due_date:        dueDate,
+                max_points:      maxPoints || 100,
+                submission_type: submissionType || 'file',
+                is_coding:       isCoding,  
+                created_by:      user.id,
+                created_at:      new Date().toISOString()
+            })
+            .select()
+            .maybeSingle();
+
+        if (error) throw error;
+
+        return { success: true, assignment: data, message: 'Assignment created successfully!' };
+
+    } catch (error) {
+        console.error('❌ createAssignment error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// Add this new function to fetch coding submissions
+async function getCodingSubmissions(assignmentId) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabaseClient
+            .from('coding_submissions')
+            .select('*')
+            .eq('assignment_id', assignmentId)
+            .eq('student_id', user.id)
+            .order('submitted_at', { ascending: false })
+            .maybeSingle();
+
+        if (error) throw error;
+        return { success: true, submission: data };
+
+    } catch (error) {
+        console.error('❌ getCodingSubmissions error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+// Add this function to submit coding assignment
+async function submitCodingAssignment(assignmentId, code, language) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) throw new Error('Not authenticated');
+
+        const { data, error } = await supabaseClient
+            .from('coding_submissions')
+            .insert({
+                assignment_id: assignmentId,
+                student_id: user.id,
+                code: code,
+                language: language,
+                submitted_at: new Date().toISOString()
+            })
+            .select()
+            .maybeSingle();
+
+        if (error) throw error;
+        return { success: true, submission: data, message: 'Coding assignment submitted!' };
+
+    } catch (error) {
+        console.error('❌ submitCodingAssignment error:', error.message);
+        return { success: false, error: error.message };
+    }
+}
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────
