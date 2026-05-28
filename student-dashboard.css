@@ -7560,3 +7560,37 @@ body.dark-mode .notes-chapter-item:hover span span {
     padding: 0 !important;
     box-shadow: none !important;
 }
+.notes-chapter-header {
+    transition: all 0.2s ease;
+}
+
+.notes-chapter-header:hover {
+    background: linear-gradient(135deg, #f3f0ff, #e8e2ff) !important;
+}
+
+.notes-subchapter-list {
+    transition: all 0.2s ease;
+}
+
+.notes-chapter-item {
+    padding: 8px 12px !important;
+    margin: 2px 0 !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.notes-chapter-item:hover {
+    background: #f3f4f6 !important;
+}
+
+.notes-chapter-item.active {
+    background: #ede9fe !important;
+    color: #7c3aed !important;
+    font-weight: 600 !important;
+}
+
+.notes-chapter-item.completed {
+    background: #f0fdf4 !important;
+    color: #065f46 !important;
+}
