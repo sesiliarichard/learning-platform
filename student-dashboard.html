@@ -2894,88 +2894,12 @@ function loadChapterList() {
 
         const subChapters = window._subChapterMap?.[chapterId];
 
-        if (subChapters && subChapters.length > 0) {
-            // Group topics by sub_chapter_id
-            const topicsBySubChapter = {};
-            const orphans = [];
-
-            group.topics.forEach(({ note, index }) => {
-                if (note.subChapterId) {
-                    if (!topicsBySubChapter[note.subChapterId]) topicsBySubChapter[note.subChapterId] = [];
-                    topicsBySubChapter[note.subChapterId].push({ note, index });
-                } else {
-                    orphans.push({ note, index });
-                }
-            });
-
-            subChapters.forEach((sc, scIdx) => {
-                const scTopics = topicsBySubChapter[sc.id] || [];
-                const scAllRead = scTopics.length > 0 && scTopics.every(({ note }) => note.completed);
-
-                // Sub-chapter header row
-                const scHeader = document.createElement('li');
-                scHeader.style.cssText = `
-                    list-style:none;
-                    padding: 8px 12px 6px;
-                    margin: 4px 0 0;
-                    background: ${scAllRead ? '#f0fdf4' : '#f8f7ff'};
-                    border-radius: 8px;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;`;
-                scHeader.innerHTML = `
-                    <div style="width:22px;height:22px;border-radius:7px;
-                                background:${scAllRead ? '#10b981' : '#7c3aed'};
-                                color:white;font-size:10px;font-weight:800;
-                                display:flex;align-items:center;justify-content:center;
-                                flex-shrink:0;">
-                        ${scAllRead ? '<i class="fas fa-check" style="font-size:9px;"></i>' : (scIdx + 1)}
-                    </div>
-                    <span style="font-size:11px;font-weight:700;color:#374151;
-                                 flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        ${escapeHtml(sc.title.length > 28 ? sc.title.substring(0, 25) + '...' : sc.title)}
-                    </span>
-                    <span style="font-size:10px;color:#9ca3af;">${scTopics.filter(t => t.note.completed).length}/${scTopics.length}</span>
-                    <i class="fas fa-chevron-down" id="scArrow_${sc.id}"
-                       style="font-size:9px;color:#9ca3af;transition:transform 0.2s;"></i>`;
-
-                scHeader.onclick = () => {
-                    const body = document.getElementById(`scBody_${sc.id}`);
-                    const arrow = document.getElementById(`scArrow_${sc.id}`);
-                    if (!body) return;
-                    const isOpen = body.style.display !== 'none';
-                    body.style.display = isOpen ? 'none' : 'block';
-                    if (arrow) arrow.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
-                };
-                chapterList.appendChild(scHeader);
-
-                // Topics under this sub-chapter
-                const scBody = document.createElement('li');
-                scBody.id = `scBody_${sc.id}`;
-                scBody.style.cssText = `list-style:none;padding-left:8px;`;
-
-                scTopics.forEach(({ note, index }) => {
-                    const topicLi = _buildTopicItem(note, index);
-                    scBody.appendChild(topicLi);
-                });
-
-                chapterList.appendChild(scBody);
-            });
-
-            // Orphan topics (no sub-chapter)
-            orphans.forEach(({ note, index }) => {
-                const topicLi = _buildTopicItem(note, index);
-                chapterList.appendChild(topicLi);
-            });
-
-        } else {
-            // No sub-chapters — original flat list
-            group.topics.forEach(({ note, index }) => {
-                const topicLi = _buildTopicItem(note, index);
-                chapterList.appendChild(topicLi);
-            });
-        }
+// Always render flat topic list in sidebar regardless of sub-chapters
+// Sub-chapter grouping is handled in the reader area by loadWeekStructure
+group.topics.forEach(({ note, index }) => {
+    const topicLi = _buildTopicItem(note, index);
+    chapterList.appendChild(topicLi);
+});
     });
 }
 
