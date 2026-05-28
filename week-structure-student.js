@@ -82,7 +82,16 @@
     // ─────────────────────────────────────────────────────────
     // RENDER
     // ─────────────────────────────────────────────────────────
-    function _renderWeekView(container, chapter, subChapters, allTopics, assessment, readTopicIds, userId) {
+  function _renderWeekView(container, chapter, subChapters, allTopics, assessment, readTopicIds, userId) {
+    
+    // ── Reset container styling so it blends with the notes reader ──
+    container.style.padding = '0';
+    container.style.border = 'none';
+    container.style.borderRadius = '0';
+    container.style.background = 'transparent';
+    container.style.boxShadow = 'none';
+    container.style.margin = '0';
+    
 
         // Separate topics with sub-chapter vs orphaned (legacy)
         const topicsBySubChapter = {};

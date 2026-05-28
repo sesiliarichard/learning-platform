@@ -2927,26 +2927,30 @@ function displayNote(index) {
         id => window._chapterMap[id] === note.chapterTitle
     );
 
-    if (chapterId && typeof window.loadWeekStructure === 'function') {
-        // Only re-render if we're switching to a different chapter
-        if (reader.dataset.loadedChapterId !== chapterId) {
-            reader.dataset.loadedChapterId = chapterId;
-            window.loadWeekStructure(
-                {
-                    id:        chapterId,
-                    course_id: window.currentCourseId || window.currentCourse,
-                    title:     note.chapterTitle,
-                    description: ''
-                },
-                reader
-            );
-        }
-        // Always update sidebar active state
-        loadChapterList();
-        // Scroll reader to top
-        reader.scrollTop = 0;
-        return;
+   if (chapterId && typeof window.loadWeekStructure === 'function') {
+    if (reader.dataset.loadedChapterId !== chapterId) {
+        reader.dataset.loadedChapterId = chapterId;
+        window.loadWeekStructure(
+            {
+                id:          chapterId,
+                course_id:   window.currentCourseId || window.currentCourse,
+                title:       note.chapterTitle,
+                description: ''
+            },
+            reader
+        );
     }
+    // ── Keep the ORIGINAL sidebar active state ──
+    // Remove this line: loadChapterList();
+    
+    // Just update the active item in the existing sidebar
+    document.querySelectorAll('.notes-chapter-item').forEach(el => el.classList.remove('active'));
+    const activeItem = document.querySelector(`.notes-chapter-item:nth-child(${index + 1})`);
+    if (activeItem) activeItem.classList.add('active');
+    
+    reader.scrollTop = 0;
+    return;
+}
 
     // ── FALLBACK: original behaviour for chapters without sub-chapters ──
     reader.dataset.loadedChapterId = '';
