@@ -2713,6 +2713,7 @@ let currentNoteIndex = 0;
 let currentCourseNotes = [];
 
 // Load course notes
+// Load course notes
 async function loadCourseNotes(courseId) {
     if (window._notesLoadingFor === courseId) return;
     window._notesLoadingFor = courseId;
@@ -2725,12 +2726,12 @@ async function loadCourseNotes(courseId) {
     currentCourseNotes = [];
 
     try {
-        // Load chapters with sub_chapters info
+        // Load chapters with topics
         const { data: chapters, error } = await db
             .from('chapters')
             .select(`
                 id, title, description, order_num,
-                topics ( id, title, content, video_url, file_url, duration, category, order_num )
+                topics ( id, title, content, video_url, file_url, duration, category, order_num, sub_chapter_id )
             `)
             .eq('course_id', courseId)
             .eq('published', true)
@@ -2752,6 +2753,10 @@ async function loadCourseNotes(courseId) {
             subChaptersByChapter[sc.chapter_id].push(sc);
         });
 
+        // Build topic_id → sub_chapter_id map
+        const topicSubChapterMap = {};
+        const topicsBySubChapter = {};
+
         if (!chapters || chapters.length === 0) {
             chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No notes published yet</li>';
             reader.innerHTML = `<div style="padding:60px;text-align:center;color:#9ca3af;">
@@ -2767,13 +2772,23 @@ async function loadCourseNotes(courseId) {
             (a.order_num ?? 999) - (b.order_num ?? 999)
         );
 
-        // Build notes array
+        // Build notes array and topic mappings
         sortedChapters.forEach(chapter => {
             const sortedTopics = (chapter.topics || [])
                 .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
 
             sortedTopics.forEach(topic => {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
+                
+                // Track topic -> sub_chapter mapping
+                if (topic.sub_chapter_id) {
+                    topicSubChapterMap[topic.id] = topic.sub_chapter_id;
+                    if (!topicsBySubChapter[topic.sub_chapter_id]) {
+                        topicsBySubChapter[topic.sub_chapter_id] = [];
+                    }
+                    topicsBySubChapter[topic.sub_chapter_id].push(topic);
+                }
+                
                 currentCourseNotes.push({
                     id: topic.id,
                     title: cleanTitle,
@@ -2811,14 +2826,14 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // CRITICAL: Determine which sidebar to display based on sub-chapters
+        // 🔑 CRITICAL: Determine which sidebar to display based on sub-chapters
         const hasSubChapters = Object.keys(subChaptersByChapter).length > 0;
 
         if (hasSubChapters) {
             // Render WITH sub-chapters (collapsible structure)
-            renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, currentCourseNotes);
+            renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
         } else {
-            // Render WITHOUT sub-chapters (flat structure like first image)
+            // Render WITHOUT sub-chapters (flat structure)
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
@@ -2839,38 +2854,48 @@ async function loadCourseNotes(courseId) {
 }
 
 // Helper: Render sidebar WITH sub-chapters (collapsible)
-function renderSidebarWithSubChapters(chapters, subChaptersByChapter, allNotes) {
+function renderSidebarWithSubChapters(chapters, subChaptersByChapter, topicsBySubChapter, allNotes) {
     const chapterList = document.getElementById('notesChapterList');
     chapterList.innerHTML = '';
 
     chapters.forEach((chapter, idx) => {
         const subChaps = subChaptersByChapter[chapter.id] || [];
         
+        // Count total topics in this chapter
+        let totalTopicsInChapter = 0;
+        let readTopics = 0;
+        
+        subChaps.forEach(sc => {
+            const scTopics = topicsBySubChapter[sc.id] || [];
+            totalTopicsInChapter += scTopics.length;
+            scTopics.forEach(topic => {
+                const note = allNotes.find(n => n.id === topic.id);
+                if (note && note.completed) readTopics++;
+            });
+        });
+        
         // Week header (collapsible)
         const header = document.createElement('li');
         header.className = 'notes-chapter-header';
         header.style.cssText = `
-            padding: 8px 12px;
+            padding: 10px 14px;
             background: linear-gradient(135deg, #f8f7ff, #f0ecff);
-            border-radius: 10px;
+            border-radius: 12px;
             margin: 8px 0 4px 0;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
             user-select: none;
+            transition: all 0.2s ease;
         `;
         
-        // Count total topics in this chapter
-        const totalTopicsInChapter = allNotes.filter(n => n.chapterId === chapter.id).length;
-        const readTopics = allNotes.filter(n => n.chapterId === chapter.id && n.completed).length;
-        
         header.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="background: #7c3aed; color: white; padding: 2px 8px; border-radius: 16px; font-size: 10px; font-weight: 700;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+                <span style="background: #7c3aed; color: white; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;">
                     Week ${chapter.order_num || idx + 1}
                 </span>
-                <span style="font-weight: 700; color: #1f2937; font-size: 13px;">${escapeHtml(chapter.title)}</span>
+                <span style="font-weight: 700; color: #1f2937; font-size: 14px;">${escapeHtml(chapter.title)}</span>
                 <span style="font-size: 11px; color: #9ca3af;">(${readTopics}/${totalTopicsInChapter})</span>
             </div>
             <i class="fas fa-chevron-down" style="color: #7c3aed; font-size: 12px; transition: transform 0.2s;"></i>
@@ -2881,64 +2906,74 @@ function renderSidebarWithSubChapters(chapters, subChaptersByChapter, allNotes) 
         subContainer.className = 'notes-subchapter-list';
         subContainer.style.cssText = `
             padding-left: 20px;
-            margin: 4px 0 8px 0;
+            margin: 6px 0 10px 0;
             list-style: none;
             display: block;
         `;
         
-        // Add sub-chapters
-        subChaps.forEach((subChap, scIdx) => {
-            const subTopics = allNotes.filter(n => n.subChapterId === subChap.id);
-            const subRead = subTopics.filter(t => t.completed).length;
+        // Add each sub-chapter
+        subChaps.forEach((subChap) => {
+            const subTopics = topicsBySubChapter[subChap.id] || [];
+            let subRead = 0;
+            subTopics.forEach(topic => {
+                const note = allNotes.find(n => n.id === topic.id);
+                if (note && note.completed) subRead++;
+            });
             
             const subHeader = document.createElement('li');
             subHeader.style.cssText = `
-                padding: 6px 10px;
-                margin: 2px 0;
-                border-radius: 8px;
+                padding: 8px 12px;
+                margin: 4px 0;
+                border-radius: 10px;
                 cursor: pointer;
                 font-weight: 600;
-                font-size: 12px;
+                font-size: 13px;
                 color: #4b5563;
                 display: flex;
                 align-items: center;
-                gap: 8px;
+                gap: 10px;
                 background: ${subRead === subTopics.length && subTopics.length > 0 ? '#f0fdf4' : 'transparent'};
+                transition: background 0.15s ease;
             `;
             subHeader.innerHTML = `
-                <i class="fas ${subRead === subTopics.length && subTopics.length > 0 ? 'fa-check-circle' : 'fa-circle'}" 
-                   style="font-size: 8px; color: ${subRead === subTopics.length && subTopics.length > 0 ? '#10b981' : '#d1d5db'};"></i>
+                <i class="fas ${subRead === subTopics.length && subTopics.length > 0 ? 'fa-check-circle' : 'fa-chevron-right'}" 
+                   style="font-size: 10px; color: ${subRead === subTopics.length && subTopics.length > 0 ? '#10b981' : '#7c3aed'};"></i>
                 <span style="flex: 1;">${escapeHtml(subChap.title)}</span>
-                <span style="font-size: 10px; color: #9ca3af;">${subRead}/${subTopics.length}</span>
+                <span style="font-size: 11px; color: #9ca3af;">${subRead}/${subTopics.length}</span>
             `;
             
-            // Toggle collapse for sub-chapter topics
+            // Topics container for this sub-chapter
             const topicsContainer = document.createElement('ul');
             topicsContainer.style.cssText = `
-                padding-left: 20px;
-                margin: 4px 0 8px 0;
+                padding-left: 24px;
+                margin: 6px 0 12px 0;
                 list-style: none;
                 display: block;
             `;
             
             subTopics.forEach(topic => {
+                const note = allNotes.find(n => n.id === topic.id);
                 const topicIndex = allNotes.findIndex(n => n.id === topic.id);
-                const topicItem = _buildTopicItem(topic, topicIndex);
+                const topicItem = buildTopicItemForSidebar(note, topicIndex);
                 topicsContainer.appendChild(topicItem);
             });
             
+            // Toggle collapse when clicking sub-header
             subHeader.onclick = (e) => {
                 e.stopPropagation();
                 const isOpen = topicsContainer.style.display !== 'none';
                 topicsContainer.style.display = isOpen ? 'none' : 'block';
                 const icon = subHeader.querySelector('i');
-                if (icon) icon.className = isOpen ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
+                if (icon) {
+                    icon.className = isOpen ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
+                }
             };
             
             subContainer.appendChild(subHeader);
             subContainer.appendChild(topicsContainer);
         });
         
+        // Toggle collapse when clicking week header
         header.onclick = () => {
             const isOpen = subContainer.style.display !== 'none';
             subContainer.style.display = isOpen ? 'none' : 'block';
@@ -2960,7 +2995,7 @@ function renderSidebarFlat(chapters, allNotes) {
         const chapterTopics = allNotes.filter(n => n.chapterId === chapter.id);
         const readTopics = chapterTopics.filter(t => t.completed).length;
         
-        // Week header (simple, non-collapsible week pill)
+        // Simple week pill header (non-collapsible)
         const header = document.createElement('li');
         header.style.cssText = `
             padding: 8px 12px;
@@ -2969,10 +3004,10 @@ function renderSidebarFlat(chapters, allNotes) {
             margin: 8px 0 4px 0;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         `;
         header.innerHTML = `
-            <span style="background: #7c3aed; color: white; padding: 2px 8px; border-radius: 16px; font-size: 10px; font-weight: 700;">
+            <span style="background: #7c3aed; color: white; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;">
                 Week ${chapter.order_num || idx + 1}
             </span>
             <span style="font-weight: 600; color: #1f2937; font-size: 13px;">${escapeHtml(chapter.title)}</span>
@@ -2983,11 +3018,50 @@ function renderSidebarFlat(chapters, allNotes) {
         // Add topics directly (no sub-chapters)
         chapterTopics.forEach(topic => {
             const topicIndex = allNotes.findIndex(n => n.id === topic.id);
-            const topicItem = _buildTopicItem(topic, topicIndex);
+            const topicItem = buildTopicItemForSidebar(topic, topicIndex);
             chapterList.appendChild(topicItem);
         });
     });
 }
+
+// Build individual topic item
+function buildTopicItemForSidebar(note, index) {
+    const li = document.createElement('li');
+    li.className = [
+        'notes-chapter-item',
+        index === currentNoteIndex ? 'active' : '',
+        note.completed ? 'completed' : ''
+    ].filter(Boolean).join(' ');
+
+    let title = note.title;
+    if (title.length > 35) title = title.substring(0, 32) + '...';
+
+    li.style.cssText = `
+        padding: 8px 12px 8px 28px;
+        margin: 2px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        ${note.completed ? 'background: #f0fdf4;' : ''}
+        ${index === currentNoteIndex ? 'background: #ede9fe; font-weight: 600;' : ''}
+    `;
+
+    li.innerHTML = `
+        ${note.completed
+            ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
+            : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
+            ${escapeHtml(title)}
+        </span>
+    `;
+
+    li.onclick = () => displayNote(index);
+    return li;
+}
+
 
 // Helper to build individual topic item (reused)
 function _buildTopicItem(note, index) {
@@ -3017,71 +3091,8 @@ function _buildTopicItem(note, index) {
 
 // Load chapter list
 function loadChapterList() {
-    const chapterList = document.getElementById('notesChapterList');
-    chapterList.innerHTML = '';
-
-    const groups = {};
-    const groupOrder = [];
-
-    currentCourseNotes.forEach((note, index) => {
-        const key = note.chapterTitle || 'General';
-        if (!groups[key]) {
-            groups[key] = {
-                label: key,
-                weekLabel: note.weekLabel || '',
-                orderNum: note.chapterOrderNum ?? 999,
-                topics: []
-            };
-            groupOrder.push(key);
-        }
-        groups[key].topics.push({ note, index });
-    });
-
-    groupOrder.sort((a, b) =>
-        (groups[a].orderNum ?? 999) - (groups[b].orderNum ?? 999)
-    );
-
-    groupOrder.forEach(key => {
-        const group = groups[key];
-
-        // Week header
-        const header = document.createElement('li');
-        header.style.cssText = `
-            padding: 10px 14px 4px;
-            list-style: none;
-            border-top: 1px solid #f3f4f6;
-            margin-top: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;`;
-        header.innerHTML = `
-            <span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;
-                         border-radius:20px;font-size:9px;font-weight:800;
-                         white-space:nowrap;">
-                ${group.weekLabel}
-            </span>
-            <span style="font-size:10px;font-weight:700;color:#374151;
-                         overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-                         max-width:180px;text-transform:uppercase;letter-spacing:0.5px;">
-                ${escapeHtml(group.label.length > 30 ? group.label.substring(0, 27) + '...' : group.label)}
-            </span>`;
-        chapterList.appendChild(header);
-
-        // ── NEW: fetch sub-chapters and group topics under them ──
-        const chapterId = Object.keys(window._chapterMap || {}).find(
-            id => window._chapterMap[id] === key
-        );
-
-        const subChapters = window._subChapterMap?.[chapterId];
-
-// Always render flat topic list in sidebar regardless of sub-chapters
-// Sub-chapter grouping is handled in the reader area by loadWeekStructure
-group.topics.forEach(({ note, index }) => {
-    const topicLi = _buildTopicItem(note, index);
-    chapterList.appendChild(topicLi);
-});
-    });
+    // This function is no longer used - sidebar is rendered by loadCourseNotes
+    console.log('loadChapterList called but replaced by conditional rendering');
 }
 
 function _buildTopicItem(note, index) {
