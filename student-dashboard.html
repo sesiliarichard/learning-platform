@@ -2726,37 +2726,29 @@ async function loadCourseNotes(courseId) {
     currentCourseNotes = [];
 
     try {
-        // Load chapters with topics
+        // Load chapters
         const { data: chapters, error } = await db
             .from('chapters')
-            .select(`
-                id, title, description, order_num,
-                topics ( id, title, content, video_url, file_url, duration, category, order_num, sub_chapter_id )
-            `)
+            .select(`id, title, description, order_num`)
             .eq('course_id', courseId)
             .eq('published', true)
             .order('order_num', { ascending: true });
 
         if (error) throw error;
 
-        // Check for sub-chapters in this course
+        // Load sub-chapters (THIS IS THE KEY!)
         const { data: subChapters } = await db
             .from('sub_chapters')
             .select('id, title, chapter_id, order_num')
             .eq('course_id', courseId)
             .order('order_num', { ascending: true });
 
-        // Build chapter_id → sub-chapters map
-        const subChaptersByChapter = {};
-        (subChapters || []).forEach(sc => {
-            if (!subChaptersByChapter[sc.chapter_id]) {
-                subChaptersByChapter[sc.chapter_id] = [];
-            }
-            subChaptersByChapter[sc.chapter_id].push(sc);
-        });
-
-        // Build topics grouped by sub_chapter_id
-        const topicsBySubChapter = {};
+        // Load topics
+        const { data: allTopics } = await db
+            .from('topics')
+            .select('id, title, content, duration, category, order_num, sub_chapter_id, chapter_id')
+            .eq('course_id', courseId)
+            .order('order_num', { ascending: true });
 
         if (!chapters || chapters.length === 0) {
             chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No notes published yet</li>';
@@ -2769,29 +2761,33 @@ async function loadCourseNotes(courseId) {
             return;
         }
 
-        const sortedChapters = [...chapters].sort((a, b) =>
-            (a.order_num ?? 999) - (b.order_num ?? 999)
-        );
+        // Group sub-chapters by chapter_id
+        const subChaptersByChapter = {};
+        (subChapters || []).forEach(sc => {
+            if (!subChaptersByChapter[sc.chapter_id]) {
+                subChaptersByChapter[sc.chapter_id] = [];
+            }
+            subChaptersByChapter[sc.chapter_id].push(sc);
+        });
 
-        // Build notes array and check if ANY topic has sub_chapter_id
-        let hasAnySubChapterTopics = false;
-
-        sortedChapters.forEach(chapter => {
-            const sortedTopics = (chapter.topics || [])
-                .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
-
-            sortedTopics.forEach(topic => {
-                const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-                
-                // Check if this topic belongs to a sub-chapter
-                if (topic.sub_chapter_id) {
-                    hasAnySubChapterTopics = true;
-                    if (!topicsBySubChapter[topic.sub_chapter_id]) {
-                        topicsBySubChapter[topic.sub_chapter_id] = [];
-                    }
-                    topicsBySubChapter[topic.sub_chapter_id].push(topic);
+        // Group topics by sub_chapter_id
+        const topicsBySubChapter = {};
+        (allTopics || []).forEach(topic => {
+            if (topic.sub_chapter_id) {
+                if (!topicsBySubChapter[topic.sub_chapter_id]) {
+                    topicsBySubChapter[topic.sub_chapter_id] = [];
                 }
-                
+                topicsBySubChapter[topic.sub_chapter_id].push(topic);
+            }
+        });
+
+        // Build currentCourseNotes for flat list (used by displayNote)
+        const sortedChapters = [...chapters].sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+        
+        (allTopics || []).forEach(topic => {
+            const chapter = sortedChapters.find(c => c.id === topic.chapter_id);
+            if (chapter) {
+                const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
                 currentCourseNotes.push({
                     id: topic.id,
                     title: cleanTitle,
@@ -2806,7 +2802,7 @@ async function loadCourseNotes(courseId) {
                     weekLabel: 'Week ' + (chapter.order_num || '?'),
                     subChapterId: topic.sub_chapter_id || null
                 });
-            });
+            }
         });
 
         currentNoteIndex = 0;
@@ -2829,19 +2825,17 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // 🔑 CRITICAL: Check if topics have sub_chapter_id values
-        const hasSubChapters = hasAnySubChapterTopics;
+        // 🔑 THE FIX: Check if sub-chapters exist
+        const hasSubChapters = subChapters && subChapters.length > 0;
 
-        console.log('🎯 hasSubChapters (topics have sub_chapter_id):', hasSubChapters);
-        console.log('🎯 Topics with sub_chapter_id:', Object.keys(topicsBySubChapter).length);
+        console.log('📊 hasSubChapters:', hasSubChapters);
+        console.log('📊 Sub-chapters count:', subChapters?.length || 0);
 
         if (hasSubChapters) {
-            // Render WITH sub-chapters (collapsible structure)
-            console.log('✅ Rendering WITH sub-chapters (collapsible)');
+            // Render WITH sub-chapters (collapsible - Week → Sub-chapter → Topics)
             renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
         } else {
-            // Render WITHOUT sub-chapters (flat structure)
-            console.log('✅ Rendering WITHOUT sub-chapters (flat)');
+            // Render WITHOUT sub-chapters (flat - Week pill → Topics)
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
@@ -2860,7 +2854,6 @@ async function loadCourseNotes(courseId) {
         window._notesLoadingFor = null;
     }
 }
-
 // Helper: Render sidebar WITH sub-chapters (collapsible)
 function renderSidebarWithSubChapters(chapters, subChaptersByChapter, topicsBySubChapter, allNotes) {
     const chapterList = document.getElementById('notesChapterList');
