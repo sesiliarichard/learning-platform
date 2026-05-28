@@ -38,7 +38,7 @@
  <script src="projects.js"></script>
  <script src="discussions.js"></script>
  <script src="discussions-ui.js"></script>
-<script src="week-structure-student.js"></script>
+
 </head>
 
 <body>
@@ -2917,16 +2917,42 @@ function loadChapterList() {
 
 function displayNote(index) {
     if (index < 0 || index >= currentCourseNotes.length) return;
-    
+
     currentNoteIndex = index;
     const note = currentCourseNotes[index];
-    
     const reader = document.getElementById('notesReader');
-    
-    // Ensure reader has proper overflow
+
+    // ── NEW: If this chapter has sub-chapters, hand off to week-structure-student.js ──
+    const chapterId = Object.keys(window._chapterMap || {}).find(
+        id => window._chapterMap[id] === note.chapterTitle
+    );
+
+    if (chapterId && typeof window.loadWeekStructure === 'function') {
+        // Only re-render if we're switching to a different chapter
+        if (reader.dataset.loadedChapterId !== chapterId) {
+            reader.dataset.loadedChapterId = chapterId;
+            window.loadWeekStructure(
+                {
+                    id:        chapterId,
+                    course_id: window.currentCourseId || window.currentCourse,
+                    title:     note.chapterTitle,
+                    description: ''
+                },
+                reader
+            );
+        }
+        // Always update sidebar active state
+        loadChapterList();
+        // Scroll reader to top
+        reader.scrollTop = 0;
+        return;
+    }
+
+    // ── FALLBACK: original behaviour for chapters without sub-chapters ──
+    reader.dataset.loadedChapterId = '';
     reader.style.overflow = 'auto';
     reader.style.maxHeight = 'calc(100vh - 150px)';
-    
+
     reader.innerHTML = `
         <div class="notes-header">
             <div class="notes-category-badge">${escapeHtml(note.category)}</div>
@@ -2942,18 +2968,18 @@ function displayNote(index) {
                 </div>
             </div>
         </div>
-        
+
         <div class="notes-content" style="word-wrap: break-word; overflow-wrap: break-word; max-width: 100%;">
             ${note.content}
         </div>
 
         ${buildWeekExtrasHTML(note.chapterTitle)}
-        
+
         <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
             <i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i>
             ${note.completed ? 'Completed' : 'Mark as Complete'}
         </button>
-        
+
         <div class="notes-navigation">
             <button class="notes-nav-btn" onclick="displayNote(${index - 1})" ${index === 0 ? 'disabled' : ''}>
                 <i class="fas fa-arrow-left"></i>
@@ -2965,19 +2991,14 @@ function displayNote(index) {
             </button>
         </div>
     `;
-    
-    // Update sidebar to show active item
+
     loadChapterList();
-    
-    // Scroll the active chapter item into view in the sidebar
+
     setTimeout(() => {
         const activeItem = document.querySelector('.notes-chapter-item.active');
-        if (activeItem && activeItem.scrollIntoView) {
-            activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+        if (activeItem) activeItem.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
-    
-    // Reset scroll position of reader to top
+
     reader.scrollTop = 0;
 }
 
@@ -6537,6 +6558,8 @@ async function downloadFile(url, filename) {
     }
     console.log('✅ Coding environment modal hidden on page load');
 })();
+
     </script>
+    <script src="week-structure-student.js"></script>
 </body>
 </html>
