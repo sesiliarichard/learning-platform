@@ -2713,7 +2713,7 @@ let currentNoteIndex = 0;
 let currentCourseNotes = [];
 
 // Load course notes
-// Load course notes
+
 async function loadCourseNotes(courseId) {
     if (window._notesLoadingFor === courseId) return;
     window._notesLoadingFor = courseId;
@@ -2749,12 +2749,13 @@ async function loadCourseNotes(courseId) {
         // Build chapter_id → sub-chapters map
         const subChaptersByChapter = {};
         (subChapters || []).forEach(sc => {
-            if (!subChaptersByChapter[sc.chapter_id]) subChaptersByChapter[sc.chapter_id] = [];
+            if (!subChaptersByChapter[sc.chapter_id]) {
+                subChaptersByChapter[sc.chapter_id] = [];
+            }
             subChaptersByChapter[sc.chapter_id].push(sc);
         });
 
-        // Build topic_id → sub_chapter_id map
-        const topicSubChapterMap = {};
+        // Build topics grouped by sub_chapter_id
         const topicsBySubChapter = {};
 
         if (!chapters || chapters.length === 0) {
@@ -2772,7 +2773,9 @@ async function loadCourseNotes(courseId) {
             (a.order_num ?? 999) - (b.order_num ?? 999)
         );
 
-        // Build notes array and topic mappings
+        // Build notes array and check if ANY topic has sub_chapter_id
+        let hasAnySubChapterTopics = false;
+
         sortedChapters.forEach(chapter => {
             const sortedTopics = (chapter.topics || [])
                 .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
@@ -2780,9 +2783,9 @@ async function loadCourseNotes(courseId) {
             sortedTopics.forEach(topic => {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
                 
-                // Track topic -> sub_chapter mapping
+                // Check if this topic belongs to a sub-chapter
                 if (topic.sub_chapter_id) {
-                    topicSubChapterMap[topic.id] = topic.sub_chapter_id;
+                    hasAnySubChapterTopics = true;
                     if (!topicsBySubChapter[topic.sub_chapter_id]) {
                         topicsBySubChapter[topic.sub_chapter_id] = [];
                     }
@@ -2826,14 +2829,19 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // 🔑 CRITICAL: Determine which sidebar to display based on sub-chapters
-        const hasSubChapters = Object.keys(subChaptersByChapter).length > 0;
+        // 🔑 CRITICAL: Check if topics have sub_chapter_id values
+        const hasSubChapters = hasAnySubChapterTopics;
+
+        console.log('🎯 hasSubChapters (topics have sub_chapter_id):', hasSubChapters);
+        console.log('🎯 Topics with sub_chapter_id:', Object.keys(topicsBySubChapter).length);
 
         if (hasSubChapters) {
             // Render WITH sub-chapters (collapsible structure)
+            console.log('✅ Rendering WITH sub-chapters (collapsible)');
             renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
         } else {
             // Render WITHOUT sub-chapters (flat structure)
+            console.log('✅ Rendering WITHOUT sub-chapters (flat)');
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
@@ -3095,31 +3103,6 @@ function loadChapterList() {
     console.log('loadChapterList called but replaced by conditional rendering');
 }
 
-function _buildTopicItem(note, index) {
-    const li = document.createElement('li');
-    li.className = [
-        'notes-chapter-item',
-        index === currentNoteIndex ? 'active' : '',
-        note.completed ? 'completed' : ''
-    ].filter(Boolean).join(' ');
-
-    let title = note.title;
-    if (title.length > 35) title = title.substring(0, 32) + '...';
-
-    li.innerHTML = `
-        <span style="padding-left:4px;display:flex;align-items:center;gap:6px;width:100%;">
-            ${note.completed
-                ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
-                : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
-            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
-                ${escapeHtml(title)}
-            </span>
-        </span>`;
-
-    li.onclick = () => displayNote(index);
-    return li;
-}
-// Display note
 
 function displayNote(index) {
     if (index < 0 || index >= currentCourseNotes.length) return;
