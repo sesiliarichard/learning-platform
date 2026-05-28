@@ -2747,6 +2747,17 @@ async function loadCourseNotes(courseId) {
         window._chapterMap = {};
         (chapters || []).forEach(ch => { window._chapterMap[ch.id] = ch.title; });
 
+        window._subChapterMap = {};
+       const { data: allSubChapters } = await supabaseClient
+    .from('sub_chapters')
+    .select('id, title, chapter_id, order_num')
+    .eq('course_id', courseId)
+    .order('order_num', { ascending: true });
+
+(allSubChapters || []).forEach(sc => {
+    if (!window._subChapterMap[sc.chapter_id]) window._subChapterMap[sc.chapter_id] = [];
+    window._subChapterMap[sc.chapter_id].push(sc);
+});
         // Load quizzes & assignments linked to chapters
         await loadWeekQuizzesAndAssignments(courseId);
 
@@ -2775,17 +2786,18 @@ sortedChapters.forEach(chapter => {
     sortedTopics.forEach(topic => {
         const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
         currentCourseNotes.push({
-            id: topic.id,
-            title: cleanTitle,
-            category: topic.category || 'General',
-            duration: (topic.duration || '15') + ' min read',
-            updated: 'Recently',
-            completed: false,
-            content: topic.content || '<p>No content yet.</p>',
-            chapterTitle: chapter.title,
-            chapterOrderNum: chapter.order_num ?? 999,
-            weekLabel: 'Week ' + (chapter.order_num || '?')
-        });
+    id: topic.id,
+    title: cleanTitle,
+    category: topic.category || 'General',
+    duration: (topic.duration || '15') + ' min read',
+    updated: 'Recently',
+    completed: false,
+    content: topic.content || '<p>No content yet.</p>',
+    chapterTitle: chapter.title,
+    chapterOrderNum: chapter.order_num ?? 999,
+    weekLabel: 'Week ' + (chapter.order_num || '?'),
+    subChapterId: topic.sub_chapter_id || null   // ← ADD THIS LINE
+});
     });
 });
        currentNoteIndex = 0;
@@ -2827,7 +2839,6 @@ function loadChapterList() {
     const chapterList = document.getElementById('notesChapterList');
     chapterList.innerHTML = '';
 
-    // Group notes by chapter
     const groups = {};
     const groupOrder = [];
 
@@ -2835,31 +2846,24 @@ function loadChapterList() {
         const key = note.chapterTitle || 'General';
         if (!groups[key]) {
             groups[key] = {
-                label:    key,
+                label: key,
                 weekLabel: note.weekLabel || '',
                 orderNum: note.chapterOrderNum ?? 999,
-                topics:   []
+                topics: []
             };
             groupOrder.push(key);
         }
         groups[key].topics.push({ note, index });
     });
 
-    // Sort groups by chapter order_num
     groupOrder.sort((a, b) =>
         (groups[a].orderNum ?? 999) - (groups[b].orderNum ?? 999)
     );
 
     groupOrder.forEach(key => {
         const group = groups[key];
-        
-        // Truncate long chapter titles
-        let truncatedLabel = group.label;
-        if (truncatedLabel.length > 30) {
-            truncatedLabel = truncatedLabel.substring(0, 27) + '...';
-        }
-        
-        // Chapter group header
+
+        // Week header
         const header = document.createElement('li');
         header.style.cssText = `
             padding: 10px 14px 4px;
@@ -2879,39 +2883,125 @@ function loadChapterList() {
             <span style="font-size:10px;font-weight:700;color:#374151;
                          overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
                          max-width:180px;text-transform:uppercase;letter-spacing:0.5px;">
-                ${escapeHtml(truncatedLabel)}
+                ${escapeHtml(group.label.length > 30 ? group.label.substring(0, 27) + '...' : group.label)}
             </span>`;
         chapterList.appendChild(header);
 
-        // Topics under this chapter
-        group.topics.forEach(({ note, index }) => {
-            const li = document.createElement('li');
-            li.className = [
-                'notes-chapter-item',
-                index === currentNoteIndex ? 'active' : '',
-                note.completed ? 'completed' : ''
-            ].filter(Boolean).join(' ');
+        // ── NEW: fetch sub-chapters and group topics under them ──
+        const chapterId = Object.keys(window._chapterMap || {}).find(
+            id => window._chapterMap[id] === key
+        );
 
-            // Truncate topic titles
-            let truncatedTitle = note.title;
-            if (truncatedTitle.length > 40) {
-                truncatedTitle = truncatedTitle.substring(0, 37) + '...';
-            }
+        const subChapters = window._subChapterMap?.[chapterId];
 
-            li.innerHTML = `
-                <span style="padding-left:6px;display:flex;align-items:center;gap:6px;width:100%;">
-                    ${note.completed
-                        ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
-                        : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
-                        ${escapeHtml(truncatedTitle)}
+        if (subChapters && subChapters.length > 0) {
+            // Group topics by sub_chapter_id
+            const topicsBySubChapter = {};
+            const orphans = [];
+
+            group.topics.forEach(({ note, index }) => {
+                if (note.subChapterId) {
+                    if (!topicsBySubChapter[note.subChapterId]) topicsBySubChapter[note.subChapterId] = [];
+                    topicsBySubChapter[note.subChapterId].push({ note, index });
+                } else {
+                    orphans.push({ note, index });
+                }
+            });
+
+            subChapters.forEach((sc, scIdx) => {
+                const scTopics = topicsBySubChapter[sc.id] || [];
+                const scAllRead = scTopics.length > 0 && scTopics.every(({ note }) => note.completed);
+
+                // Sub-chapter header row
+                const scHeader = document.createElement('li');
+                scHeader.style.cssText = `
+                    list-style:none;
+                    padding: 8px 12px 6px;
+                    margin: 4px 0 0;
+                    background: ${scAllRead ? '#f0fdf4' : '#f8f7ff'};
+                    border-radius: 8px;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;`;
+                scHeader.innerHTML = `
+                    <div style="width:22px;height:22px;border-radius:7px;
+                                background:${scAllRead ? '#10b981' : '#7c3aed'};
+                                color:white;font-size:10px;font-weight:800;
+                                display:flex;align-items:center;justify-content:center;
+                                flex-shrink:0;">
+                        ${scAllRead ? '<i class="fas fa-check" style="font-size:9px;"></i>' : (scIdx + 1)}
+                    </div>
+                    <span style="font-size:11px;font-weight:700;color:#374151;
+                                 flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        ${escapeHtml(sc.title.length > 28 ? sc.title.substring(0, 25) + '...' : sc.title)}
                     </span>
-                </span>`;
+                    <span style="font-size:10px;color:#9ca3af;">${scTopics.filter(t => t.note.completed).length}/${scTopics.length}</span>
+                    <i class="fas fa-chevron-down" id="scArrow_${sc.id}"
+                       style="font-size:9px;color:#9ca3af;transition:transform 0.2s;"></i>`;
 
-            li.onclick = () => displayNote(index);
-            chapterList.appendChild(li);
-        });
+                scHeader.onclick = () => {
+                    const body = document.getElementById(`scBody_${sc.id}`);
+                    const arrow = document.getElementById(`scArrow_${sc.id}`);
+                    if (!body) return;
+                    const isOpen = body.style.display !== 'none';
+                    body.style.display = isOpen ? 'none' : 'block';
+                    if (arrow) arrow.style.transform = isOpen ? 'rotate(-90deg)' : 'rotate(0deg)';
+                };
+                chapterList.appendChild(scHeader);
+
+                // Topics under this sub-chapter
+                const scBody = document.createElement('li');
+                scBody.id = `scBody_${sc.id}`;
+                scBody.style.cssText = `list-style:none;padding-left:8px;`;
+
+                scTopics.forEach(({ note, index }) => {
+                    const topicLi = _buildTopicItem(note, index);
+                    scBody.appendChild(topicLi);
+                });
+
+                chapterList.appendChild(scBody);
+            });
+
+            // Orphan topics (no sub-chapter)
+            orphans.forEach(({ note, index }) => {
+                const topicLi = _buildTopicItem(note, index);
+                chapterList.appendChild(topicLi);
+            });
+
+        } else {
+            // No sub-chapters — original flat list
+            group.topics.forEach(({ note, index }) => {
+                const topicLi = _buildTopicItem(note, index);
+                chapterList.appendChild(topicLi);
+            });
+        }
     });
+}
+
+function _buildTopicItem(note, index) {
+    const li = document.createElement('li');
+    li.className = [
+        'notes-chapter-item',
+        index === currentNoteIndex ? 'active' : '',
+        note.completed ? 'completed' : ''
+    ].filter(Boolean).join(' ');
+
+    let title = note.title;
+    if (title.length > 35) title = title.substring(0, 32) + '...';
+
+    li.innerHTML = `
+        <span style="padding-left:4px;display:flex;align-items:center;gap:6px;width:100%;">
+            ${note.completed
+                ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;flex-shrink:0;"></i>'
+                : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;flex-shrink:0;"></i>'}
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
+                ${escapeHtml(title)}
+            </span>
+        </span>`;
+
+    li.onclick = () => displayNote(index);
+    return li;
 }
 // Display note
 
@@ -2927,19 +3017,7 @@ function displayNote(index) {
         id => window._chapterMap[id] === note.chapterTitle
     );
 
-   if (chapterId && typeof window.loadWeekStructure === 'function') {
-    if (reader.dataset.loadedChapterId !== chapterId) {
-        reader.dataset.loadedChapterId = chapterId;
-        window.loadWeekStructure(
-            {
-                id:          chapterId,
-                course_id:   window.currentCourseId || window.currentCourse,
-                title:       note.chapterTitle,
-                description: ''
-            },
-            reader
-        );
-    }
+   
     // ── Keep the ORIGINAL sidebar active state ──
     // Remove this line: loadChapterList();
     
