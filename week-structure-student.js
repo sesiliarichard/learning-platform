@@ -83,6 +83,7 @@
     // RENDER
     // ─────────────────────────────────────────────────────────
   function _renderWeekView(container, chapter, subChapters, allTopics, assessment, readTopicIds, userId) {
+    container.classList.add('week-structure-active');
     
     // ── Reset container styling so it blends with the notes reader ──
     container.style.padding = '0';

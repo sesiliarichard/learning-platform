@@ -7553,3 +7553,10 @@ body.dark-mode .notes-chapter-item:hover span span {
 #codingEnvironmentModal.active {
     display: flex;
 }
+.notes-reader.week-structure-active {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}

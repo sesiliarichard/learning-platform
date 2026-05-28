@@ -2954,6 +2954,7 @@ function displayNote(index) {
 
     // ── FALLBACK: original behaviour for chapters without sub-chapters ──
     reader.dataset.loadedChapterId = '';
+    reader.classList.remove('week-structure-active'); 
     reader.style.overflow = 'auto';
     reader.style.maxHeight = 'calc(100vh - 150px)';
 
