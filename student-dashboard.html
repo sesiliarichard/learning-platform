@@ -2941,34 +2941,10 @@ function displayNote(index) {
         id => window._chapterMap[id] === note.chapterTitle
     );
 
-   if (chapterId && typeof window.loadWeekStructure === 'function') {
-    if (reader.dataset.loadedChapterId !== chapterId) {
-        reader.dataset.loadedChapterId = chapterId;
-        window.loadWeekStructure(
-            {
-                id:          chapterId,
-                course_id:   window.currentCourseId || window.currentCourse,
-                title:       note.chapterTitle,
-                description: ''
-            },
-            reader
-        );
-    }
-    // ── Keep the ORIGINAL sidebar active state ──
-    // Remove this line: loadChapterList();
-    
-    // Just update the active item in the existing sidebar
-    document.querySelectorAll('.notes-chapter-item').forEach(el => el.classList.remove('active'));
-    const activeItem = document.querySelector(`.notes-chapter-item:nth-child(${index + 1})`);
-    if (activeItem) activeItem.classList.add('active');
-    
-    reader.scrollTop = 0;
-    return;
-}
+   
 
     // ── FALLBACK: original behaviour for chapters without sub-chapters ──
-    reader.dataset.loadedChapterId = '';
-    reader.classList.remove('week-structure-active'); 
+   
     reader.style.overflow = 'auto';
     reader.style.maxHeight = 'calc(100vh - 150px)';
 
@@ -6579,6 +6555,6 @@ async function downloadFile(url, filename) {
 })();
 
     </script>
-    
+    <script src="week-structure-student.js"></script>
 </body>
 </html>
