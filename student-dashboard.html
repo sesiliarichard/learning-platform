@@ -590,20 +590,15 @@
                     </div>
 
                     <!-- Course Navigation -->
-                    <div class="course-nav" id="courseNav">
-                        <button class="course-nav-btn active" data-content="notes">
-                            <i class="fas fa-sticky-note"></i> Notes & Materials
-                        </button>
-                        <button class="course-nav-btn" data-content="videos">
-                            <i class="fas fa-video"></i> Video Lectures
-                        </button>
-                        <button class="course-nav-btn" data-content="quizzes">
-                            <i class="fas fa-question-circle"></i> Quizzes
-                        </button>
-                        <button class="course-nav-btn" data-content="assignments">
-                            <i class="fas fa-tasks"></i> Assignments
-                        </button>
-                    </div>
+                    
+<div class="course-nav" id="courseNav">
+    <button class="course-nav-btn active" data-content="notes">
+        <i class="fas fa-sticky-note"></i> Notes & Materials
+    </button>
+    <button class="course-nav-btn" data-content="videos">
+        <i class="fas fa-video"></i> Video Lectures
+    </button>
+</div>
 
                     <!-- Course Content Area -->
                     <div id="courseContentArea">
@@ -669,33 +664,8 @@
 
 </div> 
 
-<!-- Quizzes Sub-page -->
-<div class="course-sub-page" id="quizzesSubPage">
-                            <div class="course-sub-header">
-                                <h3>Course Quizzes</h3>
-                                <button class="see-all-btn">
-                                    <i class="fas fa-history"></i> Quiz History
-                                </button>
-                            </div>
-                            <div class="course-quiz-grid" id="courseQuizzesGrid">
-                                <!-- Quizzes will be dynamically loaded here -->
-                            </div>
-                        </div>
-
-                        <!-- Assignments Sub-page -->
-                        <div class="course-sub-page" id="assignmentsSubPage">
-                            <div class="course-sub-header">
-                                <h3>Course Assignments</h3>
-                                <button class="see-all-btn">
-                                    <i class="fas fa-calendar"></i> View Calendar
-                                </button>
-                            </div>
-                            <div class="course-assignment-grid" id="courseAssignmentsGrid">
-                                <!-- Assignments will be dynamically loaded here -->
-                            </div>
-
-                            <!-- Assignment Feedback Modal -->
-             <div class="modal assignment-feedback-modal hidden" id="assignmentFeedbackModal">
+<!-- Assignment Feedback Modal -->
+<div class="modal assignment-feedback-modal hidden" id="assignmentFeedbackModal">
     <div class="modal-content assignment-modal-content">
         <div class="modal-header">
             <h2>Assignment Feedback</h2>
@@ -749,12 +719,10 @@
     </div>
     </div>
    </div>
-                        </div>
-                    </div>
+               </div>
                 </div>
             </div>
-
-            <!-- Project & Research Section -->
+           
             
 <!-- ============================================================
      PROJECT & RESEARCH SECTION
@@ -2220,19 +2188,9 @@ window.currentCourseId = courseId;
 console.log('🔄 Loading quizzes/assignments for course:', courseId);
 
 // Wait for external scripts to be ready before loading
-setTimeout(() => {
-    if (typeof loadCourseQuizzesUI === 'function') {
-        loadCourseQuizzesUI(courseId);
-    } else {
-        loadQuizzesDirectly(courseId);
-    }
+// Quizzes and assignments are shown inline in the notes reader
 
-    if (typeof loadCourseAssignmentsUI === 'function') {
-        loadCourseAssignmentsUI(courseId);
-    } else {
-        loadAssignmentsDirectly(courseId);
-    }
-}, 300);
+console.log('✅ Quizzes and assignments load inline in notes reader');
         }
 
         // Load course content
@@ -2519,13 +2477,20 @@ function showCourseContent(content) {
         page.classList.toggle('active', page.id === `${content}SubPage`);
     });
 
-    // Load recordings when videos tab is selected
     if (content === 'videos') {
         const courseId = window.currentCourseId || window.currentCourse;
         if (courseId) loadCourseRecordings(courseId);
     }
+
+    // Notes tab — make sure week assessments are loaded
+    if (content === 'notes') {
+        const courseId = window.currentCourseId || window.currentCourse;
+        if (courseId && typeof loadWeekQuizzesAndAssignments === 'function') {
+            loadWeekQuizzesAndAssignments(courseId);
+        }
+    }
 }
-        // Show project content
+    // Show project content
         function showProjectContent(project) {
             projectTabs.forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.project === project);
