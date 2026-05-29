@@ -2788,20 +2788,22 @@ async function loadCourseNotes(courseId) {
             const chapter = sortedChapters.find(c => c.id === topic.chapter_id);
             if (chapter) {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-                currentCourseNotes.push({
-                    id: topic.id,
-                    title: cleanTitle,
-                    category: topic.category || 'General',
-                    duration: (topic.duration || '15') + ' min read',
-                    updated: 'Recently',
-                    completed: false,
-                    content: topic.content || '<p>No content yet.</p>',
-                    chapterTitle: chapter.title,
-                    chapterId: chapter.id,
-                    chapterOrderNum: chapter.order_num ?? 999,
-                    weekLabel: 'Week ' + (chapter.order_num || '?'),
-                    subChapterId: topic.sub_chapter_id || null
-                });
+               currentCourseNotes.push({
+    id: topic.id,
+    title: cleanTitle,
+    category: topic.category || 'General',
+    duration: (topic.duration || '15') + ' min read',
+    updated: 'Recently',
+    completed: false,
+    content: topic.content || '<p>No content yet.</p>',
+    chapterTitle: chapter.title,
+    chapterId: chapter.id,
+    chapterOrderNum: chapter.order_num ?? 999,
+    weekLabel: 'Week ' + (chapter.order_num || '?'),
+    subChapterId: topic.sub_chapter_id || null,
+    hasCodingExercise: topic.has_coding_exercise || false,
+    codingPrompt: topic.coding_prompt || ''
+});
             }
         });
 
@@ -3145,6 +3147,20 @@ function displayNote(index) {
         </div>
 
         ${buildWeekExtrasHTML(note.chapterTitle)}
+
+       ${note.hasCodingExercise && note.codingPrompt ? `
+        <div style="margin:20px 0;padding:18px;background:#f5f3ff;border-radius:14px;border:1.5px solid #ddd6fe;">
+            <div style="font-size:14px;font-weight:700;color:#5b21b6;margin-bottom:8px;">
+                <i class="fas fa-code" style="margin-right:8px;"></i>Coding Exercise
+            </div>
+            <p style="font-size:14px;color:#374151;margin-bottom:14px;line-height:1.6;">${escapeHtml(note.codingPrompt)}</p>
+            <button onclick="openCodingEnvironment('topic-${note.id}', '${note.codingPrompt.replace(/'/g, "\\'")}' )"
+                style="padding:10px 22px;background:#7c3aed;color:white;border:none;
+                       border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;
+                       font-family:inherit;display:inline-flex;align-items:center;gap:8px;">
+                <i class="fas fa-play"></i> Open Coding Environment
+            </button>
+        </div>` : ''}
 
         <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
             <i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i>

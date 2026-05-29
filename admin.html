@@ -1467,21 +1467,33 @@ body { visibility: hidden }
                                          data-placeholder="Start writing your topic content here..."></div>
                             
 
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Reading Time (minutes)</label>
-                                    <input type="number" name="topics[0][duration]" min="1" placeholder="15">
-                                </div>
-                                <div class="form-group">
-                                   <label>Topic Category</label>
-                     <select name="topics[0][category]" aria-label="Topic category">
-                          <option value="basics">Basics</option>
-                           <option value="intermediate">Intermediate</option>
-                           <option value="advanced">Advanced</option>
-                             <option value="practical">Practical</option>
-                                   </select>
-                                </div>
-                            </div>
+                           <div class="form-row">
+    <div class="form-group">
+        <label>Reading Time (minutes)</label>
+        <input type="number" name="topics[${idx}][duration]" min="1" placeholder="15">
+    </div>
+    <div class="form-group">
+        <label>Topic Category</label>
+        <select name="topics[${idx}][category]" aria-label="Topic category">
+            <option value="basics">Basics</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+            <option value="practical">Practical</option>
+        </select>
+    </div>
+</div>
+<div class="form-group">
+    <label>
+        <input type="checkbox" id="topicHasCoding_${idx}"
+            onchange="document.getElementById('topicCodingWrap_${idx}').style.display=this.checked?'block':'none'">
+        Add coding exercise to this topic
+    </label>
+    <div id="topicCodingWrap_${idx}" style="display:none;margin-top:10px;">
+        <textarea id="topicCodingPrompt_${idx}" rows="3"
+            placeholder="e.g. Write a Python function that takes a list of numbers and returns the average..."
+            style="width:100%;padding:10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+    </div>
+</div>
                         </div>
                     </div>
                 </div>
@@ -2193,21 +2205,33 @@ function addNewTopic() {
                      data-name="topics[${idx}][content]"
                      data-placeholder="Start writing your topic content here..."></div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Reading Time (minutes)</label>
-                    <input type="number" name="topics[${idx}][duration]" min="1" placeholder="15">
-                </div>
-                <div class="form-group">
-                    <label>Topic Category</label>
-                    <select name="topics[${idx}][category]" aria-label="Topic category">
-                        <option value="basics">Basics</option>
-                        <option value="intermediate">Intermediate</option>
-                        <option value="advanced">Advanced</option>
-                        <option value="practical">Practical</option>
-                    </select>
-                </div>
-            </div>
+           <div class="form-row">
+    <div class="form-group">
+        <label>Reading Time (minutes)</label>
+        <input type="number" name="topics[${idx}][duration]" min="1" placeholder="15">
+    </div>
+    <div class="form-group">
+        <label>Topic Category</label>
+        <select name="topics[${idx}][category]" aria-label="Topic category">
+            <option value="basics">Basics</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+            <option value="practical">Practical</option>
+        </select>
+    </div>
+</div>
+<div class="form-group">
+    <label>
+        <input type="checkbox" id="topicHasCoding_${idx}"
+            onchange="document.getElementById('topicCodingWrap_${idx}').style.display=this.checked?'block':'none'">
+        Add coding exercise to this topic
+    </label>
+    <div id="topicCodingWrap_${idx}" style="display:none;margin-top:10px;">
+        <textarea id="topicCodingPrompt_${idx}" rows="3"
+            placeholder="e.g. Write a Python function that takes a list of numbers and returns the average..."
+            style="width:100%;padding:10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
+    </div>
+</div>
         </div>
     `;
  
@@ -3051,13 +3075,19 @@ async function handleCreateChapter(event) {
                 content = '';
             }
 
-            topics.push({
-                title:     titleInput.value.trim(),
-                content:   content,
-                duration:  durationInput?.value || '15',
-                category:  categorySelect?.value || 'basics',
-                order_num: topics.length + 1  // sequential, no gaps
-            });
+           const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
+const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
+
+topics.push({
+    id:                   topicId,
+    title:                titleEl.value.trim(),
+    content:              contentEl?.innerHTML || '',
+    duration:             durEl?.value || '15',
+    category:             catEl?.value || 'basics',
+    order_num:            i + 1,
+    has_coding_exercise:  hasCoding,
+    coding_prompt:        hasCoding ? codingPrompt : null
+});
         }
     });
 
@@ -3753,22 +3783,36 @@ function addEditTopic(existingTopic = null) {
                     ${existingTopic?.content || '<p>Enter your content here...</p>'}
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Reading Time (minutes)</label>
-                    <input type="number" id="editTopicDuration_${idx}" min="1"
-                           value="${existingTopic?.duration || 15}" placeholder="15">
-                </div>
-                <div class="form-group">
-                    <label>Topic Category</label>
-                    <select id="editTopicCategory_${idx}">
-                        <option value="basics"        ${existingTopic?.category==='basics'?'selected':''}>Basics</option>
-                        <option value="intermediate"  ${existingTopic?.category==='intermediate'?'selected':''}>Intermediate</option>
-                        <option value="advanced"      ${existingTopic?.category==='advanced'?'selected':''}>Advanced</option>
-                        <option value="practical"     ${existingTopic?.category==='practical'?'selected':''}>Practical</option>
-                    </select>
-                </div>
-            </div>
+          <div class="form-row">
+    <div class="form-group">
+        <label>Reading Time (minutes)</label>
+        <input type="number" id="editTopicDuration_${idx}" min="1"
+               value="${existingTopic?.duration || 15}" placeholder="15">
+    </div>
+    <div class="form-group">
+        <label>Topic Category</label>
+        <select id="editTopicCategory_${idx}">
+            <option value="basics"        ${existingTopic?.category==='basics'?'selected':''}>Basics</option>
+            <option value="intermediate"  ${existingTopic?.category==='intermediate'?'selected':''}>Intermediate</option>
+            <option value="advanced"      ${existingTopic?.category==='advanced'?'selected':''}>Advanced</option>
+            <option value="practical"     ${existingTopic?.category==='practical'?'selected':''}>Practical</option>
+        </select>
+    </div>
+</div>
+<div class="form-group">
+    <label>
+        <input type="checkbox" id="topicHasCoding_${idx}"
+            ${existingTopic?.has_coding_exercise ? 'checked' : ''}
+            onchange="document.getElementById('topicCodingWrap_${idx}').style.display=this.checked?'block':'none'">
+        Add coding exercise to this topic
+    </label>
+    <div id="topicCodingWrap_${idx}" style="display:${existingTopic?.has_coding_exercise ? 'block' : 'none'};margin-top:10px;">
+        <textarea id="topicCodingPrompt_${idx}" rows="3"
+            placeholder="e.g. Write a Python function that takes a list of numbers and returns the average..."
+            style="width:100%;padding:10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"
+        >${existingTopic?.coding_prompt || ''}</textarea>
+    </div>
+</div>
         </div>`;
 
     container.appendChild(div);
@@ -3811,14 +3855,19 @@ async function handleEditChapter(event) {
         const catEl    = document.getElementById(`editTopicCategory_${idx}`);
 
         if (titleEl?.value?.trim()) {
-            topics.push({
-                id:        topicId,
-                title:     titleEl.value.trim(),
-                content:   contentEl?.innerHTML || '',
-                duration:  durEl?.value || '15',
-                category:  catEl?.value || 'basics',
-                order_num: i + 1
-            });
+           const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
+const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
+
+topics.push({
+    id:                   topicId,
+    title:                titleEl.value.trim(),
+    content:              contentEl?.innerHTML || '',
+    duration:             durEl?.value || '15',
+    category:             catEl?.value || 'basics',
+    order_num:            i + 1,
+    has_coding_exercise:  hasCoding,
+    coding_prompt:        hasCoding ? codingPrompt : null
+});
         }
     });
 
@@ -3856,15 +3905,17 @@ async function handleEditChapter(event) {
             if (t.id && existingIds.has(t.id)) {
                 // Update existing
                 const { error } = await db
-                    .from('topics')
-                    .update({
-                        title:     t.title,
-                        content:   t.content,
-                        duration:  t.duration,
-                        category:  t.category,
-                        order_num: t.order_num
-                    })
-                    .eq('id', t.id);
+    .from('topics')
+    .update({
+        title:               t.title,
+        content:             t.content,
+        duration:            t.duration,
+        category:            t.category,
+        order_num:           t.order_num,
+        has_coding_exercise: t.has_coding_exercise,
+        coding_prompt:       t.coding_prompt
+    })
+    .eq('id', t.id);
                 if (error) throw error;
             } else {
                 // Insert new
