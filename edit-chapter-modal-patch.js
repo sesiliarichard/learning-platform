@@ -36,6 +36,10 @@
             .maybeSingle();
 
         const courseId = chapter?.course_id;
+         // ── DEBUG: verify correct IDs ──
+    console.log('chapterId received:', chapterId);
+    console.log('chapter found:', chapter);
+    console.log('courseId used for quiz fetch:', courseId);
         if (!courseId) return;
 
         // ── 2. Load existing sub-chapters ─────────────────────
