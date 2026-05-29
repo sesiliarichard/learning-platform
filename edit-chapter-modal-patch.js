@@ -374,8 +374,8 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         byTopic[a.topic_id].push(a);
     });
 
-    const quizOptions = quizzes.map(q => `<option value="${q.id}">${escapeHTML(q.title)}</option>`).join('');
-    const assignOptions = assignments.map(a => `<option value="${a.id}">${escapeHTML(a.title)}</option>`).join('');
+    const quizOptions = quizzes.map(q => `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
+    const assignOptions = assignments.map(a => `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
 
     container.innerHTML = topics.map((topic, i) => {
         const topicAssessments = byTopic[topic.id] || [];
@@ -385,7 +385,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
             <span style="display:inline-flex;align-items:center;gap:6px;background:#ede9fe;
                          color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:12px;
                          font-weight:600;margin:3px;">
-                <i class="fas fa-question-circle"></i> ${escapeHTML(a.quizzes.title)}
+                <i class="fas fa-question-circle"></i> ${escHTML(a.quizzes.title)}
                 <button type="button" onclick="ecmUnlinkTopicAssessment('${a.id}','${chapterId}','${courseId}')"
                     style="background:none;border:none;cursor:pointer;color:#7c3aed;font-size:11px;">✕</button>
             </span>`).join('');
@@ -396,7 +396,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
             <span style="display:inline-flex;align-items:center;gap:6px;background:#d1fae5;
                          color:#065f46;padding:4px 10px;border-radius:20px;font-size:12px;
                          font-weight:600;margin:3px;">
-                <i class="fas fa-tasks"></i> ${escapeHTML(a.assignments.title)}
+                <i class="fas fa-tasks"></i> ${escHTML(a.assignments.title)}
                 <button type="button" onclick="ecmUnlinkTopicAssessment('${a.id}','${chapterId}','${courseId}')"
                     style="background:none;border:none;cursor:pointer;color:#065f46;font-size:11px;">✕</button>
             </span>`).join('');
@@ -411,7 +411,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                              justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">
                     ${i + 1}
                 </span>
-                ${escapeHTML(topic.title)}
+               ${escHTML(topic.title)}
             </div>
 
             <!-- Linked quizzes -->
