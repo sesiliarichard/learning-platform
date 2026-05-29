@@ -3194,62 +3194,61 @@ async function loadWeekQuizzesAndAssignments(courseId) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
 
-        const [assessmentsRes, quizSubsRes] = await Promise.all([
-            supabaseClient
-                .from('chapter_assessments')
-                .select(`
-                    chapter_id, assessment_type,
-                    quizzes(id, title, time_limit, passing_score),
-                    assignments(id, title, due_date, max_points, instructions)
-                `)
-                .eq('course_id', courseId),
-            supabaseClient
-                .from('quiz_submissions')
-                .select('quiz_id, score')
-                .eq('student_id', user?.id)
-        ]);
+      const [directQuizzesRes, directAssignRes, quizSubsRes] = await Promise.all([
+    supabaseClient
+        .from('quizzes')
+        .select('id, title, chapter_id, time_limit, passing_score')
+        .eq('course_id', courseId)
+        .eq('published', true)
+        .not('chapter_id', 'is', null),
+    supabaseClient
+        .from('assignments')
+        .select('id, title, chapter_id, due_date, max_points, instructions')
+        .eq('course_id', courseId)
+        .not('chapter_id', 'is', null),
+    supabaseClient
+        .from('quiz_submissions')
+        .select('quiz_id, score')
+        .eq('student_id', user?.id)
+]);
 
-        const assessments = assessmentsRes.data || [];
+// Also fetch from chapter_assessments as a second source
+const assessmentsRes = await supabaseClient
+    .from('chapter_assessments')
+    .select(`
+        chapter_id, assessment_type,
+        quizzes(id, title, time_limit, passing_score),
+        assignments(id, title, due_date, max_points, instructions)
+    `)
+    .eq('course_id', courseId);
 
-        // Also fetch directly linked quizzes (chapter_id on quizzes table)
-        const [directQuizzesRes, directAssignRes] = await Promise.all([
-            supabaseClient
-                .from('quizzes')
-                .select('id, title, chapter_id, time_limit, passing_score')
-                .eq('course_id', courseId)
-                .eq('published', true)
-                .not('chapter_id', 'is', null),
-            supabaseClient
-                .from('assignments')
-                .select('id, title, chapter_id, due_date, max_points, instructions')
-                .eq('course_id', courseId)
-                .not('chapter_id', 'is', null)
-        ]);
+const assessments = assessmentsRes.data || [];
 
-        // Merge both sources, deduplicate by id
-        const quizzesFromAssessments = assessments
-            .filter(a => a.assessment_type === 'quiz' && a.quizzes)
-            .map(a => ({ ...a.quizzes, chapter_id: a.chapter_id }));
+const quizzesFromAssessments = assessments
+    .filter(a => a.assessment_type === 'quiz' && a.quizzes)
+    .map(a => ({ ...a.quizzes, chapter_id: a.chapter_id }));
 
-        const assignsFromAssessments = assessments
-            .filter(a => a.assessment_type === 'assignment' && a.assignments)
-            .map(a => ({ ...a.assignments, chapter_id: a.chapter_id }));
+const assignsFromAssessments = assessments
+    .filter(a => a.assessment_type === 'assignment' && a.assignments)
+    .map(a => ({ ...a.assignments, chapter_id: a.chapter_id }));
 
-        const allQuizzes = [...quizzesFromAssessments];
-        (directQuizzesRes.data || []).forEach(q => {
-            if (!allQuizzes.find(x => x.id === q.id)) allQuizzes.push(q);
-        });
+// Start with direct chapter_id links (most reliable source)
+const allQuizzes = [...(directQuizzesRes.data || [])];
+quizzesFromAssessments.forEach(q => {
+    if (!allQuizzes.find(x => x.id === q.id)) allQuizzes.push(q);
+});
 
-        const allAssignments = [...assignsFromAssessments];
-        (directAssignRes.data || []).forEach(a => {
-            if (!allAssignments.find(x => x.id === a.id)) allAssignments.push(a);
-        });
+const allAssignments = [...(directAssignRes.data || [])];
+assignsFromAssessments.forEach(a => {
+    if (!allAssignments.find(x => x.id === a.id)) allAssignments.push(a);
+});
 
-        window._weekQuizzes     = allQuizzes;
-        window._weekAssignments = allAssignments;
-        window._quizSubmissions = quizSubsRes.data || [];
+window._weekQuizzes     = allQuizzes;
+window._weekAssignments = allAssignments;
+window._quizSubmissions = quizSubsRes.data || [];
 
-        console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
+console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
+
 
     } catch (err) {
         console.error('loadWeekQuizzesAndAssignments error:', err.message);

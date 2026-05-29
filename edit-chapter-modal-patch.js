@@ -46,21 +46,34 @@
             .order('order_num', { ascending: true });
 
         // ── 3. Load quizzes / assignments for this course ──────
-        const [quizzesRes, assignsRes, assessmentsRes] = await Promise.all([
-            getSB().from('quizzes').select('id, title').eq('course_id', courseId).order('title'),
-            getSB().from('assignments').select('id, title').eq('course_id', courseId).order('title'),
-            getSB().from('chapter_assessments')
-                .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
-                .eq('chapter_id', chapterId)
-        ]);
+        const [quizzesRes, assignsRes, assessmentsRes, linkedQuizzesRes, linkedAssignsRes] = await Promise.all([
+    getSB().from('quizzes').select('id, title').eq('course_id', courseId).order('title'),
+    getSB().from('assignments').select('id, title').eq('course_id', courseId).order('title'),
+    getSB().from('chapter_assessments')
+        .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
+        .eq('chapter_id', chapterId),
+    // Also fetch quizzes linked via direct chapter_id column
+    getSB().from('quizzes')
+        .select('id, title')
+        .eq('chapter_id', chapterId),
+    getSB().from('assignments')
+        .select('id, title')
+        .eq('chapter_id', chapterId)
+]);
 
-        const quizzes     = quizzesRes.data    || [];
-        const assignments = assignsRes.data    || [];
-        const assessments = assessmentsRes.data || [];
+const quizzes     = quizzesRes.data    || [];
+const assignments = assignsRes.data    || [];
+const assessments = assessmentsRes.data || [];
 
-        const linkedQuizIds   = new Set(assessments.filter(a => a.assessment_type === 'quiz').map(a => a.quiz_id));
-        const linkedAssignIds = new Set(assessments.filter(a => a.assessment_type === 'assignment').map(a => a.assignment_id));
-
+// Combine both sources for linked IDs
+const linkedQuizIds = new Set([
+    ...assessments.filter(a => a.assessment_type === 'quiz').map(a => a.quiz_id),
+    ...(linkedQuizzesRes.data || []).map(q => q.id)
+]);
+const linkedAssignIds = new Set([
+    ...assessments.filter(a => a.assessment_type === 'assignment').map(a => a.assignment_id),
+    ...(linkedAssignsRes.data || []).map(a => a.id)
+]);
         // ── 4. Build sub-chapters HTML ─────────────────────────
         const scListHTML = (subChapters || []).map(sc => `
             <div class="edit-sc-item" id="editSC_${sc.id}"

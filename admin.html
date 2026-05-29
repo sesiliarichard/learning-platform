@@ -3357,28 +3357,37 @@ async function linkItem(type, chapterId, courseId) {
     const itemId   = document.getElementById(selectId)?.value;
     if (!itemId) { showToast('Please select an item to link', 'error'); return; }
 
-    // Update chapter_id on the item directly
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
-    const { error } = await db.from(table).update({ chapter_id: chapterId }).eq('id', itemId);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
-    // Also write to chapter_assessments for the student notes reader
-    const existing = await db
+    // Step 1: Set chapter_id directly on the quiz/assignment row
+    const { error: updateErr } = await db
+        .from(table)
+        .update({ chapter_id: chapterId })
+        .eq('id', itemId);
+
+    if (updateErr) { showToast('Error: ' + updateErr.message, 'error'); return; }
+
+    // Step 2: Also upsert into chapter_assessments
+    // First delete any existing entry for this item to avoid duplicates
+    await db
         .from('chapter_assessments')
-        .select('id')
+        .delete()
         .eq('chapter_id', chapterId)
-        .eq(type === 'quiz' ? 'quiz_id' : 'assignment_id', itemId)
-        .maybeSingle();
+        .eq(type === 'quiz' ? 'quiz_id' : 'assignment_id', itemId);
 
-    if (!existing.data) {
-        await db.from('chapter_assessments').insert({
-            chapter_id:      chapterId,
-            course_id:       courseId,
-            assessment_type: type,
-            quiz_id:        type === 'quiz'       ? itemId : null,
-            assignment_id:  type === 'assignment' ? itemId : null,
-            order_num:      1
-        });
+    // Then insert fresh
+    const { error: insertErr } = await db.from('chapter_assessments').insert({
+        chapter_id:      chapterId,
+        course_id:       courseId,
+        assessment_type: type,
+        quiz_id:         type === 'quiz'       ? itemId : null,
+        assignment_id:   type === 'assignment' ? itemId : null,
+        order_num:       1
+    });
+
+    if (insertErr) {
+        console.warn('chapter_assessments insert warning:', insertErr.message);
+        // Don't block — the direct chapter_id link above is sufficient for student view
     }
 
     showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to this week!`);
@@ -3387,18 +3396,23 @@ async function linkItem(type, chapterId, courseId) {
 
 // Unlink a quiz or assignment from a chapter
 async function unlinkItem(type, itemId, chapterId) {
-    // Remove chapter_id from the item
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
-    const { error } = await db.from(table).update({ chapter_id: null }).eq('id', itemId);
+    const col   = type === 'quiz' ? 'quiz_id' : 'assignment_id';
+
+    // Remove chapter_id from the item row
+    const { error } = await db
+        .from(table)
+        .update({ chapter_id: null })
+        .eq('id', itemId);
+
     if (error) { showToast('Error: ' + error.message, 'error'); return; }
 
-    // Also remove from chapter_assessments
-    const col = type === 'quiz' ? 'quiz_id' : 'assignment_id';
+    // Remove from chapter_assessments
     await db
         .from('chapter_assessments')
         .delete()
-        .eq('chapter_id', chapterId)
         .eq(col, itemId);
+    // Note: delete by item id only (not chapter_id) to catch all entries
 
     showToast(`${type === 'quiz' ? 'Quiz' : 'Assignment'} unlinked`);
     loadChapters();
