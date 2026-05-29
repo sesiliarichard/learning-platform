@@ -2838,9 +2838,17 @@ async function loadCourseNotes(courseId) {
             // Render WITHOUT sub-chapters (flat - Week pill → Topics)
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
+      // Build chapter map for buildWeekExtrasHTML
+      window._chapterMap = {};
+      sortedChapters.forEach(ch => {
+      window._chapterMap[ch.id] = ch.title;
+     });
 
-        if (currentCourseNotes.length > 0) displayNote(0);
-        updateNotesProgress();
+     // Load quizzes/assignments linked to weeks
+     await loadWeekQuizzesAndAssignments(courseId);
+
+      if (currentCourseNotes.length > 0) displayNote(0);
+      updateNotesProgress();
 
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
@@ -3167,24 +3175,73 @@ function displayNote(index) {
 
 // Call this after building the chapter sidebar to also show week quizzes/assignments
 async function loadWeekQuizzesAndAssignments(courseId) {
-    const [quizzesRes, assignmentsRes, subsRes] = await Promise.all([
-        supabaseClient.from('quizzes')
-            .select('id, title, chapter_id, time_limit, passing_score')
-            .eq('course_id', courseId)
-            .eq('published', true),
-        supabaseClient.from('assignments')
-            .select('id, title, chapter_id, due_date, max_points, instructions')
-            .eq('course_id', courseId),
-        supabaseClient.from('quiz_submissions')
-            .select('quiz_id, score')
-            .eq('student_id', (await supabaseClient.auth.getUser()).data.user?.id)
-    ]);
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
 
-    window._weekQuizzes     = quizzesRes.data     || [];
-    window._weekAssignments = assignmentsRes.data  || [];
-    window._quizSubmissions = subsRes.data         || [];
+        const [assessmentsRes, quizSubsRes] = await Promise.all([
+            supabaseClient
+                .from('chapter_assessments')
+                .select(`
+                    chapter_id, assessment_type,
+                    quizzes(id, title, time_limit, passing_score),
+                    assignments(id, title, due_date, max_points, instructions)
+                `)
+                .eq('course_id', courseId),
+            supabaseClient
+                .from('quiz_submissions')
+                .select('quiz_id, score')
+                .eq('student_id', user?.id)
+        ]);
+
+        const assessments = assessmentsRes.data || [];
+
+        // Also fetch directly linked quizzes (chapter_id on quizzes table)
+        const [directQuizzesRes, directAssignRes] = await Promise.all([
+            supabaseClient
+                .from('quizzes')
+                .select('id, title, chapter_id, time_limit, passing_score')
+                .eq('course_id', courseId)
+                .eq('published', true)
+                .not('chapter_id', 'is', null),
+            supabaseClient
+                .from('assignments')
+                .select('id, title, chapter_id, due_date, max_points, instructions')
+                .eq('course_id', courseId)
+                .not('chapter_id', 'is', null)
+        ]);
+
+        // Merge both sources, deduplicate by id
+        const quizzesFromAssessments = assessments
+            .filter(a => a.assessment_type === 'quiz' && a.quizzes)
+            .map(a => ({ ...a.quizzes, chapter_id: a.chapter_id }));
+
+        const assignsFromAssessments = assessments
+            .filter(a => a.assessment_type === 'assignment' && a.assignments)
+            .map(a => ({ ...a.assignments, chapter_id: a.chapter_id }));
+
+        const allQuizzes = [...quizzesFromAssessments];
+        (directQuizzesRes.data || []).forEach(q => {
+            if (!allQuizzes.find(x => x.id === q.id)) allQuizzes.push(q);
+        });
+
+        const allAssignments = [...assignsFromAssessments];
+        (directAssignRes.data || []).forEach(a => {
+            if (!allAssignments.find(x => x.id === a.id)) allAssignments.push(a);
+        });
+
+        window._weekQuizzes     = allQuizzes;
+        window._weekAssignments = allAssignments;
+        window._quizSubmissions = quizSubsRes.data || [];
+
+        console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
+
+    } catch (err) {
+        console.error('loadWeekQuizzesAndAssignments error:', err.message);
+        window._weekQuizzes     = [];
+        window._weekAssignments = [];
+        window._quizSubmissions = [];
+    }
 }
-
 // Toggle note completion
 async function toggleNoteComplete(index) {
     const note = currentCourseNotes[index];
