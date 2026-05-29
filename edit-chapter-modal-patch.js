@@ -1,0 +1,416 @@
+// ============================================================
+// PATCH: Add Sub-chapter + Quiz/Assignment linking inside
+//        the Edit Chapter Modal (editChapterModal)
+//
+// HOW TO USE:
+//   Add this file as a <script> tag in admin.html just before </body>:
+//   <script src="edit-chapter-modal-patch.js"></script>
+// ============================================================
+
+(function () {
+    'use strict';
+
+    function getSB() { return window.supabaseClient || window.db; }
+
+    // ── Patch openEditChapterModal to inject extra sections ───
+    const _origOpen = window.openEditChapterModal;
+
+    window.openEditChapterModal = async function (chapterId) {
+        // Call original first (populates title, desc, topics)
+        if (_origOpen) await _origOpen(chapterId);
+
+        // Wait a tick for the modal DOM to settle
+        await new Promise(r => setTimeout(r, 120));
+
+        const form = document.getElementById('editChapterForm');
+        if (!form) return;
+
+        // Don't inject twice
+        if (form.querySelector('#editModalSubChapterSection')) return;
+
+        // ── 1. Get course_id for this chapter ─────────────────
+        const { data: chapter } = await getSB()
+            .from('chapters')
+            .select('course_id')
+            .eq('id', chapterId)
+            .maybeSingle();
+
+        const courseId = chapter?.course_id;
+        if (!courseId) return;
+
+        // ── 2. Load existing sub-chapters ─────────────────────
+        const { data: subChapters } = await getSB()
+            .from('sub_chapters')
+            .select('id, title, order_num')
+            .eq('chapter_id', chapterId)
+            .order('order_num', { ascending: true });
+
+        // ── 3. Load quizzes / assignments for this course ──────
+        const [quizzesRes, assignsRes, assessmentsRes] = await Promise.all([
+            getSB().from('quizzes').select('id, title').eq('course_id', courseId).order('title'),
+            getSB().from('assignments').select('id, title').eq('course_id', courseId).order('title'),
+            getSB().from('chapter_assessments')
+                .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
+                .eq('chapter_id', chapterId)
+        ]);
+
+        const quizzes     = quizzesRes.data    || [];
+        const assignments = assignsRes.data    || [];
+        const assessments = assessmentsRes.data || [];
+
+        const linkedQuizIds   = new Set(assessments.filter(a => a.assessment_type === 'quiz').map(a => a.quiz_id));
+        const linkedAssignIds = new Set(assessments.filter(a => a.assessment_type === 'assignment').map(a => a.assignment_id));
+
+        // ── 4. Build sub-chapters HTML ─────────────────────────
+        const scListHTML = (subChapters || []).map(sc => `
+            <div class="edit-sc-item" id="editSC_${sc.id}"
+                 style="display:flex;align-items:center;gap:10px;padding:10px 14px;
+                        background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;
+                        margin-bottom:8px;">
+                <i class="fas fa-layer-group" style="color:#7c3aed;flex-shrink:0;"></i>
+                <span style="flex:1;font-weight:600;color:#374151;">${escHTML(sc.title)}</span>
+                <button type="button"
+                        onclick="ecmDeleteSubChapter('${sc.id}','${chapterId}','${courseId}')"
+                        style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;
+                               border-radius:6px;font-size:12px;cursor:pointer;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`).join('');
+
+        // ── 5. Build linked assessments HTML ───────────────────
+        const linkedQuizPills = assessments
+            .filter(a => a.assessment_type === 'quiz' && a.quizzes)
+            .map(a => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#ede9fe;
+                         color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:12px;
+                         font-weight:600;margin:3px;">
+                <i class="fas fa-question-circle"></i> ${escHTML(a.quizzes.title)}
+                <button type="button"
+                        onclick="ecmUnlinkAssessment('${a.id}','${chapterId}','${courseId}')"
+                        style="background:none;border:none;cursor:pointer;color:#7c3aed;
+                               font-size:11px;padding:0;margin-left:2px;">✕</button>
+            </span>`).join('');
+
+        const linkedAssignPills = assessments
+            .filter(a => a.assessment_type === 'assignment' && a.assignments)
+            .map(a => `
+            <span style="display:inline-flex;align-items:center;gap:6px;background:#d1fae5;
+                         color:#065f46;padding:4px 10px;border-radius:20px;font-size:12px;
+                         font-weight:600;margin:3px;">
+                <i class="fas fa-tasks"></i> ${escHTML(a.assignments.title)}
+                <button type="button"
+                        onclick="ecmUnlinkAssessment('${a.id}','${chapterId}','${courseId}')"
+                        style="background:none;border:none;cursor:pointer;color:#065f46;
+                               font-size:11px;padding:0;margin-left:2px;">✕</button>
+            </span>`).join('');
+
+        const unlinkedQuizzes = quizzes.filter(q => !linkedQuizIds.has(q.id));
+        const unlinkedAssigns = assignments.filter(a => !linkedAssignIds.has(a.id));
+
+        const quizOptions   = unlinkedQuizzes.map(q => `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
+        const assignOptions = unlinkedAssigns.map(a => `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
+
+        // ── 6. Inject the whole section before modal-actions ───
+        const actionsDiv = form.querySelector('.modal-actions');
+        const divider = document.createElement('div');
+        divider.innerHTML = `
+        <!-- ── SUB-CHAPTERS ── -->
+        <hr style="margin:20px 0;border:none;border-top:2px solid #f3f4f6;">
+
+        <div id="editModalSubChapterSection">
+
+            <!-- Sub-chapters block -->
+            <div style="background:#f8f7ff;border-radius:14px;padding:18px;margin-bottom:18px;
+                        border:1.5px solid #ede9fe;">
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            margin-bottom:14px;">
+                    <div style="font-size:13px;font-weight:800;color:#7c3aed;
+                                text-transform:uppercase;letter-spacing:1px;">
+                        <i class="fas fa-layer-group"></i> Sub-chapters
+                    </div>
+                    <button type="button" onclick="ecmAddSubChapter('${chapterId}','${courseId}')"
+                            style="padding:7px 14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                                   color:white;border:none;border-radius:10px;font-size:12px;
+                                   font-weight:700;cursor:pointer;font-family:inherit;
+                                   display:flex;align-items:center;gap:6px;">
+                        <i class="fas fa-plus"></i> Add Sub-chapter
+                    </button>
+                </div>
+
+                <div id="editSCList">
+                    ${scListHTML || '<p style="font-size:13px;color:#9ca3af;text-align:center;padding:8px 0;">No sub-chapters yet.</p>'}
+                </div>
+
+                <!-- Inline add form (hidden by default) -->
+                <div id="ecmNewSCForm" style="display:none;margin-top:12px;background:white;
+                                              border-radius:10px;padding:14px;border:1.5px solid #ddd6fe;">
+                    <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px;">
+                        New Sub-chapter
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="ecmNewSCTitle"
+                               placeholder="Sub-chapter title, e.g. 1.1 Introduction"
+                               style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid #ddd6fe;
+                                      border-radius:8px;font-size:13px;font-family:inherit;outline:none;"
+                               onfocus="this.style.borderColor='#7c3aed'"
+                               onblur="this.style.borderColor='#ddd6fe'"
+                               onkeypress="if(event.key==='Enter'){event.preventDefault();ecmSaveNewSC('${chapterId}','${courseId}');}">
+                        <input type="number" id="ecmNewSCOrder" value="1" min="1"
+                               placeholder="Order"
+                               style="width:70px;padding:9px 8px;border:1.5px solid #ddd6fe;
+                                      border-radius:8px;font-size:13px;font-family:inherit;outline:none;"
+                               onfocus="this.style.borderColor='#7c3aed'"
+                               onblur="this.style.borderColor='#ddd6fe'">
+                        <button type="button" onclick="ecmSaveNewSC('${chapterId}','${courseId}')"
+                                style="padding:9px 16px;background:#7c3aed;color:white;border:none;
+                                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-save"></i> Save
+                        </button>
+                        <button type="button" onclick="document.getElementById('ecmNewSCForm').style.display='none'"
+                                style="padding:9px 12px;background:#f3f4f6;color:#6b7280;border:none;
+                                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Linked Assessments block -->
+            <div style="background:#f8f7ff;border-radius:14px;padding:18px;
+                        border:1.5px solid #ede9fe;">
+                <div style="font-size:13px;font-weight:800;color:#374151;
+                            text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">
+                    <i class="fas fa-link" style="color:#7c3aed;margin-right:6px;"></i>
+                    End-of-Week Assessments
+                </div>
+
+                <!-- Quizzes row -->
+                <div style="margin-bottom:14px;">
+                    <div style="font-size:12px;font-weight:700;color:#5b21b6;
+                                margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-question-circle"></i> Quizzes
+                    </div>
+                    <div id="ecmLinkedQuizzes" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:8px;">
+                        ${linkedQuizPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
+                    </div>
+                    ${quizOptions ? `
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <select id="ecmQuizPicker"
+                                style="flex:1;min-width:160px;padding:8px 12px;
+                                       border:1.5px solid #ddd6fe;border-radius:8px;
+                                       font-size:13px;font-family:inherit;outline:none;">
+                            <option value="">+ Link a quiz…</option>
+                            ${quizOptions}
+                        </select>
+                        <button type="button"
+                                onclick="ecmLinkAssessment('quiz','${chapterId}','${courseId}')"
+                                style="padding:8px 14px;background:#7c3aed;color:white;border:none;
+                                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                            Link
+                        </button>
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;">(all quizzes linked)</span>'}
+                </div>
+
+                <!-- Assignments row -->
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:#065f46;
+                                margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">
+                        <i class="fas fa-tasks"></i> Assignments
+                    </div>
+                    <div id="ecmLinkedAssignments" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:8px;">
+                        ${linkedAssignPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
+                    </div>
+                    ${assignOptions ? `
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <select id="ecmAssignPicker"
+                                style="flex:1;min-width:160px;padding:8px 12px;
+                                       border:1.5px solid #bbf7d0;border-radius:8px;
+                                       font-size:13px;font-family:inherit;outline:none;">
+                            <option value="">+ Link an assignment…</option>
+                            ${assignOptions}
+                        </select>
+                        <button type="button"
+                                onclick="ecmLinkAssessment('assignment','${chapterId}','${courseId}')"
+                                style="padding:8px 14px;background:#10b981;color:white;border:none;
+                                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                            Link
+                        </button>
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;">(all assignments linked)</span>'}
+                </div>
+            </div>
+
+        </div>`;
+
+        actionsDiv.parentNode.insertBefore(divider, actionsDiv);
+    };
+
+    // ── Show/hide inline sub-chapter form ─────────────────────
+    window.ecmAddSubChapter = function (chapterId, courseId) {
+        const form = document.getElementById('ecmNewSCForm');
+        if (!form) return;
+        form.style.display = form.style.display === 'none' ? 'block' : 'none';
+        if (form.style.display === 'block') {
+            document.getElementById('ecmNewSCTitle')?.focus();
+        }
+    };
+
+    // ── Save new sub-chapter ───────────────────────────────────
+    window.ecmSaveNewSC = async function (chapterId, courseId) {
+        const title = document.getElementById('ecmNewSCTitle')?.value?.trim();
+        const order = parseInt(document.getElementById('ecmNewSCOrder')?.value) || 1;
+
+        if (!title) {
+            if (typeof showToast === 'function') showToast('Please enter a title', 'error');
+            return;
+        }
+
+        const { data, error } = await getSB().from('sub_chapters').insert({
+            chapter_id: chapterId,
+            course_id:  courseId,
+            title,
+            order_num:  order
+        }).select('id, title, order_num').single();
+
+        if (error) {
+            if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
+            return;
+        }
+
+        // Add pill to list
+        const list = document.getElementById('editSCList');
+        if (list) {
+            // Remove "no sub-chapters" placeholder if present
+            const placeholder = list.querySelector('p');
+            if (placeholder) placeholder.remove();
+
+            const item = document.createElement('div');
+            item.id = `editSC_${data.id}`;
+            item.className = 'edit-sc-item';
+            item.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 14px;
+                background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;margin-bottom:8px;`;
+            item.innerHTML = `
+                <i class="fas fa-layer-group" style="color:#7c3aed;flex-shrink:0;"></i>
+                <span style="flex:1;font-weight:600;color:#374151;">${escHTML(data.title)}</span>
+                <button type="button"
+                        onclick="ecmDeleteSubChapter('${data.id}','${chapterId}','${courseId}')"
+                        style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;
+                               border-radius:6px;font-size:12px;cursor:pointer;">
+                    <i class="fas fa-trash"></i>
+                </button>`;
+            list.appendChild(item);
+        }
+
+        // Reset & hide form
+        const form = document.getElementById('ecmNewSCForm');
+        if (form) {
+            document.getElementById('ecmNewSCTitle').value = '';
+            document.getElementById('ecmNewSCOrder').value = '1';
+            form.style.display = 'none';
+        }
+
+        if (typeof showToast === 'function') showToast('✅ Sub-chapter added!');
+    };
+
+    // ── Delete sub-chapter ─────────────────────────────────────
+    window.ecmDeleteSubChapter = async function (scId, chapterId, courseId) {
+        if (!confirm('Delete this sub-chapter? Topics inside will become unassigned.')) return;
+
+        // Unassign topics
+        await getSB().from('topics').update({ sub_chapter_id: null }).eq('sub_chapter_id', scId);
+        const { error } = await getSB().from('sub_chapters').delete().eq('id', scId);
+
+        if (error) {
+            if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
+            return;
+        }
+
+        document.getElementById(`editSC_${scId}`)?.remove();
+        if (typeof showToast === 'function') showToast('Sub-chapter deleted.');
+
+        const list = document.getElementById('editSCList');
+        if (list && !list.querySelector('.edit-sc-item')) {
+            list.innerHTML = '<p style="font-size:13px;color:#9ca3af;text-align:center;padding:8px 0;">No sub-chapters yet.</p>';
+        }
+    };
+
+    // ── Link a quiz or assignment ──────────────────────────────
+    window.ecmLinkAssessment = async function (type, chapterId, courseId) {
+        const pickerId = type === 'quiz' ? 'ecmQuizPicker' : 'ecmAssignPicker';
+        const itemId   = document.getElementById(pickerId)?.value;
+        if (!itemId) {
+            if (typeof showToast === 'function') showToast('Please select an item to link', 'error');
+            return;
+        }
+
+        // Update chapter_id on the item
+        const table = type === 'quiz' ? 'quizzes' : 'assignments';
+        const { error: e1 } = await getSB().from(table).update({ chapter_id: chapterId }).eq('id', itemId);
+        if (e1) { if (typeof showToast === 'function') showToast('Error: ' + e1.message, 'error'); return; }
+
+        // Insert into chapter_assessments
+        const { error: e2 } = await getSB().from('chapter_assessments').insert({
+            chapter_id:      chapterId,
+            course_id:       courseId,
+            assessment_type: type,
+            quiz_id:        type === 'quiz'       ? itemId : null,
+            assignment_id:  type === 'assignment' ? itemId : null,
+            order_num:      1
+        });
+        if (e2 && !e2.message.includes('duplicate')) {
+            if (typeof showToast === 'function') showToast('Error: ' + e2.message, 'error');
+            return;
+        }
+
+        if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked!`);
+
+        // Refresh the section by reopening
+        const chapterIdVal = document.getElementById('editChapterId')?.value;
+        if (chapterIdVal) {
+            // Re-inject the section with fresh data
+            document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+            window.openEditChapterModal._patched = true; // allow re-inject
+            await _reInjectExtras(chapterIdVal);
+        }
+    };
+
+    // ── Unlink an assessment ───────────────────────────────────
+    window.ecmUnlinkAssessment = async function (assessmentId, chapterId, courseId) {
+        const { data: assessment } = await getSB()
+            .from('chapter_assessments')
+            .select('assessment_type, quiz_id, assignment_id')
+            .eq('id', assessmentId)
+            .maybeSingle();
+
+        if (assessment) {
+            const table = assessment.assessment_type === 'quiz' ? 'quizzes' : 'assignments';
+            const col   = assessment.assessment_type === 'quiz' ? assessment.quiz_id : assessment.assignment_id;
+            await getSB().from(table).update({ chapter_id: null }).eq('id', col);
+        }
+
+        await getSB().from('chapter_assessments').delete().eq('id', assessmentId);
+
+        if (typeof showToast === 'function') showToast('Unlinked.');
+
+        const chapterIdVal = document.getElementById('editChapterId')?.value;
+        if (chapterIdVal) {
+            document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+            await _reInjectExtras(chapterIdVal);
+        }
+    };
+
+    // ── Helper: re-inject extras without re-opening the modal ─
+    async function _reInjectExtras(chapterId) {
+        // Re-use same logic by temporarily clearing the guard
+        const section = document.getElementById('editModalSubChapterSection');
+        if (section) section.closest('div').remove();
+        // Re-call the patched open (it won't re-fetch topics, just injects the bottom section)
+        await window.openEditChapterModal(chapterId);
+    }
+
+    // ── Tiny HTML escape ───────────────────────────────────────
+    function escHTML(s) {
+        return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    console.log('✅ edit-chapter-modal-patch.js loaded');
+})();
