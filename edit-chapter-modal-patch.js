@@ -324,13 +324,8 @@ _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
         if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked!`);
 
         // Refresh the section by reopening
-        const chapterIdVal = document.getElementById('editChapterId')?.value;
-        if (chapterIdVal) {
-            // Re-inject the section with fresh data
-            document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-            window.openEditChapterModal._patched = true; // allow re-inject
-            await _reInjectExtras(chapterIdVal);
-        }
+        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+window.openEditChapterModal(chapterId);
     };
 
     // ── Unlink an assessment ───────────────────────────────────
@@ -351,21 +346,16 @@ _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
 
         if (typeof showToast === 'function') showToast('Unlinked.');
 
-        const chapterIdVal = document.getElementById('editChapterId')?.value;
-        if (chapterIdVal) {
-            document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-            await _reInjectExtras(chapterIdVal);
-        }
+        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+window.openEditChapterModal(chapterId);
     };
 
     // ── Helper: re-inject extras without re-opening the modal ─
     async function _reInjectExtras(chapterId) {
-        // Re-use same logic by temporarily clearing the guard
-        const section = document.getElementById('editModalSubChapterSection');
-        if (section) section.closest('div').remove();
-        // Re-call the patched open (it won't re-fetch topics, just injects the bottom section)
-        await window.openEditChapterModal(chapterId);
-    }
+    const section = document.getElementById('editModalSubChapterSection');
+    if (section) section.closest('div').remove();
+    await window.openEditChapterModal(chapterId);  // pass chapterId directly
+}
 
     // ── Render per-topic assessment blocks ────────────────
 async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments, existingAssessments) {
@@ -540,11 +530,8 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
     if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
 
     // Refresh
-    const chapterIdVal = document.getElementById('editChapterId')?.value;
-    if (chapterIdVal) {
-        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-        window.openEditChapterModal(chapterIdVal);
-    }
+   document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+window.openEditChapterModal(chapterId);
 };
 
 // ── Unlink assessment from topic ─────────────────────
@@ -565,11 +552,8 @@ window.ecmUnlinkTopicAssessment = async function(assessmentId, chapterId, course
 
     if (typeof showToast === 'function') showToast('Unlinked.');
 
-    const chapterIdVal = document.getElementById('editChapterId')?.value;
-    if (chapterIdVal) {
-        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-        window.openEditChapterModal(chapterIdVal);
-    }
+   document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+window.openEditChapterModal(chapterId);
 };
     // ── Tiny HTML escape ───────────────────────────────────────
     function escHTML(s) {
