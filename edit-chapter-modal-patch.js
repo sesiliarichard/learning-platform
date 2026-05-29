@@ -374,11 +374,21 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         byTopic[a.topic_id].push(a);
     });
 
-    const quizOptions = quizzes.map(q => `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
-    const assignOptions = assignments.map(a => `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
-
     container.innerHTML = topics.map((topic, i) => {
         const topicAssessments = byTopic[topic.id] || [];
+        
+        // Get IDs already linked to THIS specific topic
+        const linkedToThisTopic = new Set(topicAssessments.map(a => 
+            a.assessment_type === 'quiz' ? a.quiz_id : a.assignment_id
+        ));
+        
+        // Filter out quizzes/assignments already linked to THIS topic
+        const availableQuizzes = quizzes.filter(q => !linkedToThisTopic.has(q.id));
+        const availableAssignments = assignments.filter(a => !linkedToThisTopic.has(a.id));
+        
+        const quizOptions = availableQuizzes.map(q => `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
+        const assignOptions = availableAssignments.map(a => `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
+        
         const linkedQuizPills = topicAssessments
             .filter(a => a.assessment_type === 'quiz' && a.quizzes)
             .map(a => `
@@ -411,7 +421,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                              justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">
                     ${i + 1}
                 </span>
-               ${escHTML(topic.title)}
+                ${escHTML(topic.title)}
             </div>
 
             <!-- Linked quizzes -->
@@ -436,7 +446,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                                        border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                             Link
                         </button>
-                    </div>` : ''}
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all quizzes linked)</span>'}
                 </div>
             </div>
 
@@ -462,7 +472,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                                        border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                             Link
                         </button>
-                    </div>` : ''}
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
                 </div>
             </div>
         </div>`;
