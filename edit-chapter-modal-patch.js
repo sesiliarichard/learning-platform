@@ -56,6 +56,7 @@
     getSB().from('chapter_assessments')
     .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
     .eq('chapter_id', chapterId)
+    .eq('course_id', courseId)
     .is('topic_id', null),
     // Also fetch quizzes linked via direct chapter_id column
     getSB().from('quizzes')
@@ -378,6 +379,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         .from('chapter_assessments')
         .select('id, topic_id, assessment_type, quiz_id, assignment_id, quizzes(id,title), assignments(id,title)')
         .eq('chapter_id', chapterId)
+        .eq('course_id', courseId)
         .not('topic_id', 'is', null);
 
     // Build map: topic_id → array of assessments
