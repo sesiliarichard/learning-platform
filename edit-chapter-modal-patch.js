@@ -15,9 +15,13 @@
     // ── Patch openEditChapterModal to inject extra sections ───
     const _origOpen = window.openEditChapterModal;
 
-    window.openEditChapterModal = async function (chapterId) {
-        // Call original first (populates title, desc, topics)
-        if (_origOpen) await _origOpen(chapterId);
+   window.openEditChapterModal = async function (chapterId) {
+    // Prevent double execution
+    if (window._ecmRunning) return;
+    window._ecmRunning = true;
+
+    // Call original first (populates title, desc, topics)
+    if (_origOpen) await _origOpen(chapterId);
 
         // Wait a tick for the modal DOM to settle
         await new Promise(r => setTimeout(r, 120));
@@ -201,7 +205,8 @@ divider.innerHTML = `
 actionsDiv.parentNode.insertBefore(divider, actionsDiv);
 
 // ── Load topics and render per-topic assessment blocks ──
-_renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
+await _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
+    window._ecmRunning = false;
 
 }
 
@@ -325,7 +330,8 @@ _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
         if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked!`);
 
         // Refresh the section by reopening
-        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+      window._ecmRunning = false;
+document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
 window.openEditChapterModal(chapterId);
     };
 
@@ -347,7 +353,8 @@ window.openEditChapterModal(chapterId);
 
         if (typeof showToast === 'function') showToast('Unlinked.');
 
-        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+       window._ecmRunning = false;
+document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
 window.openEditChapterModal(chapterId);
     };
 
@@ -540,7 +547,8 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
     if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
 
     // Refresh
-   document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+   window._ecmRunning = false;
+document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
 window.openEditChapterModal(chapterId);
 };
 
@@ -562,7 +570,8 @@ window.ecmUnlinkTopicAssessment = async function(assessmentId, chapterId, course
 
     if (typeof showToast === 'function') showToast('Unlinked.');
 
-   document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+window._ecmRunning = false;
+document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
 window.openEditChapterModal(chapterId);
 };
     // ── Tiny HTML escape ───────────────────────────────────────
