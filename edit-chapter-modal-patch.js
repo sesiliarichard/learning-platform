@@ -69,12 +69,14 @@
             .maybeSingle();
 
         const courseId = chapter?.course_id;
-         // ── DEBUG: verify correct IDs ──
     console.log('chapterId received:', chapterId);
     console.log('chapter found:', chapter);
     console.log('courseId used for quiz fetch:', courseId);
-        if (!courseId) return;
-
+    if (!courseId) {
+        console.error('❌ courseId is null — chapter may belong to wrong course or DB issue');
+        window._ecmRunning = false;
+        return;
+    }
         // ── 2. Load existing sub-chapters ─────────────────────
         const { data: subChapters } = await getSB()
             .from('sub_chapters')
@@ -83,15 +85,25 @@
             .order('order_num', { ascending: true });
 
         // ── 3. Load quizzes / assignments for this course ──────
-        const [quizzesRes, assignsRes, assessmentsRes, linkedQuizzesRes, linkedAssignsRes] = await Promise.all([
-    getSB().from('quizzes').select('id, title').eq('course_id', courseId).order('title'),
-    getSB().from('assignments').select('id, title').eq('course_id', courseId).order('title'),
+// Re-fetch courseId directly from the chapter to ensure correctness
+const { data: freshChapter } = await getSB()
+    .from('chapters')
+    .select('course_id')
+    .eq('id', chapterId)
+    .maybeSingle();
+
+const safeCourseId = freshChapter?.course_id || courseId;
+
+console.log('✅ safeCourseId for assessments:', safeCourseId);
+
+const [quizzesRes, assignsRes, assessmentsRes, linkedQuizzesRes, linkedAssignsRes] = await Promise.all([
+    getSB().from('quizzes').select('id, title').eq('course_id', safeCourseId).order('title'),
+    getSB().from('assignments').select('id, title').eq('course_id', safeCourseId).order('title'),
     getSB().from('chapter_assessments')
     .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
     .eq('chapter_id', chapterId)
-    .eq('course_id', courseId)
+    .eq('course_id', safeCourseId)
     .is('topic_id', null),
-    // Also fetch quizzes linked via direct chapter_id column
     getSB().from('quizzes')
         .select('id, title')
         .eq('chapter_id', chapterId),
@@ -399,11 +411,29 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
     const container = document.getElementById('ecmTopicAssessmentsList');
     if (!container) return;
 
+    // Always re-verify courseId from chapter to prevent cross-course contamination
+    const { data: chapterCheck } = await getSB()
+        .from('chapters')
+        .select('course_id')
+        .eq('id', chapterId)
+        .maybeSingle();
+
+    const verifiedCourseId = chapterCheck?.course_id || courseId;
+
+    // Re-fetch quizzes and assignments scoped to the VERIFIED course
+    const [freshQuizzesRes, freshAssignsRes] = await Promise.all([
+        getSB().from('quizzes').select('id, title').eq('course_id', verifiedCourseId).order('title'),
+        getSB().from('assignments').select('id, title').eq('course_id', verifiedCourseId).order('title')
+    ]);
+
+    quizzes     = freshQuizzesRes.data    || [];
+    assignments = freshAssignsRes.data    || [];
+
     const { data: topics } = await getSB()
         .from('topics')
         .select('id, title, order_num')
         .eq('chapter_id', chapterId)
-        .eq('course_id', courseId)
+        .eq('course_id', verifiedCourseId)
         .order('order_num', { ascending: true });
 
     if (!topics || topics.length === 0) {
