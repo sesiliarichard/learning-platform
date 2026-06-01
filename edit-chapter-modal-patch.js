@@ -54,8 +54,9 @@
     getSB().from('quizzes').select('id, title').eq('course_id', courseId).order('title'),
     getSB().from('assignments').select('id, title').eq('course_id', courseId).order('title'),
     getSB().from('chapter_assessments')
-        .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
-        .eq('chapter_id', chapterId),
+    .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
+    .eq('chapter_id', chapterId)
+    .is('topic_id', null),
     // Also fetch quizzes linked via direct chapter_id column
     getSB().from('quizzes')
         .select('id, title')
@@ -69,15 +70,14 @@ const quizzes     = quizzesRes.data    || [];
 const assignments = assignsRes.data    || [];
 const assessments = assessmentsRes.data || [];
 
-// Combine both sources for linked IDs
-const linkedQuizIds = new Set([
-    ...assessments.filter(a => a.assessment_type === 'quiz').map(a => a.quiz_id),
-    ...(linkedQuizzesRes.data || []).map(q => q.id)
-]);
-const linkedAssignIds = new Set([
-    ...assessments.filter(a => a.assessment_type === 'assignment').map(a => a.assignment_id),
-    ...(linkedAssignsRes.data || []).map(a => a.id)
-]);
+// Only use chapter_id-based links for the chapter-level section
+// Topic dropdowns handle their own filtering inside _renderTopicAssessments
+const linkedQuizIds = new Set(
+    (linkedQuizzesRes.data || []).map(q => q.id)
+);
+const linkedAssignIds = new Set(
+    (linkedAssignsRes.data || []).map(a => a.id)
+);
         // ── 4. Build sub-chapters HTML ─────────────────────────
         const scListHTML = (subChapters || []).map(sc => `
             <div class="edit-sc-item" id="editSC_${sc.id}"
