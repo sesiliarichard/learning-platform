@@ -3112,7 +3112,7 @@ function displayNote(index) {
             ${note.content}
         </div>
 
-        ${buildWeekExtrasHTML(note.chapterTitle, index)}
+       ${buildWeekExtrasHTML(note.chapterTitle, note.id)}
 
        ${note.hasCodingExercise && note.codingPrompt ? `
         <div style="margin:20px 0;padding:18px;background:#f5f3ff;border-radius:14px;border:1.5px solid #ddd6fe;">
