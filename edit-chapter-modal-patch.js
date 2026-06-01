@@ -373,7 +373,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         return;
     }
 
-    // Fetch topic-level assessments fresh from DB (only those WITH topic_id)
+    // ── Fetch ALL topic-level assessments for this chapter in ONE query ──
     const { data: topicAssessmentRows } = await getSB()
         .from('chapter_assessments')
         .select('id, topic_id, assessment_type, quiz_id, assignment_id, quizzes(id,title), assignments(id,title)')
@@ -387,28 +387,32 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         byTopic[a.topic_id].push(a);
     });
 
+    // ── Collect ALL quiz/assign IDs already linked to ANY topic in this chapter ──
+    // so we don't show them as available in other topics
+    const allLinkedQuizIds   = new Set((topicAssessmentRows || []).filter(a => a.assessment_type === 'quiz'       && a.quiz_id).map(a => a.quiz_id));
+    const allLinkedAssignIds = new Set((topicAssessmentRows || []).filter(a => a.assessment_type === 'assignment' && a.assignment_id).map(a => a.assignment_id));
+
     container.innerHTML = topics.map((topic, i) => {
         const topicAssessments = byTopic[topic.id] || [];
 
-        // IDs already linked to THIS specific topic only
+        // IDs already linked to THIS specific topic
         const linkedQuizIdsForTopic = new Set(
-            topicAssessments
-                .filter(a => a.assessment_type === 'quiz' && a.quiz_id)
-                .map(a => a.quiz_id)
+            topicAssessments.filter(a => a.assessment_type === 'quiz' && a.quiz_id).map(a => a.quiz_id)
         );
         const linkedAssignIdsForTopic = new Set(
-            topicAssessments
-                .filter(a => a.assessment_type === 'assignment' && a.assignment_id)
-                .map(a => a.assignment_id)
+            topicAssessments.filter(a => a.assessment_type === 'assignment' && a.assignment_id).map(a => a.assignment_id)
         );
 
-        // Available = all course quizzes MINUS ones already linked to this topic
-        const availableQuizzes = quizzes.filter(q => !linkedQuizIdsForTopic.has(q.id));
+        // Available = course quizzes MINUS ones already linked to THIS topic
+        // (allow same quiz to be linked to different topics, just not same topic twice)
+        const availableQuizzes     = quizzes.filter(q => !linkedQuizIdsForTopic.has(q.id));
         const availableAssignments = assignments.filter(a => !linkedAssignIdsForTopic.has(a.id));
-        
-        const quizOptions = availableQuizzes.map(q => `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
-        const assignOptions = availableAssignments.map(a => `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
-        
+
+        const quizOptions   = availableQuizzes.map(q =>
+            `<option value="${q.id}">${escHTML(q.title)}</option>`).join('');
+        const assignOptions = availableAssignments.map(a =>
+            `<option value="${a.id}">${escHTML(a.title)}</option>`).join('');
+
         const linkedQuizPills = topicAssessments
             .filter(a => a.assessment_type === 'quiz' && a.quizzes)
             .map(a => `
@@ -430,6 +434,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                 <button type="button" onclick="ecmUnlinkTopicAssessment('${a.id}','${chapterId}','${courseId}')"
                     style="background:none;border:none;cursor:pointer;color:#065f46;font-size:11px;">✕</button>
             </span>`).join('');
+
         return `
         <div style="background:white;border:1.5px solid #e5e7eb;border-radius:12px;
                     padding:14px 16px;margin-bottom:12px;">
@@ -451,7 +456,8 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                 </div>
                 <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
                     ${linkedQuizPills || '<span style="font-size:12px;color:#9ca3af;">None linked</span>'}
-                   <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
+                    ${quizOptions ? `
+                    <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
                         <select id="topicQuizLink_${topic.id}"
                             style="padding:4px 8px;border:1.5px solid #ddd6fe;border-radius:8px;
                                    font-size:12px;font-family:inherit;outline:none;">
@@ -464,7 +470,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                                        border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                             Link
                         </button>
-                    </div>
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all quizzes linked)</span>'}
                 </div>
             </div>
 
@@ -476,7 +482,8 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                 </div>
                 <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
                     ${linkedAssignPills || '<span style="font-size:12px;color:#9ca3af;">None linked</span>'}
-                   <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
+                    ${assignOptions ? `
+                    <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
                         <select id="topicAssignLink_${topic.id}"
                             style="padding:4px 8px;border:1.5px solid #bbf7d0;border-radius:8px;
                                    font-size:12px;font-family:inherit;outline:none;">
@@ -489,7 +496,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                                        border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                             Link
                         </button>
-                    </div>
+                    </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
                 </div>
             </div>
         </div>`;
