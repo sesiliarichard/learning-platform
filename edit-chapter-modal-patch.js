@@ -12,12 +12,19 @@
 
     function getSB() { return window.supabaseClient || window.db; }
 
-    // ── Patch openEditChapterModal to inject extra sections ───
-    const _origOpen = null; // bypass original — patch handles everything directly
+    window.openEditChapterModal = async function (chapterId) {
+    // Always reset state for every new chapter opened
+    window._ecmRunning = false;
+    window._lastEcmChapterId = null;
 
-   window.openEditChapterModal = async function (chapterId) {
-    if (window._ecmRunning) return;
+    // Prevent double execution only for the SAME chapter
+    if (window._ecmRunning && window._lastEcmChapterId === chapterId) return;
     window._ecmRunning = true;
+    window._lastEcmChapterId = chapterId;
+
+    // Always clean up previous modal injection before rebuilding
+    document.getElementById('editModalSubChapterSection')
+        ?.closest('div')?.remove();
 
     // Clean up any previous injection before rebuilding
     document.getElementById('editModalSubChapterSection')
@@ -31,6 +38,14 @@
             .select('title, description')
             .eq('id', chapterId)
             .maybeSingle();
+
+        // Clear previous topic list before loading new ones
+        const prevTopicContainer = document.getElementById('editTopicsContainer');
+        if (prevTopicContainer) prevTopicContainer.innerHTML = '';
+
+        // Clear previous assessment section
+        document.getElementById('editModalSubChapterSection')
+            ?.closest('div')?.remove();
 
         document.getElementById('editChapterId').value = chapterId;
         document.getElementById('editChapterTitle').value = chapterMeta?.title || '';
@@ -72,11 +87,12 @@
     console.log('chapterId received:', chapterId);
     console.log('chapter found:', chapter);
     console.log('courseId used for quiz fetch:', courseId);
-    if (!courseId) {
-        console.error('❌ courseId is null — chapter may belong to wrong course or DB issue');
-        window._ecmRunning = false;
-        return;
-    }
+   if (!courseId) {
+            console.error('❌ courseId is null — chapter may belong to wrong course or DB issue');
+            window._ecmRunning = false;
+            window._lastEcmChapterId = null;
+            return;
+        }
         // ── 2. Load existing sub-chapters ─────────────────────
         const { data: subChapters } = await getSB()
             .from('sub_chapters')
@@ -247,8 +263,10 @@ actionsDiv.parentNode.insertBefore(divider, actionsDiv);
 
 // ── Load topics and render per-topic assessment blocks ──
 await _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessments);
-    window._ecmRunning = false;
 
+    // Reset so next chapter opens cleanly
+    window._ecmRunning = false;
+    window._lastEcmChapterId = null;
 }
 
     // ── Show/hide inline sub-chapter form ─────────────────────
@@ -371,9 +389,14 @@ await _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessm
         if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked!`);
 
         // Refresh the section by reopening
-      window._ecmRunning = false;
+     window._ecmRunning = false;
+window._lastEcmChapterId = null;
 document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-window.openEditChapterModal(chapterId);
+
+// Small delay to ensure DOM is clean before reopening
+setTimeout(() => {
+    window.openEditChapterModal(chapterId);
+}, 50);
     };
 
     // ── Unlink an assessment ───────────────────────────────────
@@ -394,9 +417,14 @@ window.openEditChapterModal(chapterId);
 
         if (typeof showToast === 'function') showToast('Unlinked.');
 
-       window._ecmRunning = false;
+      window._ecmRunning = false;
+window._lastEcmChapterId = null;
 document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-window.openEditChapterModal(chapterId);
+
+// Small delay to ensure DOM is clean before reopening
+setTimeout(() => {
+    window.openEditChapterModal(chapterId);
+}, 50);
     };
 
     // ── Helper: re-inject extras without re-opening the modal ─
@@ -606,9 +634,14 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
     if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
 
     // Refresh
-   window._ecmRunning = false;
+  window._ecmRunning = false;
+window._lastEcmChapterId = null;
 document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-window.openEditChapterModal(chapterId);
+
+// Small delay to ensure DOM is clean before reopening
+setTimeout(() => {
+    window.openEditChapterModal(chapterId);
+}, 50);
 };
 
 // ── Unlink assessment from topic ─────────────────────
@@ -630,8 +663,13 @@ window.ecmUnlinkTopicAssessment = async function(assessmentId, chapterId, course
     if (typeof showToast === 'function') showToast('Unlinked.');
 
 window._ecmRunning = false;
+window._lastEcmChapterId = null;
 document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-window.openEditChapterModal(chapterId);
+
+// Small delay to ensure DOM is clean before reopening
+setTimeout(() => {
+    window.openEditChapterModal(chapterId);
+}, 50);
 };
     // ── Tiny HTML escape ───────────────────────────────────────
     function escHTML(s) {

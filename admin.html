@@ -1741,9 +1741,13 @@ body { visibility: hidden }
     <div class="modal-content modal-content-wide">
         <div class="modal-header">
             <h2>Edit Chapter</h2>
-            <button class="modal-close" onclick="closeModal('editChapterModal')">
-                <i class="fas fa-times"></i>
-            </button>
+           <button class="modal-close" onclick="
+    window._ecmRunning = false;
+    window._lastEcmChapterId = null;
+    document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+    closeModal('editChapterModal')">
+    <i class="fas fa-times"></i>
+</button>
         </div>
         <form id="editChapterForm" onsubmit="handleEditChapter(event)">
             <input type="hidden" id="editChapterId">
