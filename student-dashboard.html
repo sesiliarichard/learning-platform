@@ -2811,8 +2811,9 @@ async function loadCourseNotes(courseId) {
       window._chapterMap[ch.id] = ch.title;
      });
 
-     // Load quizzes/assignments linked to weeks
+    // Load quizzes/assignments linked to weeks
      await loadWeekQuizzesAndAssignments(courseId);
+     await loadTopicAssessments(courseId);
 
       if (currentCourseNotes.length > 0) displayNote(0);
       updateNotesProgress();
@@ -3255,30 +3256,25 @@ async function toggleNoteComplete(index) {
         await syncCourseProgressToDB(user.id, courseId);
     }
 }
-function buildWeekExtrasHTML(chapterTitle, noteIndex) {
-    const allQ = window._weekQuizzes     || [];
-    const allA = window._weekAssignments || [];
+function buildWeekExtrasHTML(chapterTitle, topicId) {
+    if (!topicId) return '';
+
     const subs = window._quizSubmissions || [];
+    const topicAssessments = window._topicAssessments || [];
 
-    if (!window._chapterMap) return '';
+    const topicQuizzes = topicAssessments
+        .filter(a => a.topic_id === topicId && a.assessment_type === 'quiz' && a.quizzes);
 
-    // Find the chapter_id whose title matches this note's chapter
-    const chapterId = Object.keys(window._chapterMap).find(
-        id => window._chapterMap[id] === chapterTitle
-    );
-    if (!chapterId) return '';
-    const firstTopicIndex = currentCourseNotes.findIndex(n => n.chapterId === chapterId);
-    if (noteIndex === undefined || noteIndex !== firstTopicIndex) return '';
+    const topicAssigns = topicAssessments
+        .filter(a => a.topic_id === topicId && a.assessment_type === 'assignment' && a.assignments);
 
-    const weekQuizzes     = allQ.filter(q => q.chapter_id === chapterId);
-    const weekAssignments = allA.filter(a => a.chapter_id === chapterId);
-
-    if (!weekQuizzes.length && !weekAssignments.length) return '';
+    if (!topicQuizzes.length && !topicAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
-    const quizCards = weekQuizzes.map(q => {
-        const done  = submittedIds.has(q.id);
+    const quizCards = topicQuizzes.map(a => {
+        const q = a.quizzes;
+        const done = submittedIds.has(q.id);
         const score = subs.find(s => s.quiz_id === q.id)?.score;
         return `
         <div style="background:white;border:1.5px solid ${done ? '#d1fae5' : '#ddd6fe'};
@@ -3292,7 +3288,6 @@ function buildWeekExtrasHTML(chapterTitle, noteIndex) {
                 </div>
                 <div style="font-size:12px;color:#6b7280;">
                     ${q.time_limit ? q.time_limit + ' mins' : 'No time limit'}
-                    ${q.passing_score ? ' · ' + q.passing_score + '% to pass' : ''}
                     ${done ? ` · <span style="color:#10b981;font-weight:700;">Score: ${score}%</span>` : ''}
                 </div>
             </div>
@@ -3312,9 +3307,10 @@ function buildWeekExtrasHTML(chapterTitle, noteIndex) {
         </div>`;
     }).join('');
 
-    const assignCards = weekAssignments.map(a => {
-        const due = a.due_date
-            ? new Date(a.due_date).toLocaleDateString('en-US',
+    const assignCards = topicAssigns.map(a => {
+        const assign = a.assignments;
+        const due = assign.due_date
+            ? new Date(assign.due_date).toLocaleDateString('en-US',
                 { month:'short', day:'numeric', year:'numeric' })
             : 'No deadline';
         return `
@@ -3324,14 +3320,14 @@ function buildWeekExtrasHTML(chapterTitle, noteIndex) {
             <div>
                 <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
                     <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
-                    ${escapeHtml(a.title)}
+                    ${escapeHtml(assign.title)}
                 </div>
                 <div style="font-size:12px;color:#6b7280;">
                     Due: ${due}
-                    ${a.max_points ? ' · ' + a.max_points + ' points' : ''}
+                    ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
                 </div>
             </div>
-            <button onclick="submitAssignmentModal && submitAssignmentModal('${a.id}')"
+            <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
                 style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
                        color:white;border:none;border-radius:8px;font-size:12px;
                        font-weight:700;cursor:pointer;">
@@ -3352,13 +3348,33 @@ function buildWeekExtrasHTML(chapterTitle, noteIndex) {
             </span>
             This Week's Activities
             <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:4px;">
-                ${weekQuizzes.length} quiz${weekQuizzes.length !== 1 ? 'zes' : ''}
-                · ${weekAssignments.length} assignment${weekAssignments.length !== 1 ? 's' : ''}
+                ${topicQuizzes.length} quiz${topicQuizzes.length !== 1 ? 'zes' : ''}
+                · ${topicAssigns.length} assignment${topicAssigns.length !== 1 ? 's' : ''}
             </span>
         </div>
-        ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this week.</p>'}
-        ${assignCards || '<p style="font-size:13px;color:#9ca3af;">No assignments linked to this week.</p>'}
+        ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this topic.</p>'}
+        ${assignCards || '<p style="font-size:13px;color:#9ca3af;">No assignments linked to this topic.</p>'}
     </div>`;
+}
+async function loadTopicAssessments(courseId) {
+    try {
+        const { data: assessments } = await supabaseClient
+            .from('chapter_assessments')
+            .select(`
+                id, topic_id, assessment_type,
+                quizzes(id, title, time_limit, passing_score),
+                assignments(id, title, due_date, max_points, instructions)
+            `)
+            .eq('course_id', courseId)
+            .not('topic_id', 'is', null);
+
+        window._topicAssessments = assessments || [];
+        console.log('✅ Topic assessments loaded:', window._topicAssessments.length);
+
+    } catch (err) {
+        console.error('loadTopicAssessments error:', err.message);
+        window._topicAssessments = [];
+    }
 }
 // Update progress bar
 function updateNotesProgress() {
