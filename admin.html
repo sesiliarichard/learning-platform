@@ -3271,13 +3271,14 @@ async function loadChapters() {
                         ${chapter.published ? '✓ Published' : '⏳ Unpublished'}
                     </span>
                 </div>
-                <div class="action-buttons">
+               <div class="action-buttons">
                     <button class="btn-primary" style="padding:8px 14px;font-size:12px;"
                         onclick="togglePublishChapter('${chapter.id}',${chapter.published})">
                         <i class="fas fa-${chapter.published?'eye-slash':'eye'}"></i>
                         ${chapter.published ? 'Unpublish' : 'Publish'}
                     </button>
-                    <button class="action-btn edit" onclick="openEditChapterModal('${chapter.id}')" title="Edit">
+                    <button class="action-btn edit" title="Edit"
+                        onclick="(function(id){ openEditChapterModal(id); })('${chapter.id}')">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
