@@ -3364,15 +3364,16 @@ async function loadTopicAssessments(courseId) {
         const { data: assessments } = await supabaseClient
             .from('chapter_assessments')
             .select(`
-                id, topic_id, assessment_type,
-                quizzes(id, title, time_limit, passing_score),
-                assignments(id, title, due_date, max_points, instructions)
+                id, topic_id, assessment_type, quiz_id, assignment_id,
+                quizzes:quiz_id(id, title, time_limit, passing_score),
+                assignments:assignment_id(id, title, due_date, max_points, instructions)
             `)
             .eq('course_id', courseId)
             .not('topic_id', 'is', null);
 
         window._topicAssessments = assessments || [];
         console.log('✅ Topic assessments loaded:', window._topicAssessments.length);
+        console.log('✅ Sample:', JSON.stringify(window._topicAssessments[0]));
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
