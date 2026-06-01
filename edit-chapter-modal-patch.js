@@ -13,17 +13,44 @@
     function getSB() { return window.supabaseClient || window.db; }
 
     // ── Patch openEditChapterModal to inject extra sections ───
-    const _origOpen = window.openEditChapterModal;
+    const _origOpen = null; // bypass original — patch handles everything directly
 
    window.openEditChapterModal = async function (chapterId) {
     // Prevent double execution
     if (window._ecmRunning) return;
     window._ecmRunning = true;
 
-    // Call original first (populates title, desc, topics)
-    if (_origOpen) await _origOpen(chapterId);
+  
+   
 
-        // Wait a tick for the modal DOM to settle
+       // Open the modal and populate title/description manually
+        const { data: chapterMeta } = await getSB()
+            .from('chapters')
+            .select('title, description')
+            .eq('id', chapterId)
+            .maybeSingle();
+
+        document.getElementById('editChapterId').value = chapterId;
+        document.getElementById('editChapterTitle').value = chapterMeta?.title || '';
+        document.getElementById('editChapterDescription').value = chapterMeta?.description || '';
+
+        // Build topics in editTopicsContainer
+        const { data: topicsForEdit } = await getSB()
+            .from('topics')
+            .select('id, title, content, duration, category, order_num')
+            .eq('chapter_id', chapterId)
+            .order('order_num', { ascending: true });
+
+        const editContainer = document.getElementById('editTopicsContainer');
+        if (editContainer) {
+            editContainer.innerHTML = '';
+            window.editTopicCounter = 0;
+            (topicsForEdit || []).forEach(topic => addEditTopic(topic));
+            if (!topicsForEdit || topicsForEdit.length === 0) addEditTopic();
+        }
+
+        document.getElementById('editChapterModal').classList.add('active');
+
         await new Promise(r => setTimeout(r, 120));
 
         const form = document.getElementById('editChapterForm');
