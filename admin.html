@@ -224,10 +224,10 @@ body { visibility: hidden }
                         <div class="card-title">Select Course</div>
                     </div>
                     <div class="form-group">
-                        <select id="courseSelectNotes" onchange="loadChapters()" 
-                aria-label="Select a course to view notes">
-                   <option value="">Select a course...</option>
-                        </select>
+                       <select id="courseSelectNotes" onchange="loadChapters()" 
+    aria-label="Select a course to view notes">
+    <option value="">— Select a course to view chapters —</option>
+</select>
                     </div>
                 </div>
 
@@ -1867,7 +1867,7 @@ async function init() {
     loadAdminQuizzes();
     loadAssignments();
     loadAnnouncements();
-    loadChapters();
+    //loadChapters();
     setupEventListeners();
     await updateAnalytics();
     loadRecentActivity();
@@ -1907,6 +1907,17 @@ if (window.innerWidth <= 768) closeSidebar();
 const mc = document.querySelector('.main-content');
 if (mc) {
     mc.scrollTop = 0;
+}
+
+if (item.dataset.section === 'notes') {
+    const sel = document.getElementById('courseSelectNotes');
+    if (sel && !sel.value) {
+        // don't auto-load, just show the select prompt
+        const container = document.getElementById('chaptersContainer');
+        if (container) container.innerHTML = '<div class="card"><p style="color:#6b7280;">Please select a course above to view its chapters.</p></div>';
+    } else {
+        loadChapters();
+    }
 }
         // Load section-specific data
 if (item.dataset.section === 'certificates') {
@@ -3163,11 +3174,13 @@ async function loadChapters() {
     const container = document.getElementById('chaptersContainer');
     if (!container) return;
 
-    if (!courseId) { container.innerHTML = ''; return; }
+    if (!courseId) {
+        container.innerHTML = '<div class="card"><p style="color:#6b7280;">Please select a course to view its chapters.</p></div>';
+        return;
+    }
 
     container.innerHTML = '<div class="card"><p style="color:#6b7280;">Loading chapters...</p></div>';
 
-    // Load chapters, quizzes and assignments for this course in parallel
     const [chaptersRes, quizzesRes, assignmentsRes] = await Promise.all([
         db.from('chapters')
           .select(`id, title, description, published, order_num,
@@ -3176,10 +3189,32 @@ async function loadChapters() {
           .order('order_num', { ascending: true }),
         db.from('quizzes')
           .select('id, title, chapter_id, published')
-          .eq('course_id', courseId),
+          .eq('course_id', courseId)
+          .not('chapter_id', 'is', null)
+          .then(async linked => {
+              const unlinked = await db.from('quizzes')
+                  .select('id, title, chapter_id, published')
+                  .eq('course_id', courseId)
+                  .is('chapter_id', null);
+              return {
+                  data: [...(linked.data || []), ...(unlinked.data || [])],
+                  error: linked.error || unlinked.error
+              };
+          }),
         db.from('assignments')
           .select('id, title, chapter_id, due_date')
           .eq('course_id', courseId)
+          .not('chapter_id', 'is', null)
+          .then(async linked => {
+              const unlinked = await db.from('assignments')
+                  .select('id, title, chapter_id, due_date')
+                  .eq('course_id', courseId)
+                  .is('chapter_id', null);
+              return {
+                  data: [...(linked.data || []), ...(unlinked.data || [])],
+                  error: linked.error || unlinked.error
+              };
+          })
     ]);
 
     const chapters    = chaptersRes.data    || [];
@@ -3420,7 +3455,8 @@ async function unlinkItem(type, itemId, chapterId) {
 }
 // Helper used by handleCreateChapter after save
 function loadAdminChapters(courseId) {
-    document.getElementById('courseSelectNotes').value = courseId;
+    const sel = document.getElementById('courseSelectNotes');
+    if (sel) sel.value = courseId;
     loadChapters();
 }
 

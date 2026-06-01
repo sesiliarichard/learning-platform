@@ -16,10 +16,12 @@
     const _origOpen = null; // bypass original — patch handles everything directly
 
    window.openEditChapterModal = async function (chapterId) {
-    // Prevent double execution
     if (window._ecmRunning) return;
     window._ecmRunning = true;
 
+    // Clean up any previous injection before rebuilding
+    document.getElementById('editModalSubChapterSection')
+        ?.closest('div[style*="border-top"]')?.remove();
   
    
 
