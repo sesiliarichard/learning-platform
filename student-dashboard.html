@@ -3310,34 +3310,41 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
         </div>`;
     }).join('');
 
-    const assignCards = topicAssigns.map(a => {
-        const assign = a.assignments;
-        const due = assign.due_date
-            ? new Date(assign.due_date).toLocaleDateString('en-US',
-                { month:'short', day:'numeric', year:'numeric' })
-            : 'No deadline';
-        return `
-        <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
-                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
-                    flex-wrap:wrap;gap:10px;margin-bottom:10px;">
-            <div>
-                <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
-                    <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
-                    ${escapeHtml(assign.title)}
-                </div>
-                <div style="font-size:12px;color:#6b7280;">
-                    Due: ${due}
-                    ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
-                </div>
+   const assignCards = topicAssigns.map(a => {
+    const assign = a.assignments;
+    const due = assign.due_date
+        ? new Date(assign.due_date).toLocaleDateString('en-US',
+            { month:'short', day:'numeric', year:'numeric' })
+        : 'No deadline';
+    return `
+    <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
+                padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+                flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+        <div>
+            <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
+                <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
+                ${escapeHtml(assign.title)}
             </div>
+            <div style="font-size:12px;color:#6b7280;">
+                Due: ${due}
+                ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
+            </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
+                style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
+                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                <i class="fas fa-eye"></i> View
+            </button>
             <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
                 style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
                        color:white;border:none;border-radius:8px;font-size:12px;
                        font-weight:700;cursor:pointer;">
                 <i class="fas fa-upload"></i> Submit
             </button>
-        </div>`;
-    }).join('');
+        </div>
+    </div>`;
+}).join('');
 
     return `
     <div style="margin:28px 0 20px;padding:20px;background:linear-gradient(135deg,#fafaf9,#f5f3ff);
