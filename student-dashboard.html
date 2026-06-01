@@ -3111,7 +3111,7 @@ function displayNote(index) {
             ${note.content}
         </div>
 
-        ${buildWeekExtrasHTML(note.chapterTitle)}
+        ${buildWeekExtrasHTML(note.chapterTitle, index)}
 
        ${note.hasCodingExercise && note.codingPrompt ? `
         <div style="margin:20px 0;padding:18px;background:#f5f3ff;border-radius:14px;border:1.5px solid #ddd6fe;">
@@ -3159,61 +3159,62 @@ async function loadWeekQuizzesAndAssignments(courseId) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
 
-      const [directQuizzesRes, directAssignRes, quizSubsRes] = await Promise.all([
-    supabaseClient
-        .from('quizzes')
-        .select('id, title, chapter_id, time_limit, passing_score')
-        .eq('course_id', courseId)
-        .eq('published', true)
-        .not('chapter_id', 'is', null),
-    supabaseClient
-        .from('assignments')
-        .select('id, title, chapter_id, due_date, max_points, instructions')
-        .eq('course_id', courseId)
-        .not('chapter_id', 'is', null),
-    supabaseClient
-        .from('quiz_submissions')
-        .select('quiz_id, score')
-        .eq('student_id', user?.id)
-]);
+        const [directQuizzesRes, directAssignRes, quizSubsRes] = await Promise.all([
+            supabaseClient
+                .from('quizzes')
+                .select('id, title, chapter_id, time_limit, passing_score')
+                .eq('course_id', courseId)
+                .eq('published', true)
+                .not('chapter_id', 'is', null),
+            supabaseClient
+                .from('assignments')
+                .select('id, title, chapter_id, due_date, max_points, instructions')
+                .eq('course_id', courseId)
+                .not('chapter_id', 'is', null),
+            supabaseClient
+                .from('quiz_submissions')
+                .select('quiz_id, score')
+                .eq('student_id', user?.id)
+        ]);
 
-// Also fetch from chapter_assessments as a second source
-const assessmentsRes = await supabaseClient
-    .from('chapter_assessments')
-    .select(`
-        chapter_id, assessment_type,
-        quizzes(id, title, time_limit, passing_score),
-        assignments(id, title, due_date, max_points, instructions)
-    `)
-    .eq('course_id', courseId);
+        // Fetch chapter_assessments — both chapter-level AND topic-level
+        const assessmentsRes = await supabaseClient
+            .from('chapter_assessments')
+            .select(`
+                chapter_id, topic_id, assessment_type,
+                quizzes(id, title, time_limit, passing_score),
+                assignments(id, title, due_date, max_points, instructions)
+            `)
+            .eq('course_id', courseId);
 
-const assessments = assessmentsRes.data || [];
+        const assessments = assessmentsRes.data || [];
 
-const quizzesFromAssessments = assessments
-    .filter(a => a.assessment_type === 'quiz' && a.quizzes)
-    .map(a => ({ ...a.quizzes, chapter_id: a.chapter_id }));
+        // Chapter-level only (topic_id is null) — for "This Week's Activities"
+        const chapterLevelAssessments = assessments.filter(a => !a.topic_id);
 
-const assignsFromAssessments = assessments
-    .filter(a => a.assessment_type === 'assignment' && a.assignments)
-    .map(a => ({ ...a.assignments, chapter_id: a.chapter_id }));
+        const quizzesFromAssessments = chapterLevelAssessments
+            .filter(a => a.assessment_type === 'quiz' && a.quizzes)
+            .map(a => ({ ...a.quizzes, chapter_id: a.chapter_id }));
 
-// Start with direct chapter_id links (most reliable source)
-const allQuizzes = [...(directQuizzesRes.data || [])];
-quizzesFromAssessments.forEach(q => {
-    if (!allQuizzes.find(x => x.id === q.id)) allQuizzes.push(q);
-});
+        const assignsFromAssessments = chapterLevelAssessments
+            .filter(a => a.assessment_type === 'assignment' && a.assignments)
+            .map(a => ({ ...a.assignments, chapter_id: a.chapter_id }));
 
-const allAssignments = [...(directAssignRes.data || [])];
-assignsFromAssessments.forEach(a => {
-    if (!allAssignments.find(x => x.id === a.id)) allAssignments.push(a);
-});
+        const allQuizzes = [...(directQuizzesRes.data || [])];
+        quizzesFromAssessments.forEach(q => {
+            if (!allQuizzes.find(x => x.id === q.id)) allQuizzes.push(q);
+        });
 
-window._weekQuizzes     = allQuizzes;
-window._weekAssignments = allAssignments;
-window._quizSubmissions = quizSubsRes.data || [];
+        const allAssignments = [...(directAssignRes.data || [])];
+        assignsFromAssessments.forEach(a => {
+            if (!allAssignments.find(x => x.id === a.id)) allAssignments.push(a);
+        });
 
-console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
+        window._weekQuizzes     = allQuizzes;
+        window._weekAssignments = allAssignments;
+        window._quizSubmissions = quizSubsRes.data || [];
 
+        console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
 
     } catch (err) {
         console.error('loadWeekQuizzesAndAssignments error:', err.message);
@@ -3254,7 +3255,7 @@ async function toggleNoteComplete(index) {
         await syncCourseProgressToDB(user.id, courseId);
     }
 }
-function buildWeekExtrasHTML(chapterTitle) {
+function buildWeekExtrasHTML(chapterTitle, noteIndex) {
     const allQ = window._weekQuizzes     || [];
     const allA = window._weekAssignments || [];
     const subs = window._quizSubmissions || [];
@@ -3266,6 +3267,8 @@ function buildWeekExtrasHTML(chapterTitle) {
         id => window._chapterMap[id] === chapterTitle
     );
     if (!chapterId) return '';
+    const firstTopicIndex = currentCourseNotes.findIndex(n => n.chapterId === chapterId);
+    if (noteIndex === undefined || noteIndex !== firstTopicIndex) return '';
 
     const weekQuizzes     = allQ.filter(q => q.chapter_id === chapterId);
     const weekAssignments = allA.filter(a => a.chapter_id === chapterId);
