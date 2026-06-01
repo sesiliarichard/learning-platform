@@ -367,6 +367,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         .from('topics')
         .select('id, title, order_num')
         .eq('chapter_id', chapterId)
+        .eq('course_id', courseId)
         .order('order_num', { ascending: true });
 
     if (!topics || topics.length === 0) {
