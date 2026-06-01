@@ -3191,34 +3191,12 @@ async function loadChapters() {
                    topics(id, title, category, duration, order_num)`)
           .eq('course_id', courseId)
           .order('order_num', { ascending: true }),
-        db.from('quizzes')
-          .select('id, title, chapter_id, published')
-          .eq('course_id', courseId)
-          .not('chapter_id', 'is', null)
-          .then(async linked => {
-              const unlinked = await db.from('quizzes')
-                  .select('id, title, chapter_id, published')
-                  .eq('course_id', courseId)
-                  .is('chapter_id', null);
-              return {
-                  data: [...(linked.data || []), ...(unlinked.data || [])],
-                  error: linked.error || unlinked.error
-              };
-          }),
-        db.from('assignments')
-          .select('id, title, chapter_id, due_date')
-          .eq('course_id', courseId)
-          .not('chapter_id', 'is', null)
-          .then(async linked => {
-              const unlinked = await db.from('assignments')
-                  .select('id, title, chapter_id, due_date')
-                  .eq('course_id', courseId)
-                  .is('chapter_id', null);
-              return {
-                  data: [...(linked.data || []), ...(unlinked.data || [])],
-                  error: linked.error || unlinked.error
-              };
-          })
+       db.from('quizzes')
+  .select('id, title, chapter_id, published')
+  .eq('course_id', courseId),
+db.from('assignments')
+  .select('id, title, chapter_id, due_date')
+  .eq('course_id', courseId)
     ]);
 
     const chapters    = chaptersRes.data    || [];
