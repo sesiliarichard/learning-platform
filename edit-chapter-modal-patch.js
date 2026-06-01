@@ -470,11 +470,12 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
     }
 
     // ── Fetch ALL topic-level assessments for this chapter in ONE query ──
+   // ── Fetch ALL topic-level assessments for this chapter in ONE query ──
     const { data: topicAssessmentRows } = await getSB()
         .from('chapter_assessments')
         .select('id, topic_id, assessment_type, quiz_id, assignment_id, quizzes(id,title), assignments(id,title)')
         .eq('chapter_id', chapterId)
-        .eq('course_id', courseId)
+        .eq('course_id', verifiedCourseId)
         .not('topic_id', 'is', null);
 
     // Build map: topic_id → array of assessments
