@@ -825,7 +825,118 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
         ? new Date(assignmentData.due_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
         : '';
 
-    let inputHTML = '';
+  let inputHTML = '';
+
+    // ── RICH TEXT EDITOR (always shown for text/both, enhanced for file types) ──
+    if (submissionType === 'text' || submissionType === 'both') {
+        inputHTML += `
+        <div style="margin-bottom:20px;">
+            <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
+                <i class="fas fa-pen" style="color:#10b981;margin-right:6px;"></i>
+                Your Answer ${submissionType === 'text' ? '*' : '(optional)'}
+            </label>
+
+            <!-- Toolbar -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;
+                        background:#f9fafb;border:1.5px solid #e5e7eb;
+                        border-radius:12px 12px 0 0;border-bottom:none;">
+                <button type="button" onclick="execRichCmd('bold')"
+                    title="Bold"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:12px;font-weight:700;cursor:pointer;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">B</button>
+
+                <button type="button" onclick="execRichCmd('italic')"
+                    title="Italic"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:12px;cursor:pointer;font-style:italic;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">I</button>
+
+                <button type="button" onclick="execRichCmd('underline')"
+                    title="Underline"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:12px;cursor:pointer;text-decoration:underline;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">U</button>
+
+                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+
+                <button type="button" onclick="execRichCmd('formatBlock','H2')"
+                    title="Heading"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:11px;font-weight:700;cursor:pointer;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">H2</button>
+
+                <button type="button" onclick="execRichCmd('formatBlock','H3')"
+                    title="Sub-heading"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:11px;font-weight:700;cursor:pointer;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">H3</button>
+
+                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+
+                <button type="button" onclick="execRichCmd('insertUnorderedList')"
+                    title="Bullet list"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:12px;cursor:pointer;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">• List</button>
+
+                <button type="button" onclick="execRichCmd('insertOrderedList')"
+                    title="Numbered list"
+                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
+                           background:white;font-size:12px;cursor:pointer;
+                           color:#1f2937;transition:all 0.15s;"
+                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
+                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">1. List</button>
+
+                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+
+                <button type="button" onclick="clearRichEditor()"
+                    title="Clear"
+                    style="padding:5px 10px;border:1px solid #fee2e2;border-radius:6px;
+                           background:white;font-size:11px;cursor:pointer;
+                           color:#ef4444;transition:all 0.15s;"
+                    onmouseover="this.style.background='#fee2e2'"
+                    onmouseout="this.style.background='white'">Clear</button>
+            </div>
+
+            <!-- Editor area -->
+            <div id="richTextEditor"
+                 contenteditable="true"
+                 spellcheck="true"
+                 data-placeholder="Write your answer here..."
+                 oninput="updateWordCount()"
+                 style="min-height:220px;padding:16px;
+                        border:1.5px solid #e5e7eb;border-radius:0 0 12px 12px;
+                        font-size:14px;color:#1f2937;line-height:1.75;
+                        outline:none;background:white;
+                        font-family:'Plus Jakarta Sans',sans-serif;
+                        transition:border-color 0.2s;"
+                 onfocus="this.style.borderColor='#10b981'"
+                 onblur="this.style.borderColor='#e5e7eb'"></div>
+
+            <!-- Word count -->
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        margin-top:6px;padding:0 4px;">
+                <span style="font-size:11px;color:#9ca3af;">
+                    <i class="fas fa-info-circle"></i> 
+                    Use the toolbar to format your answer
+                </span>
+                <span id="richWordCount" style="font-size:11px;color:#9ca3af;">0 words</span>
+            </div>
+        </div>`;
+    }
 
     if (submissionType === 'file' || submissionType === 'both') {
         inputHTML += `
@@ -848,22 +959,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 </div>
                 <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.txt,.zip"
                        style="display:none;" onchange="showAssignmentFileName(this)">
-            </div>`;
-    }
-
-    if (submissionType === 'text' || submissionType === 'both') {
-        inputHTML += `
-            <div style="margin-bottom:20px;">
-                <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
-                    <i class="fas fa-pen" style="color:#10b981;margin-right:6px;"></i>
-                    Text Response ${submissionType === 'text' ? '*' : '(optional)'}
-                </label>
-                <textarea id="assignmentTextInput" rows="7" placeholder="Type your response here..."
-                          style="width:100%;padding:14px;border:2px solid #e5e7eb;border-radius:12px;
-                                 font-family:inherit;font-size:14px;resize:vertical;outline:none;
-                                 color:#374151;line-height:1.6;transition:border-color 0.2s;"
-                          onfocus="this.style.borderColor='#10b981'"
-                          onblur="this.style.borderColor='#e5e7eb'"></textarea>
             </div>`;
     }
 
@@ -977,7 +1072,13 @@ window.handleSubmitAssignment = async function(assignmentId, submissionType) {
         fileUrl = uploadResult.fileUrl;
     }
 
-    if (textInput?.value.trim()) textResponse = textInput.value.trim();
+    // Support both plain textarea and rich text editor
+const richEditor = document.getElementById('richTextEditor');
+if (richEditor && richEditor.innerHTML.trim() && richEditor.innerText.trim()) {
+    textResponse = richEditor.innerHTML.trim();
+} else if (textInput?.value.trim()) {
+    textResponse = textInput.value.trim();
+}
 
     const result = await submitAssignment(assignmentId, { fileUrl, textResponse });
 
@@ -1147,6 +1248,25 @@ async function submitCodingAssignment(assignmentId, code, language) {
         return { success: false, error: error.message };
     }
 }
+// ── Rich text editor helpers ──────────────────────────────────
+window.execRichCmd = function(command, value = null) {
+    document.getElementById('richTextEditor')?.focus();
+    document.execCommand(command, false, value);
+};
+
+window.clearRichEditor = function() {
+    const ed = document.getElementById('richTextEditor');
+    if (ed) { ed.innerHTML = ''; updateWordCount(); }
+};
+
+window.updateWordCount = function() {
+    const ed = document.getElementById('richTextEditor');
+    const counter = document.getElementById('richWordCount');
+    if (!ed || !counter) return;
+    const text = ed.innerText.trim();
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    counter.textContent = words + ' word' + (words !== 1 ? 's' : '');
+};
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────
