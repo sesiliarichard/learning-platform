@@ -357,16 +357,14 @@ function renderStudentCourseCards(courses, progressMap = {}) {
         courses.forEach((course, index) => {
             const progress    = progressMap[course.id] || 0;
             const thumbColor  = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
-          const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
-        const fallbackCategories  = ['AI', 'Data Science', 'Coding', 'ML'];
-          const fallbackLessons     = [24, 18, 20, 16];
+            const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
+            const fallbackLessons     = [24, 18, 20, 16];
             const fallbackStudents    = ['45+', '30+', '28+', '22+'];
 
-const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
-const category    = course.category      || fallbackCategories[index % fallbackCategories.length];
-const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
-const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
-const instructor  = course.instructor    || 'ASAI Instructor';
+            const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
+            const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
+            const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
+            const instructor  = course.instructor    || 'ASAI Instructor';
 
             const isCompleted = progress >= 90;
             const isStarted   = progress > 0 && !isCompleted;
@@ -402,16 +400,6 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                     ">
                         <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessonCount}x lesson
                     </span>` : ''}
-
-                    ${category ? `
-                    <span style="
-                        position:absolute; top:11px; right:11px;
-                        background:rgba(255,255,255,0.22); color:#fff;
-                        font-size:10px; font-weight:600;
-                        padding:3px 9px; border-radius:20px;
-                        border:0.5px solid rgba(255,255,255,0.3);
-                        text-transform:uppercase; letter-spacing:0.3px;
-                    ">${escapeHtml(category)}</span>` : ''}
 
                     <i class="fas ${escapeHtml(icon)}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
                 </div>
@@ -492,7 +480,7 @@ const instructor  = course.instructor    || 'ASAI Instructor';
             grid.appendChild(card);
         });
 
-        console.log('✅ renderStudentCourseCards: rendered', courses.length, 'cards into', grid.id || grid.className);
+        console.log('✅ renderStudentCourseCards: rendered', courses.length, 'cards');
     });
 }
 // ─────────────────────────────────────────────
