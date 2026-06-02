@@ -1334,24 +1334,22 @@ async function loadExistingDraft(assignmentId) {
                 const timeEl = document.getElementById('draftSavedTime');
                 if (timeEl && data.saved_at) {
                     const savedDate = new Date(data.saved_at);
-                    const now = new Date();
-                    const diffHours = Math.floor((now - savedDate) / 3600000);
-                    if (diffHours < 1) {
-                        timeEl.textContent = 'Saved just now';
-                    } else if (diffHours < 24) {
-                        timeEl.textContent = `Saved ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
-                    } else {
-                        timeEl.textContent = `Saved ${savedDate.toLocaleDateString()}`;
-                    }
+                    timeEl.textContent = 'Saved ' + savedDate.toLocaleDateString() + ' ' + savedDate.toLocaleTimeString();
                 }
             }
             
-            // Ask user if they want to restore
-            setTimeout(() => {
-                if (confirm('You have a saved draft from a previous session. Would you like to restore it?')) {
-                    loadDraftIntoEditor();
+            // Wait for editor to be ready then restore automatically
+            const waitForEditor = setInterval(() => {
+                const editor = document.getElementById('richTextEditor');
+                if (editor) {
+                    clearInterval(waitForEditor);
+                    editor.innerHTML = currentDraftContent;
+                    updateWordCount();
+                    showToast('Draft restored!', 'success');
                 }
             }, 100);
+            
+            setTimeout(() => clearInterval(waitForEditor), 3000);
         }
     } catch (err) {
         console.error('Error loading draft:', err);
@@ -1376,41 +1374,54 @@ async function saveDraft(assignmentId) {
             return;
         }
 
-        const { error } = await supabaseClient
+        // First check if draft exists
+        const { data: existing } = await supabaseClient
             .from('draft_assignments')
-            .upsert({
-                student_id: user.id,
-                assignment_id: assignmentId,
-                content: content,
-                updated_at: new Date().toISOString()
-            }, {
-                onConflict: 'student_id,assignment_id'
-            });
+            .select('id')
+            .eq('assignment_id', assignmentId)
+            .eq('student_id', user.id)
+            .maybeSingle();
 
-        if (error) throw error;
+        if (existing) {
+            // Update existing
+            const { error } = await supabaseClient
+                .from('draft_assignments')
+                .update({
+                    content: content,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existing.id);
+            if (error) throw error;
+        } else {
+            // Insert new
+            const { error } = await supabaseClient
+                .from('draft_assignments')
+                .insert({
+                    student_id: user.id,
+                    assignment_id: assignmentId,
+                    content: content,
+                    saved_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            if (error) throw error;
+        }
 
         currentDraftContent = content;
         
-        // Show success message and update status bar
         const statusBar = document.getElementById('draftStatusBar');
         if (statusBar) {
             statusBar.style.display = 'flex';
             const timeEl = document.getElementById('draftSavedTime');
             if (timeEl) timeEl.textContent = 'Saved just now';
-            
-            // Flash effect
-            statusBar.style.animation = 'none';
-            setTimeout(() => { statusBar.style.animation = ''; }, 10);
         }
         
-        showToast('✅ Draft saved successfully! You can continue later.', 'success');
+        showToast('✅ Draft saved!', 'success');
 
     } catch (err) {
-        console.error('Error saving draft:', err);
-        showToast('Error saving draft: ' + err.message, 'error');
+        console.error('Save error:', err);
+        showToast('Error saving draft', 'error');
     }
 }
-
 function autoSaveDraft(assignmentId) {
     // Auto-save after 3 seconds of no typing
     if (window._autoSaveTimeout) clearTimeout(window._autoSaveTimeout);
@@ -1429,20 +1440,16 @@ async function loadDraftIntoEditor() {
 
     editor.innerHTML = currentDraftContent;
     updateWordCount();
-    
-    // Scroll to editor
     editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
     
     // Highlight effect
-    editor.style.transition = 'background 0.3s';
     editor.style.background = '#1a3a2a';
     setTimeout(() => { editor.style.background = '#0f0f1a'; }, 500);
     
     showToast('Draft restored!', 'success');
 }
-
 async function deleteCurrentDraft() {
-    if (!confirm('Are you sure you want to delete this draft? This action cannot be undone.')) return;
+    if (!confirm('Delete this draft?')) return;
     
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
@@ -1464,14 +1471,13 @@ async function deleteCurrentDraft() {
         const editor = document.getElementById('richTextEditor');
         if (editor) editor.innerHTML = '';
         
-        showToast('Draft deleted successfully', 'success');
+        showToast('Draft deleted', 'success');
         
     } catch (err) {
-        console.error('Error deleting draft:', err);
+        console.error('Delete error:', err);
         showToast('Error deleting draft', 'error');
     }
 }
-
 // ─────────────────────────────────────────────
 // RICH TEXT HELPER FUNCTIONS
 // ─────────────────────────────────────────────
