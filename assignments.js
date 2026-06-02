@@ -836,7 +836,7 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
   let inputHTML = '';
 
     // ── RICH TEXT EDITOR (always shown for text/both, enhanced for file types) ──
-if (submissionType === 'text' || submissionType === 'both') {
+if (submissionType === 'text' || submissionType === 'both' || submissionType === 'file') {
     inputHTML += `
     <div style="margin-bottom:20px;">
 
