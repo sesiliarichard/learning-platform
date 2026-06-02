@@ -818,6 +818,10 @@ window.submitAssignmentModal = async function(assignmentId) {
     }
 };
 
+// Global variable to store current draft content
+let currentDraftContent = null;
+let currentDraftAssignmentId = null;
+
 function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData) {
     document.getElementById('submitAssignmentModal')?.remove();
 
@@ -829,16 +833,49 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
         return;
     }
 
+    currentDraftAssignmentId = assignmentId;
+    
     const dueDate = assignmentData?.due_date
         ? new Date(assignmentData.due_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
         : '';
 
-    let inputHTML = '';
+    // Load existing draft if any
+    loadExistingDraft(assignmentId);
 
-    // Assignment Brief Section - IMPROVED DISPLAY
-    inputHTML += `
+    let inputHTML = `
+
+    <!-- Save Draft Status Bar -->
+    <div id="draftStatusBar" style="margin-bottom:20px;
+                                      background:linear-gradient(135deg,#fef3c7,#fffbeb);
+                                      border:1px solid #f59e0b;
+                                      border-radius:16px;
+                                      padding:14px 20px;
+                                      display:none;
+                                      align-items:center;
+                                      justify-content:space-between;
+                                      flex-wrap:wrap;
+                                      gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;">
+            <div style="background:#f59e0b;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-save" style="color:white;font-size:16px;"></i>
+            </div>
+            <div>
+                <div style="font-weight:700;color:#92400e;font-size:14px;">Draft Saved</div>
+                <div style="font-size:12px;color:#78350f;" id="draftSavedTime">Last saved just now</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button onclick="deleteCurrentDraft()" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:30px;padding:6px 14px;font-size:12px;color:#92400e;cursor:pointer;">
+                <i class="fas fa-trash-alt"></i> Delete Draft
+            </button>
+            <button onclick="loadDraftIntoEditor()" style="background:#f59e0b;border:none;border-radius:30px;padding:6px 14px;font-size:12px;color:white;cursor:pointer;">
+                <i class="fas fa-undo-alt"></i> Restore Draft
+            </button>
+        </div>
+    </div>
+
+    <!-- Assignment Brief Card -->
     <div style="margin-bottom:25px;">
-        <!-- Assignment Brief Card - WIDER, FULL WIDTH -->
         <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);
                     border:2px solid #10b981;
                     border-radius:20px;
@@ -847,7 +884,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                     width:100%;
                     box-sizing:border-box;">
             
-            <!-- Header with icon -->
             <div style="display:flex;
                         align-items:center;
                         gap:12px;
@@ -869,7 +905,7 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                                 letter-spacing:2px;
                                 text-transform:uppercase;
                                 color:#059669;">
-                        WEEK 2 ASSIGNMENT
+                        ${assignmentData?.due_date && new Date(assignmentData.due_date) > new Date() ? 'UPCOMING ASSIGNMENT' : 'ASSIGNMENT'}
                     </div>
                     <div style="font-size:20px;
                                 font-weight:800;
@@ -889,7 +925,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 </div>
             </div>
 
-            <!-- Assignment Questions Display -->
             <div style="margin-bottom:20px;">
                 <div style="font-size:13px;
                             font-weight:700;
@@ -898,7 +933,7 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                             display:flex;
                             align-items:center;
                             gap:8px;">
-                    <i class="fas fa-question-circle"></i> ASSIGNMENT BRIEF
+                    <i class="fas fa-question-circle"></i> QUESTION
                 </div>
                 <div style="background:white;
                             border-radius:16px;
@@ -916,7 +951,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 </div>
             </div>
 
-            <!-- Meta info row -->
             <div style="display:flex;
                         gap:20px;
                         flex-wrap:wrap;
@@ -935,12 +969,11 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
                     <i class="fas fa-pen-fancy" style="color:#7c3aed;"></i>
-                    <span>Written Response</span>
+                    <span>Written Response Required</span>
                 </div>
             </div>
         </div>
 
-        <!-- Writing area label -->
         <div style="display:flex;
                     align-items:center;
                     justify-content:space-between;
@@ -960,7 +993,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
             </span>
         </div>
 
-        <!-- Toolbar - FULL WIDTH -->
         <div style="display:flex;
                     gap:6px;
                     flex-wrap:wrap;
@@ -1078,11 +1110,10 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
             </button>
         </div>
 
-        <!-- The writing area - WIDER, FULL WIDTH -->
         <div id="richTextEditor"
              contenteditable="true"
              spellcheck="true"
-             oninput="updateWordCount()"
+             oninput="updateWordCount(); autoSaveDraft('${assignmentId}')"
              style="min-height:350px;
                     width:100%;
                     padding:24px 28px;
@@ -1101,7 +1132,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
              onblur="this.style.borderColor='#2d2d44';this.style.boxShadow='none'"
              data-placeholder="Write your answer here..."></div>
 
-        <!-- Word count and tip bar -->
         <div style="display:flex;
                     align-items:center;
                     justify-content:space-between;
@@ -1144,14 +1174,13 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
         <div style="background:white;
                     border-radius:28px;
                     width:100%;
-                    max-width:900px;
+                    max-width:950px;
                     max-height:90vh;
                     overflow:hidden;
                     display:flex;
                     flex-direction:column;
                     box-shadow:0 30px 80px rgba(0,0,0,0.4);">
             
-            <!-- Header -->
             <div style="background:linear-gradient(135deg,#10b981,#047857);
                         padding:28px 32px;
                         color:white;
@@ -1200,7 +1229,6 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 </div>
             </div>
 
-            <!-- Scrollable content -->
             <div style="padding:28px 32px;
                         overflow-y:auto;
                         flex:1;
@@ -1208,13 +1236,32 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                 ${inputHTML}
             </div>
 
-            <!-- Footer buttons -->
             <div style="padding:20px 32px;
                         background:white;
                         border-top:2px solid #f3f4f6;
                         display:flex;
                         gap:16px;
                         flex-shrink:0;">
+                <button onclick="saveDraft('${assignmentId}')"
+                        style="flex:1;
+                               padding:14px;
+                               background:#fef3c7;
+                               border:2px solid #f59e0b;
+                               border-radius:14px;
+                               color:#92400e;
+                               font-weight:800;
+                               cursor:pointer;
+                               font-family:inherit;
+                               font-size:14px;
+                               display:flex;
+                               align-items:center;
+                               justify-content:center;
+                               gap:8px;
+                               transition:all 0.2s;"
+                        onmouseover="this.style.background='#fde68a';this.style.transform='translateY(-1px)'"
+                        onmouseout="this.style.background='#fef3c7';this.style.transform='translateY(0)'">
+                    <i class="fas fa-save"></i> Save Draft
+                </button>
                 <button onclick="document.getElementById('submitAssignmentModal').remove()"
                         style="flex:1;
                                padding:14px;
@@ -1250,7 +1297,7 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
                                transition:all 0.3s;"
                         onmouseover="this.style.transform='translateY(-2px)'"
                         onmouseout="this.style.transform='translateY(0)'">
-                    <i class="fas fa-paper-plane"></i> Submit Assignment
+                    <i class="fas fa-paper-plane"></i> Submit Final
                 </button>
             </div>
         </div>`;
@@ -1259,6 +1306,219 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
+// ─────────────────────────────────────────────
+// DRAFT FUNCTIONS
+// ─────────────────────────────────────────────
+
+async function loadExistingDraft(assignmentId) {
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const { data, error } = await supabaseClient
+            .from('draft_assignments')
+            .select('content, saved_at')
+            .eq('assignment_id', assignmentId)
+            .eq('student_id', user.id)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (data && data.content) {
+            currentDraftContent = data.content;
+            
+            // Show draft status bar
+            const statusBar = document.getElementById('draftStatusBar');
+            if (statusBar) {
+                statusBar.style.display = 'flex';
+                const timeEl = document.getElementById('draftSavedTime');
+                if (timeEl && data.saved_at) {
+                    const savedDate = new Date(data.saved_at);
+                    const now = new Date();
+                    const diffHours = Math.floor((now - savedDate) / 3600000);
+                    if (diffHours < 1) {
+                        timeEl.textContent = 'Saved just now';
+                    } else if (diffHours < 24) {
+                        timeEl.textContent = `Saved ${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+                    } else {
+                        timeEl.textContent = `Saved ${savedDate.toLocaleDateString()}`;
+                    }
+                }
+            }
+            
+            // Ask user if they want to restore
+            setTimeout(() => {
+                if (confirm('You have a saved draft from a previous session. Would you like to restore it?')) {
+                    loadDraftIntoEditor();
+                }
+            }, 100);
+        }
+    } catch (err) {
+        console.error('Error loading draft:', err);
+    }
+}
+
+async function saveDraft(assignmentId) {
+    const editor = document.getElementById('richTextEditor');
+    if (!editor) return;
+
+    const content = editor.innerHTML;
+    
+    if (!content || content.trim() === '' || content === '<br>') {
+        showToast('Cannot save empty draft', 'warning');
+        return;
+    }
+
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) {
+            showToast('Please login to save drafts', 'error');
+            return;
+        }
+
+        const { error } = await supabaseClient
+            .from('draft_assignments')
+            .upsert({
+                student_id: user.id,
+                assignment_id: assignmentId,
+                content: content,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'student_id,assignment_id'
+            });
+
+        if (error) throw error;
+
+        currentDraftContent = content;
+        
+        // Show success message and update status bar
+        const statusBar = document.getElementById('draftStatusBar');
+        if (statusBar) {
+            statusBar.style.display = 'flex';
+            const timeEl = document.getElementById('draftSavedTime');
+            if (timeEl) timeEl.textContent = 'Saved just now';
+            
+            // Flash effect
+            statusBar.style.animation = 'none';
+            setTimeout(() => { statusBar.style.animation = ''; }, 10);
+        }
+        
+        showToast('✅ Draft saved successfully! You can continue later.', 'success');
+
+    } catch (err) {
+        console.error('Error saving draft:', err);
+        showToast('Error saving draft: ' + err.message, 'error');
+    }
+}
+
+function autoSaveDraft(assignmentId) {
+    // Auto-save after 3 seconds of no typing
+    if (window._autoSaveTimeout) clearTimeout(window._autoSaveTimeout);
+    
+    window._autoSaveTimeout = setTimeout(() => {
+        const editor = document.getElementById('richTextEditor');
+        if (editor && editor.innerHTML.trim() && editor.innerHTML !== '<br>') {
+            saveDraft(assignmentId);
+        }
+    }, 3000);
+}
+
+async function loadDraftIntoEditor() {
+    const editor = document.getElementById('richTextEditor');
+    if (!editor || !currentDraftContent) return;
+
+    editor.innerHTML = currentDraftContent;
+    updateWordCount();
+    
+    // Scroll to editor
+    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    
+    // Highlight effect
+    editor.style.transition = 'background 0.3s';
+    editor.style.background = '#1a3a2a';
+    setTimeout(() => { editor.style.background = '#0f0f1a'; }, 500);
+    
+    showToast('Draft restored!', 'success');
+}
+
+async function deleteCurrentDraft() {
+    if (!confirm('Are you sure you want to delete this draft? This action cannot be undone.')) return;
+    
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) return;
+
+        const { error } = await supabaseClient
+            .from('draft_assignments')
+            .delete()
+            .eq('assignment_id', currentDraftAssignmentId)
+            .eq('student_id', user.id);
+
+        if (error) throw error;
+
+        currentDraftContent = null;
+        
+        const statusBar = document.getElementById('draftStatusBar');
+        if (statusBar) statusBar.style.display = 'none';
+        
+        const editor = document.getElementById('richTextEditor');
+        if (editor) editor.innerHTML = '';
+        
+        showToast('Draft deleted successfully', 'success');
+        
+    } catch (err) {
+        console.error('Error deleting draft:', err);
+        showToast('Error deleting draft', 'error');
+    }
+}
+
+// ─────────────────────────────────────────────
+// RICH TEXT HELPER FUNCTIONS
+// ─────────────────────────────────────────────
+
+window.execRichCmd = function(command, value = null) {
+    const editor = document.getElementById('richTextEditor');
+    if (!editor) return;
+    editor.focus();
+    
+    if (command === 'formatBlock') {
+        document.execCommand(command, false, value);
+    } else {
+        document.execCommand(command, false, value);
+    }
+    updateWordCount();
+    if (currentDraftAssignmentId) autoSaveDraft(currentDraftAssignmentId);
+};
+
+window.clearRichEditor = function() {
+    if (confirm('Clear all your writing? This cannot be undone unless you have a saved draft.')) {
+        const ed = document.getElementById('richTextEditor');
+        if (ed) { ed.innerHTML = ''; updateWordCount(); }
+    }
+};
+
+window.updateWordCount = function() {
+    const ed = document.getElementById('richTextEditor');
+    const counter = document.getElementById('richWordCount');
+    if (!ed || !counter) return;
+    
+    // Get plain text without HTML tags
+    const text = ed.innerText.trim();
+    const words = text ? text.split(/\s+/).filter(word => word.length > 0).length : 0;
+    counter.textContent = words + ' word' + (words !== 1 ? 's' : '');
+    
+    // Change color based on length
+    if (words === 0) {
+        counter.style.background = '#fee2e2';
+        counter.style.color = '#ef4444';
+    } else if (words < 50) {
+        counter.style.background = '#fef3c7';
+        counter.style.color = '#d97706';
+    } else {
+        counter.style.background = '#d1fae5';
+        counter.style.color = '#065f46';
+    }
+};
 window.handleAssignmentFileDrop = function(event) {
     event.preventDefault();
     const zone = document.getElementById('assignDropZone');
