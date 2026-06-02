@@ -807,7 +807,7 @@ window.submitAssignmentModal = async function(assignmentId) {
     try {
         const { data, error } = await supabaseClient
             .from('assignments')
-            .select('title, submission_type, instructions, max_points, due_date')
+            .select('title, submission_type, instructions, max_points, due_date, is_coding')
             .eq('id', assignmentId)
             .maybeSingle();
 
@@ -821,6 +821,14 @@ window.submitAssignmentModal = async function(assignmentId) {
 function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData) {
     document.getElementById('submitAssignmentModal')?.remove();
 
+    // Redirect coding assignments to the coding environment
+    if (assignmentData?.is_coding) {
+        if (typeof openCodingEnvironment === 'function') {
+            openCodingEnvironment(assignmentId, assignmentData.instructions || 'Write code to solve this problem.');
+        }
+        return;
+    }
+
     const dueDate = assignmentData?.due_date
         ? new Date(assignmentData.due_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
         : '';
@@ -828,139 +836,160 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
   let inputHTML = '';
 
     // ── RICH TEXT EDITOR (always shown for text/both, enhanced for file types) ──
-    if (submissionType === 'text' || submissionType === 'both') {
-        inputHTML += `
-        <div style="margin-bottom:20px;">
-            <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
-                <i class="fas fa-pen" style="color:#10b981;margin-right:6px;"></i>
-                Your Answer ${submissionType === 'text' ? '*' : '(optional)'}
+if (submissionType === 'text' || submissionType === 'both') {
+    inputHTML += `
+    <div style="margin-bottom:20px;">
+
+        <!-- Assignment brief banner -->
+        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;
+                    border-radius:14px;padding:16px 20px;margin-bottom:18px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
+                        color:#059669;margin-bottom:6px;">
+                <i class="fas fa-tasks"></i> Assignment Brief
+            </div>
+            <div style="font-size:14px;color:#1f2937;line-height:1.6;font-weight:500;">
+                ${assignmentData?.instructions ? escapeHtml(assignmentData.instructions) : 'Complete the assignment below.'}
+            </div>
+            <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:#6b7280;">
+                ${assignmentData?.due_date ? `<span><i class="fas fa-calendar-alt" style="color:#10b981;margin-right:4px;"></i>Due: ${new Date(assignmentData.due_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
+                ${assignmentData?.max_points ? `<span><i class="fas fa-star" style="color:#f59e0b;margin-right:4px;"></i>${assignmentData.max_points} points</span>` : ''}
+            </div>
+        </div>
+
+        <!-- Writing area label -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <label style="font-weight:700;color:#1f2937;font-size:14px;">
+                <i class="fas fa-pen-nib" style="color:#10b981;margin-right:6px;"></i>
+                Your Response ${submissionType === 'text' ? '*' : '(optional)'}
             </label>
+            <span style="font-size:11px;color:#9ca3af;background:#f3f4f6;
+                         padding:3px 10px;border-radius:20px;">
+                <i class="fas fa-keyboard"></i> Write below
+            </span>
+        </div>
 
-            <!-- Toolbar -->
-            <div style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px;
-                        background:#f9fafb;border:1.5px solid #e5e7eb;
-                        border-radius:12px 12px 0 0;border-bottom:none;">
-                <button type="button" onclick="execRichCmd('bold')"
-                    title="Bold"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:12px;font-weight:700;cursor:pointer;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">B</button>
+        <!-- Toolbar -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;padding:10px 14px;
+                    background:#1a1a2e;border-radius:12px 12px 0 0;
+                    border:1.5px solid #2d2d44;border-bottom:none;">
 
-                <button type="button" onclick="execRichCmd('italic')"
-                    title="Italic"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:12px;cursor:pointer;font-style:italic;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">I</button>
+            <button type="button" onclick="execRichCmd('bold')" title="Bold"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:12px;font-weight:700;cursor:pointer;
+                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
+                <b>B</b>
+            </button>
 
-                <button type="button" onclick="execRichCmd('underline')"
-                    title="Underline"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:12px;cursor:pointer;text-decoration:underline;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">U</button>
+            <button type="button" onclick="execRichCmd('italic')" title="Italic"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:12px;cursor:pointer;
+                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
+                <i>I</i>
+            </button>
 
-                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+            <button type="button" onclick="execRichCmd('underline')" title="Underline"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:12px;cursor:pointer;
+                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;text-decoration:underline;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
+                U
+            </button>
 
-                <button type="button" onclick="execRichCmd('formatBlock','H2')"
-                    title="Heading"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:11px;font-weight:700;cursor:pointer;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">H2</button>
+            <div style="width:1px;background:#3d3d5c;margin:0 4px;"></div>
 
-                <button type="button" onclick="execRichCmd('formatBlock','H3')"
-                    title="Sub-heading"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:11px;font-weight:700;cursor:pointer;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">H3</button>
+            <button type="button" onclick="execRichCmd('formatBlock','H1')" title="Heading 1"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:11px;font-weight:700;cursor:pointer;
+                       color:#a5b4fc;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#a5b4fc'">
+                H1
+            </button>
 
-                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+            <button type="button" onclick="execRichCmd('formatBlock','H2')" title="Heading 2"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:11px;font-weight:700;cursor:pointer;
+                       color:#a5b4fc;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#a5b4fc'">
+                H2
+            </button>
 
-                <button type="button" onclick="execRichCmd('insertUnorderedList')"
-                    title="Bullet list"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:12px;cursor:pointer;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">• List</button>
+            <div style="width:1px;background:#3d3d5c;margin:0 4px;"></div>
 
-                <button type="button" onclick="execRichCmd('insertOrderedList')"
-                    title="Numbered list"
-                    style="padding:5px 10px;border:1px solid #e5e7eb;border-radius:6px;
-                           background:white;font-size:12px;cursor:pointer;
-                           color:#1f2937;transition:all 0.15s;"
-                    onmouseover="this.style.background='#f0fdf4';this.style.borderColor='#10b981'"
-                    onmouseout="this.style.background='white';this.style.borderColor='#e5e7eb'">1. List</button>
+            <button type="button" onclick="execRichCmd('insertUnorderedList')" title="Bullet list"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:12px;cursor:pointer;
+                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
+                • List
+            </button>
 
-                <div style="width:1px;background:#e5e7eb;margin:0 4px;"></div>
+            <button type="button" onclick="execRichCmd('insertOrderedList')" title="Numbered list"
+                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
+                       background:#2d2d44;font-size:12px;cursor:pointer;
+                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
+                1. List
+            </button>
 
-                <button type="button" onclick="clearRichEditor()"
-                    title="Clear"
-                    style="padding:5px 10px;border:1px solid #fee2e2;border-radius:6px;
-                           background:white;font-size:11px;cursor:pointer;
-                           color:#ef4444;transition:all 0.15s;"
-                    onmouseover="this.style.background='#fee2e2'"
-                    onmouseout="this.style.background='white'">Clear</button>
-            </div>
+            <div style="flex:1;"></div>
 
-            <!-- Editor area -->
-            <div id="richTextEditor"
-                 contenteditable="true"
-                 spellcheck="true"
-                 data-placeholder="Write your answer here..."
-                 oninput="updateWordCount()"
-                 style="min-height:220px;padding:16px;
-                        border:1.5px solid #e5e7eb;border-radius:0 0 12px 12px;
-                        font-size:14px;color:#1f2937;line-height:1.75;
-                        outline:none;background:white;
-                        font-family:'Plus Jakarta Sans',sans-serif;
-                        transition:border-color 0.2s;"
-                 onfocus="this.style.borderColor='#10b981'"
-                 onblur="this.style.borderColor='#e5e7eb'"></div>
+            <button type="button" onclick="clearRichEditor()" title="Clear all"
+                style="padding:5px 11px;border:1px solid #7f1d1d;border-radius:6px;
+                       background:#2d2d44;font-size:11px;cursor:pointer;
+                       color:#fca5a5;transition:all 0.15s;font-family:inherit;"
+                onmouseover="this.style.background='#ef4444';this.style.borderColor='#ef4444';this.style.color='white'"
+                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#7f1d1d';this.style.color='#fca5a5'">
+                <i class="fas fa-trash-alt"></i> Clear
+            </button>
+        </div>
 
-            <!-- Word count -->
-            <div style="display:flex;justify-content:space-between;align-items:center;
-                        margin-top:6px;padding:0 4px;">
-                <span style="font-size:11px;color:#9ca3af;">
-                    <i class="fas fa-info-circle"></i> 
-                    Use the toolbar to format your answer
-                </span>
-                <span id="richWordCount" style="font-size:11px;color:#9ca3af;">0 words</span>
-            </div>
-        </div>`;
-    }
+        <!-- The actual writing area -->
+        <div id="richTextEditor"
+             contenteditable="true"
+             spellcheck="true"
+             oninput="updateWordCount()"
+             style="min-height:280px;
+                    padding:20px 22px;
+                    border:1.5px solid #2d2d44;
+                    border-radius:0 0 12px 12px;
+                    font-size:14px;
+                    color:#e5e7eb;
+                    line-height:1.85;
+                    outline:none;
+                    background:#0f0f1a;
+                    font-family:'Plus Jakarta Sans',sans-serif;
+                    transition:border-color 0.2s;
+                    caret-color:#10b981;"
+             onfocus="this.style.borderColor='#10b981';this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.15)'"
+             onblur="this.style.borderColor='#2d2d44';this.style.boxShadow='none'"
+             data-placeholder="Write your answer here..."></div>
 
-    if (submissionType === 'file' || submissionType === 'both') {
-        inputHTML += `
-            <div style="margin-bottom:20px;">
-                <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
-                    <i class="fas fa-upload" style="color:#10b981;margin-right:6px;"></i>
-                    Upload File ${submissionType === 'file' ? '*' : '(optional)'}
-                </label>
-                <div id="assignDropZone"
-                     style="border:2px dashed #d1d5db;border-radius:14px;padding:32px;
-                            text-align:center;cursor:pointer;transition:all 0.3s;background:#f9fafb;"
-                     onclick="document.getElementById('assignmentFileInput').click()"
-                     ondragover="event.preventDefault();this.style.borderColor='#10b981';this.style.background='#f0fdf4';"
-                     ondragleave="this.style.borderColor='#d1d5db';this.style.background='#f9fafb';"
-                     ondrop="handleAssignmentFileDrop(event)">
-                    <i class="fas fa-cloud-upload-alt" style="font-size:36px;color:#10b981;margin-bottom:12px;display:block;"></i>
-                    <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:6px;">Drag & drop your file here</div>
-                    <div style="font-size:13px;color:#6b7280;">or click to browse &nbsp;•&nbsp; PDF, DOC, DOCX, TXT, ZIP &nbsp;•&nbsp; Max 10MB</div>
-                    <div id="assignDropFileName" style="margin-top:14px;font-size:13px;font-weight:700;color:#10b981;display:none;"></div>
-                </div>
-                <input type="file" id="assignmentFileInput" accept=".pdf,.doc,.docx,.txt,.zip"
-                       style="display:none;" onchange="showAssignmentFileName(this)">
-            </div>`;
-    }
+        <!-- Bottom bar: word count + tip -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    margin-top:8px;padding:0 4px;">
+            <span style="font-size:11px;color:#6b7280;">
+                <i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i>
+                Tip: Use headings and bullet points to structure your answer
+            </span>
+            <span id="richWordCount"
+                  style="font-size:12px;font-weight:700;color:#10b981;
+                         background:#f0fdf4;padding:3px 10px;border-radius:20px;">
+                0 words
+            </span>
+        </div>
+    </div>`;
+}
+
+   
 
     const modal = document.createElement('div');
     modal.id = 'submitAssignmentModal';
@@ -1046,41 +1075,20 @@ window.showAssignmentFileName = function(inputOrEvent) {
 
 
 window.handleSubmitAssignment = async function(assignmentId, submissionType) {
-    const fileInput = document.getElementById('assignmentFileInput');
-    const textInput = document.getElementById('assignmentTextInput');
-    const btn       = document.querySelector('#submitAssignmentModal button[onclick*="handleSubmitAssignment"]');
+    const btn = document.querySelector('#submitAssignmentModal button[onclick*="handleSubmitAssignment"]');
 
-    let fileUrl = null, textResponse = null;
+    // Read from rich text editor only
+    const richEditor = document.getElementById('richTextEditor');
+    const textResponse = richEditor?.innerText?.trim() ? richEditor.innerHTML.trim() : null;
 
-    if (submissionType === 'file' && !fileInput?.files?.[0]) {
-        showToast('Please upload a file before submitting', 'warning'); return;
-    }
-    if (submissionType === 'text' && !textInput?.value.trim()) {
-        showToast('Please enter a text response before submitting', 'warning'); return;
+    if (!textResponse) {
+        showToast('Please write your response before submitting', 'warning');
+        return;
     }
 
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...'; }
 
-    if (fileInput?.files?.[0]) {
-        showToast('Uploading file...', 'success');
-        const uploadResult = await uploadAssignmentFile(fileInput.files[0], assignmentId);
-        if (!uploadResult.success) {
-            showToast('Upload failed: ' + uploadResult.error, 'error');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment'; }
-            return;
-        }
-        fileUrl = uploadResult.fileUrl;
-    }
-
-    // Support both plain textarea and rich text editor
-const richEditor = document.getElementById('richTextEditor');
-if (richEditor && richEditor.innerHTML.trim() && richEditor.innerText.trim()) {
-    textResponse = richEditor.innerHTML.trim();
-} else if (textInput?.value.trim()) {
-    textResponse = textInput.value.trim();
-}
-
-    const result = await submitAssignment(assignmentId, { fileUrl, textResponse });
+    const result = await submitAssignment(assignmentId, { fileUrl: null, textResponse });
 
     if (!result.success) {
         showToast('Submission failed: ' + result.error, 'error');
@@ -1088,13 +1096,12 @@ if (richEditor && richEditor.innerHTML.trim() && richEditor.innerText.trim()) {
         return;
     }
 
-document.getElementById('submitAssignmentModal')?.remove();
+    document.getElementById('submitAssignmentModal')?.remove();
     showToast('Assignment submitted successfully! ✅', 'success');
 
     const courseId = window.currentCourseId || window.currentCourse;
     if (courseId && typeof loadCourseAssignmentsUI === 'function') loadCourseAssignmentsUI(courseId);
 
-    // ✅ Sync progress after assignment submission
     if (typeof syncCourseProgressToDB === 'function' && courseId) {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (user) await syncCourseProgressToDB(user.id, courseId);
