@@ -1643,19 +1643,23 @@ window.coursesData = coursesData;
 async function loadCoursesFromDB() {
     const { data: courses } = await db
         .from('courses')
-        .select('id, title, description, order_num')
+        .select('id, title, description, order_num, lesson_count, icon, category, student_count, instructor')
         .order('order_num', { ascending: true });
     
     if (!courses) return;
     
-  courses.forEach(course => {
+    courses.forEach(course => {
         coursesData[course.id] = {
             id: course.id,
             title: course.title,
-            instructor: 'Instructor',
+            instructor: course.instructor || 'ASAI Instructor',
             description: course.description || '',
             progress: 0,
             order_num: course.order_num ?? 999,
+            lesson_count: course.lesson_count || 0,
+            icon: course.icon || null,
+            category: course.category || null,
+            student_count: course.student_count || null,
             notes: [],
             videos: [],
             quizzes: [],
@@ -1663,9 +1667,9 @@ async function loadCoursesFromDB() {
         };
     });
     
-    console.log('✅ Courses loaded:', Object.keys(coursesData));
+    console.log('✅ Courses loaded:', coursesData);
 
-// Load real progress from enrollments table
+    // Load real progress from enrollments table
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session?.user) {
         const user = session.user;
@@ -1687,6 +1691,7 @@ async function loadCoursesFromDB() {
         calculateProfileStats();
     }
 }
+
 function renderCourseCards() {
     const grids = [
         document.getElementById('courseSelection'),
@@ -1707,23 +1712,20 @@ function renderCourseCards() {
         grid.innerHTML = '';
 
         Object.values(coursesData).forEach((course, index) => {
-            const progress    = course.progress || 0;
-            const thumbColor  = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
-            const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
-const fallbackCategories  = ['AI', 'Data Science', 'Coding', 'ML'];
-const fallbackLessons     = [24, 18, 20, 16];
-const fallbackStudents    = ['45+', '30+', '28+', '22+'];
-
-const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
-const category    = course.category      || fallbackCategories[index % fallbackCategories.length];
-const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
-const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
-const instructor  = course.instructor    || 'ASAI Instructor';
+            const progress = course.progress || 0;
+            const thumbColor = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
+            
+            // Get REAL lesson count from course data or use fallback
+            const lessonCount = course.lesson_count || 0;
+            const icon = course.icon || getFallbackIcon(index);
+            const category = course.category || getFallbackCategory(index);
+            const studentNum = course.student_count || getFallbackStudents(index);
+            const instructor = course.instructor || 'ASAI Instructor';
 
             const isCompleted = progress >= 90;
-            const isStarted   = progress > 0 && !isCompleted;
-            const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
-            const btnColor    = isCompleted ? '#1D9E75'     : isStarted ? '#378ADD'  : '#7F77DD';
+            const isStarted = progress > 0 && !isCompleted;
+            const btnLabel = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
+            const btnColor = isCompleted ? '#1D9E75' : isStarted ? '#378ADD' : '#7F77DD';
 
             const progLabel = isCompleted
                 ? '<span style="color:#1D9E75;">✓ Completed!</span>'
@@ -1744,7 +1746,7 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                     display:flex; align-items:center; justify-content:center;
                     position:relative; overflow:hidden; flex-shrink:0;
                 ">
-                    ${lessonCount ? `
+                    ${lessonCount > 0 ? `
                     <span style="
                         position:absolute; top:11px; left:11px;
                         background:rgba(0,0,0,0.38); color:#fff;
@@ -1752,7 +1754,7 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                         padding:3px 9px; border-radius:20px;
                         display:flex; align-items:center; gap:4px;
                     ">
-                        <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessonCount}x lesson
+                        <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessonCount} ${lessonCount === 1 ? 'lesson' : 'lessons'}
                     </span>` : ''}
 
                     ${category ? `
@@ -1841,7 +1843,23 @@ const instructor  = course.instructor    || 'ASAI Instructor';
         });
     });
 
-    console.log('✅ Course cards rendered');
+    console.log('✅ Course cards rendered with real lesson counts');
+}
+
+// Helper functions for fallbacks
+function getFallbackIcon(index) {
+    const icons = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain', 'fa-chart-line', 'fa-bullhorn'];
+    return icons[index % icons.length];
+}
+
+function getFallbackCategory(index) {
+    const categories = ['AI', 'Data Science', 'Coding', 'ML', 'Analytics', 'Business'];
+    return categories[index % categories.length];
+}
+
+function getFallbackStudents(index) {
+    const students = ['45+', '30+', '28+', '22+', '35+', '40+'];
+    return students[index % students.length];
 }
         // Initialize Dashboard
 async function initDashboard() {
