@@ -833,217 +833,423 @@ function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData)
         ? new Date(assignmentData.due_date).toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })
         : '';
 
-  let inputHTML = '';
+    let inputHTML = '';
 
-    // ── RICH TEXT EDITOR (always shown for text/both, enhanced for file types) ──
-if (submissionType === 'text' || submissionType === 'both' || submissionType === 'file') {
+    // Assignment Brief Section - IMPROVED DISPLAY
     inputHTML += `
-    <div style="margin-bottom:20px;">
+    <div style="margin-bottom:25px;">
+        <!-- Assignment Brief Card - WIDER, FULL WIDTH -->
+        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);
+                    border:2px solid #10b981;
+                    border-radius:20px;
+                    padding:24px 28px;
+                    margin-bottom:24px;
+                    width:100%;
+                    box-sizing:border-box;">
+            
+            <!-- Header with icon -->
+            <div style="display:flex;
+                        align-items:center;
+                        gap:12px;
+                        margin-bottom:20px;
+                        border-bottom:2px solid #bbf7d0;
+                        padding-bottom:16px;">
+                <div style="background:#10b981;
+                            width:44px;
+                            height:44px;
+                            border-radius:50%;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;">
+                    <i class="fas fa-file-alt" style="color:white;font-size:20px;"></i>
+                </div>
+                <div>
+                    <div style="font-size:12px;
+                                font-weight:700;
+                                letter-spacing:2px;
+                                text-transform:uppercase;
+                                color:#059669;">
+                        WEEK 2 ASSIGNMENT
+                    </div>
+                    <div style="font-size:20px;
+                                font-weight:800;
+                                color:#1f2937;">
+                        ${escapeHtml(assignmentData?.title || 'Assignment')}
+                    </div>
+                </div>
+                <div style="margin-left:auto;">
+                    <span style="background:#fef3c7;
+                                 color:#d97706;
+                                 padding:6px 16px;
+                                 border-radius:30px;
+                                 font-size:13px;
+                                 font-weight:700;">
+                        ${assignmentData?.max_points || 100} pts
+                    </span>
+                </div>
+            </div>
 
-        <!-- Assignment brief banner -->
-        <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;
-                    border-radius:14px;padding:16px 20px;margin-bottom:18px;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;
-                        color:#059669;margin-bottom:6px;">
-                <i class="fas fa-tasks"></i> Assignment Brief
+            <!-- Assignment Questions Display -->
+            <div style="margin-bottom:20px;">
+                <div style="font-size:13px;
+                            font-weight:700;
+                            color:#059669;
+                            margin-bottom:10px;
+                            display:flex;
+                            align-items:center;
+                            gap:8px;">
+                    <i class="fas fa-question-circle"></i> ASSIGNMENT BRIEF
+                </div>
+                <div style="background:white;
+                            border-radius:16px;
+                            padding:20px 24px;
+                            font-size:15px;
+                            color:#374151;
+                            line-height:1.8;
+                            border-left:4px solid #10b981;">
+                    ${assignmentData?.instructions ? 
+                        assignmentData.instructions
+                            .split('\n')
+                            .map(line => `<p style="margin:0 0 12px 0;">${escapeHtml(line)}</p>`)
+                            .join('') 
+                        : '<p>No instructions provided.</p>'}
+                </div>
             </div>
-            <div style="font-size:14px;color:#1f2937;line-height:1.6;font-weight:500;">
-                ${assignmentData?.instructions ? escapeHtml(assignmentData.instructions) : 'Complete the assignment below.'}
-            </div>
-            <div style="display:flex;gap:16px;margin-top:10px;font-size:12px;color:#6b7280;">
-                ${assignmentData?.due_date ? `<span><i class="fas fa-calendar-alt" style="color:#10b981;margin-right:4px;"></i>Due: ${new Date(assignmentData.due_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>` : ''}
-                ${assignmentData?.max_points ? `<span><i class="fas fa-star" style="color:#f59e0b;margin-right:4px;"></i>${assignmentData.max_points} points</span>` : ''}
+
+            <!-- Meta info row -->
+            <div style="display:flex;
+                        gap:20px;
+                        flex-wrap:wrap;
+                        padding-top:12px;
+                        border-top:1px solid #d1fae5;
+                        font-size:13px;
+                        color:#6b7280;">
+                ${assignmentData?.due_date ? `
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-calendar-alt" style="color:#10b981;"></i>
+                    <span>Due: ${new Date(assignmentData.due_date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span>
+                </div>` : ''}
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-star" style="color:#f59e0b;"></i>
+                    <span>${assignmentData?.max_points || 100} points possible</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <i class="fas fa-pen-fancy" style="color:#7c3aed;"></i>
+                    <span>Written Response</span>
+                </div>
             </div>
         </div>
 
         <!-- Writing area label -->
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-            <label style="font-weight:700;color:#1f2937;font-size:14px;">
-                <i class="fas fa-pen-nib" style="color:#10b981;margin-right:6px;"></i>
-                Your Response ${submissionType === 'text' ? '*' : '(optional)'}
+        <div style="display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-bottom:12px;">
+            <label style="font-weight:700;
+                         color:#1f2937;
+                         font-size:15px;">
+                <i class="fas fa-pen-nib" style="color:#10b981;margin-right:8px;"></i>
+                Your Answer
             </label>
-            <span style="font-size:11px;color:#9ca3af;background:#f3f4f6;
-                         padding:3px 10px;border-radius:20px;">
-                <i class="fas fa-keyboard"></i> Write below
+            <span style="font-size:12px;
+                         color:#9ca3af;
+                         background:#f3f4f6;
+                         padding:4px 12px;
+                         border-radius:30px;">
+                <i class="fas fa-lightbulb"></i> Use headings and bullet points
             </span>
         </div>
 
-        <!-- Toolbar -->
-        <div style="display:flex;gap:5px;flex-wrap:wrap;padding:10px 14px;
-                    background:#1a1a2e;border-radius:12px 12px 0 0;
-                    border:1.5px solid #2d2d44;border-bottom:none;">
+        <!-- Toolbar - FULL WIDTH -->
+        <div style="display:flex;
+                    gap:6px;
+                    flex-wrap:wrap;
+                    padding:12px 16px;
+                    background:#1a1a2e;
+                    border-radius:16px 16px 0 0;
+                    border:1.5px solid #2d2d44;
+                    border-bottom:none;">
 
             <button type="button" onclick="execRichCmd('bold')" title="Bold"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:12px;font-weight:700;cursor:pointer;
-                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:13px;
+                       font-weight:700;
+                       cursor:pointer;
+                       color:#e5e7eb;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
-                <b>B</b>
+                <b>Bold</b>
             </button>
 
             <button type="button" onclick="execRichCmd('italic')" title="Italic"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:12px;cursor:pointer;
-                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:13px;
+                       cursor:pointer;
+                       color:#e5e7eb;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
-                <i>I</i>
+                <i>Italic</i>
             </button>
 
-            <button type="button" onclick="execRichCmd('underline')" title="Underline"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:12px;cursor:pointer;
-                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;text-decoration:underline;"
-                onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
-                onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
-                U
-            </button>
+            <div style="width:1px;background:#3d3d5c;margin:0 6px;"></div>
 
-            <div style="width:1px;background:#3d3d5c;margin:0 4px;"></div>
-
-            <button type="button" onclick="execRichCmd('formatBlock','H1')" title="Heading 1"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:11px;font-weight:700;cursor:pointer;
-                       color:#a5b4fc;transition:all 0.15s;font-family:inherit;"
+            <button type="button" onclick="execRichCmd('formatBlock','h1')" title="Heading 1"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:12px;
+                       font-weight:700;
+                       cursor:pointer;
+                       color:#a5b4fc;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#a5b4fc'">
-                H1
+                Heading 1
             </button>
 
-            <button type="button" onclick="execRichCmd('formatBlock','H2')" title="Heading 2"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:11px;font-weight:700;cursor:pointer;
-                       color:#a5b4fc;transition:all 0.15s;font-family:inherit;"
+            <button type="button" onclick="execRichCmd('formatBlock','h2')" title="Heading 2"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:12px;
+                       font-weight:700;
+                       cursor:pointer;
+                       color:#a5b4fc;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#a5b4fc'">
-                H2
+                Heading 2
             </button>
 
-            <div style="width:1px;background:#3d3d5c;margin:0 4px;"></div>
+            <div style="width:1px;background:#3d3d5c;margin:0 6px;"></div>
 
             <button type="button" onclick="execRichCmd('insertUnorderedList')" title="Bullet list"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:12px;cursor:pointer;
-                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:12px;
+                       cursor:pointer;
+                       color:#e5e7eb;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
-                • List
+                • Bullet List
             </button>
 
             <button type="button" onclick="execRichCmd('insertOrderedList')" title="Numbered list"
-                style="padding:5px 11px;border:1px solid #3d3d5c;border-radius:6px;
-                       background:#2d2d44;font-size:12px;cursor:pointer;
-                       color:#e5e7eb;transition:all 0.15s;font-family:inherit;"
+                style="padding:6px 14px;
+                       border:1px solid #3d3d5c;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:12px;
+                       cursor:pointer;
+                       color:#e5e7eb;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#10b981';this.style.borderColor='#10b981';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#3d3d5c';this.style.color='#e5e7eb'">
-                1. List
+                1. Numbered List
             </button>
 
             <div style="flex:1;"></div>
 
             <button type="button" onclick="clearRichEditor()" title="Clear all"
-                style="padding:5px 11px;border:1px solid #7f1d1d;border-radius:6px;
-                       background:#2d2d44;font-size:11px;cursor:pointer;
-                       color:#fca5a5;transition:all 0.15s;font-family:inherit;"
+                style="padding:6px 14px;
+                       border:1px solid #7f1d1d;
+                       border-radius:8px;
+                       background:#2d2d44;
+                       font-size:12px;
+                       cursor:pointer;
+                       color:#fca5a5;
+                       transition:all 0.15s;"
                 onmouseover="this.style.background='#ef4444';this.style.borderColor='#ef4444';this.style.color='white'"
                 onmouseout="this.style.background='#2d2d44';this.style.borderColor='#7f1d1d';this.style.color='#fca5a5'">
                 <i class="fas fa-trash-alt"></i> Clear
             </button>
         </div>
 
-        <!-- The actual writing area -->
+        <!-- The writing area - WIDER, FULL WIDTH -->
         <div id="richTextEditor"
              contenteditable="true"
              spellcheck="true"
              oninput="updateWordCount()"
-             style="min-height:280px;
-                    padding:20px 22px;
+             style="min-height:350px;
+                    width:100%;
+                    padding:24px 28px;
                     border:1.5px solid #2d2d44;
-                    border-radius:0 0 12px 12px;
-                    font-size:14px;
+                    border-radius:0 0 16px 16px;
+                    font-size:15px;
                     color:#e5e7eb;
-                    line-height:1.85;
+                    line-height:1.9;
                     outline:none;
                     background:#0f0f1a;
                     font-family:'Plus Jakarta Sans',sans-serif;
                     transition:border-color 0.2s;
-                    caret-color:#10b981;"
+                    caret-color:#10b981;
+                    box-sizing:border-box;"
              onfocus="this.style.borderColor='#10b981';this.style.boxShadow='0 0 0 3px rgba(16,185,129,0.15)'"
              onblur="this.style.borderColor='#2d2d44';this.style.boxShadow='none'"
              data-placeholder="Write your answer here..."></div>
 
-        <!-- Bottom bar: word count + tip -->
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    margin-top:8px;padding:0 4px;">
-            <span style="font-size:11px;color:#6b7280;">
-                <i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:4px;"></i>
-                Tip: Use headings and bullet points to structure your answer
+        <!-- Word count and tip bar -->
+        <div style="display:flex;
+                    align-items:center;
+                    justify-content:space-between;
+                    margin-top:12px;
+                    padding:8px 4px;">
+            <span style="font-size:12px;
+                         color:#6b7280;">
+                <i class="fas fa-lightbulb" style="color:#f59e0b;margin-right:8px;"></i>
+                <strong>Tip:</strong> Use headings and bullet points to structure your answer
             </span>
             <span id="richWordCount"
-                  style="font-size:12px;font-weight:700;color:#10b981;
-                         background:#f0fdf4;padding:3px 10px;border-radius:20px;">
+                  style="font-size:13px;
+                         font-weight:800;
+                         color:#10b981;
+                         background:#f0fdf4;
+                         padding:5px 14px;
+                         border-radius:30px;">
                 0 words
             </span>
         </div>
     </div>`;
-}
-
-   
 
     const modal = document.createElement('div');
     modal.id = 'submitAssignmentModal';
-    modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
-        background:rgba(0,0,0,0.75);z-index:9999;display:flex;align-items:center;
-        justify-content:center;padding:20px;backdrop-filter:blur(4px);animation:fadeIn 0.25s ease;`;
+    modal.style.cssText = `position:fixed;
+                           top:0;
+                           left:0;
+                           width:100%;
+                           height:100%;
+                           background:rgba(0,0,0,0.85);
+                           z-index:10000;
+                           display:flex;
+                           align-items:center;
+                           justify-content:center;
+                           padding:20px;
+                           backdrop-filter:blur(5px);
+                           animation:fadeIn 0.25s ease;`;
 
     modal.innerHTML = `
-        <div style="background:white;border-radius:24px;width:100%;max-width:600px;
-                    max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
-                    box-shadow:0 30px 80px rgba(0,0,0,0.3);">
+        <div style="background:white;
+                    border-radius:28px;
+                    width:100%;
+                    max-width:900px;
+                    max-height:90vh;
+                    overflow:hidden;
+                    display:flex;
+                    flex-direction:column;
+                    box-shadow:0 30px 80px rgba(0,0,0,0.4);">
+            
+            <!-- Header -->
             <div style="background:linear-gradient(135deg,#10b981,#047857);
-                        padding:24px 28px;color:white;flex-shrink:0;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        padding:28px 32px;
+                        color:white;
+                        flex-shrink:0;">
+                <div style="display:flex;
+                            justify-content:space-between;
+                            align-items:flex-start;">
                     <div>
-                        <div style="font-size:11px;font-weight:700;letter-spacing:2px;
-                                    text-transform:uppercase;opacity:0.8;margin-bottom:6px;">
-                            <i class="fas fa-tasks"></i> Submit Assignment
+                        <div style="font-size:11px;
+                                    font-weight:700;
+                                    letter-spacing:2px;
+                                    text-transform:uppercase;
+                                    opacity:0.8;
+                                    margin-bottom:8px;">
+                            <i class="fas fa-tasks"></i> SUBMIT ASSIGNMENT
                         </div>
-                        <div style="font-size:18px;font-weight:800;line-height:1.3;">
-                            ${assignmentData?.title ? escapeHtml(assignmentData.title) : 'Assignment'}
+                        <div style="font-size:22px;
+                                    font-weight:800;
+                                    line-height:1.3;">
+                            ${escapeHtml(assignmentData?.title || 'Assignment')}
                         </div>
-                        ${dueDate ? `<div style="font-size:12px;opacity:0.85;margin-top:5px;">
+                        ${dueDate ? `<div style="font-size:13px;
+                                                opacity:0.85;
+                                                margin-top:8px;">
                             <i class="fas fa-calendar-alt"></i> Due: ${dueDate}
-                            &nbsp;•&nbsp;
-                            <i class="fas fa-star"></i> ${assignmentData?.max_points || 100} pts
                         </div>` : ''}
                     </div>
                     <button onclick="document.getElementById('submitAssignmentModal').remove()"
-                            style="background:rgba(255,255,255,0.2);border:none;color:white;
-                                   width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:16px;
-                                   display:flex;align-items:center;justify-content:center;flex-shrink:0;"
+                            style="background:rgba(255,255,255,0.2);
+                                   border:none;
+                                   color:white;
+                                   width:42px;
+                                   height:42px;
+                                   border-radius:50%;
+                                   cursor:pointer;
+                                   font-size:18px;
+                                   display:flex;
+                                   align-items:center;
+                                   justify-content:center;
+                                   flex-shrink:0;
+                                   transition:all 0.2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.35)'"
                             onmouseout="this.style.background='rgba(255,255,255,0.2)'">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
             </div>
-            <div style="padding:24px 28px;overflow-y:auto;flex:1;">
+
+            <!-- Scrollable content -->
+            <div style="padding:28px 32px;
+                        overflow-y:auto;
+                        flex:1;
+                        background:#fafafa;">
                 ${inputHTML}
             </div>
-            <div style="padding:18px 28px;background:#f9fafb;border-top:2px solid #f3f4f6;
-                        display:flex;gap:12px;flex-shrink:0;">
+
+            <!-- Footer buttons -->
+            <div style="padding:20px 32px;
+                        background:white;
+                        border-top:2px solid #f3f4f6;
+                        display:flex;
+                        gap:16px;
+                        flex-shrink:0;">
                 <button onclick="document.getElementById('submitAssignmentModal').remove()"
-                        style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
-                               background:white;color:#6b7280;font-weight:700;cursor:pointer;
-                               font-family:inherit;font-size:14px;">
+                        style="flex:1;
+                               padding:14px;
+                               border:2px solid #e5e7eb;
+                               border-radius:14px;
+                               background:white;
+                               color:#6b7280;
+                               font-weight:700;
+                               cursor:pointer;
+                               font-family:inherit;
+                               font-size:14px;
+                               transition:all 0.2s;"
+                        onmouseover="this.style.borderColor='#10b981';this.style.color='#10b981'"
+                        onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#6b7280'">
                     Cancel
                 </button>
                 <button onclick="handleSubmitAssignment('${assignmentId}', '${submissionType}')"
-                        style="flex:2;padding:13px;background:linear-gradient(135deg,#10b981,#059669);
-                               border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;
-                               font-family:inherit;font-size:14px;display:flex;align-items:center;
-                               justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
+                        style="flex:2;
+                               padding:14px;
+                               background:linear-gradient(135deg,#10b981,#059669);
+                               border:none;
+                               border-radius:14px;
+                               color:white;
+                               font-weight:800;
+                               cursor:pointer;
+                               font-family:inherit;
+                               font-size:15px;
+                               display:flex;
+                               align-items:center;
+                               justify-content:center;
+                               gap:10px;
+                               box-shadow:0 4px 14px rgba(16,185,129,0.4);
+                               transition:all 0.3s;"
+                        onmouseover="this.style.transform='translateY(-2px)'"
+                        onmouseout="this.style.transform='translateY(0)'">
                     <i class="fas fa-paper-plane"></i> Submit Assignment
                 </button>
             </div>
