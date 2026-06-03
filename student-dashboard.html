@@ -3274,33 +3274,21 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
     console.log('🔍 _topicAssessments:', window._topicAssessments?.map(a => ({topic_id: a.topic_id, type: a.assessment_type})));
 
     const subs = window._quizSubmissions || [];
-  const topicAssessments  = window._topicAssessments  || [];
 const chapterAssessments = window._chapterAssessments || [];
 
 // Find the chapter this topic belongs to
 const currentNote = currentCourseNotes.find(n => n.id === topicId);
 const chapterId   = currentNote?.chapterId || null;
 
-// Get topic-level assessments for this specific topic
-const topicQuizzes = topicAssessments
-    .filter(a => a.topic_id === topicId && a.assessment_type === 'quiz' && a.quizzes);
+// Get assessments for this chapter
+const allQuizzes = chapterAssessments.filter(
+    a => a.chapter_id === chapterId && a.assessment_type === 'quiz' && a.quizzes
+);
+const allAssigns = chapterAssessments.filter(
+    a => a.chapter_id === chapterId && a.assessment_type === 'assignment' && a.assignments
+);
 
-const topicAssigns = topicAssessments
-    .filter(a => a.topic_id === topicId && a.assessment_type === 'assignment' && a.assignments);
-
-// Also get chapter-level assessments if no topic-level found
-const chapterQuizzes = topicQuizzes.length === 0 && chapterId
-    ? chapterAssessments.filter(a => a.chapter_id === chapterId && a.assessment_type === 'quiz' && a.quizzes)
-    : [];
-
-const chapterAssigns = topicAssigns.length === 0 && chapterId
-    ? chapterAssessments.filter(a => a.chapter_id === chapterId && a.assessment_type === 'assignment' && a.assignments)
-    : [];
-
-// Combine both
-const allQuizzes = [...topicQuizzes, ...chapterQuizzes];
-const allAssigns = [...topicAssigns, ...chapterAssigns];
-    if (!topicQuizzes.length && !topicAssigns.length) return '';
+if (!allQuizzes.length && !allAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
@@ -3397,62 +3385,60 @@ const allAssigns = [...topicAssigns, ...chapterAssigns];
 }
 async function loadTopicAssessments(courseId) {
     try {
-        // First fetch without join to check raw data
-        const { data: rawAssessments, error: rawErr } = await supabaseClient
-            .from('chapter_assessments')
-            .select('id, topic_id, assessment_type, quiz_id, assignment_id, chapter_id')
-            .eq('course_id', courseId);
+        // Fetch quizzes linked via chapter_id directly
+        const { data: directQuizzes } = await supabaseClient
+            .from('quizzes')
+            .select('id, title, time_limit, passing_score, chapter_id')
+            .eq('course_id', courseId)
+            .not('chapter_id', 'is', null);
 
-        console.log('Raw assessments for course:', rawAssessments?.length, rawAssessments);
+        // Fetch assignments linked via chapter_id directly
+        const { data: directAssigns } = await supabaseClient
+            .from('assignments')
+            .select('id, title, due_date, max_points, instructions, chapter_id')
+            .eq('course_id', courseId)
+            .not('chapter_id', 'is', null);
 
-        if (rawErr) throw rawErr;
+        console.log('Direct quizzes:', directQuizzes?.length, directQuizzes);
+        console.log('Direct assigns:', directAssigns?.length, directAssigns);
 
-        if (!rawAssessments || rawAssessments.length === 0) {
-            window._topicAssessments = [];
-            return;
-        }
+        // Build synthetic assessment rows from direct chapter_id links
+        const syntheticRows = [];
 
-        // Now fetch with joins separately
-        const quizIds   = [...new Set(rawAssessments.filter(a => a.quiz_id).map(a => a.quiz_id))];
-        const assignIds = [...new Set(rawAssessments.filter(a => a.assignment_id).map(a => a.assignment_id))];
+        (directQuizzes || []).forEach(q => {
+            syntheticRows.push({
+                id: 'direct-quiz-' + q.id,
+                topic_id: null,
+                chapter_id: q.chapter_id,
+                assessment_type: 'quiz',
+                quiz_id: q.id,
+                assignment_id: null,
+                quizzes: q,
+                assignments: null
+            });
+        });
 
-        // Fetch quizzes
-        let quizMap = {};
-        if (quizIds.length > 0) {
-            const { data: quizzes } = await supabaseClient
-                .from('quizzes')
-                .select('id, title, time_limit, passing_score')
-                .in('id', quizIds);
-            (quizzes || []).forEach(q => { quizMap[q.id] = q; });
-        }
+        (directAssigns || []).forEach(a => {
+            syntheticRows.push({
+                id: 'direct-assign-' + a.id,
+                topic_id: null,
+                chapter_id: a.chapter_id,
+                assessment_type: 'assignment',
+                quiz_id: null,
+                assignment_id: a.id,
+                quizzes: null,
+                assignments: a
+            });
+        });
 
-        // Fetch assignments
-        let assignMap = {};
-        if (assignIds.length > 0) {
-            const { data: assigns } = await supabaseClient
-                .from('assignments')
-                .select('id, title, due_date, max_points, instructions')
-                .in('id', assignIds);
-            (assigns || []).forEach(a => { assignMap[a.id] = a; });
-        }
+        window._topicAssessments   = syntheticRows;
+        window._chapterAssessments = syntheticRows; // all are chapter-level
 
-        // Merge everything including rows WITHOUT topic_id
-        window._topicAssessments = rawAssessments.map(a => ({
-            ...a,
-            quizzes:     a.quiz_id       ? quizMap[a.quiz_id]     : null,
-            assignments: a.assignment_id ? assignMap[a.assignment_id] : null
-        }));
-
-        // Also store chapter-level ones separately
-        window._chapterAssessments = window._topicAssessments.filter(a => !a.topic_id);
-
-        console.log('✅ Topic assessments loaded:', window._topicAssessments.length);
-        console.log('✅ Chapter assessments loaded:', window._chapterAssessments?.length);
-        console.log('Sample:', window._topicAssessments[0]);
+        console.log('✅ Assessments loaded:', syntheticRows.length);
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
-        window._topicAssessments = [];
+        window._topicAssessments   = [];
         window._chapterAssessments = [];
     }
 }
