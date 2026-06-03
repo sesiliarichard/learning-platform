@@ -3274,13 +3274,19 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
     console.log('🔍 _topicAssessments:', window._topicAssessments?.map(a => ({topic_id: a.topic_id, type: a.assessment_type})));
 
     const subs = window._quizSubmissions || [];
-const chapterAssessments = window._chapterAssessments || [];
 
-// Find the chapter this topic belongs to
+// Find this topic's chapter
 const currentNote = currentCourseNotes.find(n => n.id === topicId);
-const chapterId   = currentNote?.chapterId || null;
+if (!currentNote) return '';
+const chapterId = currentNote.chapterId;
+
+// Only show on the LAST topic of the chapter
+const chapterTopics = currentCourseNotes.filter(n => n.chapterId === chapterId);
+const lastTopicInChapter = chapterTopics[chapterTopics.length - 1];
+if (!lastTopicInChapter || lastTopicInChapter.id !== topicId) return '';
 
 // Get assessments for this chapter
+const chapterAssessments = window._chapterAssessments || [];
 const allQuizzes = chapterAssessments.filter(
     a => a.chapter_id === chapterId && a.assessment_type === 'quiz' && a.quizzes
 );
@@ -3289,7 +3295,6 @@ const allAssigns = chapterAssessments.filter(
 );
 
 if (!allQuizzes.length && !allAssigns.length) return '';
-
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
    const quizCards = allQuizzes.map(a => {
