@@ -3292,7 +3292,7 @@ if (!allQuizzes.length && !allAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
-    const quizCards = topicQuizzes.map(a => {
+   const quizCards = allQuizzes.map(a => {
         const q = a.quizzes;
         const done = submittedIds.has(q.id);
         const score = subs.find(s => s.quiz_id === q.id)?.score;
@@ -3327,7 +3327,7 @@ if (!allQuizzes.length && !allAssigns.length) return '';
         </div>`;
     }).join('');
 
-   const assignCards = topicAssigns.map(a => {
+   const assignCards = allAssigns.map(a => {
     const assign = a.assignments;
     const due = assign.due_date
         ? new Date(assign.due_date).toLocaleDateString('en-US',
@@ -3375,8 +3375,8 @@ if (!allQuizzes.length && !allAssigns.length) return '';
             </span>
             This Week's Activities
             <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:4px;">
-                ${topicQuizzes.length} quiz${topicQuizzes.length !== 1 ? 'zes' : ''}
-                · ${topicAssigns.length} assignment${topicAssigns.length !== 1 ? 's' : ''}
+                ${allQuizzes.length} quiz${allQuizzes.length !== 1 ? 'zes' : ''}
+                · ${allAssigns.length} assignment${allAssigns.length !== 1 ? 's' : ''}
             </span>
         </div>
         ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this topic.</p>'}
