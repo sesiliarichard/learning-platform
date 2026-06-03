@@ -3274,14 +3274,32 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
     console.log('🔍 _topicAssessments:', window._topicAssessments?.map(a => ({topic_id: a.topic_id, type: a.assessment_type})));
 
     const subs = window._quizSubmissions || [];
-    const topicAssessments = window._topicAssessments || [];
+  const topicAssessments  = window._topicAssessments  || [];
+const chapterAssessments = window._chapterAssessments || [];
 
-    const topicQuizzes = topicAssessments
-        .filter(a => a.topic_id === topicId && a.assessment_type === 'quiz' && a.quizzes);
+// Find the chapter this topic belongs to
+const currentNote = currentCourseNotes.find(n => n.id === topicId);
+const chapterId   = currentNote?.chapterId || null;
 
-    const topicAssigns = topicAssessments
-        .filter(a => a.topic_id === topicId && a.assessment_type === 'assignment' && a.assignments);
+// Get topic-level assessments for this specific topic
+const topicQuizzes = topicAssessments
+    .filter(a => a.topic_id === topicId && a.assessment_type === 'quiz' && a.quizzes);
 
+const topicAssigns = topicAssessments
+    .filter(a => a.topic_id === topicId && a.assessment_type === 'assignment' && a.assignments);
+
+// Also get chapter-level assessments if no topic-level found
+const chapterQuizzes = topicQuizzes.length === 0 && chapterId
+    ? chapterAssessments.filter(a => a.chapter_id === chapterId && a.assessment_type === 'quiz' && a.quizzes)
+    : [];
+
+const chapterAssigns = topicAssigns.length === 0 && chapterId
+    ? chapterAssessments.filter(a => a.chapter_id === chapterId && a.assessment_type === 'assignment' && a.assignments)
+    : [];
+
+// Combine both
+const allQuizzes = [...topicQuizzes, ...chapterQuizzes];
+const allAssigns = [...topicAssigns, ...chapterAssigns];
     if (!topicQuizzes.length && !topicAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
@@ -3379,23 +3397,63 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
 }
 async function loadTopicAssessments(courseId) {
     try {
-        const { data: assessments } = await supabaseClient
+        // First fetch without join to check raw data
+        const { data: rawAssessments, error: rawErr } = await supabaseClient
             .from('chapter_assessments')
-            .select(`
-                id, topic_id, assessment_type, quiz_id, assignment_id,
-                quizzes:quiz_id(id, title, time_limit, passing_score),
-                assignments:assignment_id(id, title, due_date, max_points, instructions)
-            `)
-            .eq('course_id', courseId)
-            .not('topic_id', 'is', null);
+            .select('id, topic_id, assessment_type, quiz_id, assignment_id, chapter_id')
+            .eq('course_id', courseId);
 
-        window._topicAssessments = assessments || [];
+        console.log('Raw assessments for course:', rawAssessments?.length, rawAssessments);
+
+        if (rawErr) throw rawErr;
+
+        if (!rawAssessments || rawAssessments.length === 0) {
+            window._topicAssessments = [];
+            return;
+        }
+
+        // Now fetch with joins separately
+        const quizIds   = [...new Set(rawAssessments.filter(a => a.quiz_id).map(a => a.quiz_id))];
+        const assignIds = [...new Set(rawAssessments.filter(a => a.assignment_id).map(a => a.assignment_id))];
+
+        // Fetch quizzes
+        let quizMap = {};
+        if (quizIds.length > 0) {
+            const { data: quizzes } = await supabaseClient
+                .from('quizzes')
+                .select('id, title, time_limit, passing_score')
+                .in('id', quizIds);
+            (quizzes || []).forEach(q => { quizMap[q.id] = q; });
+        }
+
+        // Fetch assignments
+        let assignMap = {};
+        if (assignIds.length > 0) {
+            const { data: assigns } = await supabaseClient
+                .from('assignments')
+                .select('id, title, due_date, max_points, instructions')
+                .in('id', assignIds);
+            (assigns || []).forEach(a => { assignMap[a.id] = a; });
+        }
+
+        // Merge everything including rows WITHOUT topic_id
+        window._topicAssessments = rawAssessments.map(a => ({
+            ...a,
+            quizzes:     a.quiz_id       ? quizMap[a.quiz_id]     : null,
+            assignments: a.assignment_id ? assignMap[a.assignment_id] : null
+        }));
+
+        // Also store chapter-level ones separately
+        window._chapterAssessments = window._topicAssessments.filter(a => !a.topic_id);
+
         console.log('✅ Topic assessments loaded:', window._topicAssessments.length);
-        console.log('✅ Sample:', JSON.stringify(window._topicAssessments[0]));
+        console.log('✅ Chapter assessments loaded:', window._chapterAssessments?.length);
+        console.log('Sample:', window._topicAssessments[0]);
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
         window._topicAssessments = [];
+        window._chapterAssessments = [];
     }
 }
 // Update progress bar

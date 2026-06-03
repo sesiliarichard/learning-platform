@@ -1,29 +1,20 @@
 // ============================================================
 // ASAI Admin Patch: week-structure-admin.js
-// Adds: Week → Sub-chapter → Topics + Chapter Assessment
-//
-// HOW TO USE:
-//   Add this AFTER all other scripts in admin.html:
-//   <script src="week-structure-admin.js"></script>
 // ============================================================
 
 (function () {
     'use strict';
 
-    // ── State ──────────────────────────────────────────────
     let _subChapterCounter = 0;
-    let _topicCounters     = {};   // { subChapterIdx: topicCount }
+    let _topicCounters     = {};
 
-    // ── Helpers ────────────────────────────────────────────
     function getSB() { return window.supabaseClient || window.db; }
     function _esc(s) { return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
     function _toast(msg, type) {
         if (typeof showToast === 'function') showToast(msg, type);
         else console.log(msg);
     }
 
-    // ── Override openCreateChapterModal ────────────────────
     window.openCreateChapterModal = function () {
         _subChapterCounter = 0;
         _topicCounters     = {};
@@ -31,7 +22,6 @@
         _buildWeekModal();
     };
 
-    // ── Build the full Week modal ──────────────────────────
     function _buildWeekModal() {
         document.getElementById('weekStructureModal')?.remove();
 
@@ -56,7 +46,6 @@
 
             <form id="weekStructureForm" style="padding:24px 0 0;">
 
-                <!-- ── Week Info ── -->
                 <div style="background:#f8f7ff;border-radius:14px;padding:20px;margin-bottom:24px;border:1.5px solid #ede9fe;">
                     <div style="font-size:13px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">
                         <i class="fas fa-info-circle"></i> Week Details
@@ -83,7 +72,6 @@
                     </div>
                 </div>
 
-                <!-- ── Sub-chapters ── -->
                 <div style="margin-bottom:20px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
                         <div style="font-size:13px;font-weight:800;color:#1f2937;text-transform:uppercase;letter-spacing:1px;">
@@ -98,7 +86,6 @@
                     <div id="ws_subChaptersContainer"></div>
                 </div>
 
-                <!-- ── End-of-Week Assessment ── -->
                 <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:14px;padding:20px;margin-bottom:24px;">
                     <div style="font-size:13px;font-weight:800;color:#065f46;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">
                         <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
@@ -113,7 +100,7 @@
                                 <option value="assignment">Assignment</option>
                             </select>
                         </div>
-                        <div id="ws_assessPickerWrap" style="display:none;" class="form-group" style="margin:0;">
+                        <div id="ws_assessPickerWrap" style="display:none;" class="form-group">
                             <label id="ws_assessPickerLabel">Select Quiz</label>
                             <select id="ws_assessId" style="width:100%;">
                                 <option value="">Loading…</option>
@@ -122,7 +109,6 @@
                     </div>
                 </div>
 
-                <!-- ── Actions ── -->
                 <div class="modal-actions" style="position:sticky;bottom:0;background:white;padding-top:16px;margin-top:0;border-top:2px solid #f3f4f6;">
                     <button type="button" class="btn-secondary" onclick="document.getElementById('weekStructureModal').remove()">Cancel</button>
                     <button type="submit" class="btn-primary" id="ws_submitBtn">
@@ -135,14 +121,8 @@
 
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-
-        // Populate course dropdown
         _populateWsCourses();
-
-        // Add first sub-chapter automatically
         wsAddSubChapter();
-
-        // Wire form submit
         document.getElementById('weekStructureForm').onsubmit = _handleWsSubmit;
     }
 
@@ -160,18 +140,15 @@
         });
     }
 
-    // ── Toggle quiz / assignment picker ───────────────────
     window.wsToggleAssessment = async function () {
         const type = document.getElementById('ws_assessType')?.value;
         const wrap = document.getElementById('ws_assessPickerWrap');
         const sel  = document.getElementById('ws_assessId');
         const lbl  = document.getElementById('ws_assessPickerLabel');
         if (!wrap || !sel) return;
-
         if (!type) { wrap.style.display = 'none'; return; }
         wrap.style.display = 'block';
         lbl.textContent = type === 'quiz' ? 'Select Quiz' : 'Select Assignment';
-
         sel.innerHTML = '<option value="">Loading…</option>';
         const table = type === 'quiz' ? 'quizzes' : 'assignments';
         const { data } = await getSB().from(table).select('id, title').order('title');
@@ -184,11 +161,9 @@
         });
     };
 
-    // ── Add Sub-chapter block ──────────────────────────────
     window.wsAddSubChapter = function () {
         const idx = _subChapterCounter++;
         _topicCounters[idx] = 0;
-
         const container = document.getElementById('ws_subChaptersContainer');
         if (!container) return;
 
@@ -197,7 +172,6 @@
         div.style.cssText = 'background:white;border:1.5px solid #e5e7eb;border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);';
 
         div.innerHTML = `
-            <!-- Sub-chapter header -->
             <div style="background:linear-gradient(135deg,#f8f7ff,#f0ecff);padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e7eb;">
                 <div style="width:28px;height:28px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:800;flex-shrink:0;">${idx + 1}</div>
                 <input type="text" id="ws_sc_title_${idx}"
@@ -209,8 +183,6 @@
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
-
-            <!-- Topics inside this sub-chapter -->
             <div style="padding:14px 18px 10px;">
                 <div id="ws_topics_${idx}" style="margin-bottom:10px;"></div>
                 <button type="button" onclick="wsAddTopic(${idx})"
@@ -220,8 +192,6 @@
             </div>`;
 
         container.appendChild(div);
-
-        // Add first topic automatically
         wsAddTopic(idx);
     };
 
@@ -229,7 +199,6 @@
         document.getElementById(`ws_sc_${idx}`)?.remove();
     };
 
-    // ── Add Topic inside a Sub-chapter ────────────────────
     window.wsAddTopic = function (scIdx) {
         const topicIdx  = _topicCounters[scIdx]++;
         const globalIdx = `${scIdx}_${topicIdx}`;
@@ -244,7 +213,7 @@
             <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
                 <span style="background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700;white-space:nowrap;">Topic ${topicIdx + 1}</span>
                 <input type="text" id="ws_t_title_${globalIdx}"
-                    placeholder="Topic title, e.g. Types of Machine Learning"
+                    placeholder="Topic title"
                     style="flex:1;padding:7px 11px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;outline:none;"
                     onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'">
                 <button type="button" onclick="wsRemoveTopic('${globalIdx}')"
@@ -253,7 +222,7 @@
                 </button>
             </div>
 
-            <!-- Mini rich-text toolbar -->
+            <!-- Rich text toolbar -->
             <div class="editor-toolbar" style="margin-bottom:6px;flex-wrap:wrap;gap:2px;">
                 <button type="button" class="editor-btn" onclick="wsFormatTopic('${globalIdx}','bold')" title="Bold"><b>B</b></button>
                 <button type="button" class="editor-btn" onclick="wsFormatTopic('${globalIdx}','italic')" title="Italic"><i>I</i></button>
@@ -265,13 +234,23 @@
                 <div class="editor-sep"></div>
                 <button type="button" class="editor-btn" onclick="wsFormatTopic('${globalIdx}','justifyLeft')" title="Left"><i class="fas fa-align-left"></i></button>
                 <button type="button" class="editor-btn" onclick="wsFormatTopic('${globalIdx}','justifyCenter')" title="Center"><i class="fas fa-align-center"></i></button>
+                <div class="editor-sep"></div>
+                <!-- Code block button -->
+                <button type="button" class="editor-btn" onclick="wsInsertCodeBlock('${globalIdx}')" 
+                    title="Insert Code Block"
+                    style="background:#1e1b4b;color:#a5b4fc;border-radius:6px;padding:4px 8px;">
+                    <i class="fas fa-code"></i>
+                </button>
             </div>
+
+            <!-- Content editor -->
             <div class="editor-content" contenteditable="true"
                  id="ws_t_content_${globalIdx}"
                  style="min-height:90px;padding:10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:13px;line-height:1.6;outline:none;font-family:'Plus Jakarta Sans',sans-serif;"
                  data-placeholder="Write topic content here…"
                  onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#e5e7eb'">
             </div>
+
             <div style="display:flex;gap:10px;margin-top:8px;">
                 <div style="flex:1;">
                     <label style="font-size:11px;font-weight:700;color:#6b7280;display:block;margin-bottom:3px;">Reading time (min)</label>
@@ -286,9 +265,143 @@
                         <option value="practical">Practical</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- ── Coding Exercise Section ── -->
+            <div style="margin-top:14px;background:linear-gradient(135deg,#1e1b4b,#312e81);border-radius:12px;padding:16px;">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                        <input type="checkbox" id="ws_t_hasCoding_${globalIdx}"
+                            onchange="wsToggleCodingSection('${globalIdx}')"
+                            style="width:16px;height:16px;cursor:pointer;">
+                        <span style="font-size:13px;font-weight:700;color:#a5b4fc;">
+                            <i class="fas fa-code" style="margin-right:6px;"></i>
+                            Add Coding Exercise
+                        </span>
+                    </label>
+                </div>
+                <div id="ws_t_codingSection_${globalIdx}" style="display:none;">
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:11px;font-weight:700;color:#a5b4fc;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Language</label>
+                        <select id="ws_t_lang_${globalIdx}" 
+                            style="width:100%;padding:8px 12px;border:1.5px solid #4338ca;border-radius:8px;font-size:13px;font-family:inherit;background:#1e1b4b;color:#a5b4fc;outline:none;">
+                            <option value="python">Python</option>
+                            <option value="javascript">JavaScript</option>
+                            <option value="both">Both (student chooses)</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom:10px;">
+                        <label style="font-size:11px;font-weight:700;color:#a5b4fc;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Problem Statement / Instructions</label>
+                        <textarea id="ws_t_prompt_${globalIdx}" rows="3"
+                            placeholder="e.g. Write a function that takes a list of numbers and returns the average..."
+                            style="width:100%;padding:10px;border:1.5px solid #4338ca;border-radius:8px;font-size:13px;font-family:inherit;background:#1e1b4b;color:#c7d2fe;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:11px;font-weight:700;color:#a5b4fc;display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Starter Code (optional)</label>
+                        <textarea id="ws_t_starterCode_${globalIdx}" rows="4"
+                            placeholder="# Write starter code here&#10;def calculate_average(numbers):&#10;    # Your code here&#10;    pass"
+                            style="width:100%;padding:10px;border:1.5px solid #4338ca;border-radius:8px;font-size:13px;font-family:'Courier New',monospace;background:#0f0e2a;color:#a5b4fc;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+                </div>
             </div>`;
 
         container.appendChild(div);
+    };
+
+    window.wsToggleCodingSection = function(globalIdx) {
+        const checkbox = document.getElementById(`ws_t_hasCoding_${globalIdx}`);
+        const section  = document.getElementById(`ws_t_codingSection_${globalIdx}`);
+        if (!section) return;
+        section.style.display = checkbox?.checked ? 'block' : 'none';
+    };
+
+    window.wsInsertCodeBlock = function(globalIdx) {
+        const editor = document.getElementById(`ws_t_content_${globalIdx}`);
+        if (!editor) return;
+
+        // Remove existing language picker modal
+        document.getElementById('wsCodeLangModal')?.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'wsCodeLangModal';
+        modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+            background:rgba(0,0,0,0.5);z-index:9999;display:flex;
+            align-items:center;justify-content:center;`;
+
+        modal.innerHTML = `
+        <div style="background:white;border-radius:16px;padding:24px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <h3 style="margin:0 0 16px;font-size:16px;font-weight:800;color:#1f2937;">
+                <i class="fas fa-code" style="color:#7c3aed;margin-right:8px;"></i>Insert Code Block
+            </h3>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Language</label>
+                <select id="wsCodeLangSelect"
+                    style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
+                    <option value="python">Python</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="html">HTML/CSS</option>
+                    <option value="sql">SQL</option>
+                    <option value="bash">Bash</option>
+                </select>
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:13px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Code</label>
+                <textarea id="wsCodeInput" rows="6"
+                    placeholder="# Write your code here"
+                    style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:'Courier New',monospace;outline:none;resize:vertical;box-sizing:border-box;background:#1e1b4b;color:#a5b4fc;"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button onclick="document.getElementById('wsCodeLangModal').remove()"
+                    style="flex:1;padding:10px;border:2px solid #e5e7eb;border-radius:10px;background:white;color:#6b7280;font-weight:700;cursor:pointer;font-family:inherit;">
+                    Cancel
+                </button>
+                <button onclick="wsConfirmInsertCode('${globalIdx}')"
+                    style="flex:2;padding:10px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;border-radius:10px;color:white;font-weight:800;cursor:pointer;font-family:inherit;">
+                    <i class="fas fa-code"></i> Insert
+                </button>
+            </div>
+        </div>`;
+
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+        document.getElementById('wsCodeInput')?.focus();
+    };
+
+    window.wsConfirmInsertCode = function(globalIdx) {
+        const lang = document.getElementById('wsCodeLangSelect')?.value || 'python';
+        const code = document.getElementById('wsCodeInput')?.value || '';
+        document.getElementById('wsCodeLangModal')?.remove();
+
+        const editor = document.getElementById(`ws_t_content_${globalIdx}`);
+        if (!editor) return;
+
+        const langColors = {
+            python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
+            javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
+            html:       { bg: '#1c1917', border: '#dc2626', badge: '#ef4444', label: 'HTML/CSS' },
+            sql:        { bg: '#0c1a2e', border: '#0ea5e9', badge: '#38bdf8', label: 'SQL' },
+            bash:       { bg: '#0a1628', border: '#10b981', badge: '#34d399', label: 'Bash' }
+        };
+        const lc = langColors[lang] || langColors.python;
+
+        const codeHtml = `
+        <div class="asai-code-block" data-language="${lang}"
+             style="margin:12px 0;border-radius:12px;overflow:hidden;border:1.5px solid ${lc.border};">
+            <div style="background:${lc.bg};padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="background:${lc.badge};color:white;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">${lc.label}</span>
+                <span class="asai-run-btn" style="background:rgba(255,255,255,0.15);color:white;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
+                    ▶ Run
+                </span>
+            </div>
+            <pre style="margin:0;padding:14px;background:${lc.bg};color:#c7d2fe;font-family:'Courier New',monospace;font-size:13px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${_esc(code)}</pre>
+            <div class="asai-code-output" style="display:none;background:#0f172a;padding:12px 14px;border-top:1px solid ${lc.border};">
+                <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Output</div>
+                <pre style="margin:0;color:#4ade80;font-family:'Courier New',monospace;font-size:12px;white-space:pre-wrap;"></pre>
+            </div>
+        </div><br>`;
+
+        editor.focus();
+        document.execCommand('insertHTML', false, codeHtml);
     };
 
     window.wsRemoveTopic = function (globalIdx) {
@@ -302,7 +415,6 @@
         setTimeout(() => document.execCommand(cmd, false, val || null), 10);
     };
 
-    // ── Save handler ──────────────────────────────────────
     async function _handleWsSubmit(e) {
         e.preventDefault();
         const btn = document.getElementById('ws_submitBtn');
@@ -319,7 +431,6 @@
 
             const sb = getSB();
 
-            // 1. Create chapter
             const { data: chapterArr, error: cErr } = await sb
                 .from('chapters')
                 .insert({ course_id: courseId, title, description: desc, order_num: orderNum, published: false })
@@ -328,7 +439,6 @@
             const chapterId = chapterArr[0]?.id;
             if (!chapterId) throw new Error('Chapter not created.');
 
-            // 2. Create sub-chapters + topics
             const scDivs = document.querySelectorAll('#ws_subChaptersContainer > div[id^="ws_sc_"]');
             let scOrder  = 1;
 
@@ -337,7 +447,6 @@
                 const scTitle = document.getElementById(`ws_sc_title_${scIdx}`)?.value?.trim();
                 if (!scTitle) continue;
 
-                // Insert sub-chapter
                 const { data: scArr, error: scErr } = await sb
                     .from('sub_chapters')
                     .insert({ chapter_id: chapterId, course_id: courseId, title: scTitle, order_num: scOrder++ })
@@ -345,29 +454,36 @@
                 if (scErr) throw scErr;
                 const subChapterId = scArr[0]?.id;
 
-                // Collect topics for this sub-chapter
                 const topicDivs = document.querySelectorAll(`#ws_topics_${scIdx} > div[id^="ws_topic_"]`);
                 const topicsToInsert = [];
                 let tOrder = 1;
 
                 for (const tDiv of topicDivs) {
-                    const gIdx    = tDiv.id.replace('ws_topic_', '');
-                    const tTitle  = document.getElementById(`ws_t_title_${gIdx}`)?.value?.trim();
-                    const content = document.getElementById(`ws_t_content_${gIdx}`)?.innerHTML || '';
-                    const dur     = document.getElementById(`ws_t_dur_${gIdx}`)?.value || '15';
-                    const cat     = document.getElementById(`ws_t_cat_${gIdx}`)?.value || 'basics';
+                    const gIdx       = tDiv.id.replace('ws_topic_', '');
+                    const tTitle     = document.getElementById(`ws_t_title_${gIdx}`)?.value?.trim();
+                    const content    = document.getElementById(`ws_t_content_${gIdx}`)?.innerHTML || '';
+                    const dur        = document.getElementById(`ws_t_dur_${gIdx}`)?.value || '15';
+                    const cat        = document.getElementById(`ws_t_cat_${gIdx}`)?.value || 'basics';
+                    const hasCoding  = document.getElementById(`ws_t_hasCoding_${gIdx}`)?.checked || false;
+                    const prompt     = document.getElementById(`ws_t_prompt_${gIdx}`)?.value?.trim() || '';
+                    const lang       = document.getElementById(`ws_t_lang_${gIdx}`)?.value || 'python';
+                    const starter    = document.getElementById(`ws_t_starterCode_${gIdx}`)?.value?.trim() || '';
+
                     if (!tTitle) continue;
 
-                    const textOnly = content.replace(/<[^>]*>/g, '').trim();
                     topicsToInsert.push({
-                        chapter_id:     chapterId,
-                        sub_chapter_id: subChapterId,
-                        course_id:      courseId,
-                        title:          tTitle,
-                        content:        textOnly ? content : '',
-                        duration:       dur,
-                        category:       cat,
-                        order_num:      tOrder++
+                        chapter_id:          chapterId,
+                        sub_chapter_id:      subChapterId,
+                        course_id:           courseId,
+                        title:               tTitle,
+                        content:             content,
+                        duration:            dur,
+                        category:            cat,
+                        order_num:           tOrder++,
+                        has_coding_exercise: hasCoding,
+                        coding_prompt:       hasCoding ? prompt : null,
+                        coding_language:     hasCoding ? lang   : null,
+                        coding_starter_code: hasCoding ? starter : null
                     });
                 }
 
@@ -377,11 +493,10 @@
                 }
             }
 
-            // 3. End-of-week assessment
             const assessType = document.getElementById('ws_assessType')?.value;
             const assessId   = document.getElementById('ws_assessId')?.value;
             if (assessType && assessId) {
-                const { error: aErr } = await sb.from('chapter_assessments').insert({
+                await sb.from('chapter_assessments').insert({
                     chapter_id:      chapterId,
                     course_id:       courseId,
                     assessment_type: assessType,
@@ -389,13 +504,11 @@
                     assignment_id:  assessType === 'assignment' ? assessId : null,
                     order_num:      1
                 });
-                if (aErr) console.warn('Assessment link warning:', aErr.message);
             }
 
             document.getElementById('weekStructureModal')?.remove();
-            _toast('✅ Week saved! Sub-chapters, topics and assessment linked.');
+            _toast('✅ Week saved successfully!');
 
-            // Refresh admin course notes list
             if (typeof loadChapters === 'function') loadChapters();
             if (typeof loadAdminCourses === 'function') loadAdminCourses();
 
@@ -407,13 +520,9 @@
         }
     }
 
-    // ── Patch loadChapters to show sub-chapter structure ──
-    // We wrap the existing function to also show sub-chapters
     const _origLoadChapters = window.loadChapters;
     window.loadChapters = async function () {
-        // Call original to render base chapters
         if (_origLoadChapters) await _origLoadChapters();
-        // Then annotate each chapter card with sub-chapter info
         await _annotateChaptersWithSubChapters();
     };
 
@@ -430,32 +539,22 @@
 
         if (!subChapters || subChapters.length === 0) return;
 
-        // Group sub-chapters by chapter_id
         const byChapter = {};
         subChapters.forEach(sc => {
             if (!byChapter[sc.chapter_id]) byChapter[sc.chapter_id] = [];
             byChapter[sc.chapter_id].push(sc);
         });
 
-        // Also fetch assessments for this course
         const { data: assessments } = await sb
             .from('chapter_assessments')
-            .select(`
-                id, chapter_id, assessment_type,
-                quizzes(id, title),
-                assignments(id, title)
-            `)
+            .select(`id, chapter_id, assessment_type, quizzes(id, title), assignments(id, title)`)
             .eq('course_id', courseId);
 
         const assessByChapter = {};
-        (assessments || []).forEach(a => {
-            assessByChapter[a.chapter_id] = a;
-        });
+        (assessments || []).forEach(a => { assessByChapter[a.chapter_id] = a; });
 
-        // Find each chapter card and inject the sub-chapter badge list + assessment badge
         const chapterCards = document.querySelectorAll('#chaptersContainer .card');
         chapterCards.forEach(card => {
-            // Try to extract chapter id from any button inside the card
             const editBtn = card.querySelector('[onclick*="openEditChapterModal"]');
             if (!editBtn) return;
             const match = editBtn.getAttribute('onclick')?.match(/'([^']+)'/);
@@ -465,9 +564,7 @@
             const scs    = byChapter[chId] || [];
             const assess = assessByChapter[chId];
 
-            // Remove any existing annotation
             card.querySelector('.ws-sub-annotation')?.remove();
-
             if (scs.length === 0 && !assess) return;
 
             const ann = document.createElement('div');
@@ -475,7 +572,6 @@
             ann.style.cssText = 'margin-top:12px;padding-top:12px;border-top:1px solid #f3f4f6;';
 
             let html = '';
-
             if (scs.length > 0) {
                 html += `<div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;"><i class="fas fa-layer-group"></i> Sub-chapters</div>`;
                 html += `<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:${assess ? 10 : 0}px;">`;
@@ -486,9 +582,7 @@
             }
 
             if (assess) {
-                const label = assess.assessment_type === 'quiz'
-                    ? (assess.quizzes?.title || 'Quiz')
-                    : (assess.assignments?.title || 'Assignment');
+                const label  = assess.assessment_type === 'quiz' ? (assess.quizzes?.title || 'Quiz') : (assess.assignments?.title || 'Assignment');
                 const color  = assess.assessment_type === 'quiz' ? '#0ea5e9' : '#10b981';
                 const icon   = assess.assessment_type === 'quiz' ? 'fa-question-circle' : 'fa-tasks';
                 const badge  = assess.assessment_type === 'quiz' ? 'Quiz' : 'Assignment';
@@ -497,17 +591,7 @@
                     <i class="fas ${icon}" style="color:${color};"></i>
                     <span style="font-size:12px;font-weight:600;color:#0c4a6e;">End-of-Week ${badge}:</span>
                     <span style="font-size:13px;font-weight:700;color:#0369a1;">${_esc(label)}</span>
-                    <button onclick="wsEditAssessment('${chId}','${assess.id}')"
-                        style="margin-left:auto;padding:4px 10px;background:white;border:1.5px solid ${color};color:${color};border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;">
-                        <i class="fas fa-pencil"></i> Change
-                    </button>
                 </div>`;
-            } else {
-                html += `
-                <button onclick="wsAttachAssessment('${chId}', '${courseId}')"
-                    style="padding:6px 14px;background:#f0f9ff;border:1.5px dashed #7dd3fc;color:#0369a1;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                    <i class="fas fa-plus"></i> Attach Quiz / Assignment
-                </button>`;
             }
 
             ann.innerHTML = html;
@@ -515,97 +599,13 @@
         });
     }
 
-    // ── Attach / change assessment on existing chapter ──
-    window.wsAttachAssessment = async function (chapterId, courseId) {
-        _openAssessmentPicker(chapterId, courseId, null);
-    };
-    window.wsEditAssessment = async function (chapterId, assessmentId) {
-        // Get course id
-        const { data: ch } = await getSB().from('chapters').select('course_id').eq('id', chapterId).maybeSingle();
-        _openAssessmentPicker(chapterId, ch?.course_id, assessmentId);
-    };
-
-    async function _openAssessmentPicker(chapterId, courseId, existingId) {
-        document.getElementById('wsAssessPickerModal')?.remove();
-        const modal = document.createElement('div');
-        modal.id        = 'wsAssessPickerModal';
-        modal.className = 'modal active';
-        modal.style.zIndex = '4000';
-        modal.innerHTML = `
-        <div class="modal-content" style="max-width:460px;">
-            <div class="modal-header">
-                <h2><i class="fas fa-link" style="color:#10b981;margin-right:8px;"></i>${existingId ? 'Change' : 'Attach'} Assessment</h2>
-                <button class="modal-close" onclick="document.getElementById('wsAssessPickerModal').remove()"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="form-group">
-                <label>Type</label>
-                <select id="wsp_type" onchange="wspLoadItems()" style="width:100%;">
-                    <option value="">None (remove)</option>
-                    <option value="quiz">Quiz</option>
-                    <option value="assignment">Assignment</option>
-                </select>
-            </div>
-            <div id="wsp_itemWrap" class="form-group" style="display:none;">
-                <label id="wsp_itemLabel">Select Quiz</label>
-                <select id="wsp_itemId" style="width:100%;"><option value="">Loading…</option></select>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-secondary" onclick="document.getElementById('wsAssessPickerModal').remove()">Cancel</button>
-                <button type="button" class="btn-primary" onclick="wspSave('${chapterId}','${courseId}','${existingId||''}')">
-                    <i class="fas fa-save"></i> Save
-                </button>
-            </div>
-        </div>`;
-        document.body.appendChild(modal);
-        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-    }
-
-    window.wspLoadItems = async function () {
-        const type = document.getElementById('wsp_type')?.value;
-        const wrap = document.getElementById('wsp_itemWrap');
-        const sel  = document.getElementById('wsp_itemId');
-        const lbl  = document.getElementById('wsp_itemLabel');
-        if (!wrap || !sel) return;
-        if (!type) { wrap.style.display = 'none'; return; }
-        wrap.style.display = 'block';
-        lbl.textContent = type === 'quiz' ? 'Select Quiz' : 'Select Assignment';
-        sel.innerHTML = '<option value="">Loading…</option>';
-        const table = type === 'quiz' ? 'quizzes' : 'assignments';
-        const { data } = await getSB().from(table).select('id, title').order('title');
-        sel.innerHTML = `<option value="">Choose…</option>`;
-        (data || []).forEach(item => {
-            const o = document.createElement('option');
-            o.value = item.id; o.textContent = item.title;
-            sel.appendChild(o);
-        });
-    };
-
-    window.wspSave = async function (chapterId, courseId, existingId) {
-        const type    = document.getElementById('wsp_type')?.value;
-        const itemId  = document.getElementById('wsp_itemId')?.value;
-        const sb      = getSB();
-
-        // Delete existing if any
-        if (existingId) {
-            await sb.from('chapter_assessments').delete().eq('id', existingId);
-        }
-
-        // Insert new
-        if (type && itemId) {
-            const { error } = await sb.from('chapter_assessments').insert({
-                chapter_id:      chapterId,
-                course_id:       courseId,
-                assessment_type: type,
-                quiz_id:        type === 'quiz'       ? itemId : null,
-                assignment_id:  type === 'assignment' ? itemId : null,
-                order_num:      1
+    // Also run SQL to add coding_starter_code column if needed
+    window.wsEnsureCodingColumns = async function() {
+        try {
+            await getSB().rpc('exec_sql', {
+                sql: `ALTER TABLE topics ADD COLUMN IF NOT EXISTS coding_starter_code text;`
             });
-            if (error) { _toast('Error: ' + error.message, 'error'); return; }
-        }
-
-        document.getElementById('wsAssessPickerModal')?.remove();
-        _toast('✅ Assessment updated!');
-        if (typeof loadChapters === 'function') loadChapters();
+        } catch(e) { /* silent - column may already exist */ }
     };
 
     console.log('✅ week-structure-admin.js loaded');
