@@ -3089,16 +3089,14 @@ async function handleCreateChapter(event) {
             if (content === '<br>' || content === '<p><br></p>' || content === '') {
                 content = '';
             }
-
-           const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
+const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
 const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
 
 topics.push({
-    id:                   topicId,
-    title:                titleEl.value.trim(),
-    content:              contentEl?.innerHTML || '',
-    duration:             durEl?.value || '15',
-    category:             catEl?.value || 'basics',
+    title:                titleInput.value.trim(),
+    content:              contentEditor.innerHTML.trim(),
+    duration:             durationInput?.value || '15',
+    category:             categorySelect?.value || 'basics',
     order_num:            i + 1,
     has_coding_exercise:  hasCoding,
     coding_prompt:        hasCoding ? codingPrompt : null
@@ -3138,14 +3136,16 @@ topics.push({
         console.log('✅ Chapter created with ID:', chapter.id);
 
         // 2. Insert topics
-        const topicsToInsert = topics.map((t, i) => ({
+ const topicsToInsert = topics.map((t, i) => ({
     chapter_id: chapter.id,
     course_id: courseId,
     title: t.title,
     content: t.content,
     duration: t.duration,
     category: t.category,
-    order_num: t.order_num  
+    order_num: t.order_num,
+    has_coding_exercise: t.has_coding_exercise || false,
+    coding_prompt: t.coding_prompt || null
 }));
 
         const { error: topicsError } = await db
@@ -3888,15 +3888,14 @@ async function handleEditChapter(event) {
         const catEl    = document.getElementById(`editTopicCategory_${idx}`);
 
         if (titleEl?.value?.trim()) {
-           const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
+const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
 const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
 
 topics.push({
-    id:                   topicId,
-    title:                titleEl.value.trim(),
-    content:              contentEl?.innerHTML || '',
-    duration:             durEl?.value || '15',
-    category:             catEl?.value || 'basics',
+    title:                titleInput.value.trim(),
+    content:              contentEditor.innerHTML.trim(),
+    duration:             durationInput?.value || '15',
+    category:             categorySelect?.value || 'basics',
     order_num:            i + 1,
     has_coding_exercise:  hasCoding,
     coding_prompt:        hasCoding ? codingPrompt : null
