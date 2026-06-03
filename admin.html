@@ -3077,7 +3077,7 @@ async function handleCreateChapter(event) {
     const topicEditors = document.querySelectorAll('#topicsContainer .topic-editor');
     const topics = [];
 
-    topicEditors.forEach((editorDiv) => {
+    topicEditors.forEach((editorDiv, i) => {
         const idx = editorDiv.getAttribute('data-topic-index');
         const titleInput     = editorDiv.querySelector(`input[name="topics[${idx}][title]"]`);
         const contentEditor  = editorDiv.querySelector(`#editor-${idx}`);
