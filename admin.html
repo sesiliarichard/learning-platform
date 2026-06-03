@@ -3888,15 +3888,15 @@ async function handleEditChapter(event) {
         const durEl    = document.getElementById(`editTopicDuration_${idx}`);
         const catEl    = document.getElementById(`editTopicCategory_${idx}`);
 
-        if (titleEl?.value?.trim()) {
+if (titleEl?.value?.trim()) {
 const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
 const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
 
 topics.push({
-    title:                titleInput.value.trim(),
-    content:              contentEditor.innerHTML.trim(),
-    duration:             durationInput?.value || '15',
-    category:             categorySelect?.value || 'basics',
+    title:                titleEl.value.trim(),
+    content:              contentEl.innerHTML.trim(),
+    duration:             durEl?.value || '15',
+    category:             catEl?.value || 'basics',
     order_num:            i + 1,
     has_coding_exercise:  hasCoding,
     coding_prompt:        hasCoding ? codingPrompt : null
