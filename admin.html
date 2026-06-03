@@ -3084,23 +3084,24 @@ async function handleCreateChapter(event) {
         const durationInput  = editorDiv.querySelector(`input[name="topics[${idx}][duration]"]`);
         const categorySelect = editorDiv.querySelector(`select[name="topics[${idx}][category]"]`);
 
-        if (titleInput?.value?.trim() && contentEditor) {
+if (titleInput?.value?.trim() && contentEditor) {
             let content = contentEditor.innerHTML.trim();
             if (content === '<br>' || content === '<p><br></p>' || content === '') {
                 content = '';
             }
-const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
-const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
 
-topics.push({
-    title:                titleInput.value.trim(),
-    content:              contentEditor.innerHTML.trim(),
-    duration:             durationInput?.value || '15',
-    category:             categorySelect?.value || 'basics',
-    order_num:            i + 1,
-    has_coding_exercise:  hasCoding,
-    coding_prompt:        hasCoding ? codingPrompt : null
-});
+            const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || false;
+            const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
+
+            topics.push({
+                title:               titleInput.value.trim(),
+                content:             content,
+                duration:            durationInput?.value || '15',
+                category:            categorySelect?.value || 'basics',
+                order_num:           topics.length + 1,
+                has_coding_exercise: hasCoding,
+                coding_prompt:       hasCoding ? codingPrompt : null
+            });
         }
     });
 
@@ -3136,17 +3137,17 @@ topics.push({
         console.log('✅ Chapter created with ID:', chapter.id);
 
         // 2. Insert topics
- const topicsToInsert = topics.map((t, i) => ({
-    chapter_id: chapter.id,
-    course_id: courseId,
-    title: t.title,
-    content: t.content,
-    duration: t.duration,
-    category: t.category,
-    order_num: t.order_num,
-    has_coding_exercise: t.has_coding_exercise || false,
-    coding_prompt: t.coding_prompt || null
-}));
+const topicsToInsert = topics.map((t, i) => ({
+            chapter_id:          chapter.id,
+            course_id:           courseId,
+            title:               t.title,
+            content:             t.content,
+            duration:            t.duration,
+            category:            t.category,
+            order_num:           t.order_num,
+            has_coding_exercise: t.has_coding_exercise || false,
+            coding_prompt:       t.coding_prompt || null
+        }));
 
         const { error: topicsError } = await db
             .from('topics')
