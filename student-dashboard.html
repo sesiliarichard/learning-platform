@@ -3269,30 +3269,25 @@ async function toggleNoteComplete(index) {
 }
 function buildWeekExtrasHTML(chapterTitle, topicId) {
     if (!topicId) return '';
-    
-    console.log('🔍 buildWeekExtrasHTML topicId:', topicId, typeof topicId);
-    console.log('🔍 _topicAssessments:', window._topicAssessments?.map(a => ({topic_id: a.topic_id, type: a.assessment_type})));
 
     const subs = window._quizSubmissions || [];
-const chapterAssessments = window._chapterAssessments || [];
 
-// Find the chapter this topic belongs to
-const currentNote = currentCourseNotes.find(n => n.id === topicId);
-const chapterId   = currentNote?.chapterId || null;
+    const topicAssessments = (window._topicAssessments || []).filter(
+        a => a.topic_id === topicId
+    );
 
-// Get assessments for this chapter
-const allQuizzes = chapterAssessments.filter(
-    a => a.chapter_id === chapterId && a.assessment_type === 'quiz' && a.quizzes
-);
-const allAssigns = chapterAssessments.filter(
-    a => a.chapter_id === chapterId && a.assessment_type === 'assignment' && a.assignments
-);
+    const allQuizzes = topicAssessments.filter(
+        a => a.assessment_type === 'quiz' && a.quizzes
+    );
+    const allAssigns = topicAssessments.filter(
+        a => a.assessment_type === 'assignment' && a.assignments
+    );
 
-if (!allQuizzes.length && !allAssigns.length) return '';
+    if (!allQuizzes.length && !allAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
-   const quizCards = allQuizzes.map(a => {
+    const quizCards = allQuizzes.map(a => {
         const q = a.quizzes;
         const done = submittedIds.has(q.id);
         const score = subs.find(s => s.quiz_id === q.id)?.score;
@@ -3327,41 +3322,41 @@ if (!allQuizzes.length && !allAssigns.length) return '';
         </div>`;
     }).join('');
 
-   const assignCards = allAssigns.map(a => {
-    const assign = a.assignments;
-    const due = assign.due_date
-        ? new Date(assign.due_date).toLocaleDateString('en-US',
-            { month:'short', day:'numeric', year:'numeric' })
-        : 'No deadline';
-    return `
-    <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
-                padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
-                flex-wrap:wrap;gap:10px;margin-bottom:10px;">
-        <div>
-            <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
-                <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
-                ${escapeHtml(assign.title)}
+    const assignCards = allAssigns.map(a => {
+        const assign = a.assignments;
+        const due = assign.due_date
+            ? new Date(assign.due_date).toLocaleDateString('en-US',
+                { month:'short', day:'numeric', year:'numeric' })
+            : 'No deadline';
+        return `
+        <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
+                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+                    flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+            <div>
+                <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
+                    <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
+                    ${escapeHtml(assign.title)}
+                </div>
+                <div style="font-size:12px;color:#6b7280;">
+                    Due: ${due}
+                    ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
+                </div>
             </div>
-            <div style="font-size:12px;color:#6b7280;">
-                Due: ${due}
-                ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
+                    style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
+                           border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
+                    style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
+                           color:white;border:none;border-radius:8px;font-size:12px;
+                           font-weight:700;cursor:pointer;">
+                    <i class="fas fa-upload"></i> Submit
+                </button>
             </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
-                style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
-                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                <i class="fas fa-eye"></i> View
-            </button>
-            <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
-                style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
-                       color:white;border:none;border-radius:8px;font-size:12px;
-                       font-weight:700;cursor:pointer;">
-                <i class="fas fa-upload"></i> Submit
-            </button>
-        </div>
-    </div>`;
-}).join('');
+        </div>`;
+    }).join('');
 
     return `
     <div style="margin:28px 0 20px;padding:20px;background:linear-gradient(135deg,#fafaf9,#f5f3ff);
@@ -3373,68 +3368,44 @@ if (!allQuizzes.length && !allAssigns.length) return '';
                          align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">
                 <i class="fas fa-layer-group"></i>
             </span>
-            This Week's Activities
+            This Topic's Activities
             <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:4px;">
                 ${allQuizzes.length} quiz${allQuizzes.length !== 1 ? 'zes' : ''}
                 · ${allAssigns.length} assignment${allAssigns.length !== 1 ? 's' : ''}
             </span>
         </div>
-        ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this topic.</p>'}
-        ${assignCards || '<p style="font-size:13px;color:#9ca3af;">No assignments linked to this topic.</p>'}
+        ${quizCards || ''}
+        ${assignCards || ''}
     </div>`;
 }
+
 async function loadTopicAssessments(courseId) {
     try {
-        // Fetch quizzes linked via chapter_id directly
-        const { data: directQuizzes } = await supabaseClient
-            .from('quizzes')
-            .select('id, title, time_limit, passing_score, chapter_id')
+        const { data: topicRows } = await supabaseClient
+            .from('chapter_assessments')
+            .select(`
+                id, topic_id, chapter_id, assessment_type,
+                quizzes(id, title, time_limit, passing_score),
+                assignments(id, title, due_date, max_points, instructions)
+            `)
             .eq('course_id', courseId)
-            .not('chapter_id', 'is', null);
+            .not('topic_id', 'is', null);
 
-        // Fetch assignments linked via chapter_id directly
-        const { data: directAssigns } = await supabaseClient
-            .from('assignments')
-            .select('id, title, due_date, max_points, instructions, chapter_id')
+        const { data: chapterRows } = await supabaseClient
+            .from('chapter_assessments')
+            .select(`
+                id, topic_id, chapter_id, assessment_type,
+                quizzes(id, title, time_limit, passing_score),
+                assignments(id, title, due_date, max_points, instructions)
+            `)
             .eq('course_id', courseId)
-            .not('chapter_id', 'is', null);
+            .is('topic_id', null);
 
-        console.log('Direct quizzes:', directQuizzes?.length, directQuizzes);
-        console.log('Direct assigns:', directAssigns?.length, directAssigns);
+        window._topicAssessments   = topicRows   || [];
+        window._chapterAssessments = chapterRows || [];
 
-        // Build synthetic assessment rows from direct chapter_id links
-        const syntheticRows = [];
-
-        (directQuizzes || []).forEach(q => {
-            syntheticRows.push({
-                id: 'direct-quiz-' + q.id,
-                topic_id: null,
-                chapter_id: q.chapter_id,
-                assessment_type: 'quiz',
-                quiz_id: q.id,
-                assignment_id: null,
-                quizzes: q,
-                assignments: null
-            });
-        });
-
-        (directAssigns || []).forEach(a => {
-            syntheticRows.push({
-                id: 'direct-assign-' + a.id,
-                topic_id: null,
-                chapter_id: a.chapter_id,
-                assessment_type: 'assignment',
-                quiz_id: null,
-                assignment_id: a.id,
-                quizzes: null,
-                assignments: a
-            });
-        });
-
-        window._topicAssessments   = syntheticRows;
-        window._chapterAssessments = syntheticRows; // all are chapter-level
-
-        console.log('✅ Assessments loaded:', syntheticRows.length);
+        console.log('✅ Topic assessments:', window._topicAssessments.length);
+        console.log('✅ Chapter assessments:', window._chapterAssessments.length);
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
