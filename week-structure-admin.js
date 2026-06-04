@@ -367,42 +367,58 @@
         document.getElementById('wsCodeInput')?.focus();
     };
 
-    window.wsConfirmInsertCode = function(globalIdx) {
-        const lang = document.getElementById('wsCodeLangSelect')?.value || 'python';
-        const code = document.getElementById('wsCodeInput')?.value || '';
-        document.getElementById('wsCodeLangModal')?.remove();
+   window.wsConfirmInsertCode = function(globalIdx) {
+    const lang = document.getElementById('wsCodeLangSelect')?.value || 'python';
+    const code = document.getElementById('wsCodeInput')?.value || '';
+    document.getElementById('wsCodeLangModal')?.remove();
 
-        const editor = document.getElementById(`ws_t_content_${globalIdx}`);
-        if (!editor) return;
+    const editor = document.getElementById(`ws_t_content_${globalIdx}`);
+    if (!editor) return;
 
-        const langColors = {
-            python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
-            javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
-            html:       { bg: '#1c1917', border: '#dc2626', badge: '#ef4444', label: 'HTML/CSS' },
-            sql:        { bg: '#0c1a2e', border: '#0ea5e9', badge: '#38bdf8', label: 'SQL' },
-            bash:       { bg: '#0a1628', border: '#10b981', badge: '#34d399', label: 'Bash' }
-        };
-        const lc = langColors[lang] || langColors.python;
-
-        const codeHtml = `
-        <div class="asai-code-block" data-language="${lang}"
-             style="margin:12px 0;border-radius:12px;overflow:hidden;border:1.5px solid ${lc.border};">
-            <div style="background:${lc.bg};padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
-                <span style="background:${lc.badge};color:white;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">${lc.label}</span>
-                <span class="asai-run-btn" style="background:rgba(255,255,255,0.15);color:white;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">
-                    ▶ Run
-                </span>
-            </div>
-            <pre style="margin:0;padding:14px;background:${lc.bg};color:#c7d2fe;font-family:'Courier New',monospace;font-size:13px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${_esc(code)}</pre>
-            <div class="asai-code-output" style="display:none;background:#0f172a;padding:12px 14px;border-top:1px solid ${lc.border};">
-                <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Output</div>
-                <pre style="margin:0;color:#4ade80;font-family:'Courier New',monospace;font-size:12px;white-space:pre-wrap;"></pre>
-            </div>
-        </div><br>`;
-
-        editor.focus();
-        document.execCommand('insertHTML', false, codeHtml);
+    const langColors = {
+        python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
+        javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
+        html:       { bg: '#1c1917', border: '#dc2626', badge: '#ef4444', label: 'HTML/CSS' },
+        sql:        { bg: '#0c1a2e', border: '#0ea5e9', badge: '#38bdf8', label: 'SQL' },
+        bash:       { bg: '#0a1628', border: '#10b981', badge: '#34d399', label: 'Bash' }
     };
+    const lc = langColors[lang] || langColors.python;
+
+    // Use a placeholder div so the HTML is injected as a real DOM node, not via execCommand
+    const placeholder = document.createElement('div');
+    placeholder.innerHTML = `
+    <div class="asai-code-block" data-language="${lang}"
+         style="margin:12px 0;border-radius:12px;overflow:hidden;border:1.5px solid ${lc.border};">
+        <div style="background:${lc.bg};padding:8px 14px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="background:${lc.badge};color:white;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;">${lc.label}</span>
+            <span class="asai-run-btn" style="background:rgba(255,255,255,0.15);color:white;padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;">▶ Run</span>
+        </div>
+        <pre style="margin:0;padding:14px;background:${lc.bg};color:#c7d2fe;font-family:'Courier New',monospace;font-size:13px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${_esc(code)}</pre>
+        <div class="asai-code-output" style="display:none;background:#0f172a;padding:12px 14px;border-top:1px solid ${lc.border};">
+            <div style="font-size:10px;font-weight:700;color:#64748b;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;">Output</div>
+            <pre style="margin:0;color:#4ade80;font-family:'Courier New',monospace;font-size:12px;white-space:pre-wrap;"></pre>
+        </div>
+    </div>`;
+
+    const codeNode = placeholder.firstElementChild;
+    const br = document.createElement('br');
+
+    // Get cursor position and insert at caret, or append to end
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(br);
+        range.insertNode(codeNode);
+        range.setStartAfter(br);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else {
+        editor.appendChild(codeNode);
+        editor.appendChild(br);
+    }
+};
 
     window.wsRemoveTopic = function (globalIdx) {
         document.getElementById(`ws_topic_${globalIdx}`)?.remove();

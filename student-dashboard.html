@@ -2190,9 +2190,6 @@ const savedProgress = enrollment?.progress || 0;
             // Show course details
             showCourseDetails();
 
-            // Load ALL content from Supabase
-            loadCourseNotes(courseId);
-
            // Force set the course ID globally BEFORE loading
 window.currentCourse   = courseId;
 window.currentCourseId = courseId;
@@ -3157,7 +3154,38 @@ function displayNote(index) {
     `;
 
     reader.innerHTML = contentHtml;
-    reader.scrollTop = 0;
+  reader.scrollTop = 0;
+
+    // Wire up Run buttons in code blocks
+    reader.querySelectorAll('.asai-run-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const block  = btn.closest('.asai-code-block');
+            const lang   = block?.dataset?.language || 'python';
+            const code   = block?.querySelector('pre')?.textContent || '';
+            const output = block?.querySelector('.asai-code-output');
+            if (!output) return;
+
+            btn.textContent = '⏳ Running…';
+
+            const runIt = lang === 'javascript'
+                ? runJavaScriptCode(code)
+                : lang === 'python'
+                    ? runPythonCode(code)
+                    : Promise.resolve({ output: code, error: null });
+
+            runIt.then(result => {
+                output.style.display = 'block';
+                const pre = output.querySelector('pre');
+                if (pre) pre.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
+                btn.textContent = '▶ Run';
+            }).catch(err => {
+                output.style.display = 'block';
+                const pre = output.querySelector('pre');
+                if (pre) pre.textContent = '❌ ' + err.message;
+                btn.textContent = '▶ Run';
+            });
+        });
+    });
 
     // Update active state in sidebar
     updateActiveSidebarItem(index);
@@ -3176,9 +3204,12 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
         
         if (!chapterId) return '';
 
-    const chapterAssessments = (window._chapterAssessments || []).filter(
-            a => (a.topic_id === topicId) || (a.topic_id === null && a.chapter_id === chapterId)
-        );
+    const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+        if (!a.chapter_id) return false;
+        if (a.chapter_id !== chapterId) return false;
+        // show topic-linked ones only for this topic, chapter-level ones for all topics
+        return (a.topic_id === topicId) || (a.topic_id === null) || (a.topic_id === undefined);
+    });
 
         if (!chapterAssessments.length) return '';
 
