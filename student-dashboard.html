@@ -2702,32 +2702,18 @@ async function loadCourseNotes(courseId) {
     currentCourseNotes = [];
 
     try {
-        // Load chapters
+        // Load ONLY published chapters
         const { data: chapters, error } = await db
             .from('chapters')
             .select(`id, title, description, order_num`)
             .eq('course_id', courseId)
-            .eq('published', true)
+            .eq('published', true)  // ← CRITICAL: only published chapters
             .order('order_num', { ascending: true });
 
         if (error) throw error;
 
-        // Load sub-chapters (THIS IS THE KEY!)
-        const { data: subChapters } = await db
-            .from('sub_chapters')
-            .select('id, title, chapter_id, order_num')
-            .eq('course_id', courseId)
-            .order('order_num', { ascending: true });
-
-        // Load topics
-        const { data: allTopics } = await db
-            .from('topics')
-            .select('id, title, content, duration, category, order_num, sub_chapter_id, chapter_id')
-            .eq('course_id', courseId)
-            .order('order_num', { ascending: true });
-
         if (!chapters || chapters.length === 0) {
-            chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No notes published yet</li>';
+            chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No published notes yet</li>';
             reader.innerHTML = `<div style="padding:60px;text-align:center;color:#9ca3af;">
                 <i class="fas fa-book-open" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
                 <h3>No notes available yet</h3>
@@ -2737,53 +2723,37 @@ async function loadCourseNotes(courseId) {
             return;
         }
 
-        // Group sub-chapters by chapter_id
-        const subChaptersByChapter = {};
-        (subChapters || []).forEach(sc => {
-            if (!subChaptersByChapter[sc.chapter_id]) {
-                subChaptersByChapter[sc.chapter_id] = [];
-            }
-            subChaptersByChapter[sc.chapter_id].push(sc);
-        });
+        // Load topics for these chapters
+        const chapterIds = chapters.map(c => c.id);
+        const { data: allTopics } = await db
+            .from('topics')
+            .select('id, title, content, duration, category, order_num, chapter_id')
+            .in('chapter_id', chapterIds)
+            .eq('course_id', courseId)
+            .order('order_num', { ascending: true });
 
-        // Group topics by sub_chapter_id
-        const topicsBySubChapter = {};
-        (allTopics || []).forEach(topic => {
-            if (topic.sub_chapter_id) {
-                if (!topicsBySubChapter[topic.sub_chapter_id]) {
-                    topicsBySubChapter[topic.sub_chapter_id] = [];
-                }
-                topicsBySubChapter[topic.sub_chapter_id].push(topic);
-            }
-        });
-
-        // Build currentCourseNotes for flat list (used by displayNote)
+        // Build currentCourseNotes
         const sortedChapters = [...chapters].sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
         
         (allTopics || []).forEach(topic => {
             const chapter = sortedChapters.find(c => c.id === topic.chapter_id);
             if (chapter) {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-               currentCourseNotes.push({
-    id: topic.id,
-    title: cleanTitle,
-    category: topic.category || 'General',
-    duration: (topic.duration || '15') + ' min read',
-    updated: 'Recently',
-    completed: false,
-    content: topic.content || '<p>No content yet.</p>',
-    chapterTitle: chapter.title,
-    chapterId: chapter.id,
-    chapterOrderNum: chapter.order_num ?? 999,
-    weekLabel: 'Week ' + (chapter.order_num || '?'),
-    subChapterId: topic.sub_chapter_id || null,
-    hasCodingExercise: topic.has_coding_exercise || false,
-    codingPrompt: topic.coding_prompt || ''
-});
+                currentCourseNotes.push({
+                    id: topic.id,
+                    title: cleanTitle,
+                    category: topic.category || 'General',
+                    duration: (topic.duration || '15') + ' min read',
+                    updated: 'Recently',
+                    completed: false,
+                    content: topic.content || '<p>No content yet.</p>',
+                    chapterTitle: chapter.title,
+                    chapterId: chapter.id,
+                    chapterOrderNum: chapter.order_num ?? 999,
+                    weekLabel: 'Week ' + (chapter.order_num || '?')
+                });
             }
         });
-
-        currentNoteIndex = 0;
 
         // Load saved progress
         const { data: { user } } = await supabaseClient.auth.getUser();
@@ -2803,31 +2773,11 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // 🔑 THE FIX: Check if sub-chapters exist
-        const hasSubChapters = subChapters && subChapters.length > 0;
+        // Render the sidebar WITHOUT sub-chapters if none exist
+        renderSidebarWithoutSubChapters(sortedChapters, currentCourseNotes);
 
-        console.log('📊 hasSubChapters:', hasSubChapters);
-        console.log('📊 Sub-chapters count:', subChapters?.length || 0);
-
-        if (hasSubChapters) {
-            // Render WITH sub-chapters (collapsible - Week → Sub-chapter → Topics)
-            renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
-        } else {
-            // Render WITHOUT sub-chapters (flat - Week pill → Topics)
-            renderSidebarFlat(sortedChapters, currentCourseNotes);
-        }
-      // Build chapter map for buildWeekExtrasHTML
-      window._chapterMap = {};
-      sortedChapters.forEach(ch => {
-      window._chapterMap[ch.id] = ch.title;
-     });
-
-    // Load quizzes/assignments linked to weeks
-     await loadWeekQuizzesAndAssignments(courseId);
-     await loadTopicAssessments(courseId);
-
-      if (currentCourseNotes.length > 0) displayNote(0);
-if (typeof updateNotesProgress === 'function') updateNotesProgress();
+        if (currentCourseNotes.length > 0) displayNote(0);
+        if (typeof updateNotesProgress === 'function') updateNotesProgress();
 
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
@@ -2840,6 +2790,44 @@ if (typeof updateNotesProgress === 'function') updateNotesProgress();
         chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Error: ${err.message}</li>`;
         window._notesLoadingFor = null;
     }
+}
+
+// Simple sidebar render without sub-chapters
+function renderSidebarWithoutSubChapters(chapters, allNotes) {
+    const chapterList = document.getElementById('notesChapterList');
+    chapterList.innerHTML = '';
+
+    chapters.forEach((chapter, idx) => {
+        const chapterTopics = allNotes.filter(n => n.chapterId === chapter.id);
+        const readTopics = chapterTopics.filter(t => t.completed).length;
+        
+        // Week header
+        const header = document.createElement('li');
+        header.style.cssText = `
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #f8f7ff, #f0ecff);
+            border-radius: 10px;
+            margin: 8px 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        `;
+        header.innerHTML = `
+            <span style="background: #7c3aed; color: white; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;">
+                Week ${chapter.order_num || idx + 1}
+            </span>
+            <span style="font-weight: 600; color: #1f2937; font-size: 13px;">${escapeHtml(chapter.title)}</span>
+            <span style="font-size: 11px; color: #9ca3af;">(${readTopics}/${chapterTopics.length})</span>
+        `;
+        chapterList.appendChild(header);
+        
+        // Add topics directly
+        chapterTopics.forEach((topic, topicIdx) => {
+            const globalIdx = allNotes.findIndex(n => n.id === topic.id);
+            const topicItem = buildTopicItemForSidebar(topic, globalIdx);
+            chapterList.appendChild(topicItem);
+        });
+    });
 }
 // Helper: Render sidebar WITH sub-chapters (collapsible)
 function renderSidebarWithSubChapters(chapters, subChaptersByChapter, topicsBySubChapter, allNotes) {
@@ -3270,41 +3258,22 @@ async function toggleNoteComplete(index) {
 function buildWeekExtrasHTML(chapterTitle, topicId) {
     if (!topicId) return '';
 
-    const subs = window._quizSubmissions || [];
     const currentNote = currentCourseNotes.find(n => n.id === topicId);
     const chapterId   = currentNote?.chapterId || null;
+    
+    if (!chapterId) return '';
 
-    // Topic-specific assessments — always show on this topic
-    const topicRows = (window._topicAssessments || []).filter(
-        a => a.topic_id === topicId
+    const subs = window._quizSubmissions || [];
+
+    // Get assessments linked to this SPECIFIC chapter/topic
+    const chapterAssessments = (window._chapterAssessments || []).filter(
+        a => a.chapter_id === chapterId
     );
 
-// Chapter-level assessments — only on LAST topic of the chapter
-const chapterTopics = currentCourseNotes.filter(n => n.chapterId === chapterId);
-const isLastTopic = chapterTopics.length > 0 &&
-    String(chapterTopics[chapterTopics.length - 1].id) === String(topicId);
+    if (!chapterAssessments.length) return '';
 
-console.log('🔍 isLastTopic check:', {
-    topicId,
-    lastTopicId: chapterTopics[chapterTopics.length - 1]?.id,
-    isLastTopic,
-    chapterTopicsCount: chapterTopics.length
-});
-
-const chapterRows = isLastTopic
-    ? (window._chapterAssessments || []).filter(a => a.chapter_id === chapterId)
-    : [];
-
-    const allQuizzes = [
-        ...topicRows.filter(a => a.assessment_type === 'quiz' && a.quizzes),
-        ...chapterRows.filter(a => a.assessment_type === 'quiz' && a.quizzes)
-    ];
-    const allAssigns = [
-        ...topicRows.filter(a => a.assessment_type === 'assignment' && a.assignments),
-        ...chapterRows.filter(a => a.assessment_type === 'assignment' && a.assignments)
-    ];
-
-    if (!allQuizzes.length && !allAssigns.length) return '';
+    const allQuizzes = chapterAssessments.filter(a => a.assessment_type === 'quiz' && a.quizzes);
+    const allAssigns = chapterAssessments.filter(a => a.assessment_type === 'assignment' && a.assignments);
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
@@ -3379,6 +3348,8 @@ const chapterRows = isLastTopic
         </div>`;
     }).join('');
 
+    if (!quizCards && !assignCards) return '';
+
     return `
     <div style="margin:28px 0 20px;padding:20px;background:linear-gradient(135deg,#fafaf9,#f5f3ff);
                 border-radius:16px;border:1.5px solid #e5e7eb;">
@@ -3399,6 +3370,7 @@ const chapterRows = isLastTopic
         ${assignCards || ''}
     </div>`;
 }
+
 async function loadTopicAssessments(courseId) {
     try {
         const { data: directQuizzes } = await supabaseClient

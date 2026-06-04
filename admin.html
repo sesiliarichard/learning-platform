@@ -12281,6 +12281,37 @@ async function getAllQuizSubmissions() {
         return { success: false, error: error.message, submissions: [] };
     }
 }
+// Admin function to link assignment to specific chapter
+async function linkAssignmentToChapter(assignmentId, chapterId, courseId) {
+    try {
+        // Update assignment with chapter_id
+        const { error: updateErr } = await db
+            .from('assignments')
+            .update({ chapter_id: chapterId })
+            .eq('id', assignmentId);
+            
+        if (updateErr) throw updateErr;
+        
+        // Also add to chapter_assessments for the student view
+        const { error: insertErr } = await db
+            .from('chapter_assessments')
+            .upsert({
+                chapter_id: chapterId,
+                course_id: courseId,
+                assessment_type: 'assignment',
+                assignment_id: assignmentId,
+                order_num: 1
+            }, { onConflict: 'chapter_id,assignment_id' });
+            
+        if (insertErr) throw insertErr;
+        
+        showToast('✅ Assignment linked to chapter successfully!');
+        loadChapters(); // Refresh view
+        
+    } catch (err) {
+        showToast('Error linking assignment: ' + err.message, 'error');
+    }
+}
 </script>
 <script src="week-structure-admin.js"></script>
 <script src="edit-chapter-modal-patch.js"></script>
