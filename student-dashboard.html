@@ -2827,7 +2827,7 @@ async function loadCourseNotes(courseId) {
      await loadTopicAssessments(courseId);
 
       if (currentCourseNotes.length > 0) displayNote(0);
-      updateNotesProgress();
+if (typeof updateNotesProgress === 'function') updateNotesProgress();
 
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
@@ -3279,14 +3279,10 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
         a => a.topic_id === topicId
     );
 
-    // Chapter-level assessments — only show on the LAST topic of the chapter
-    const chapterTopics = currentCourseNotes.filter(n => n.chapterId === chapterId);
-    const isLastTopicInChapter = chapterTopics.length > 0 &&
-        chapterTopics[chapterTopics.length - 1].id === topicId;
-
-    const chapterRows = isLastTopicInChapter
-        ? (window._chapterAssessments || []).filter(a => a.chapter_id === chapterId)
-        : [];
+   // Chapter-level assessments — show on ALL topics within this chapter
+const chapterRows = (window._chapterAssessments || []).filter(
+    a => a.chapter_id === chapterId
+);
 
     const allQuizzes = [
         ...topicRows.filter(a => a.assessment_type === 'quiz' && a.quizzes),
