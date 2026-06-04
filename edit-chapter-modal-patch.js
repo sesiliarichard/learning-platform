@@ -479,6 +479,19 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         .not('topic_id', 'is', null);
 
     // Build map: topic_id → array of assessments
+   // Fill in missing quiz/assignment titles if join returned null
+    for (const row of (topicAssessmentRows || [])) {
+        if (row.assessment_type === 'quiz' && row.quiz_id && !row.quizzes) {
+            const found = quizzes.find(q => q.id === row.quiz_id);
+            if (found) row.quizzes = { id: found.id, title: found.title };
+        }
+        if (row.assessment_type === 'assignment' && row.assignment_id && !row.assignments) {
+            const found = assignments.find(a => a.id === row.assignment_id);
+            if (found) row.assignments = { id: found.id, title: found.title };
+        }
+    }
+
+    // Build map: topic_id → array of assessments
     const byTopic = {};
     (topicAssessmentRows || []).forEach(a => {
         if (!byTopic[a.topic_id]) byTopic[a.topic_id] = [];
