@@ -3282,12 +3282,19 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
 // Chapter-level assessments — only on LAST topic of the chapter
 const chapterTopics = currentCourseNotes.filter(n => n.chapterId === chapterId);
 const isLastTopic = chapterTopics.length > 0 &&
-    chapterTopics[chapterTopics.length - 1].id === topicId;
+    String(chapterTopics[chapterTopics.length - 1].id) === String(topicId);
+
+console.log('🔍 isLastTopic check:', {
+    topicId,
+    lastTopicId: chapterTopics[chapterTopics.length - 1]?.id,
+    isLastTopic,
+    chapterTopicsCount: chapterTopics.length
+});
 
 const chapterRows = isLastTopic
     ? (window._chapterAssessments || []).filter(a => a.chapter_id === chapterId)
     : [];
-    
+
     const allQuizzes = [
         ...topicRows.filter(a => a.assessment_type === 'quiz' && a.quizzes),
         ...chapterRows.filter(a => a.assessment_type === 'quiz' && a.quizzes)
