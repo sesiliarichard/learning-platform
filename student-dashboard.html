@@ -1639,6 +1639,262 @@
         // Course Data - now loaded from DB
 let coursesData = {};
 window.coursesData = coursesData;
+window.currentCourseNotes = [];
+window.currentNoteIndex = 0;
+// ADD THIS FUNCTION - Place it after showToast() but before loadCoursesFromDB()
+async function loadCourseNotesWithCoding(courseId) {
+    if (window._notesLoadingFor === courseId) return;
+    window._notesLoadingFor = courseId;
+
+    const chapterList = document.getElementById('notesChapterList');
+    const reader = document.getElementById('notesReader');
+
+    chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
+    reader.innerHTML = '';
+    window.currentCourseNotes = window.currentCourseNotes || [];
+
+    try {
+        const { data: chapters, error } = await db
+            .from('chapters')
+            .select(`id, title, description, order_num`)
+            .eq('course_id', courseId)
+            .eq('published', true)
+            .order('order_num', { ascending: true });
+
+        if (error) throw error;
+
+        if (!chapters || chapters.length === 0) {
+            chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No published notes yet</li>';
+            reader.innerHTML = `<div style="padding:60px;text-align:center;color:#9ca3af;">
+                <i class="fas fa-book-open" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
+                <h3>No notes available yet</h3>
+                <p>Your instructor hasn't published notes for this course yet.</p>
+            </div>`;
+            window._notesLoadingFor = null;
+            return;
+        }
+
+        const chapterIds = chapters.map(c => c.id);
+        const { data: topics, error: topicsError } = await db
+            .from('topics')
+            .select('id, title, content, duration, category, order_num, chapter_id, has_coding_exercise, coding_prompt, coding_language')
+            .in('chapter_id', chapterIds)
+            .order('order_num', { ascending: true });
+
+        if (topicsError) throw topicsError;
+
+        window.currentCourseNotes = [];
+        (topics || []).forEach(topic => {
+            const chapter = chapters.find(c => c.id === topic.chapter_id);
+            if (chapter) {
+                window.currentCourseNotes.push({
+                    id: topic.id,
+                    title: topic.title,
+                    category: topic.category || 'General',
+                    duration: (topic.duration || '15') + ' min read',
+                    updated: 'Recently',
+                    completed: false,
+                    content: topic.content || '<p>No content yet.</p>',
+                    chapterTitle: chapter.title,
+                    chapterId: chapter.id,
+                    chapterOrderNum: chapter.order_num ?? 999,
+                    weekLabel: 'Week ' + (chapter.order_num || '?'),
+                    hasCodingExercise: topic.has_coding_exercise || false,
+                    codingPrompt: topic.coding_prompt || null,
+                    codingLanguage: topic.coding_language || 'python'
+                });
+            }
+        });
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (user) {
+            const { data: saved } = await supabaseClient
+                .from('course_progress')
+                .select('topic_id')
+                .eq('student_id', user.id)
+                .eq('course_id', courseId)
+                .eq('completed', true);
+
+            if (saved) {
+                const doneIds = new Set(saved.map(r => r.topic_id));
+                window.currentCourseNotes.forEach(n => {
+                    n.completed = doneIds.has(n.id);
+                });
+            }
+        }
+
+        renderSimpleSidebar(chapters, window.currentCourseNotes);
+
+        if (window.currentCourseNotes.length > 0) displayNoteWithCoding(0);
+        if (typeof updateNotesProgress === 'function') updateNotesProgress();
+
+        window._notesLoadingFor = null;
+
+    } catch (err) {
+        console.error('loadCourseNotesWithCoding error:', err.message);
+        chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Error: ${err.message}</li>`;
+        window._notesLoadingFor = null;
+    }
+}
+// ADD THIS FUNCTION
+function renderSimpleSidebar(chapters, allNotes) {
+    const chapterList = document.getElementById('notesChapterList');
+    if (!chapterList) return;
+    
+    chapterList.innerHTML = '';
+
+    chapters.forEach((chapter, idx) => {
+        const chapterTopics = allNotes.filter(n => n.chapterId === chapter.id);
+        const readTopics = chapterTopics.filter(t => t.completed).length;
+        
+        const header = document.createElement('li');
+        header.style.cssText = `
+            padding: 8px 12px;
+            background: linear-gradient(135deg, #f8f7ff, #f0ecff);
+            border-radius: 10px;
+            margin: 8px 0 4px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        `;
+        header.innerHTML = `
+            <span style="background: #7c3aed; color: white; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;">
+                Week ${chapter.order_num || idx + 1}
+            </span>
+            <span style="font-weight: 600; color: #1f2937; font-size: 13px;">${escapeHtml(chapter.title)}</span>
+            <span style="font-size: 11px; color: #9ca3af;">(${readTopics}/${chapterTopics.length})</span>
+        `;
+        chapterList.appendChild(header);
+        
+        chapterTopics.forEach(topic => {
+            const globalIdx = allNotes.findIndex(n => n.id === topic.id);
+            const topicItem = document.createElement('li');
+            topicItem.className = 'notes-chapter-item';
+            topicItem.style.cssText = `
+                padding: 8px 12px 8px 28px;
+                margin: 2px 0;
+                border-radius: 8px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                ${topic.completed ? 'background: #f0fdf4;' : ''}
+            `;
+            topicItem.innerHTML = `
+                ${topic.completed
+                    ? '<i class="fas fa-check-circle" style="color:#10b981;font-size:10px;"></i>'
+                    : '<i class="fas fa-circle" style="color:#e5e7eb;font-size:8px;"></i>'}
+                <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                    ${escapeHtml(topic.title)}
+                </span>
+            `;
+            topicItem.onclick = () => displayNoteWithCoding(globalIdx);
+            chapterList.appendChild(topicItem);
+        });
+    });
+}
+// ADD THIS FUNCTION
+function displayNoteWithCoding(index) {
+    if (index < 0 || index >= window.currentCourseNotes.length) return;
+
+    window.currentNoteIndex = index;
+    const note = window.currentCourseNotes[index];
+    const reader = document.getElementById('notesReader');
+    
+    if (!reader) return;
+
+    let contentHtml = `
+        <div class="notes-header">
+            <div class="notes-category-badge">${escapeHtml(note.category || 'General')}</div>
+            <h1 class="notes-title">${escapeHtml(note.title)}</h1>
+            <div class="notes-meta">
+                <div class="notes-meta-item">
+                    <i class="fas fa-clock"></i>
+                    ${escapeHtml(note.duration || '15 min read')}
+                </div>
+                <div class="notes-meta-item">
+                    <i class="fas fa-sync-alt"></i>
+                    Updated ${escapeHtml(note.updated || 'Recently')}
+                </div>
+            </div>
+        </div>
+        <div class="notes-content">
+            ${note.content || '<p>No content available.</p>'}
+        </div>
+    `;
+
+    if (note.hasCodingExercise && note.codingPrompt) {
+        contentHtml += `
+            <div style="margin: 30px 0 20px; padding: 20px; background: #f5f3ff; border-radius: 16px; border: 1.5px solid #ddd6fe;">
+                <div style="font-size: 16px; font-weight: 800; color: #5b21b6; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-code"></i>
+                    <span>Coding Exercise</span>
+                </div>
+                <p style="font-size: 14px; color: #374151; margin-bottom: 20px; line-height: 1.6;">${escapeHtml(note.codingPrompt)}</p>
+                <button onclick="openCodingEnvironmentForTopic('${note.id}', '${escapeHtml(note.codingPrompt).replace(/'/g, "\\'")}', '${note.codingLanguage || 'python'}')"
+                        style="padding: 10px 22px; background: #7c3aed; color: white; border: none;
+                               border-radius: 10px; cursor: pointer; font-weight: 700; font-size: 14px;
+                               font-family: inherit; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-play"></i> Open Coding Environment
+                </button>
+            </div>
+        `;
+    }
+
+    contentHtml += `
+        <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
+            <i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i>
+            ${note.completed ? 'Completed' : 'Mark as Complete'}
+        </button>
+        <div class="notes-navigation">
+            <button class="notes-nav-btn" onclick="displayNoteWithCoding(${index - 1})" ${index === 0 ? 'disabled' : ''}>
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <button class="notes-nav-btn" onclick="displayNoteWithCoding(${index + 1})" ${index === window.currentCourseNotes.length - 1 ? 'disabled' : ''}>
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    `;
+
+    reader.innerHTML = contentHtml;
+    reader.scrollTop = 0;
+}
+// ADD THIS FUNCTION
+function openCodingEnvironmentForTopic(topicId, prompt, language = 'python') {
+    const modal = document.getElementById('codingEnvironmentModal');
+    if (!modal) {
+        showToast('Coding environment not available', 'error');
+        return;
+    }
+    
+    window.currentCodingAssignment = { 
+        id: topicId, 
+        prompt: prompt,
+        type: 'topic'
+    };
+    
+    const linkDiv = document.getElementById('codingAssignmentLink');
+    if (linkDiv) {
+        const promptEl = document.getElementById('codingAssignmentPrompt');
+        if (promptEl) promptEl.innerHTML = prompt;
+        linkDiv.style.display = 'block';
+    }
+    
+    const editor = document.getElementById('codeEditor');
+    if (editor) {
+        if (language === 'python') {
+            editor.value = '# Write your Python solution here\n\ndef solution():\n    # Your code here\n    pass\n\n# Test your solution\nprint(solution())';
+        } else if (language === 'javascript') {
+            editor.value = '// Write your JavaScript solution here\n\nfunction solution() {\n    // Your code here\n    \n}\n\n// Test your solution\nconsole.log(solution());';
+        }
+    }
+    
+    const langSelect = document.getElementById('codingLanguage');
+    if (langSelect) langSelect.value = language;
+    
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
 
 async function loadCoursesFromDB() {
     const { data: courses } = await db
@@ -2191,6 +2447,7 @@ const savedProgress = enrollment?.progress || 0;
 
             // Load ALL content from Supabase
             loadCourseNotes(courseId);
+            loadCourseNotesWithCoding(courseId);
 
            // Force set the course ID globally BEFORE loading
 window.currentCourse   = courseId;
@@ -3119,7 +3376,8 @@ function displayNote(index) {
         contentHtml += weekHtml;
     }
 
-    // Add coding exercise if present
+    
+        // Add coding exercise if present
     if (note.hasCodingExercise && note.codingPrompt) {
         contentHtml += `
             <div style="margin:20px 0;padding:18px;background:#f5f3ff;border-radius:14px;border:1.5px solid #ddd6fe;">
@@ -3127,7 +3385,7 @@ function displayNote(index) {
                     <i class="fas fa-code" style="margin-right:8px;"></i>Coding Exercise
                 </div>
                 <p style="font-size:14px;color:#374151;margin-bottom:14px;line-height:1.6;">${escapeHtml(note.codingPrompt)}</p>
-                <button onclick="openCodingEnvironment('topic-${note.id}', '${note.codingPrompt.replace(/'/g, "\\'")}')"
+                <button onclick="openCodingEnvironmentForTopic('${note.id}', '${escapeHtml(note.codingPrompt).replace(/'/g, "\\'")}', '${note.codingLanguage || 'python'}')"
                     style="padding:10px 22px;background:#7c3aed;color:white;border:none;
                            border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;
                            font-family:inherit;display:inline-flex;align-items:center;gap:8px;">
@@ -3135,7 +3393,6 @@ function displayNote(index) {
                 </button>
             </div>`;
     }
-
     // Add complete button
     contentHtml += `
         <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
@@ -6699,7 +6956,15 @@ async function downloadFile(url, filename) {
     }
     console.log('✅ Coding environment modal hidden on page load');
 })();
-
+// ADD THIS at the very bottom
+(function cleanupAdminUI() {
+    function removeAdminElements() {
+        const overlays = document.getElementById('sharedTableOverlay');
+        if (overlays) overlays.remove();
+    }
+    removeAdminElements();
+    setInterval(removeAdminElements, 2000);
+})();
 
     </script>
     <script src="week-structure-student.js"></script>
