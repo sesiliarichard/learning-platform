@@ -3204,11 +3204,12 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
         
         if (!chapterId) return '';
 
-    const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-        if (!a.chapter_id) return false;
-        if (a.chapter_id !== chapterId) return false;
-        // show topic-linked ones only for this topic, chapter-level ones for all topics
-        return (a.topic_id === topicId) || (a.topic_id === null) || (a.topic_id === undefined);
+   const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+        // Must belong to this exact chapter
+        if (!a.chapter_id || a.chapter_id !== chapterId) return false;
+        // Topic-linked: only show on the exact matching topic
+        if (a.topic_id && a.topic_id !== topicId) return false;
+        return true;
     });
 
         if (!chapterAssessments.length) return '';
@@ -3436,9 +3437,11 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
     const subs = window._quizSubmissions || [];
 
     // Get assessments linked to this SPECIFIC chapter/topic
-    const chapterAssessments = (window._chapterAssessments || []).filter(
-        a => a.chapter_id === chapterId
-    );
+   const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+        if (!a.chapter_id || a.chapter_id !== chapterId) return false;
+        if (a.topic_id && a.topic_id !== topicId) return false;
+        return true;
+    });
 
     if (!chapterAssessments.length) return '';
 
