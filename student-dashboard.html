@@ -2706,12 +2706,12 @@ async function loadCourseNotes(courseId) {
     currentCourseNotes = [];
 
     try {
-        // Load ONLY published chapters
+        // Load chapters (ONLY published)
         const { data: chapters, error } = await db
             .from('chapters')
             .select(`id, title, description, order_num`)
             .eq('course_id', courseId)
-            .eq('published', true)  // ← CRITICAL: only published chapters
+            .eq('published', true)
             .order('order_num', { ascending: true });
 
         if (error) throw error;
@@ -2727,14 +2727,41 @@ async function loadCourseNotes(courseId) {
             return;
         }
 
-        // Load topics for these chapters
+        // ✅ CRITICAL: Load sub-chapters
+        const { data: subChapters } = await db
+            .from('sub_chapters')
+            .select('id, title, chapter_id, order_num')
+            .eq('course_id', courseId)
+            .order('order_num', { ascending: true });
+
+        // Load topics
         const chapterIds = chapters.map(c => c.id);
         const { data: allTopics } = await db
             .from('topics')
-            .select('id, title, content, duration, category, order_num, chapter_id')
+            .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id')
             .in('chapter_id', chapterIds)
             .eq('course_id', courseId)
             .order('order_num', { ascending: true });
+
+        // Group sub-chapters by chapter_id
+        const subChaptersByChapter = {};
+        (subChapters || []).forEach(sc => {
+            if (!subChaptersByChapter[sc.chapter_id]) {
+                subChaptersByChapter[sc.chapter_id] = [];
+            }
+            subChaptersByChapter[sc.chapter_id].push(sc);
+        });
+
+        // Group topics by sub_chapter_id
+        const topicsBySubChapter = {};
+        (allTopics || []).forEach(topic => {
+            if (topic.sub_chapter_id) {
+                if (!topicsBySubChapter[topic.sub_chapter_id]) {
+                    topicsBySubChapter[topic.sub_chapter_id] = [];
+                }
+                topicsBySubChapter[topic.sub_chapter_id].push(topic);
+            }
+        });
 
         // Build currentCourseNotes
         const sortedChapters = [...chapters].sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
@@ -2754,7 +2781,8 @@ async function loadCourseNotes(courseId) {
                     chapterTitle: chapter.title,
                     chapterId: chapter.id,
                     chapterOrderNum: chapter.order_num ?? 999,
-                    weekLabel: 'Week ' + (chapter.order_num || '?')
+                    weekLabel: 'Week ' + (chapter.order_num || '?'),
+                    subChapterId: topic.sub_chapter_id || null
                 });
             }
         });
@@ -2777,8 +2805,17 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // Render the sidebar WITHOUT sub-chapters if none exist
-        renderSidebarWithoutSubChapters(sortedChapters, currentCourseNotes);
+        // ✅ CRITICAL: Load chapter assessments BEFORE rendering
+        // This loads the link between topics and quizzes/assignments
+        await loadTopicAssessments(courseId);
+
+        const hasSubChapters = subChapters && subChapters.length > 0;
+
+        if (hasSubChapters) {
+            renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
+        } else {
+            renderSidebarFlat(sortedChapters, currentCourseNotes);
+        }
 
         if (currentCourseNotes.length > 0) displayNote(0);
         if (typeof updateNotesProgress === 'function') updateNotesProgress();
@@ -2795,6 +2832,7 @@ async function loadCourseNotes(courseId) {
         window._notesLoadingFor = null;
     }
 }
+     
 
 // Simple sidebar render without sub-chapters
 function renderSidebarWithoutSubChapters(chapters, allNotes) {
@@ -3591,7 +3629,7 @@ async function loadTopicAssessments(courseId) {
             });
         });
 
-        // From chapter_assessments table (the admin modal writes here)
+        // From chapter_assessments table
         (assessmentsRes.data || []).forEach(a => {
             const alreadyAdded = chapterRows.some(r =>
                 r.assessment_type === a.assessment_type &&
