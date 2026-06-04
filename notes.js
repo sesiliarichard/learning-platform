@@ -94,7 +94,18 @@ return data.map(chapter => ({
 export async function getTopicsByChapter(chapterId) {
   const { data, error } = await supabase
     .from('topics')
-    .select('*')
+          .select(`
+      id,
+      title,
+      content,
+      order_num,
+      duration,
+      has_coding_exercise,
+      coding_language,
+      coding_prompt,
+      coding_starter_code,
+      coding_content
+    `)
     .eq('chapter_id', chapterId)
     .order('order_num', { ascending: true })
 
@@ -121,7 +132,17 @@ export async function getTopicsByChapter(chapterId) {
 export async function getTopicById(topicId) {
   const { data, error } = await supabase
     .from('topics')
-    .select('*')
+        .select(`
+      id,
+      title,
+      content,
+      duration,
+      has_coding_exercise,
+      coding_language,
+      coding_prompt,
+      coding_starter_code,
+      coding_content
+    `)
     .eq('id', topicId)
     .maybeSingle()
 

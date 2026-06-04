@@ -1746,6 +1746,65 @@ window.updateWordCount = function() {
     const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
     counter.textContent = words + ' word' + (words !== 1 ? 's' : '');
 };
+// ================================================
+// ASSIGNMENT LINKING - NEW FUNCTIONS
+// ================================================
+export async function linkAssignmentToTopic(topicId, assignmentId) {
+  try {
+    const { data: existing } = await supabase
+      .from('topic_assignments')
+      .select('id')
+      .eq('topic_id', topicId)
+      .eq('assignment_id', assignmentId)
+      .maybeSingle();
+
+    if (existing) return { success: true, message: 'Already linked' };
+
+    const { data, error } = await supabase
+      .from('topic_assignments')
+      .insert({ topic_id: topicId, assignment_id: assignmentId, created_at: new Date().toISOString() })
+      .select()
+      .maybeSingle();
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('❌ linkAssignmentToTopic:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function unlinkAssignmentFromTopic(topicId, assignmentId) {
+  try {
+    const { error } = await supabase
+      .from('topic_assignments')
+      .delete()
+      .eq('topic_id', topicId)
+      .eq('assignment_id', assignmentId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    console.error('❌ unlinkAssignmentFromTopic:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getTopicAssignments(topicId) {
+  try {
+    const { data, error } = await supabase
+      .from('topic_assignments')
+      .select(`id,assignment_id,assignments(id,title,instructions,due_date,max_points)`)
+      .eq('topic_id', topicId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return { success: true, assignments: data || [] };
+  } catch (error) {
+    console.error('❌ getTopicAssignments:', error.message);
+    return { success: false, assignments: [], error: error.message };
+  }
+}
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────

@@ -471,7 +471,7 @@
 
                     if (!tTitle) continue;
 
-                    topicsToInsert.push({
+                                       topicsToInsert.push({
                         chapter_id:          chapterId,
                         sub_chapter_id:      subChapterId,
                         course_id:           courseId,
@@ -483,7 +483,8 @@
                         has_coding_exercise: hasCoding,
                         coding_prompt:       hasCoding ? prompt : null,
                         coding_language:     hasCoding ? lang   : null,
-                        coding_starter_code: hasCoding ? starter : null
+                        coding_starter_code: hasCoding ? starter : null,
+                        coding_content:      ''
                     });
                 }
 
@@ -507,7 +508,7 @@
             }
 
             document.getElementById('weekStructureModal')?.remove();
-            _toast('✅ Week saved successfully!');
+                       _toast('✅ Week saved successfully with all coding exercises!');
 
             if (typeof loadChapters === 'function') loadChapters();
             if (typeof loadAdminCourses === 'function') loadAdminCourses();
