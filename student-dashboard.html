@@ -1643,19 +1643,23 @@ window.coursesData = coursesData;
 async function loadCoursesFromDB() {
     const { data: courses } = await db
         .from('courses')
-        .select('id, title, description, order_num')
+        .select('id, title, description, order_num, lesson_count, icon, category, student_count, instructor')
         .order('order_num', { ascending: true });
     
     if (!courses) return;
     
-  courses.forEach(course => {
+    courses.forEach(course => {
         coursesData[course.id] = {
             id: course.id,
             title: course.title,
-            instructor: 'Instructor',
+            instructor: course.instructor || 'ASAI Instructor',
             description: course.description || '',
             progress: 0,
             order_num: course.order_num ?? 999,
+            lesson_count: course.lesson_count || 0,
+            icon: course.icon || null,
+            category: course.category || null,
+            student_count: course.student_count || null,
             notes: [],
             videos: [],
             quizzes: [],
@@ -1663,9 +1667,9 @@ async function loadCoursesFromDB() {
         };
     });
     
-    console.log('✅ Courses loaded:', Object.keys(coursesData));
+    console.log('✅ Courses loaded:', coursesData);
 
-// Load real progress from enrollments table
+    // Load real progress from enrollments table
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session?.user) {
         const user = session.user;
@@ -1687,6 +1691,7 @@ async function loadCoursesFromDB() {
         calculateProfileStats();
     }
 }
+
 function renderCourseCards() {
     const grids = [
         document.getElementById('courseSelection'),
@@ -1707,23 +1712,20 @@ function renderCourseCards() {
         grid.innerHTML = '';
 
         Object.values(coursesData).forEach((course, index) => {
-            const progress    = course.progress || 0;
-            const thumbColor  = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
-            const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
-const fallbackCategories  = ['AI', 'Data Science', 'Coding', 'ML'];
-const fallbackLessons     = [24, 18, 20, 16];
-const fallbackStudents    = ['45+', '30+', '28+', '22+'];
-
-const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
-const category    = course.category      || fallbackCategories[index % fallbackCategories.length];
-const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
-const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
-const instructor  = course.instructor    || 'ASAI Instructor';
+            const progress = course.progress || 0;
+            const thumbColor = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
+            
+            // Get REAL lesson count from course data
+            const lessonCount = course.lesson_count || 0;
+            const icon = course.icon || getFallbackIcon(index);
+            // REMOVED category - don't show category badge anymore
+            const studentNum = course.student_count || getFallbackStudents(index);
+            const instructor = course.instructor || 'ASAI Instructor';
 
             const isCompleted = progress >= 90;
-            const isStarted   = progress > 0 && !isCompleted;
-            const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
-            const btnColor    = isCompleted ? '#1D9E75'     : isStarted ? '#378ADD'  : '#7F77DD';
+            const isStarted = progress > 0 && !isCompleted;
+            const btnLabel = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
+            const btnColor = isCompleted ? '#1D9E75' : isStarted ? '#378ADD' : '#7F77DD';
 
             const progLabel = isCompleted
                 ? '<span style="color:#1D9E75;">✓ Completed!</span>'
@@ -1744,7 +1746,7 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                     display:flex; align-items:center; justify-content:center;
                     position:relative; overflow:hidden; flex-shrink:0;
                 ">
-                    ${lessonCount ? `
+                    ${lessonCount > 0 ? `
                     <span style="
                         position:absolute; top:11px; left:11px;
                         background:rgba(0,0,0,0.38); color:#fff;
@@ -1752,24 +1754,17 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                         padding:3px 9px; border-radius:20px;
                         display:flex; align-items:center; gap:4px;
                     ">
-                        <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessonCount}x lesson
+                        <i class="fas fa-play-circle" style="font-size:10px;"></i> ${lessonCount} ${lessonCount === 1 ? 'lesson' : 'lessons'}
                     </span>` : ''}
 
-                    ${category ? `
-                    <span style="
-                        position:absolute; top:11px; right:11px;
-                        background:rgba(255,255,255,0.22); color:#fff;
-                        font-size:10px; font-weight:600;
-                        padding:3px 9px; border-radius:20px;
-                        border:0.5px solid rgba(255,255,255,0.3);
-                        text-transform:uppercase; letter-spacing:0.3px;
-                    ">${escapeHtml(category)}</span>` : ''}
+                    <!-- REMOVED the category badge from top-right corner -->
 
                     <i class="fas ${escapeHtml(icon)}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
                 </div>
 
                 <div style="padding:14px 14px 16px; display:flex; flex-direction:column; flex:1;">
-                    <div style="font-size:14px; font-weight:700; color:#1f2937; line-height:1.4; margin-bottom:12px;">
+                    <!-- Course Title - Now more prominent -->
+                    <div style="font-size:16px; font-weight:800; color:#1f2937; line-height:1.3; margin-bottom:12px;">
                         ${escapeHtml(course.title)}
                     </div>
 
@@ -1803,8 +1798,8 @@ const instructor  = course.instructor    || 'ASAI Instructor';
                         padding-top:10px; border-top:1px solid #f3f4f6; margin-top:auto;
                     ">
                         <button style="
-                            padding:5px 14px; border-radius:20px;
-                            font-size:11px; font-weight:700; cursor:pointer;
+                            padding:6px 16px; border-radius:25px;
+                            font-size:12px; font-weight:700; cursor:pointer;
                             border:1.5px solid ${btnColor};
                             color:${btnColor}; background:transparent;
                             font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.2s;
@@ -1841,7 +1836,23 @@ const instructor  = course.instructor    || 'ASAI Instructor';
         });
     });
 
-    console.log('✅ Course cards rendered');
+    console.log('✅ Course cards rendered with real course names');
+}
+
+// Helper functions for fallbacks
+function getFallbackIcon(index) {
+    const icons = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain', 'fa-chart-line', 'fa-bullhorn'];
+    return icons[index % icons.length];
+}
+
+function getFallbackCategory(index) {
+    const categories = ['AI', 'Data Science', 'Coding', 'ML', 'Analytics', 'Business'];
+    return categories[index % categories.length];
+}
+
+function getFallbackStudents(index) {
+    const students = ['45+', '30+', '28+', '22+', '35+', '40+'];
+    return students[index % students.length];
 }
         // Initialize Dashboard
 async function initDashboard() {
@@ -2816,7 +2827,7 @@ async function loadCourseNotes(courseId) {
      await loadTopicAssessments(courseId);
 
       if (currentCourseNotes.length > 0) displayNote(0);
-      updateNotesProgress();
+if (typeof updateNotesProgress === 'function') updateNotesProgress();
 
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
@@ -3258,24 +3269,39 @@ async function toggleNoteComplete(index) {
 }
 function buildWeekExtrasHTML(chapterTitle, topicId) {
     if (!topicId) return '';
-    
-    console.log('🔍 buildWeekExtrasHTML topicId:', topicId, typeof topicId);
-    console.log('🔍 _topicAssessments:', window._topicAssessments?.map(a => ({topic_id: a.topic_id, type: a.assessment_type})));
 
     const subs = window._quizSubmissions || [];
-    const topicAssessments = window._topicAssessments || [];
+    const currentNote = currentCourseNotes.find(n => n.id === topicId);
+    const chapterId   = currentNote?.chapterId || null;
 
-    const topicQuizzes = topicAssessments
-        .filter(a => a.topic_id === topicId && a.assessment_type === 'quiz' && a.quizzes);
+    // Topic-specific assessments — always show on this topic
+    const topicRows = (window._topicAssessments || []).filter(
+        a => a.topic_id === topicId
+    );
 
-    const topicAssigns = topicAssessments
-        .filter(a => a.topic_id === topicId && a.assessment_type === 'assignment' && a.assignments);
+// Chapter-level assessments — only on LAST topic of the chapter
+const chapterTopics = currentCourseNotes.filter(n => n.chapterId === chapterId);
+const isLastTopic = chapterTopics.length > 0 &&
+    chapterTopics[chapterTopics.length - 1].id === topicId;
 
-    if (!topicQuizzes.length && !topicAssigns.length) return '';
+const chapterRows = isLastTopic
+    ? (window._chapterAssessments || []).filter(a => a.chapter_id === chapterId)
+    : [];
+    
+    const allQuizzes = [
+        ...topicRows.filter(a => a.assessment_type === 'quiz' && a.quizzes),
+        ...chapterRows.filter(a => a.assessment_type === 'quiz' && a.quizzes)
+    ];
+    const allAssigns = [
+        ...topicRows.filter(a => a.assessment_type === 'assignment' && a.assignments),
+        ...chapterRows.filter(a => a.assessment_type === 'assignment' && a.assignments)
+    ];
+
+    if (!allQuizzes.length && !allAssigns.length) return '';
 
     const submittedIds = new Set(subs.map(s => s.quiz_id));
 
-    const quizCards = topicQuizzes.map(a => {
+    const quizCards = allQuizzes.map(a => {
         const q = a.quizzes;
         const done = submittedIds.has(q.id);
         const score = subs.find(s => s.quiz_id === q.id)?.score;
@@ -3310,41 +3336,41 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
         </div>`;
     }).join('');
 
-   const assignCards = topicAssigns.map(a => {
-    const assign = a.assignments;
-    const due = assign.due_date
-        ? new Date(assign.due_date).toLocaleDateString('en-US',
-            { month:'short', day:'numeric', year:'numeric' })
-        : 'No deadline';
-    return `
-    <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
-                padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
-                flex-wrap:wrap;gap:10px;margin-bottom:10px;">
-        <div>
-            <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
-                <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
-                ${escapeHtml(assign.title)}
+    const assignCards = allAssigns.map(a => {
+        const assign = a.assignments;
+        const due = assign.due_date
+            ? new Date(assign.due_date).toLocaleDateString('en-US',
+                { month:'short', day:'numeric', year:'numeric' })
+            : 'No deadline';
+        return `
+        <div style="background:white;border:1.5px solid #bbf7d0;border-radius:12px;
+                    padding:14px 16px;display:flex;align-items:center;justify-content:space-between;
+                    flex-wrap:wrap;gap:10px;margin-bottom:10px;">
+            <div>
+                <div style="font-weight:700;color:#1f2937;margin-bottom:3px;">
+                    <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
+                    ${escapeHtml(assign.title)}
+                </div>
+                <div style="font-size:12px;color:#6b7280;">
+                    Due: ${due}
+                    ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
+                </div>
             </div>
-            <div style="font-size:12px;color:#6b7280;">
-                Due: ${due}
-                ${assign.max_points ? ' · ' + assign.max_points + ' points' : ''}
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
+                    style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
+                           border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
+                    style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
+                           color:white;border:none;border-radius:8px;font-size:12px;
+                           font-weight:700;cursor:pointer;">
+                    <i class="fas fa-upload"></i> Submit
+                </button>
             </div>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
-                style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
-                       border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                <i class="fas fa-eye"></i> View
-            </button>
-            <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
-                style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
-                       color:white;border:none;border-radius:8px;font-size:12px;
-                       font-weight:700;cursor:pointer;">
-                <i class="fas fa-upload"></i> Submit
-            </button>
-        </div>
-    </div>`;
-}).join('');
+        </div>`;
+    }).join('');
 
     return `
     <div style="margin:28px 0 20px;padding:20px;background:linear-gradient(135deg,#fafaf9,#f5f3ff);
@@ -3358,47 +3384,61 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
             </span>
             This Week's Activities
             <span style="font-size:11px;font-weight:400;color:#9ca3af;margin-left:4px;">
-                ${topicQuizzes.length} quiz${topicQuizzes.length !== 1 ? 'zes' : ''}
-                · ${topicAssigns.length} assignment${topicAssigns.length !== 1 ? 's' : ''}
+                ${allQuizzes.length} quiz${allQuizzes.length !== 1 ? 'zes' : ''}
+                · ${allAssigns.length} assignment${allAssigns.length !== 1 ? 's' : ''}
             </span>
         </div>
-        ${quizCards || '<p style="font-size:13px;color:#9ca3af;margin-bottom:10px;">No quizzes linked to this topic.</p>'}
-        ${assignCards || '<p style="font-size:13px;color:#9ca3af;">No assignments linked to this topic.</p>'}
+        ${quizCards || ''}
+        ${assignCards || ''}
     </div>`;
 }
 async function loadTopicAssessments(courseId) {
     try {
-        const { data: assessments } = await supabaseClient
-            .from('chapter_assessments')
-            .select(`
-                id, topic_id, assessment_type, quiz_id, assignment_id,
-                quizzes:quiz_id(id, title, time_limit, passing_score),
-                assignments:assignment_id(id, title, due_date, max_points, instructions)
-            `)
+        const { data: directQuizzes } = await supabaseClient
+            .from('quizzes')
+            .select('id, title, time_limit, passing_score, chapter_id')
             .eq('course_id', courseId)
-            .not('topic_id', 'is', null);
+            .not('chapter_id', 'is', null);
 
-        window._topicAssessments = assessments || [];
-        console.log('✅ Topic assessments loaded:', window._topicAssessments.length);
-        console.log('✅ Sample:', JSON.stringify(window._topicAssessments[0]));
+        const { data: directAssigns } = await supabaseClient
+            .from('assignments')
+            .select('id, title, due_date, max_points, instructions, chapter_id')
+            .eq('course_id', courseId)
+            .not('chapter_id', 'is', null);
+
+        const chapterRows = [];
+        (directQuizzes || []).forEach(q => {
+            chapterRows.push({
+                id: 'ch-quiz-' + q.id,
+                topic_id: null,
+                chapter_id: q.chapter_id,
+                assessment_type: 'quiz',
+                quizzes: q,
+                assignments: null
+            });
+        });
+        (directAssigns || []).forEach(a => {
+            chapterRows.push({
+                id: 'ch-assign-' + a.id,
+                topic_id: null,
+                chapter_id: a.chapter_id,
+                assessment_type: 'assignment',
+                quizzes: null,
+                assignments: a
+            });
+        });
+
+        window._topicAssessments   = [];
+        window._chapterAssessments = chapterRows;
+
+        console.log('✅ Chapter assessments loaded:', chapterRows.length);
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
-        window._topicAssessments = [];
+        window._topicAssessments   = [];
+        window._chapterAssessments = [];
     }
 }
-// Update progress bar
-function updateNotesProgress() {
-    const completed = currentCourseNotes.filter(n => n.completed).length;
-    const total = currentCourseNotes.length;
-    const percentage = total > 0 ? (completed / total) * 100 : 0;
-    
-    const progressFill = document.getElementById('notesProgressFill');
-    if (progressFill) {
-        progressFill.style.width = `${percentage}%`;
-    }
-}
-
 // Download all notes
 function downloadAllNotes() {
     showToast('Download feature coming soon!', 'warning');
@@ -5348,281 +5388,6 @@ window.closeModal = function(modalId) {
     }
 };
 
-// ── 2. submitAssignmentModal — fetch type then open modal ────
-window.submitAssignmentModal = async function(assignmentId) {
-    try {
-        const { data, error } = await supabaseClient
-            .from('assignments')
-            .select('title, submission_type, instructions, max_points, due_date')
-            .eq('id', assignmentId)
-            .maybeSingle();
-
-        if (error || !data) {
-            showToast('Could not load assignment details', 'error');
-            return;
-        }
-
-        openSubmitAssignmentModal(assignmentId, data.submission_type || 'file', data);
-    } catch (e) {
-        showToast('Error: ' + e.message, 'error');
-    }
-};
-
-// ── 3. openSubmitAssignmentModal — clean file + text modal ───
-function openSubmitAssignmentModal(assignmentId, submissionType, assignmentData) {
-    // Remove any existing modal first
-    document.getElementById('submitAssignmentModal')?.remove();
-
-    const dueDate = assignmentData?.due_date
-        ? new Date(assignmentData.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        : '';
-
-    // Build input section based on submission type
-    let inputHTML = '';
-
-    if (submissionType === 'file' || submissionType === 'both') {
-        inputHTML += `
-            <div style="margin-bottom:20px;">
-                <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
-                    <i class="fas fa-upload" style="color:#10b981;margin-right:6px;"></i>
-                    Upload File ${submissionType === 'file' ? '*' : '(optional)'}
-                </label>
-
-                <!-- Drag & drop zone -->
-                <div id="assignDropZone"
-                     style="border:2px dashed #d1d5db;border-radius:14px;padding:32px;
-                            text-align:center;cursor:pointer;transition:all 0.3s;background:#f9fafb;"
-                     onclick="document.getElementById('assignmentFileInput').click()"
-                     ondragover="event.preventDefault();this.style.borderColor='#10b981';this.style.background='#f0fdf4';"
-                     ondragleave="this.style.borderColor='#d1d5db';this.style.background='#f9fafb';"
-                     ondrop="handleAssignmentFileDrop(event)">
-                    <i class="fas fa-cloud-upload-alt"
-                       style="font-size:36px;color:#10b981;margin-bottom:12px;display:block;"></i>
-                    <div style="font-size:15px;font-weight:600;color:#374151;margin-bottom:6px;">
-                        Drag & drop your file here
-                    </div>
-                    <div style="font-size:13px;color:#6b7280;">
-                        or click to browse &nbsp;•&nbsp; PDF, DOC, DOCX, TXT, ZIP &nbsp;•&nbsp; Max 10MB
-                    </div>
-                    <div id="assignDropFileName"
-                         style="margin-top:14px;font-size:13px;font-weight:700;color:#10b981;display:none;">
-                    </div>
-                </div>
-
-                <input type="file" id="assignmentFileInput"
-                       accept=".pdf,.doc,.docx,.txt,.zip"
-                       style="display:none;"
-                       onchange="showAssignmentFileName(this)">
-            </div>`;
-    }
-
-    if (submissionType === 'text' || submissionType === 'both') {
-        inputHTML += `
-            <div style="margin-bottom:20px;">
-                <label style="display:block;font-weight:700;color:#1f2937;margin-bottom:8px;font-size:14px;">
-                    <i class="fas fa-pen" style="color:#10b981;margin-right:6px;"></i>
-                    Text Response ${submissionType === 'text' ? '*' : '(optional)'}
-                </label>
-                <textarea id="assignmentTextInput"
-                          rows="7"
-                          placeholder="Type your response here..."
-                          style="width:100%;padding:14px;border:2px solid #e5e7eb;border-radius:12px;
-                                 font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;resize:vertical;
-                                 outline:none;color:#374151;line-height:1.6;transition:border-color 0.2s;"
-                          onfocus="this.style.borderColor='#10b981'"
-                          onblur="this.style.borderColor='#e5e7eb'"></textarea>
-            </div>`;
-    }
-
-    const modal = document.createElement('div');
-    modal.id = 'submitAssignmentModal';
-    modal.style.cssText = `
-        position:fixed;top:0;left:0;width:100%;height:100%;
-        background:rgba(0,0,0,0.75);z-index:9999;
-        display:flex;align-items:center;justify-content:center;
-        padding:20px;backdrop-filter:blur(4px);
-        animation:fadeIn 0.25s ease;
-    `;
-
-    modal.innerHTML = `
-        <div style="background:white;border-radius:24px;width:100%;max-width:600px;
-                    max-height:90vh;overflow:hidden;display:flex;flex-direction:column;
-                    box-shadow:0 30px 80px rgba(0,0,0,0.3);">
-
-            <!-- Header — green gradient -->
-            <div style="background:linear-gradient(135deg,#10b981,#047857);
-                        padding:24px 28px;color:white;flex-shrink:0;">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                    <div>
-                        <div style="font-size:11px;font-weight:700;letter-spacing:2px;
-                                    text-transform:uppercase;opacity:0.8;margin-bottom:6px;">
-                            <i class="fas fa-tasks"></i> Submit Assignment
-                        </div>
-                        <div style="font-size:18px;font-weight:800;line-height:1.3;">
-                            ${assignmentData?.title ? escapeHtml(assignmentData.title) : 'Assignment'}
-                        </div>
-                        ${dueDate ? `<div style="font-size:12px;opacity:0.85;margin-top:5px;">
-                            <i class="fas fa-calendar-alt"></i> Due: ${dueDate}
-                            &nbsp;•&nbsp;
-                            <i class="fas fa-star"></i> ${assignmentData?.max_points || 100} pts
-                        </div>` : ''}
-                    </div>
-                    <button onclick="document.getElementById('submitAssignmentModal').remove()"
-                            style="background:rgba(255,255,255,0.2);border:none;color:white;
-                                   width:38px;height:38px;border-radius:50%;cursor:pointer;
-                                   font-size:16px;display:flex;align-items:center;justify-content:center;
-                                   flex-shrink:0;transition:background 0.2s;"
-                            onmouseover="this.style.background='rgba(255,255,255,0.35)'"
-                            onmouseout="this.style.background='rgba(255,255,255,0.2)'">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Body -->
-            <div style="padding:24px 28px;overflow-y:auto;flex:1;">
-                ${inputHTML}
-            </div>
-
-            <!-- Footer -->
-            <div style="padding:18px 28px;background:#f9fafb;border-top:2px solid #f3f4f6;
-                        display:flex;gap:12px;flex-shrink:0;">
-                <button onclick="document.getElementById('submitAssignmentModal').remove()"
-                        style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
-                               background:white;color:#6b7280;font-weight:700;cursor:pointer;
-                               font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;
-                               transition:all 0.2s;"
-                        onmouseover="this.style.borderColor='#10b981';this.style.color='#10b981'"
-                        onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#6b7280'">
-                    Cancel
-                </button>
-                <button onclick="handleSubmitAssignment('${assignmentId}', '${submissionType}')"
-                        style="flex:2;padding:13px;background:linear-gradient(135deg,#10b981,#059669);
-                               border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;
-                               font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;
-                               display:flex;align-items:center;justify-content:center;gap:8px;
-                               box-shadow:0 4px 14px rgba(16,185,129,0.35);transition:all 0.3s;"
-                        onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(16,185,129,0.45)'"
-                        onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 14px rgba(16,185,129,0.35)'">
-                    <i class="fas fa-paper-plane"></i> Submit Assignment
-                </button>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-
-    // Close on backdrop click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) modal.remove();
-    });
-}
-
-// ── File drop handler ─────────────────────────────────────────
-window.handleAssignmentFileDrop = function(event) {
-    event.preventDefault();
-    const zone = document.getElementById('assignDropZone');
-    if (zone) {
-        zone.style.borderColor = '#d1d5db';
-        zone.style.background  = '#f9fafb';
-    }
-    const file = event.dataTransfer.files[0];
-    if (!file) return;
-
-    const input = document.getElementById('assignmentFileInput');
-    if (input) {
-        // DataTransfer lets us set files on the input
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        input.files = dt.files;
-    }
-    showAssignmentFileName({ files: [file] });
-};
-
-// ── Show file name after selection ───────────────────────────
-window.showAssignmentFileName = function(inputOrEvent) {
-    const file = inputOrEvent.files?.[0];
-    if (!file) return;
-
-    const zone  = document.getElementById('assignDropZone');
-    const label = document.getElementById('assignDropFileName');
-
-    if (zone) {
-        zone.style.borderColor = '#10b981';
-        zone.style.background  = '#f0fdf4';
-    }
-    if (label) {
-        label.style.display = 'block';
-        label.innerHTML = `<i class="fas fa-check-circle"></i> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-    }
-};
-
-// ── handleSubmitAssignment — reads file + text, submits ───────
-window.handleSubmitAssignment = async function(assignmentId, submissionType) {
-    const fileInput = document.getElementById('assignmentFileInput');
-    const textInput = document.getElementById('assignmentTextInput');
-    const btn       = event?.target;
-
-    let fileUrl      = null;
-    let textResponse = null;
-
-    // Validate
-    if (submissionType === 'file' && !fileInput?.files?.[0]) {
-        showToast('Please upload a file before submitting', 'warning');
-        return;
-    }
-    if (submissionType === 'text' && !textInput?.value.trim()) {
-        showToast('Please enter a text response before submitting', 'warning');
-        return;
-    }
-
-    // Disable submit button while uploading
-    if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-    }
-
-    // Upload file if present
-    if (fileInput?.files?.[0]) {
-        showToast('Uploading file...', 'success');
-        const uploadResult = await uploadAssignmentFile(fileInput.files[0], assignmentId);
-        if (!uploadResult.success) {
-            showToast('Upload failed: ' + uploadResult.error, 'error');
-            if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment';
-            }
-            return;
-        }
-        fileUrl = uploadResult.fileUrl;
-    }
-
-    if (textInput?.value.trim()) {
-        textResponse = textInput.value.trim();
-    }
-
-    // Submit to Supabase
-    const result = await submitAssignment(assignmentId, { fileUrl, textResponse });
-
-    if (!result.success) {
-        showToast('Submission failed: ' + result.error, 'error');
-        if (btn) {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Assignment';
-        }
-        return;
-    }
-
-    // Success
-    document.getElementById('submitAssignmentModal')?.remove();
-    showToast('Assignment submitted successfully! ✅', 'success');
-
-    // Refresh the assignment cards
-    const courseId = window.currentCourseId || window.currentCourse;
-    if (courseId && typeof loadCourseAssignmentsUI === 'function') {
-        loadCourseAssignmentsUI(courseId);
-    }
-};
 async function loadCourseRecordings(courseId) {
     const grid = document.getElementById('sessionRecordingsGrid');
     if (!grid) return;
@@ -6788,6 +6553,7 @@ async function downloadFile(url, filename) {
     }
     console.log('✅ Coding environment modal hidden on page load');
 })();
+
 
     </script>
     <script src="week-structure-student.js"></script>
