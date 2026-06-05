@@ -3261,19 +3261,17 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
         if (a.topic_id !== null && a.topic_id !== undefined) {
             return String(a.topic_id) === topicIdStr;
         }
-   // Chapter-level: show on the LAST topic of this chapter only
+ // Chapter-level: show on the FIRST topic of this chapter only
         const chapterTopics = currentCourseNotes.filter(n => 
             String(n.chapterId) === chapterIdStr
         );
-        const lastTopicId = chapterTopics.length > 0 
-            ? String(chapterTopics[chapterTopics.length - 1].id) 
+        const firstTopicId = chapterTopics.length > 0 
+            ? String(chapterTopics[0].id) 
             : null;
-        return lastTopicId === topicIdStr;
+        return firstTopicId === topicIdStr;
     }
     
     // FALLBACK: if assessment's chapter_id doesn't match ANY chapter in this course
-    // it means the assignment was linked directly without chapter_assessments join
-    // Show it on the very first topic of the entire course only
     if (!courseChapterIds.has(aChapterId)) {
         const firstNote = currentCourseNotes[0];
         return firstNote && String(firstNote.id) === topicIdStr;
