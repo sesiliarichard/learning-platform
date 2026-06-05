@@ -498,8 +498,17 @@ ${!unlocked ? `
     if (!unlocked) {
         const prevTitle = prevCourse?.title || 'the previous course';
         if (typeof showToast === 'function') {
-            showToast(`🔒 Complete "${prevTitle}" first to unlock this course.`, 'warning');
+    showToast(`🔒 Complete "${prevTitle}" first to unlock this course.`, 'warning');
+    setTimeout(() => {
+        const toast = document.querySelector('.toast, .toast-message, [class*="toast"]');
+        if (toast) {
+            toast.style.background = '#ffffff';
+            toast.style.color = '#1f2937';
+            toast.style.border = '1.5px solid #e5e7eb';
+            toast.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)';
         }
+    }, 10);
+}
         return;
     }
 
