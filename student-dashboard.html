@@ -3261,11 +3261,8 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
         if (a.topic_id !== null && a.topic_id !== undefined) {
             return String(a.topic_id) === topicIdStr;
         }
-        // Chapter-level: show on first topic of this chapter only
-        const chapterTopics = currentCourseNotes.filter(n => 
-            String(n.chapterId) === chapterIdStr
-        );
-        return chapterTopics.length > 0 && String(chapterTopics[0].id) === topicIdStr;
+     // Chapter-level: show on ALL topics in this chapter
+        return true;
     }
     
     // FALLBACK: if assessment's chapter_id doesn't match ANY chapter in this course
