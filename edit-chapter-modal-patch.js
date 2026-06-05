@@ -469,39 +469,49 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         return;
     }
 
-    // ── Fetch ALL topic-level assessments for this chapter in ONE query ──
-   // ── Fetch ALL topic-level assessments for this chapter in ONE query ──
-    const { data: topicAssessmentRows } = await getSB()
-        .from('chapter_assessments')
-        .select('id, topic_id, assessment_type, quiz_id, assignment_id, quizzes(id,title), assignments(id,title)')
-        .eq('chapter_id', chapterId)
-        .eq('course_id', verifiedCourseId)
-        .not('topic_id', 'is', null);
+   // ── Read directly from assignments/quizzes tables using topic_id ──
+    const [topicQuizzesRes, topicAssignsRes] = await Promise.all([
+        getSB().from('quizzes')
+            .select('id, title, topic_id')
+            .eq('chapter_id', chapterId)
+            .eq('course_id', verifiedCourseId)
+            .not('topic_id', 'is', null),
+        getSB().from('assignments')
+            .select('id, title, topic_id')
+            .eq('chapter_id', chapterId)
+            .eq('course_id', verifiedCourseId)
+            .not('topic_id', 'is', null)
+    ]);
 
-    // Build map: topic_id → array of assessments
-   // Fill in missing quiz/assignment titles if join returned null
-    for (const row of (topicAssessmentRows || [])) {
-        if (row.assessment_type === 'quiz' && row.quiz_id && !row.quizzes) {
-            const found = quizzes.find(q => q.id === row.quiz_id);
-            if (found) row.quizzes = { id: found.id, title: found.title };
-        }
-        if (row.assessment_type === 'assignment' && row.assignment_id && !row.assignments) {
-            const found = assignments.find(a => a.id === row.assignment_id);
-            if (found) row.assignments = { id: found.id, title: found.title };
-        }
-    }
+    const topicAssessmentRows = [
+        ...(topicQuizzesRes.data || []).map(q => ({
+            id: 'quiz-' + q.id,
+            topic_id: q.topic_id,
+            assessment_type: 'quiz',
+            quiz_id: q.id,
+            assignment_id: null,
+            quizzes: { id: q.id, title: q.title },
+            assignments: null
+        })),
+        ...(topicAssignsRes.data || []).map(a => ({
+            id: 'assign-' + a.id,
+            topic_id: a.topic_id,
+            assessment_type: 'assignment',
+            quiz_id: null,
+            assignment_id: a.id,
+            quizzes: null,
+            assignments: { id: a.id, title: a.title }
+        }))
+    ];
 
-    // Build map: topic_id → array of assessments
     const byTopic = {};
-    (topicAssessmentRows || []).forEach(a => {
+    topicAssessmentRows.forEach(a => {
         if (!byTopic[a.topic_id]) byTopic[a.topic_id] = [];
         byTopic[a.topic_id].push(a);
     });
 
-    // ── Collect ALL quiz/assign IDs already linked to ANY topic in this chapter ──
-    // so we don't show them as available in other topics
-    const allLinkedQuizIds   = new Set((topicAssessmentRows || []).filter(a => a.assessment_type === 'quiz'       && a.quiz_id).map(a => a.quiz_id));
-    const allLinkedAssignIds = new Set((topicAssessmentRows || []).filter(a => a.assessment_type === 'assignment' && a.assignment_id).map(a => a.assignment_id));
+    const allLinkedQuizIds   = new Set(topicAssessmentRows.filter(a => a.quiz_id).map(a => a.quiz_id));
+    const allLinkedAssignIds = new Set(topicAssessmentRows.filter(a => a.assignment_id).map(a => a.assignment_id));
 
     container.innerHTML = topics.map((topic, i) => {
         const topicAssessments = byTopic[topic.id] || [];
