@@ -3299,7 +3299,14 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
 
         if (!chapterAssessments.length) return '';
 
-        const subs = window._quizSubmissions || [];
+       const subs = window._quizSubmissions || [];
+        
+        // Debug: check what's in chapterAssessments
+        console.log('✅ chapterAssessments after filter:', chapterAssessments.length);
+        chapterAssessments.forEach((a, i) => {
+            console.log(`  [${i}] type:${a.assessment_type} quizzes:`, a.quizzes, 'assignments:', a.assignments);
+        });
+        
         const allQuizzes = chapterAssessments.filter(a => a.assessment_type === 'quiz' && a.quizzes);
         const allAssigns = chapterAssessments.filter(a => a.assessment_type === 'assignment' && a.assignments);
 
@@ -3670,14 +3677,21 @@ async function loadTopicAssessments(courseId) {
                 assignments: null
             });
         });
-        (directAssignsRes.data || []).forEach(a => {
+      (directAssignsRes.data || []).forEach(a => {
+            console.log('📋 Direct assignment row:', a.id, 'title:', a.title, 'chapter:', a.chapter_id);
             chapterRows.push({
                 id: 'ch-assign-' + a.id,
                 topic_id: null,
                 chapter_id: a.chapter_id,
                 assessment_type: 'assignment',
                 quizzes: null,
-                assignments: a
+                assignments: {
+                    id: a.id,
+                    title: a.title,
+                    due_date: a.due_date,
+                    max_points: a.max_points,
+                    instructions: a.instructions
+                }
             });
         });
 
