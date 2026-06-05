@@ -3237,10 +3237,16 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
             return '';
         }
         
-        const currentNote = currentCourseNotes.find(n => n.id === topicId);
+      const currentNote = currentCourseNotes.find(n => n.id === topicId);
         const chapterId = currentNote?.chapterId || null;
         
         if (!chapterId) return '';
+
+        // Debug: log chapter_ids to compare
+        console.log('🔍 chapterId of current topic:', chapterId);
+        console.log('🔍 chapter_ids in assessments:', 
+            (window._chapterAssessments || []).map(a => a.chapter_id)
+        );
 
         console.log('🔍 buildWeekExtrasHTMLSafe called:', {
             topicId: topicId,
@@ -3253,25 +3259,36 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
    const topicIdStr    = topicId    ? String(topicId)    : null;
 const chapterIdStr  = chapterId  ? String(chapterId)  : null;
 
+// Get all unique chapter_ids in this course
+const courseChapterIds = new Set(
+    currentCourseNotes.map(n => String(n.chapterId)).filter(Boolean)
+);
+
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-    // Must belong to this exact chapter
-    if (!a.chapter_id || String(a.chapter_id) !== chapterIdStr) return false;
-
-    // If linked to a specific topic — only show on that exact topic
-    if (a.topic_id !== null && a.topic_id !== undefined) {
-        return String(a.topic_id) === topicIdStr;
+    if (!a.chapter_id) return false;
+    const aChapterId = String(a.chapter_id);
+    
+    // If assessment chapter matches current topic's chapter — normal match
+    if (aChapterId === chapterIdStr) {
+        if (a.topic_id !== null && a.topic_id !== undefined) {
+            return String(a.topic_id) === topicIdStr;
+        }
+        // Chapter-level: show on first topic of this chapter only
+        const chapterTopics = currentCourseNotes.filter(n => 
+            String(n.chapterId) === chapterIdStr
+        );
+        return chapterTopics.length > 0 && String(chapterTopics[0].id) === topicIdStr;
     }
-
-    // If NOT topic-linked (chapter-level) — show on the FIRST topic only
-    // to avoid showing the same quiz on every topic in the chapter
-    const chapterTopics = currentCourseNotes.filter(n => 
-        n.chapterId && String(n.chapterId) === chapterIdStr
-    );
-    const firstTopicId = chapterTopics.length > 0 
-        ? String(chapterTopics[0].id) 
-        : null;
-
-    return firstTopicId === topicIdStr;
+    
+    // FALLBACK: if assessment's chapter_id doesn't match ANY chapter in this course
+    // it means the assignment was linked directly without chapter_assessments join
+    // Show it on the very first topic of the entire course only
+    if (!courseChapterIds.has(aChapterId)) {
+        const firstNote = currentCourseNotes[0];
+        return firstNote && String(firstNote.id) === topicIdStr;
+    }
+    
+    return false;
 });
 
         if (!chapterAssessments.length) return '';
