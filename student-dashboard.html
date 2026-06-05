@@ -3242,6 +3242,14 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
         
         if (!chapterId) return '';
 
+        console.log('🔍 buildWeekExtrasHTMLSafe called:', {
+            topicId: topicId,
+            chapterId: chapterId,
+            totalAssessments: (window._chapterAssessments || []).length,
+            assessments: window._chapterAssessments,
+            currentCourseNotesCount: currentCourseNotes.length
+        });
+
    const topicIdStr    = topicId    ? String(topicId)    : null;
 const chapterIdStr  = chapterId  ? String(chapterId)  : null;
 
