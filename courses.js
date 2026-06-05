@@ -92,19 +92,20 @@ async function createCourse({ title, description, durationWeeks, instructor, thu
             cleanDescription = '';
         }
         
-        const { data, error } = await supabaseClient
-            .from('courses')
-            .insert({
-                title:           title.trim(),
-                description:     cleanDescription,
-                duration_weeks:  durationWeeks || 12,
-                instructor:      instructor?.trim() || '',
-                thumbnail_color: thumbnailColor || 'purple',
-                icon:            icon || 'fa-book',
-                status:          'active',
-                created_by:      user.id,
-                created_at:      new Date().toISOString()
-            })
+      const { data, error } = await supabaseClient
+    .from('courses')
+    .insert({
+        title:           title.trim(),
+        description:     cleanDescription,
+        duration_weeks:  durationWeeks || 12,
+        instructor:      instructor?.trim() || '',
+        thumbnail_color: thumbnailColor || 'purple',
+        icon:            icon || 'fa-book',
+        status:          'active',
+        created_by:      user.id,
+        created_at:      new Date().toISOString()
+    
+    })
             .select()
             .maybeSingle();
 
