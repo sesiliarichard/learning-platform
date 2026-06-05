@@ -616,48 +616,47 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
 
 // ── Link assessment to a specific topic ──────────────
 window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseId) {
+    if (!topicId || topicId === 'undefined' || topicId === 'null') {
+        if (typeof showToast === 'function') showToast('Error: topic ID missing', 'error');
+        console.error('Missing topicId:', topicId);
+        return;
+    }
+
     const pickerId = type === 'quiz'
         ? `topicQuizLink_${topicId}`
         : `topicAssignLink_${topicId}`;
     const itemId = document.getElementById(pickerId)?.value;
+
     if (!itemId) {
         if (typeof showToast === 'function') showToast('Please select an item to link', 'error');
         return;
     }
 
-    // Update chapter_id on the item
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
-    await getSB().from(table).update({ chapter_id: chapterId }).eq('id', itemId);
 
-    // Insert into chapter_assessments with topic_id
-    const { error } = await getSB().from('chapter_assessments').insert({
-        chapter_id:      chapterId,
-        course_id:       courseId,
-        assessment_type: type,
-        topic_id:        topicId,
-        quiz_id:        type === 'quiz'       ? itemId : null,
-        assignment_id:  type === 'assignment' ? itemId : null,
-        order_num:      1
-    });
+    // Save chapter_id AND topic_id directly on the assignment/quiz row
+    const { error } = await getSB()
+        .from(table)
+        .update({
+            chapter_id: chapterId,
+            topic_id:   topicId
+        })
+        .eq('id', itemId);
 
     if (error) {
         if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
+        console.error('Link error:', error);
         return;
     }
 
+    console.log('✅ Linked', type, itemId, '→ topic', topicId, 'chapter', chapterId);
     if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
 
-    // Refresh
-  window._ecmRunning = false;
-window._lastEcmChapterId = null;
-document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
-
-// Small delay to ensure DOM is clean before reopening
-setTimeout(() => {
-    window.openEditChapterModal(chapterId);
-}, 50);
+    window._ecmRunning = false;
+    window._lastEcmChapterId = null;
+    document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+    setTimeout(() => { window.openEditChapterModal(chapterId); }, 50);
 };
-
 // ── Unlink assessment from topic ─────────────────────
 window.ecmUnlinkTopicAssessment = async function(assessmentId, chapterId, courseId) {
     const { data: a } = await getSB()

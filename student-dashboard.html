@@ -3256,12 +3256,18 @@ const courseChapterIds = new Set(
 );
 
 
-    const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     if (!a.chapter_id) return false;
+    // If topic_id is set, match exactly to this topic
+    if (a.topic_id) {
+        return String(a.topic_id) === String(topicId);
+    }
+    // If no topic_id, show on all topics in this chapter (chapter-level)
     return String(a.chapter_id) === String(chapterId);
 });
 
-        if (!chapterAssessments.length) return '';
+if (!chapterAssessments.length) return '';
+
 
        const subs = window._quizSubmissions || [];
         
@@ -3482,82 +3488,60 @@ async function toggleNoteComplete(index) {
 
 async function loadTopicAssessments(courseId) {
     try {
-        const [directQuizzesRes, directAssignsRes, assessmentsRes] = await Promise.all([
+        const [quizzesRes, assignmentsRes] = await Promise.all([
             supabaseClient
                 .from('quizzes')
-                .select('id, title, time_limit, passing_score, chapter_id')
+                .select('id, title, time_limit, passing_score, chapter_id, topic_id')
                 .eq('course_id', courseId)
                 .not('chapter_id', 'is', null),
             supabaseClient
                 .from('assignments')
-                .select('id, title, due_date, max_points, instructions, chapter_id')
+                .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
                 .eq('course_id', courseId)
-                .not('chapter_id', 'is', null),
-            supabaseClient
-                .from('chapter_assessments')
-                .select(`
-                    id, chapter_id, topic_id, assessment_type, course_id,
-                    quizzes(id, title, time_limit, passing_score),
-                    assignments(id, title, due_date, max_points, instructions)
-                `)
-                .eq('course_id', courseId)
+                .not('chapter_id', 'is', null)
         ]);
 
         const chapterRows = [];
 
-        // From direct chapter_id links
-        (directQuizzesRes.data || []).forEach(q => {
+        (quizzesRes.data || []).forEach(q => {
             chapterRows.push({
                 id: 'ch-quiz-' + q.id,
-                topic_id: null,
-                chapter_id: q.chapter_id,
+                topic_id:        q.topic_id || null,
+                chapter_id:      q.chapter_id,
                 assessment_type: 'quiz',
-                quizzes: q,
+                quizzes: {
+                    id:            q.id,
+                    title:         q.title,
+                    time_limit:    q.time_limit,
+                    passing_score: q.passing_score
+                },
                 assignments: null
             });
         });
-      (directAssignsRes.data || []).forEach(a => {
+
+        (assignmentsRes.data || []).forEach(a => {
             chapterRows.push({
                 id: 'ch-assign-' + a.id,
-                topic_id: null,
-                chapter_id: a.chapter_id,
+                topic_id:        a.topic_id || null,
+                chapter_id:      a.chapter_id,
                 assessment_type: 'assignment',
                 quizzes: null,
                 assignments: {
-                    id: a.id,
-                    title: a.title,
-                    due_date: a.due_date,
-                    max_points: a.max_points,
+                    id:           a.id,
+                    title:        a.title,
+                    due_date:     a.due_date,
+                    max_points:   a.max_points,
                     instructions: a.instructions
                 }
             });
         });
 
-        // From chapter_assessments table
-        (assessmentsRes.data || []).forEach(a => {
-            const alreadyAdded = chapterRows.some(r =>
-                r.assessment_type === a.assessment_type &&
-                ((a.assessment_type === 'quiz' && r.quizzes?.id === a.quizzes?.id) ||
-                 (a.assessment_type === 'assignment' && r.assignments?.id === a.assignments?.id))
-            );
-            if (!alreadyAdded) {
-                chapterRows.push({
-                    id: a.id,
-                    topic_id: a.topic_id || null,
-                    chapter_id: a.chapter_id,
-                    assessment_type: a.assessment_type,
-                    quizzes: a.quizzes || null,
-                    assignments: a.assignments || null
-                });
-            }
-        });
+        window._topicAssessments   = chapterRows.filter(r => r.topic_id);
+        window._chapterAssessments = chapterRows;
 
-       window._topicAssessments   = chapterRows.filter(r => r.topic_id);
-       window._chapterAssessments = chapterRows;
-
-       console.log('🔍 _chapterAssessments sample:', chapterRows.slice(0,3));
-       console.log('🔍 topic_id types:', chapterRows.map(r => typeof r.topic_id + ':' + r.topic_id));
         console.log('✅ Chapter assessments loaded:', chapterRows.length);
+        console.log('topic_ids:', chapterRows.map(r => r.topic_id));
+
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
         window._topicAssessments   = [];
