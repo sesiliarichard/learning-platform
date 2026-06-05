@@ -2220,14 +2220,21 @@ function logout() {
                 }
             }
 
-            // Update course info UI
-// Load saved progress from enrollments
-const { data: enrollment } = await supabaseClient
-    .from('enrollments')
-    .select('progress')
-    .eq('student_id', (await supabaseClient.auth.getUser()).data.user.id)
-    .eq('course_id', courseId)
-    .maybeSingle();
+  let enrollment = null;
+try {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (user?.id) {
+        const { data: enrollData } = await supabaseClient
+            .from('enrollments')
+            .select('progress')
+            .eq('student_id', user.id)
+            .eq('course_id', courseId)
+            .maybeSingle();
+        enrollment = enrollData;
+    }
+} catch (enrollErr) {
+    console.warn('Could not fetch enrollment progress:', enrollErr.message);
+}
 
 const savedProgress = enrollment?.progress || 0;
 
