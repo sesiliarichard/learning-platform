@@ -2817,7 +2817,11 @@ async function loadCourseNotes(courseId) {
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
-        if (currentCourseNotes.length > 0) displayNote(0);
+        if (currentCourseNotes.length > 0) {
+            await loadTopicAssessments(courseId);
+            await loadWeekQuizzesAndAssignments(courseId);
+            displayNote(0);
+        }
         if (typeof updateNotesProgress === 'function') updateNotesProgress();
 
         if (user && courseId) {
