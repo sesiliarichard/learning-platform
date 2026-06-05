@@ -1646,9 +1646,14 @@ function getCoursesSortedByOrder() {
 }
 
 function isCourseUnlocked(courseId) {
-    const sorted = getCoursesSortedByOrder();
+    const sorted = Object.values(window.coursesData || {})
+        .filter(c => c.order_num !== undefined && c.order_num !== null)
+        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+    
+    console.log('🔒 Sorted courses for lock check:', sorted.map(c => `${c.title}(order:${c.order_num},progress:${c.progress})`));
+    
     const idx = sorted.findIndex(c => c.id === courseId);
-    if (idx === 0) return true;
+    if (idx <= 0) return true; // First course or not found = unlocked
     const prev = sorted[idx - 1];
     return (prev?.progress || 0) >= 90;
 }
@@ -1700,10 +1705,14 @@ async function loadCoursesFromDB() {
             });
         }
 
-        window.coursesData = coursesData;
-        renderCourseCards();
-        calculateProfileStats();
-    }
+      // Sync both references
+Object.assign(coursesData, window.coursesData);
+window.coursesData = coursesData;
+
+console.log('🔍 Final coursesData check:', Object.values(coursesData).map(c => `${c.title} order_num:${c.order_num}`));
+
+renderCourseCards();
+calculateProfileStats();
 }
 
 function renderCourseCards() {
@@ -1726,7 +1735,7 @@ function renderCourseCards() {
         grid.innerHTML = '';
         console.log('🔒 Lock check sample:', getCoursesSortedByOrder().map(c => `${c.title} order:${c.order_num} progress:${c.progress}`));
 
-        Object.values(coursesData).forEach((course, index) => {
+        Object.values(window.coursesData || coursesData).forEach((course, index) => {
             const progress = course.progress || 0;
             const thumbColor = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
             
