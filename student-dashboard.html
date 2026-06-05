@@ -3252,7 +3252,14 @@ const courseChapterIds = new Set(
     currentCourseNotes.map(n => String(n.chapterId)).filter(Boolean)
 );
 
-const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+console.log('📌 currentCourseNotes for this chapter:', 
+            currentCourseNotes
+                .filter(n => String(n.chapterId) === String(chapterId))
+                .map(n => ({ id: n.id, title: n.title }))
+        );
+        console.log('📌 current topicId:', topicId);
+
+        const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     if (!a.chapter_id) return false;
     const aChapterId = String(a.chapter_id);
     
