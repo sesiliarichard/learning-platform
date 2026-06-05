@@ -3318,6 +3318,13 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     return String(a.chapter_id) === String(chapterId);
 });
 
+console.log('🎯 topicId being checked:', topicId);
+console.log('🎯 All _chapterAssessments:', JSON.stringify(window._chapterAssessments?.map(a => ({
+    topic_id: a.topic_id,
+    chapter_id: a.chapter_id,
+    type: a.assessment_type,
+    title: a.quizzes?.title || a.assignments?.title
+}))));
 if (!chapterAssessments.length) return '';
 
 
