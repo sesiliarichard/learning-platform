@@ -1724,13 +1724,25 @@ function renderCourseCards() {
             const instructor = course.instructor || 'ASAI Instructor';
 
             const isCompleted = progress >= 90;
-            const isStarted = progress > 0 && !isCompleted;
-            const btnLabel = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
-            const btnColor = isCompleted ? '#1D9E75' : isStarted ? '#378ADD' : '#7F77DD';
+const isStarted   = progress > 0 && !isCompleted;
+const unlocked    = isCourseUnlocked(course.id);
 
-            const progLabel = isCompleted
-                ? '<span style="color:#1D9E75;">✓ Completed!</span>'
-                : isStarted ? progress + '% complete' : 'Not started';
+const btnLabel = isCompleted ? '✓ Completed'
+               : !unlocked  ? '🔒 Locked'
+               : isStarted  ? 'Continue'
+               : 'Start';
+
+const btnColor = isCompleted ? '#1D9E75'
+               : !unlocked  ? '#9ca3af'
+               : isStarted  ? '#378ADD'
+               : '#7F77DD';
+
+const progLabel = isCompleted
+    ? '<span style="color:#1D9E75;">✓ Completed!</span>'
+    : !unlocked
+    ? '<span style="color:#9ca3af;"><i class="fas fa-lock" style="font-size:10px;"></i> Finish previous course to unlock</span>'
+    : isStarted ? progress + '% complete'
+    : 'Not started';
 
             const card = document.createElement('div');
             card.dataset.course = course.id;
@@ -1760,8 +1772,15 @@ function renderCourseCards() {
 
                     <!-- REMOVED the category badge from top-right corner -->
 
-                    <i class="fas ${escapeHtml(icon)}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
-                </div>
+                   <i class="fas ${escapeHtml(icon)}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
+${!unlocked ? `
+<div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:center;border-radius:inherit;">
+    <i class="fas fa-lock" style="font-size:2rem;color:rgba(255,255,255,0.9);margin-bottom:6px;"></i>
+    <span style="font-size:11px;color:rgba(255,255,255,0.75);font-weight:700;">Locked</span>
+</div>` : ''}
+</div>
 
                 <div style="padding:14px 14px 16px; display:flex; flex-direction:column; flex:1;">
                     <!-- Course Title - Now more prominent -->
@@ -1822,9 +1841,18 @@ function renderCourseCards() {
             });
 
             card.addEventListener('click', function () {
-                const courseId = this.dataset.course;
-                if (!courseId) return;
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const courseId = this.dataset.course;
+    if (!courseId) return;
+
+    if (!isCourseUnlocked(courseId)) {
+        const sorted = getCoursesSortedByOrder();
+        const idx = sorted.findIndex(c => c.id === courseId);
+        const prevTitle = sorted[idx - 1]?.title || 'the previous course';
+        showToast(`🔒 Complete "${prevTitle}" first to unlock this course.`, 'warning');
+        return;
+    }
+
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
                 const coursesNav = document.querySelector('.nav-item[data-section="courses"]');
                 if (coursesNav) coursesNav.classList.add('active');
                 document.querySelectorAll('.dashboard-section').forEach(s => s.classList.remove('active'));
@@ -6663,7 +6691,18 @@ async function downloadFile(url, filename) {
     console.log('✅ Coding environment modal hidden on page load');
 })();
 
+function getCoursesSortedByOrder() {
+    return Object.values(window.coursesData || {})
+        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+}
 
+function isCourseUnlocked(courseId) {
+    const sorted = getCoursesSortedByOrder();
+    const idx = sorted.findIndex(c => c.id === courseId);
+    if (idx === 0) return true;
+    const prev = sorted[idx - 1];
+    return (prev?.progress || 0) >= 90;
+}
     </script>
     <script src="week-structure-student.js"></script>
 </body>
