@@ -1705,7 +1705,7 @@ async function loadCoursesFromDB() {
             });
         }
 
-      // Sync both references
+       // Sync both references
 Object.assign(coursesData, window.coursesData);
 window.coursesData = coursesData;
 
@@ -1713,6 +1713,7 @@ console.log('🔍 Final coursesData check:', Object.values(coursesData).map(c =>
 
 renderCourseCards();
 calculateProfileStats();
+    }
 }
 
 function renderCourseCards() {
