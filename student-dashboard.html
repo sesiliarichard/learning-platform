@@ -3491,9 +3491,14 @@ function buildWeekExtrasHTML(chapterTitle, topicId) {
     const subs = window._quizSubmissions || [];
 
     // Get assessments linked to this SPECIFIC chapter/topic
-   const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-        if (!a.chapter_id || a.chapter_id !== chapterId) return false;
-        if (a.topic_id && a.topic_id !== topicId) return false;
+const chapterIdStr = chapterId ? String(chapterId) : null;
+    const topicIdStr   = topicId   ? String(topicId)   : null;
+
+    const chapterAssessments = (window._chapterAssessments || []).filter(a => {
+        if (!a.chapter_id || String(a.chapter_id) !== chapterIdStr) return false;
+        if (a.topic_id !== null && a.topic_id !== undefined) {
+            return String(a.topic_id) === topicIdStr;
+        }
         return true;
     });
 
