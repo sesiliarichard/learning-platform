@@ -3248,6 +3248,12 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
             (window._chapterAssessments || []).map(a => a.chapter_id)
         );
 
+       console.log('🔍 CHAPTER MATCH CHECK:');
+        (window._chapterAssessments || []).forEach((a, i) => {
+            console.log(`  assessment[${i}] chapter_id:`, a.chapter_id, '| matches:', String(a.chapter_id) === chapterIdStr);
+        });
+        console.log('  current chapterId:', chapterId);
+
         console.log('🔍 buildWeekExtrasHTMLSafe called:', {
             topicId: topicId,
             chapterId: chapterId,
