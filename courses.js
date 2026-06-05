@@ -314,19 +314,24 @@ async function loadStudentDashboardCourses() {
     // ── Build coursesData for the inline script to use ──
     // This bridges courses.js with the inline selectCourse() function
     if (typeof coursesData !== 'undefined') {
-        result.courses.forEach(course => {
-            coursesData[course.id] = {
-                id:          course.id,
-                title:       course.title,
-                instructor:  course.instructor || 'ASAI Instructor',
-                description: course.description || '',
-                progress:    progressMap[course.id] || 0,
-                notes:       [],
-                videos:      [],
-                quizzes:     [],
-                assignments: []
-            };
-        });
+      result.courses.forEach(course => {
+    coursesData[course.id] = {
+        id:           course.id,
+        title:        course.title,
+        instructor:   course.instructor || 'ASAI Instructor',
+        description:  course.description || '',
+        progress:     progressMap[course.id] || 0,
+        order_num:    course.order_num ?? 999,
+        lesson_count: course.lesson_count || 0,
+        icon:         course.icon || null,
+        student_count: course.student_count || null,
+        notes:        [],
+        videos:       [],
+        quizzes:      [],
+        assignments:  []
+    };
+});
+window.coursesData = coursesData;
         console.log('✅ coursesData populated:', Object.keys(coursesData));
     }
 
