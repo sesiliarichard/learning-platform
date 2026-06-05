@@ -3241,10 +3241,19 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
             return '';
         }
         
-      const currentNote = currentCourseNotes.find(n => n.id === topicId);
+     const currentNote = currentCourseNotes.find(n => n.id === topicId);
         const chapterId = currentNote?.chapterId || null;
         
         if (!chapterId) return '';
+
+        // Only show on the first topic of this chapter
+        const chapterTopics = currentCourseNotes.filter(n => 
+            String(n.chapterId) === String(chapterId)
+        );
+        const isFirstTopic = chapterTopics.length > 0 && 
+            String(chapterTopics[0].id) === String(topicId);
+        
+        if (!isFirstTopic) return '';
 
     
 
