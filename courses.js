@@ -372,14 +372,31 @@ function renderStudentCourseCards(courses, progressMap = {}) {
             const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
             const instructor  = course.instructor    || 'ASAI Instructor';
 
-            const isCompleted = progress >= 90;
-            const isStarted   = progress > 0 && !isCompleted;
-            const btnLabel    = isCompleted ? '✓ Completed' : isStarted ? 'Continue' : 'Start';
-            const btnColor    = isCompleted ? '#1D9E75'     : isStarted ? '#378ADD'  : '#7F77DD';
+           const isCompleted = progress >= 90;
+const isStarted   = progress > 0 && !isCompleted;
 
-            const progLabel = isCompleted
-                ? '<span style="color:#1D9E75;">✓ Completed!</span>'
-                : isStarted ? progress + '% complete' : 'Not started';
+// ── Lock logic ──
+const sortedCourses = courses.slice().sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+const courseIdx = sortedCourses.findIndex(c => c.id === course.id);
+const prevCourse = sortedCourses[courseIdx - 1];
+const unlocked = courseIdx === 0 || (progressMap[prevCourse?.id] || 0) >= 90;
+
+const btnLabel = isCompleted ? '✓ Completed'
+               : !unlocked  ? '🔒 Locked'
+               : isStarted  ? 'Continue'
+               : 'Start';
+
+const btnColor = isCompleted ? '#1D9E75'
+               : !unlocked  ? '#9ca3af'
+               : isStarted  ? '#378ADD'
+               : '#7F77DD';
+
+const progLabel = isCompleted
+    ? '<span style="color:#1D9E75;">✓ Completed!</span>'
+    : !unlocked
+    ? '<span style="color:#9ca3af;"><i class="fas fa-lock" style="font-size:10px;"></i> Finish previous course to unlock</span>'
+    : isStarted ? progress + '% complete'
+    : 'Not started';
 
             const card = document.createElement('div');
             card.setAttribute('data-course', course.id);
@@ -408,7 +425,14 @@ function renderStudentCourseCards(courses, progressMap = {}) {
                     </span>` : ''}
 
                     <i class="fas ${escapeHtml(icon)}" style="font-size:3rem;color:rgba(255,255,255,0.92);"></i>
-                </div>
+${!unlocked ? `
+<div style="position:absolute;inset:0;background:rgba(0,0,0,0.45);
+            display:flex;flex-direction:column;align-items:center;
+            justify-content:center;border-radius:inherit;">
+    <i class="fas fa-lock" style="font-size:2rem;color:rgba(255,255,255,0.9);margin-bottom:6px;"></i>
+    <span style="font-size:11px;color:rgba(255,255,255,0.75);font-weight:700;">Locked</span>
+</div>` : ''}
+</div>
 
                 <div style="padding:14px 14px 16px; display:flex; flex-direction:column; flex:1;">
                     <div style="font-size:14px; font-weight:700; color:#1f2937; line-height:1.4; margin-bottom:12px;">
@@ -468,9 +492,18 @@ function renderStudentCourseCards(courses, progressMap = {}) {
             });
 
             card.addEventListener('click', function () {
-                const id = this.getAttribute('data-course');
-                if (!id) return;
-                if (typeof selectCourse === 'function') {
+    const id = this.getAttribute('data-course');
+    if (!id) return;
+
+    if (!unlocked) {
+        const prevTitle = prevCourse?.title || 'the previous course';
+        if (typeof showToast === 'function') {
+            showToast(`🔒 Complete "${prevTitle}" first to unlock this course.`, 'warning');
+        }
+        return;
+    }
+
+    if (typeof selectCourse === 'function') {
                     selectCourse(id);
                 } else {
                     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -750,6 +783,16 @@ function openAddCourseModal() {
     
     document.getElementById('addCourseModal')?.classList.add('active');
 }
+// Patch renderStudentCourseCards to always preserve order_num
+const _originalRender = window.renderStudentCourseCards;
+window.renderStudentCourseCards = function(courses, progressMap) {
+    courses.forEach(c => {
+        if (window.coursesData[c.id]) {
+            window.coursesData[c.id].order_num = c.order_num ?? 999;
+        }
+    });
+    if (_originalRender) _originalRender(courses, progressMap);
+};
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────
