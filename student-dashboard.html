@@ -1636,9 +1636,22 @@
             email: '',
             profilePicture: null
         };
-        // Course Data - now loaded from DB
+       // Course Data - now loaded from DB
 let coursesData = {};
 window.coursesData = coursesData;
+
+function getCoursesSortedByOrder() {
+    return Object.values(window.coursesData || {})
+        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
+}
+
+function isCourseUnlocked(courseId) {
+    const sorted = getCoursesSortedByOrder();
+    const idx = sorted.findIndex(c => c.id === courseId);
+    if (idx === 0) return true;
+    const prev = sorted[idx - 1];
+    return (prev?.progress || 0) >= 90;
+}
 
 
 async function loadCoursesFromDB() {
@@ -1711,6 +1724,7 @@ function renderCourseCards() {
     grids.forEach(grid => {
         if (!grid) return;
         grid.innerHTML = '';
+        console.log('🔒 Lock check sample:', getCoursesSortedByOrder().map(c => `${c.title} order:${c.order_num} progress:${c.progress}`));
 
         Object.values(coursesData).forEach((course, index) => {
             const progress = course.progress || 0;
@@ -6691,18 +6705,6 @@ async function downloadFile(url, filename) {
     console.log('✅ Coding environment modal hidden on page load');
 })();
 
-function getCoursesSortedByOrder() {
-    return Object.values(window.coursesData || {})
-        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
-}
-
-function isCourseUnlocked(courseId) {
-    const sorted = getCoursesSortedByOrder();
-    const idx = sorted.findIndex(c => c.id === courseId);
-    if (idx === 0) return true;
-    const prev = sorted[idx - 1];
-    return (prev?.progress || 0) >= 90;
-}
     </script>
     <script src="week-structure-student.js"></script>
 </body>
