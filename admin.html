@@ -41,6 +41,9 @@ body { visibility: hidden }
         
         <!-- Sidebar -->
         <div class="sidebar" id="adminSidebar">
+        <button class="sidebar-toggle" id="adminSidebarToggle" aria-label="Toggle sidebar">
+    <i class="fas fa-chevron-left"></i>
+</button>
             <div class="logo-section">
                 <div class="logo">
                     <img src="images/logo.jpg" alt="logo">
@@ -116,9 +119,7 @@ body { visibility: hidden }
     <span>Hire Requests</span>
 </div>
             </div>
-            <button class="sidebar-toggle" id="adminSidebarToggle" aria-label="Toggle sidebar">
-    <i class="fas fa-chevron-left"></i>
-</button>
+     
 
             <div class="sb-foot">
                 <div class="sb-av" id="sbAv">AD</div>
@@ -1872,21 +1873,13 @@ if (adminSidebarToggle && adminSidebar) {
     adminSidebarToggle.addEventListener('click', () => {
         adminSidebar.classList.toggle('collapsed');
         const isCollapsed = adminSidebar.classList.contains('collapsed');
-        // Flip the chevron icon
-        const icon = adminSidebarToggle.querySelector('i');
-        if (icon) {
-            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
-        }
         localStorage.setItem('adminSidebarCollapsed', isCollapsed);
     });
 }
 
-// Restore saved state on load
-const savedState = localStorage.getItem('adminSidebarCollapsed');
-if (savedState === 'true' && adminSidebar) {
+const savedAdminSidebar = localStorage.getItem('adminSidebarCollapsed');
+if (savedAdminSidebar === 'true' && adminSidebar) {
     adminSidebar.classList.add('collapsed');
-    const icon = adminSidebarToggle?.querySelector('i');
-    if (icon) icon.className = 'fas fa-chevron-right';
 }
 // ============================================
 // INITIALIZATION

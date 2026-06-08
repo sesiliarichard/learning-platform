@@ -6129,3 +6129,33 @@ body.dark-mode .topic-list .empty-topics {
 .sidebar.collapsed .nav-item:hover .nav-tooltip {
     opacity: 1;
 }
+.sidebar.collapsed .logo-section {
+    display: none;
+}
+
+.sidebar.collapsed {
+    width: 70px;
+    min-width: 70px;
+    padding: 20px 10px;
+    overflow: hidden;
+    align-items: center;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 14px 10px;
+    width: 100%;
+}
+
+.sidebar.collapsed .nav-item span:not(.nav-tooltip) {
+    display: none;
+}
+
+.sidebar.collapsed .sb-foot .sb-info,
+.sidebar.collapsed .sb-foot .lo-btn {
+    display: none;
+}
+
+.sidebar.collapsed .sb-foot {
+    justify-content: center;
+}
