@@ -646,13 +646,16 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
 
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
 
-    const { error } = await getSB()
+   const { data: updateData, error } = await getSB()
         .from(table)
         .update({
             chapter_id: chapterId,
             topic_id:   topicId
         })
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
+
+    console.log('Update result:', updateData, 'Error:', error);
 
     if (error) {
         if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
