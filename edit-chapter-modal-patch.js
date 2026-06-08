@@ -662,8 +662,16 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
         console.error('Link error:', error);
         return;
     }
-    // Also insert into chapter_assessments so it persists
-    await getSB().from('chapter_assessments').upsert({
+   // Delete existing then insert fresh
+    if (type === 'quiz') {
+        await getSB().from('chapter_assessments').delete()
+            .eq('chapter_id', chapterId).eq('topic_id', topicId).eq('quiz_id', itemId);
+    } else {
+        await getSB().from('chapter_assessments').delete()
+            .eq('chapter_id', chapterId).eq('topic_id', topicId).eq('assignment_id', itemId);
+    }
+    
+    const { error: caError } = await getSB().from('chapter_assessments').insert({
         chapter_id:      chapterId,
         course_id:       courseId,
         topic_id:        topicId,
@@ -671,7 +679,9 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
         quiz_id:        type === 'quiz'       ? itemId : null,
         assignment_id:  type === 'assignment' ? itemId : null,
         order_num:      1
-    }, { onConflict: 'chapter_id,topic_id,assessment_type,quiz_id,assignment_id' });
+    });
+    
+    console.log('chapter_assessments insert error:', caError);
 
     console.log('✅ Linked', type, itemId, '→ topic', topicId, 'chapter', chapterId);
     if (typeof showToast === 'function') showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
