@@ -3317,12 +3317,10 @@ const courseChapterIds = new Set(
 
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     if (!a.chapter_id) return false;
-    // If topic_id is set, match exactly to this topic
     if (a.topic_id) {
         return String(a.topic_id) === String(topicId);
     }
-    // If no topic_id, show on all topics in this chapter (chapter-level)
-    return String(a.chapter_id) === String(chapterId);
+    return false;
 });
 
 console.log('🎯 topicId being checked:', topicId);
@@ -3339,15 +3337,19 @@ if (!chapterAssessments.length) return '';
         
         
         
-        const allQuizzes = chapterAssessments.filter(a => a.assessment_type === 'quiz' && a.quizzes);
-        const allAssigns = chapterAssessments.filter(a => a.assessment_type === 'assignment' && a.assignments);
+        const allQuizzes = chapterAssessments.filter(a => 
+    (a.assessment_type === 'quiz' || a.type === 'quiz') && (a.quizzes || a.title)
+    );
+    const allAssigns = chapterAssessments.filter(a => 
+    (a.assessment_type === 'assignment' || a.type === 'assignment') && (a.assignments || a.title)
+     );
 
         if (!allQuizzes.length && !allAssigns.length) return '';
 
         const submittedIds = new Set(subs.map(s => s.quiz_id));
 
         const quizCards = allQuizzes.map(a => {
-            const q = a.quizzes;
+            const q = a.quizzes || { id: a.quiz_id || a.id, title: a.title, time_limit: a.time_limit };
             const done = submittedIds.has(q.id);
             const score = subs.find(s => s.quiz_id === q.id)?.score;
             return `
@@ -3381,8 +3383,8 @@ if (!chapterAssessments.length) return '';
             </div>`;
         }).join('');
 
-        const assignCards = allAssigns.map(a => {
-            const assign = a.assignments;
+       const assignCards = allAssigns.map(a => {
+            const assign = a.assignments || { id: a.assignment_id || a.id, title: a.title, due_date: a.due_date, max_points: a.max_points };
             const due = assign.due_date
                 ? new Date(assign.due_date).toLocaleDateString('en-US',
                     { month:'short', day:'numeric', year:'numeric' })
