@@ -3180,6 +3180,13 @@ function loadChapterList() {
 function displayNote(index) {
     if (index < 0 || index >= currentCourseNotes.length) return;
 
+    // Always close coding environment when switching topics
+    const codingModal = document.getElementById('codingEnvironmentModal');
+    if (codingModal) {
+        codingModal.classList.remove('active');
+        codingModal.style.display = 'none';
+    }
+
     currentNoteIndex = index;
     const note = currentCourseNotes[index];
     const reader = document.getElementById('notesReader');
