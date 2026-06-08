@@ -642,9 +642,10 @@ window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseI
         return;
     }
 
+    console.log('Linking:', type, itemId, '→ topicId:', topicId, 'chapterId:', chapterId);
+
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
 
-    // Save chapter_id AND topic_id directly on the assignment/quiz row
     const { error } = await getSB()
         .from(table)
         .update({
