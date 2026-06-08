@@ -461,8 +461,9 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         .from('topics')
         .select('id, title, order_num')
         .eq('chapter_id', chapterId)
-        .eq('course_id', verifiedCourseId)
         .order('order_num', { ascending: true });
+
+    console.log('Topics for linking:', topics?.map(t => ({id: t.id, title: t.title})));
 
     if (!topics || topics.length === 0) {
         container.innerHTML = '<p style="font-size:13px;color:#9ca3af;padding:8px 0;">No topics yet. Save topics first, then link assessments.</p>';
