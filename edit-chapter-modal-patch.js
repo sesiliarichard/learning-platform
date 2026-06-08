@@ -457,7 +457,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
     quizzes     = freshQuizzesRes.data    || [];
     assignments = freshAssignsRes.data    || [];
 
-    const { data: topics } = await getSB()
+  const { data: topics } = await getSB()
         .from('topics')
         .select('id, title, order_num')
         .eq('chapter_id', chapterId)
