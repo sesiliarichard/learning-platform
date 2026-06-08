@@ -3320,7 +3320,7 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     if (a.topic_id) {
         return String(a.topic_id) === String(topicId);
     }
-    return false;
+    return String(a.chapter_id) === String(chapterId);
 });
 
 console.log('🎯 topicId being checked:', topicId);

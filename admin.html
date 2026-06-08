@@ -3378,10 +3378,10 @@ async function linkItem(type, chapterId, courseId) {
 
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
 
-    // Step 1: Set chapter_id directly on the quiz/assignment row
+   // Step 1: Set chapter_id directly on the quiz/assignment row
     const { error: updateErr } = await db
         .from(table)
-        .update({ chapter_id: chapterId })
+        .update({ chapter_id: chapterId, topic_id: null })
         .eq('id', itemId);
 
     if (updateErr) { showToast('Error: ' + updateErr.message, 'error'); return; }
