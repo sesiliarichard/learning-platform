@@ -400,7 +400,7 @@ setTimeout(() => {
     };
 
     // ── Unlink an assessment ───────────────────────────────────
-    window.ecmUnlinkAssessment = async function (assessmentId, chapterId, courseId) {
+   window.ecmUnlinkAssessment = async function (assessmentId, chapterId, courseId) {
         const { data: assessment } = await getSB()
             .from('chapter_assessments')
             .select('assessment_type, quiz_id, assignment_id')
@@ -410,7 +410,7 @@ setTimeout(() => {
         if (assessment) {
             const table = assessment.assessment_type === 'quiz' ? 'quizzes' : 'assignments';
             const col   = assessment.assessment_type === 'quiz' ? assessment.quiz_id : assessment.assignment_id;
-            await getSB().from(table).update({ chapter_id: null }).eq('id', col);
+            await getSB().from(table).update({ chapter_id: null, topic_id: null }).eq('id', col);
         }
 
         await getSB().from('chapter_assessments').delete().eq('id', assessmentId);
@@ -542,7 +542,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                          color:#5b21b6;padding:4px 10px;border-radius:20px;font-size:12px;
                          font-weight:600;margin:3px;">
                 <i class="fas fa-question-circle"></i> ${escHTML(a.quizzes.title)}
-                <button type="button" onclick="ecmUnlinkTopicAssessment('${a.id}','${chapterId}','${courseId}')"
+               <button type="button" onclick="ecmDirectUnlinkTopic('quiz','${a.quizzes.id}','${chapterId}','${courseId}')"
                     style="background:none;border:none;cursor:pointer;color:#7c3aed;font-size:11px;">✕</button>
             </span>`).join('');
 
@@ -553,7 +553,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                          color:#065f46;padding:4px 10px;border-radius:20px;font-size:12px;
                          font-weight:600;margin:3px;">
                 <i class="fas fa-tasks"></i> ${escHTML(a.assignments.title)}
-                <button type="button" onclick="ecmUnlinkTopicAssessment('${a.id}','${chapterId}','${courseId}')"
+                <button type="button" onclick="ecmDirectUnlinkTopic('assignment','${a.assignments.id}','${chapterId}','${courseId}')"
                     style="background:none;border:none;cursor:pointer;color:#065f46;font-size:11px;">✕</button>
             </span>`).join('');
 
@@ -704,7 +704,7 @@ window.ecmUnlinkTopicAssessment = async function(assessmentId, chapterId, course
     if (a) {
         const table = a.assessment_type === 'quiz' ? 'quizzes' : 'assignments';
         const col   = a.assessment_type === 'quiz' ? a.quiz_id : a.assignment_id;
-        await getSB().from(table).update({ chapter_id: null }).eq('id', col);
+        await getSB().from(table).update({ chapter_id: null, topic_id: null }).eq('id', col);
     }
 
     await getSB().from('chapter_assessments').delete().eq('id', assessmentId);
@@ -724,6 +724,18 @@ setTimeout(() => {
     function escHTML(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
     }
+
+   window.ecmDirectUnlinkTopic = async function(type, itemId, chapterId, courseId) {
+        const table = type === 'quiz' ? 'quizzes' : 'assignments';
+        const col   = type === 'quiz' ? 'quiz_id'  : 'assignment_id';
+        await getSB().from(table).update({ chapter_id: null, topic_id: null }).eq('id', itemId);
+        await getSB().from('chapter_assessments').delete().eq(col, itemId).eq('chapter_id', chapterId);
+        if (typeof showToast === 'function') showToast('Unlinked.');
+        window._ecmRunning = false;
+        window._lastEcmChapterId = null;
+        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+        setTimeout(() => window.openEditChapterModal(chapterId), 50);
+    };
 
     console.log('✅ edit-chapter-modal-patch.js loaded');
 })();
