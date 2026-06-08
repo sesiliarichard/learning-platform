@@ -2365,6 +2365,10 @@ body.dark-mode .notes-progress-bar {
     position: absolute;
     top: 20px;
     right: -15px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 30px;
     height: 30px;
     background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
@@ -2372,17 +2376,11 @@ body.dark-mode .notes-progress-bar {
     border-radius: 50%;
     color: white;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    z-index: 10;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     transition: all 0.3s;
     opacity: 1;
     visibility: visible;
 }
-
 .sidebar-toggle:hover {
     transform: scale(1.1);
     box-shadow: 0 4px 12px rgba(0, 153, 255, 0.4);
@@ -2399,23 +2397,45 @@ body.dark-mode .notes-progress-bar {
 }
 
 .sidebar.collapsed {
-    width: 0;
-    padding: 0;
-    overflow: visible;
-    min-width: 0;
+    width: 70px;
+    padding: 20px 10px;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .logo-section {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item span {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 14px;
+    border-left: 4px solid transparent;
+}
+
+.sidebar.collapsed .nav-item i {
+    width: auto;
+    font-size: 1.3rem;
+}
+
+.sidebar.collapsed .unread-count {
+    display: none;
 }
 
 .sidebar.collapsed .sidebar-toggle {
-    position: fixed;
-    left: 10px;
-    top: 20px;
+    position: relative;
     right: auto;
+    left: auto;
+    margin: 10px auto 0;
+    display: flex;
 }
 
 .sidebar.collapsed .sidebar-toggle i {
     transform: rotate(180deg);
 }
-
 /* Main content adjustment */
 .main-content {
     transition: all 0.3s ease;
