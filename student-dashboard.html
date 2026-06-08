@@ -3319,15 +3319,6 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     if (!a.topic_id) return false;
     return String(a.topic_id) === String(topicId);
 });
-    // If chapter-level only (topic_id is null), show ONLY on the first topic of this chapter
-    if (String(a.chapter_id) === String(chapterId)) {
-        const chapterTopics = currentCourseNotes
-            .filter(n => String(n.chapterId) === String(chapterId));
-        const firstTopicId = chapterTopics[0]?.id;
-        return firstTopicId && String(firstTopicId) === String(topicId);
-    }
-    return false;
-});
 
 console.log('🎯 topicId being checked:', topicId);
 console.log('🎯 All _chapterAssessments:', JSON.stringify(window._chapterAssessments?.map(a => ({
