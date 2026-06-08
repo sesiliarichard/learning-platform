@@ -3316,8 +3316,9 @@ const courseChapterIds = new Set(
 
 
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-    if (!a.topic_id) return false;
-    return String(a.topic_id) === String(topicId);
+    if (a.topic_id) return String(a.topic_id) === String(topicId);
+    if (a.chapter_id && chapterId) return String(a.chapter_id) === String(chapterId);
+    return false;
 });
 
 console.log('🎯 topicId being checked:', topicId);
@@ -3553,21 +3554,50 @@ async function toggleNoteComplete(index) {
 
 async function loadTopicAssessments(courseId) {
     try {
-        const { data: rows, error } = await supabaseClient
-            .from('chapter_assessments')
-            .select(`
-                id, chapter_id, topic_id, assessment_type,
-                quizzes(id, title, time_limit, passing_score),
-                assignments(id, title, due_date, max_points, instructions)
-            `)
-            .eq('course_id', courseId)
-            .not('topic_id', 'is', null);
+        const [quizzesRes, assignsRes] = await Promise.all([
+            supabaseClient
+                .from('quizzes')
+                .select('id, title, time_limit, passing_score, chapter_id, topic_id')
+                .eq('course_id', courseId)
+                .eq('published', true),
+            supabaseClient
+                .from('assignments')
+                .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
+                .eq('course_id', courseId)
+        ]);
 
-        window._topicAssessments   = rows || [];
-        window._chapterAssessments = rows || [];
+        const quizzes     = quizzesRes.data  || [];
+        const assignments = assignsRes.data  || [];
 
-        console.log('✅ Topic assessments loaded:', rows?.length);
-        console.log('topic_ids:', rows?.map(r => r.topic_id));
+        const rows = [
+            ...quizzes.map(q => ({
+                id:              'quiz-' + q.id,
+                chapter_id:      q.chapter_id,
+                topic_id:        q.topic_id,
+                assessment_type: 'quiz',
+                quizzes:         { id: q.id, title: q.title, time_limit: q.time_limit, passing_score: q.passing_score },
+                assignments:     null
+            })),
+            ...assignments.map(a => ({
+                id:              'assign-' + a.id,
+                chapter_id:      a.chapter_id,
+                topic_id:        a.topic_id,
+                assessment_type: 'assignment',
+                quizzes:         null,
+                assignments:     { id: a.id, title: a.title, due_date: a.due_date, max_points: a.max_points, instructions: a.instructions }
+            }))
+        ];
+
+        window._topicAssessments   = rows;
+        window._chapterAssessments = rows;
+
+        console.log('✅ Topic assessments loaded:', rows.length);
+        console.log('Sample:', rows.map(r => ({
+            type: r.assessment_type,
+            chapter_id: r.chapter_id,
+            topic_id: r.topic_id,
+            title: r.quizzes?.title || r.assignments?.title
+        })));
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
