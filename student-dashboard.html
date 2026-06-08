@@ -3553,59 +3553,21 @@ async function toggleNoteComplete(index) {
 
 async function loadTopicAssessments(courseId) {
     try {
-        const [quizzesRes, assignmentsRes] = await Promise.all([
-            supabaseClient
-                .from('quizzes')
-                .select('id, title, time_limit, passing_score, chapter_id, topic_id')
-                .eq('course_id', courseId)
-                .not('chapter_id', 'is', null),
-            supabaseClient
-                .from('assignments')
-                .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
-                .eq('course_id', courseId)
-                .not('chapter_id', 'is', null)
-        ]);
+        const { data: rows, error } = await supabaseClient
+            .from('chapter_assessments')
+            .select(`
+                id, chapter_id, topic_id, assessment_type,
+                quizzes(id, title, time_limit, passing_score),
+                assignments(id, title, due_date, max_points, instructions)
+            `)
+            .eq('course_id', courseId)
+            .not('topic_id', 'is', null);
 
-        const chapterRows = [];
+        window._topicAssessments   = rows || [];
+        window._chapterAssessments = rows || [];
 
-        (quizzesRes.data || []).forEach(q => {
-            chapterRows.push({
-                id: 'ch-quiz-' + q.id,
-                topic_id:        q.topic_id || null,
-                chapter_id:      q.chapter_id,
-                assessment_type: 'quiz',
-                quizzes: {
-                    id:            q.id,
-                    title:         q.title,
-                    time_limit:    q.time_limit,
-                    passing_score: q.passing_score
-                },
-                assignments: null
-            });
-        });
-
-        (assignmentsRes.data || []).forEach(a => {
-            chapterRows.push({
-                id: 'ch-assign-' + a.id,
-                topic_id:        a.topic_id || null,
-                chapter_id:      a.chapter_id,
-                assessment_type: 'assignment',
-                quizzes: null,
-                assignments: {
-                    id:           a.id,
-                    title:        a.title,
-                    due_date:     a.due_date,
-                    max_points:   a.max_points,
-                    instructions: a.instructions
-                }
-            });
-        });
-
-        window._topicAssessments   = chapterRows.filter(r => r.topic_id);
-        window._chapterAssessments = chapterRows;
-
-        console.log('✅ Chapter assessments loaded:', chapterRows.length);
-        console.log('topic_ids:', chapterRows.map(r => r.topic_id));
+        console.log('✅ Topic assessments loaded:', rows?.length);
+        console.log('topic_ids:', rows?.map(r => r.topic_id));
 
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
