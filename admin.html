@@ -1872,14 +1872,21 @@ if (adminSidebarToggle && adminSidebar) {
     adminSidebarToggle.addEventListener('click', () => {
         adminSidebar.classList.toggle('collapsed');
         const isCollapsed = adminSidebar.classList.contains('collapsed');
+        // Flip the chevron icon
+        const icon = adminSidebarToggle.querySelector('i');
+        if (icon) {
+            icon.className = isCollapsed ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
+        }
         localStorage.setItem('adminSidebarCollapsed', isCollapsed);
     });
 }
 
-// Restore saved state
-const savedAdminSidebar = localStorage.getItem('adminSidebarCollapsed');
-if (savedAdminSidebar === 'true' && adminSidebar) {
+// Restore saved state on load
+const savedState = localStorage.getItem('adminSidebarCollapsed');
+if (savedState === 'true' && adminSidebar) {
     adminSidebar.classList.add('collapsed');
+    const icon = adminSidebarToggle?.querySelector('i');
+    if (icon) icon.className = 'fas fa-chevron-right';
 }
 // ============================================
 // INITIALIZATION
