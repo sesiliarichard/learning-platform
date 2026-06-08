@@ -6077,3 +6077,50 @@ body.dark-mode .topic-list .empty-topics {
 .hire-table {
     min-width: 750px;
 }
+
+.sidebar.collapsed {
+    width: 70px;
+    min-width: 70px;
+    padding: 20px 10px;
+    overflow: hidden;
+}
+
+.sidebar.collapsed .logo-section {
+    display: none;
+}
+
+.sidebar.collapsed .logo-text {
+    display: none;
+}
+
+.sidebar.collapsed .admin-badge {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item span {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center;
+    padding: 14px;
+    border-left: 4px solid transparent;
+}
+
+.sidebar.collapsed .nav-item i {
+    width: auto;
+    font-size: 1.3rem;
+}
+
+.sidebar.collapsed .sb-foot .sb-info {
+    display: none;
+}
+
+.sidebar.collapsed .sb-foot {
+    justify-content: center;
+    padding: 12px 8px;
+}
+
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
