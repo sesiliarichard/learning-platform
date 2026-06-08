@@ -6159,3 +6159,6 @@ body.dark-mode .topic-list .empty-topics {
 .sidebar.collapsed .sb-foot {
     justify-content: center;
 }
+.sidebar.collapsed .nav-menu {
+    margin-top: 5px;
+}
