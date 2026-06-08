@@ -3348,17 +3348,22 @@ db.from('assignments')
                     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
                         ${linkedQuizPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
                         ${quizOptions ? `
-                        <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
-                            <select id="quizLink_${chapter.id}"
-                                style="padding:4px 8px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
-                                <option value="">+ Link a quiz…</option>
-                                ${quizOptions}
-                            </select>
-                            <button onclick="linkItem('quiz','${chapter.id}','${courseId}')"
-                                style="padding:4px 10px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                                Link
-                            </button>
-                        </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all quizzes linked)</span>'}
+<div style="display:inline-flex;align-items:center;gap:6px;margin:3px;flex-wrap:wrap;">
+    <select id="quizLink_${chapter.id}"
+        style="padding:4px 8px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+        <option value="">+ Link a quiz…</option>
+        ${quizOptions}
+    </select>
+    <select id="quizTopicLink_${chapter.id}"
+        style="padding:4px 8px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+        <option value="">→ On topic…</option>
+        ${sortedTopics.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join('')}
+    </select>
+    <button onclick="linkItem('quiz','${chapter.id}','${courseId}')"
+        style="padding:4px 10px;background:#7c3aed;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+        Link
+    </button>
+</div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all quizzes linked)</span>'}
                     </div>
                 </div>
 
@@ -3370,17 +3375,22 @@ db.from('assignments')
                     <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;">
                         ${linkedAssignPills || '<span style="font-size:12px;color:#9ca3af;">None linked yet</span>'}
                         ${assignOptions ? `
-                        <div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
-                            <select id="assignLink_${chapter.id}"
-                                style="padding:4px 8px;border:1.5px solid #bbf7d0;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
-                                <option value="">+ Link an assignment…</option>
-                                ${assignOptions}
-                            </select>
-                            <button onclick="linkItem('assignment','${chapter.id}','${courseId}')"
-                                style="padding:4px 10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                                Link
-                            </button>
-                        </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
+<div style="display:inline-flex;align-items:center;gap:6px;margin:3px;flex-wrap:wrap;">
+    <select id="assignLink_${chapter.id}"
+        style="padding:4px 8px;border:1.5px solid #bbf7d0;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+        <option value="">+ Link an assignment…</option>
+        ${assignOptions}
+    </select>
+    <select id="assignTopicLink_${chapter.id}"
+        style="padding:4px 8px;border:1.5px solid #bbf7d0;border-radius:8px;font-size:12px;font-family:inherit;outline:none;">
+        <option value="">→ On topic…</option>
+        ${sortedTopics.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join('')}
+    </select>
+    <button onclick="linkItem('assignment','${chapter.id}','${courseId}')"
+        style="padding:4px 10px;background:#10b981;color:white;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+        Link
+    </button>
+</div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
                     </div>
                 </div>
             </div>`;
@@ -3392,31 +3402,34 @@ db.from('assignments')
 // Link a quiz or assignment to a chapter
 async function linkItem(type, chapterId, courseId) {
     const selectId = type === 'quiz' ? `quizLink_${chapterId}` : `assignLink_${chapterId}`;
-    const itemId   = document.getElementById(selectId)?.value;
-    if (!itemId) { showToast('Please select an item to link', 'error'); return; }
+    const topicSelectId = type === 'quiz' ? `quizTopicLink_${chapterId}` : `assignTopicLink_${chapterId}`;
+    
+    const itemId  = document.getElementById(selectId)?.value;
+    const topicId = document.getElementById(topicSelectId)?.value;
+    
+    if (!itemId)  { showToast('Please select an item to link', 'error'); return; }
+    if (!topicId) { showToast('Please select which topic it belongs to', 'error'); return; }
 
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
 
-   // Step 1: Set chapter_id directly on the quiz/assignment row
+    // Save both chapter_id AND topic_id
     const { error: updateErr } = await db
         .from(table)
-        .update({ chapter_id: chapterId, topic_id: null })
+        .update({ chapter_id: chapterId, topic_id: topicId })
         .eq('id', itemId);
 
     if (updateErr) { showToast('Error: ' + updateErr.message, 'error'); return; }
 
-    // Step 2: Also upsert into chapter_assessments
-    // First delete any existing entry for this item to avoid duplicates
-    await db
-        .from('chapter_assessments')
+    // Also save to chapter_assessments
+    await db.from('chapter_assessments')
         .delete()
         .eq('chapter_id', chapterId)
         .eq(type === 'quiz' ? 'quiz_id' : 'assignment_id', itemId);
 
-    // Then insert fresh
     const { error: insertErr } = await db.from('chapter_assessments').insert({
         chapter_id:      chapterId,
         course_id:       courseId,
+        topic_id:        topicId,
         assessment_type: type,
         quiz_id:         type === 'quiz'       ? itemId : null,
         assignment_id:   type === 'assignment' ? itemId : null,
@@ -3425,13 +3438,11 @@ async function linkItem(type, chapterId, courseId) {
 
     if (insertErr) {
         console.warn('chapter_assessments insert warning:', insertErr.message);
-        // Don't block — the direct chapter_id link above is sufficient for student view
     }
 
-    showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to this week!`);
+    showToast(`✅ ${type === 'quiz' ? 'Quiz' : 'Assignment'} linked to topic!`);
     loadChapters();
 }
-
 // Unlink a quiz or assignment from a chapter
 async function unlinkItem(type, itemId, chapterId) {
     const table = type === 'quiz' ? 'quizzes' : 'assignments';
