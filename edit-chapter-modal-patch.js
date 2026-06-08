@@ -626,6 +626,7 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
 
 // ── Link assessment to a specific topic ──────────────
 window.ecmLinkTopicAssessment = async function(type, topicId, chapterId, courseId) {
+    console.log('RAW ARGS:', type, topicId, chapterId, courseId);
     if (!topicId || topicId === 'undefined' || topicId === 'null') {
         if (typeof showToast === 'function') showToast('Error: topic ID missing', 'error');
         console.error('Missing topicId:', topicId);
