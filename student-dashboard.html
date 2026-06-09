@@ -2797,7 +2797,7 @@ async function loadCourseNotes(courseId) {
         const chapterIds = chapters.map(c => c.id);
         const { data: allTopics } = await db
             .from('topics')
-            .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id')
+            .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
             .in('chapter_id', chapterIds)
             .eq('course_id', courseId)
             .order('order_num', { ascending: true });
@@ -2829,7 +2829,7 @@ async function loadCourseNotes(courseId) {
             const chapter = sortedChapters.find(c => c.id === topic.chapter_id);
             if (chapter) {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-                currentCourseNotes.push({
+              currentCourseNotes.push({
                     id: topic.id,
                     title: cleanTitle,
                     category: topic.category || 'General',
@@ -2841,7 +2841,11 @@ async function loadCourseNotes(courseId) {
                     chapterId: chapter.id,
                     chapterOrderNum: chapter.order_num ?? 999,
                     weekLabel: 'Week ' + (chapter.order_num || '?'),
-                    subChapterId: topic.sub_chapter_id || null
+                    subChapterId: topic.sub_chapter_id || null,
+                    hasCodingExercise: topic.has_coding_exercise || false,
+                    codingPrompt: topic.coding_prompt || null,
+                    codingLanguage: topic.coding_language || 'python',
+                    codingStarterCode: topic.coding_starter_code || null
                 });
             }
         });
