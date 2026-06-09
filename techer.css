@@ -2952,3 +2952,156 @@ to{
   justify-content: center;
   border-radius: 8px;
 }
+/* ========== MOBILE SIDEBAR TOGGLE BUTTON ========== */
+.mobile-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    width: 42px;
+    height: 42px;
+    background: linear-gradient(135deg, #1a9fd4, #1280b0);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    z-index: 301;
+    font-size: 16px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(26,159,212,0.4);
+}
+
+/* Desktop sidebar toggle button (chevron) */
+.sb-toggle {
+    position: absolute;
+    top: 20px;
+    right: -15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1a9fd4, #1280b0);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sb-toggle:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+}
+
+/* Sidebar collapsed state */
+.sb.collapsed {
+    width: 70px !important;
+    min-width: 70px !important;
+    padding: 20px 8px !important;
+}
+
+.sb.collapsed .sb-brand {
+    display: none;
+}
+
+.sb.collapsed .sb-brand div,
+.sb.collapsed .sb-rl {
+    display: none;
+}
+
+.sb.collapsed .grp-lbl {
+    display: none;
+}
+
+.sb.collapsed .nl span:not(.nb) {
+    display: none;
+}
+
+.sb.collapsed .nl {
+    justify-content: center !important;
+    padding: 12px 8px !important;
+}
+
+.sb.collapsed .nl i {
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.sb.collapsed .nb {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    margin: 0;
+    font-size: 8px;
+    padding: 2px 5px;
+}
+
+.sb.collapsed .sb-foot .sb-info {
+    display: none;
+}
+
+.sb.collapsed .sb-foot {
+    justify-content: center;
+    padding: 8px;
+}
+
+/* Rotate chevron when collapsed */
+.sb.collapsed .sb-toggle i {
+    transform: rotate(180deg);
+}
+
+/* Tooltip on collapsed hover */
+.sb.collapsed .nl {
+    position: relative;
+}
+
+.sb.collapsed .nl:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 52px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #1f2937;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 1000;
+    pointer-events: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+/* Mobile responsive */
+@media (max-width: 900px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+    
+    .sb {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+    }
+    
+    .sb.open {
+        transform: translateX(0);
+    }
+    
+    /* Hide desktop toggle on mobile */
+    .sb-toggle {
+        display: none;
+    }
+    
+    .main-content {
+        margin-left: 0;
+    }
+    
+    .topbar {
+        padding-left: 58px !important;
+    }
+}

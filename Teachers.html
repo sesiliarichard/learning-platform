@@ -87,6 +87,12 @@
 </head>
 <body>
 
+<!-- Mobile Sidebar Toggle Button -->
+<button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle menu">
+    <i class="fas fa-bars"></i>
+</button>
+
+<!-- Sidebar Overlay -->
 <div class="sb-overlay" id="sbOverlay"></div>
 
 <aside class="sb" id="sidebar">
@@ -1136,7 +1142,101 @@ window.loadTeacherAnnouncementsUI = async function() {
             </div>`;
     }
 };
-
+// ========== SIDEBAR TOGGLE FUNCTIONALITY (like student dashboard) ==========
+(function initTeacherSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const mobileToggle = document.getElementById('mobileSidebarToggle');
+    const overlay = document.getElementById('sbOverlay');
+    
+    if (!sidebar) return;
+    
+    // Add desktop toggle button if not present
+    if (!document.querySelector('.sb-toggle')) {
+        const desktopToggle = document.createElement('button');
+        desktopToggle.className = 'sb-toggle';
+        desktopToggle.id = 'teacherSidebarToggle';
+        desktopToggle.setAttribute('aria-label', 'Toggle sidebar');
+        desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        sidebar.insertBefore(desktopToggle, sidebar.firstChild);
+        
+        // Desktop toggle event
+        desktopToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            sidebar.classList.toggle('collapsed');
+            const isCollapsed = sidebar.classList.contains('collapsed');
+            localStorage.setItem('teacherSidebarCollapsed', isCollapsed);
+        });
+    }
+    
+    // Load saved collapsed state
+    const savedCollapsed = localStorage.getItem('teacherSidebarCollapsed');
+    if (savedCollapsed === 'true') {
+        sidebar.classList.add('collapsed');
+    }
+    
+    // Mobile toggle event
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', () => {
+            const isOpen = sidebar.classList.contains('open');
+            sidebar.classList.toggle('open', !isOpen);
+            if (overlay) overlay.classList.toggle('open', !isOpen);
+            
+            // Change icon
+            const icon = mobileToggle.querySelector('i');
+            if (icon) {
+                icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
+            }
+        });
+    }
+    
+    // Close sidebar when clicking overlay
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('open');
+            overlay.classList.remove('open');
+            if (mobileToggle) {
+                const icon = mobileToggle.querySelector('i');
+                if (icon) icon.className = 'fas fa-bars';
+            }
+        });
+    }
+    
+    // Close sidebar when clicking a nav item (on mobile only)
+    document.querySelectorAll('.nl').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 900) {
+                sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('open');
+                if (mobileToggle) {
+                    const icon = mobileToggle.querySelector('i');
+                    if (icon) icon.className = 'fas fa-bars';
+                }
+            }
+        });
+    });
+    
+    // Add data-tooltip attributes for collapsed nav items
+    document.querySelectorAll('.nl').forEach(nav => {
+        const span = nav.querySelector('span:not(.nb)');
+        if (span && span.textContent) {
+            nav.setAttribute('data-tooltip', span.textContent);
+        }
+    });
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 900) {
+            sidebar.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+            if (mobileToggle) {
+                const icon = mobileToggle.querySelector('i');
+                if (icon) icon.className = 'fas fa-bars';
+            }
+        }
+    });
+    
+    console.log('✅ Teacher sidebar toggle initialized');
+})();
 
 </script>
 
