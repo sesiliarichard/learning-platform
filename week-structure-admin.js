@@ -189,6 +189,12 @@
                     style="padding:7px 14px;background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
                     <i class="fas fa-plus"></i> Add Topic
                 </button>
+                <!-- Add this button right after the existing code block button -->
+             <button type="button" class="editor-btn" onclick="wsInsertInlineCoding('${globalIdx}')" 
+          title="Insert Interactive Coding Exercise"
+         style="background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:6px;padding:4px 8px;gap:4px;display:flex;align-items:center;">
+          <i class="fas fa-play-circle"></i> <span style="font-size:10px;">+Code</span>
+         </button>
             </div>`;
 
         container.appendChild(div);
@@ -430,7 +436,302 @@
         editor.focus();
         setTimeout(() => document.execCommand(cmd, false, val || null), 10);
     };
+window.wsInsertInlineCoding = function(globalIdx) {
+    const editor = document.getElementById(`ws_t_content_${globalIdx}`);
+    if (!editor) return;
 
+    // Remove existing picker
+    document.getElementById('wsCodingInsertModal')?.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'wsCodingInsertModal';
+    modal.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;
+        background:rgba(0,0,0,0.6);z-index:9999;display:flex;
+        align-items:center;justify-content:center;backdrop-filter:blur(4px);`;
+
+    modal.innerHTML = `
+    <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:20px;
+                padding:28px;width:520px;max-width:95vw;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:22px;">
+            <div style="width:40px;height:40px;background:linear-gradient(135deg,#10b981,#059669);
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-code" style="color:white;font-size:16px;"></i>
+            </div>
+            <div>
+                <div style="font-size:17px;font-weight:800;color:white;">Insert Coding Exercise</div>
+                <div style="font-size:12px;color:#6366f1;">Embedded inline in your topic content</div>
+            </div>
+            <button onclick="document.getElementById('wsCodingInsertModal').remove()"
+                style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;color:white;
+                       width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;
+                          letter-spacing:1px;display:block;margin-bottom:8px;">Language</label>
+            <select id="wsCodingLangSelect"
+                style="width:100%;padding:10px 14px;background:#1e1b4b;color:#a5b4fc;
+                       border:1.5px solid #4338ca;border-radius:10px;font-size:14px;
+                       font-family:inherit;outline:none;">
+                <option value="python">Python 3</option>
+                <option value="javascript">JavaScript</option>
+                <option value="both">Both (student chooses)</option>
+            </select>
+        </div>
+
+        <div style="margin-bottom:14px;">
+            <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;
+                          letter-spacing:1px;display:block;margin-bottom:8px;">
+                Problem / Instructions
+            </label>
+            <textarea id="wsCodingPromptInput" rows="3"
+                placeholder="e.g. Write a function that calculates the average of a list..."
+                style="width:100%;padding:12px;background:#1e1b4b;color:#c7d2fe;
+                       border:1.5px solid #4338ca;border-radius:10px;font-size:13px;
+                       font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;"></textarea>
+        </div>
+
+        <div style="margin-bottom:20px;">
+            <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;
+                          letter-spacing:1px;display:block;margin-bottom:8px;">
+                Starter Code (optional)
+            </label>
+            <textarea id="wsCodingStarterInput" rows="5"
+                placeholder="# Write starter code here&#10;def calculate_average(numbers):&#10;    # Your code here&#10;    pass"
+                style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
+                       border:1.5px solid #4338ca;border-radius:10px;font-size:13px;
+                       font-family:'Courier New',monospace;outline:none;resize:vertical;
+                       box-sizing:border-box;"></textarea>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+            <button onclick="document.getElementById('wsCodingInsertModal').remove()"
+                style="flex:1;padding:12px;border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;
+                       background:transparent;color:#9ca3af;font-weight:700;cursor:pointer;font-family:inherit;">
+                Cancel
+            </button>
+            <button onclick="wsConfirmInsertCoding('${globalIdx}')"
+                style="flex:2;padding:12px;background:linear-gradient(135deg,#10b981,#059669);
+                       border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;
+                       font-family:inherit;font-size:14px;display:flex;align-items:center;
+                       justify-content:center;gap:8px;">
+                <i class="fas fa-plus-circle"></i> Insert Coding Exercise
+            </button>
+        </div>
+    </div>`;
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    document.getElementById('wsCodingPromptInput')?.focus();
+};
+
+window.wsConfirmInsertCoding = function(globalIdx) {
+    const lang    = document.getElementById('wsCodingLangSelect')?.value || 'python';
+    const prompt  = document.getElementById('wsCodingPromptInput')?.value?.trim() || '';
+    const starter = document.getElementById('wsCodingStarterInput')?.value || '';
+    document.getElementById('wsCodingInsertModal')?.remove();
+
+    const editor = document.getElementById(`ws_t_content_${globalIdx}`);
+    if (!editor) return;
+
+    const langColors = {
+        python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
+        javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
+        both:       { bg: '#0f2027', border: '#10b981', badge: '#34d399', label: 'Python / JS' }
+    };
+    const lc = langColors[lang] || langColors.python;
+
+    // Build unique ID for this inline exercise
+    const uid = 'ce_' + Date.now();
+
+    const defaultStarter = starter || (lang === 'javascript'
+        ? `// Write your solution here\nfunction solution() {\n    \n}`
+        : `# Write your solution here\ndef solution():\n    pass`);
+
+    const placeholder = document.createElement('div');
+    placeholder.innerHTML = `
+    <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
+         style="margin:16px 0;border-radius:14px;overflow:hidden;
+                border:2px solid ${lc.border};background:${lc.bg};">
+
+        <!-- Header -->
+        <div style="padding:12px 16px;display:flex;align-items:center;
+                    justify-content:space-between;border-bottom:1px solid ${lc.border}30;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:30px;height:30px;background:${lc.badge};border-radius:8px;
+                            display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-code" style="color:white;font-size:12px;"></i>
+                </div>
+                <div>
+                    <div style="font-size:13px;font-weight:800;color:white;">Coding Exercise</div>
+                    <div style="font-size:11px;color:${lc.badge};">${lc.label}</div>
+                </div>
+            </div>
+            <span style="background:${lc.badge};color:white;padding:3px 10px;
+                         border-radius:20px;font-size:11px;font-weight:700;">
+                Interactive
+            </span>
+        </div>
+
+        ${prompt ? `
+        <!-- Problem statement -->
+        <div style="padding:14px 16px;background:rgba(99,102,241,0.1);
+                    border-bottom:1px solid ${lc.border}20;">
+            <div style="font-size:11px;font-weight:700;color:${lc.badge};
+                        text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+                <i class="fas fa-lightbulb"></i> Problem
+            </div>
+            <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${_esc(prompt)}</div>
+        </div>` : ''}
+
+        <!-- Code editor -->
+        <div style="padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:11px;font-weight:700;color:${lc.badge};
+                             text-transform:uppercase;letter-spacing:1px;">Your Code</span>
+                <div style="display:flex;gap:6px;">
+                    <button class="asai-inline-run-btn"
+                        data-uid="${uid}"
+                        style="padding:5px 14px;background:${lc.badge};color:white;border:none;
+                               border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
+                               font-family:inherit;display:flex;align-items:center;gap:5px;">
+                        <i class="fas fa-play"></i> Run
+                    </button>
+                </div>
+            </div>
+            <textarea class="asai-inline-editor" data-uid="${uid}" rows="6"
+                spellcheck="false"
+                style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
+                       border:1.5px solid ${lc.border};border-radius:10px;font-size:13px;
+                       font-family:'Courier New',monospace;outline:none;resize:vertical;
+                       box-sizing:border-box;line-height:1.6;">${_esc(defaultStarter)}</textarea>
+        </div>
+
+        <!-- Output area (hidden by default) -->
+        <div class="asai-inline-output" data-uid="${uid}"
+             style="display:none;padding:14px 16px;background:#0a0a1a;
+                    border-top:1px solid ${lc.border}30;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;
+                        text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                <i class="fas fa-terminal"></i> Output
+            </div>
+            <pre class="asai-inline-result" data-uid="${uid}"
+                 style="margin:0;font-family:'Courier New',monospace;font-size:12px;
+                        color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+        </div>
+    </div>`;
+
+    const codingNode = placeholder.firstElementChild;
+    const br = document.createElement('br');
+
+    // Insert at cursor or append
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(br);
+        range.insertNode(codingNode);
+        range.setStartAfter(br);
+        range.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else {
+        editor.appendChild(codingNode);
+        editor.appendChild(br);
+    }
+
+    // Wire up Run button immediately
+    _wireInlineCodingBlock(codingNode, lang);
+};
+
+function _wireInlineCodingBlock(block, lang) {
+    const runBtn = block.querySelector('.asai-inline-run-btn');
+    if (!runBtn || runBtn.dataset.wired) return;
+    runBtn.dataset.wired = '1';
+
+    runBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const uid      = runBtn.dataset.uid;
+        const textarea = block.querySelector(`.asai-inline-editor[data-uid="${uid}"]`);
+        const output   = block.querySelector(`.asai-inline-output[data-uid="${uid}"]`);
+        const result   = block.querySelector(`.asai-inline-result[data-uid="${uid}"]`);
+        if (!textarea || !output || !result) return;
+
+        const code = textarea.value;
+        runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…';
+        runBtn.disabled = true;
+        output.style.display = 'block';
+        result.textContent = 'Running…';
+        result.style.color = '#94a3b8';
+
+        try {
+            let res;
+            if (lang === 'javascript') {
+                res = _runJSInline(code);
+            } else {
+                // Use Pyodide if available, else Piston
+                if (window._pyodide || typeof loadPyodide !== 'undefined') {
+                    res = await _runPyodideInline(code, output);
+                } else {
+                    res = await _runPistonInline(code);
+                }
+            }
+            result.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output)');
+            result.style.color = res.error ? '#f87171' : '#4ade80';
+        } catch (err) {
+            result.textContent = '❌ ' + err.message;
+            result.style.color = '#f87171';
+        }
+
+        runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
+        runBtn.disabled = false;
+    });
+}
+
+function _runJSInline(code) {
+    let output = '';
+    const orig = console.log;
+    console.log = (...args) => { output += args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n'; };
+    let error = null;
+    try { new Function(code)(); } catch(e) { error = e.message; }
+    finally { console.log = orig; }
+    return { output: output.trim() || (error ? '' : '(No output)'), error };
+}
+
+async function _runPyodideInline(code, outputEl) {
+    try {
+        if (!window._pyodide) {
+            outputEl.style.display = 'block';
+            outputEl.querySelector('pre').textContent = 'Loading Python engine…';
+            window._pyodide = await loadPyodide({ stdout: () => {}, stderr: () => {} });
+        }
+        let out = '', err = '';
+        window._pyodide.setStdout({ batched: t => { out += t + '\n'; } });
+        window._pyodide.setStderr({ batched: t => { err += t + '\n'; } });
+        await window._pyodide.runPythonAsync(code);
+        return { output: out.trim(), error: err.trim() && !out.trim() ? err.trim() : null };
+    } catch(e) {
+        return { output: '', error: String(e) };
+    }
+}
+
+async function _runPistonInline(code) {
+    try {
+        const r = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language:'python', version:'3.10.0', files:[{ content: code }] })
+        });
+        const d = await r.json();
+        const out = (d.run?.stdout || '').trim();
+        const err = (d.run?.stderr || '').trim();
+        return { output: out || (err ? '' : '(No output)'), error: err && !out ? err : null };
+    } catch(e) {
+        return { output: '', error: 'Could not run: ' + e.message };
+    }
+}
     async function _handleWsSubmit(e) {
         e.preventDefault();
         const btn = document.getElementById('ws_submitBtn');

@@ -171,6 +171,12 @@
 
         // Wire up code block run buttons
         _wireCodeBlocks(container);
+        setTimeout(() => {
+    container.querySelectorAll('.asai-inline-coding').forEach(block => {
+        const lang = block.dataset.lang || 'python';
+        _wireInlineCodingBlock(block, lang);
+    });
+}, 100);
     }
 
     // ─────────────────────────────────────────────────────────
