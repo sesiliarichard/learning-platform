@@ -3970,7 +3970,7 @@ topics.push({
         for (const t of topics) {
             if (t.id && existingIds.has(t.id)) {
                 // Update existing
-                const { error } = await db
+         const { error } = await db
     .from('topics')
     .update({
         title:               t.title,
@@ -3978,10 +3978,28 @@ topics.push({
         duration:            t.duration,
         category:            t.category,
         order_num:           t.order_num,
-        has_coding_exercise: t.has_coding_exercise,
-        coding_prompt:       t.coding_prompt
+        has_coding_exercise: t.has_coding_exercise || false,
+        coding_prompt:       t.coding_prompt || null
     })
     .eq('id', t.id);
+
+// After updating topic, re-link any assessments that had this topic_id
+// to make sure they don't get wiped
+const { data: linkedAssessments } = await db
+    .from('chapter_assessments')
+    .select('id, quiz_id, assignment_id, assessment_type')
+    .eq('chapter_id', chapterId)
+    .eq('topic_id', t.id);
+
+if (linkedAssessments && linkedAssessments.length > 0) {
+    for (const a of linkedAssessments) {
+        const table = a.assessment_type === 'quiz' ? 'quizzes' : 'assignments';
+        const col   = a.assessment_type === 'quiz' ? a.quiz_id : a.assignment_id;
+        await db.from(table)
+            .update({ chapter_id: chapterId, topic_id: t.id })
+            .eq('id', col);
+    }
+}
                 if (error) throw error;
             } else {
     // Insert new
