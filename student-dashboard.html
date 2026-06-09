@@ -6211,33 +6211,39 @@ let currentCodingAssignment = null;
 function openCodingEnvironment(assignmentId = null, prompt = null) {
     const modal = document.getElementById('codingEnvironmentModal');
     const linkDiv = document.getElementById('codingAssignmentLink');
-    
     if (!modal) return;
-    
-    // ALWAYS hide the submit bar — just a run environment
+
     if (linkDiv) linkDiv.style.display = 'none';
     currentCodingAssignment = null;
-    
-    modal.classList.add('active');
-    modal.style.display = 'flex';
-    
-    // Set starter code based on current language
-    const lang = document.getElementById('codingLanguage')?.value || 'python';
-    
-    // If a prompt was passed, pre-fill the editor with it as a comment
-    if (prompt) {
-        document.getElementById('codeEditor').value = `# ${prompt}\n\n# Write your code here\n`;
+
+    // Default to Python (most common for this platform)
+    const langSelect = document.getElementById('codingLanguage');
+    if (langSelect && langSelect.value !== 'javascript' && langSelect.value !== 'html') {
+        langSelect.value = 'python';
+    }
+
+    const lang = langSelect?.value || 'python';
+    const editor = document.getElementById('codeEditor');
+
+    if (prompt && editor) {
+        // Safe comment insertion — no raw string injection
+        const commentChar = lang === 'javascript' ? '//' : '#';
+        const promptLines = prompt.split('\n')
+            .map(line => `${commentChar} ${line}`)
+            .join('\n');
+        editor.value = `${promptLines}\n\n# Write your solution here\n`;
     } else {
         setDefaultCode(lang);
     }
-    
-    // Clear previous output
+
     const outputDiv = document.getElementById('codeOutput');
     if (outputDiv) outputDiv.innerHTML = '<span style="color:#94a3b8;">Click "Run Code" to see output…</span>';
     const timeEl = document.getElementById('executionTime');
     if (timeEl) timeEl.textContent = '';
-}
 
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+}
 function closeCodingEnvironment() {
     const modal = document.getElementById('codingEnvironmentModal');
     if (modal) {
@@ -6869,10 +6875,49 @@ async function downloadFile(url, filename) {
     }
     console.log('✅ Coding environment modal hidden on page load');
 })();
+
 function openCodingEnvironmentById(topicId) {
     const note = currentCourseNotes.find(n => String(n.id) === String(topicId));
     if (!note) return;
-    openCodingEnvironment('topic-' + note.id, note.codingPrompt || '');
+
+    const modal = document.getElementById('codingEnvironmentModal');
+    const linkDiv = document.getElementById('codingAssignmentLink');
+    if (!modal) return;
+
+    // Always hide submit bar
+    if (linkDiv) linkDiv.style.display = 'none';
+
+    // Force the correct language for this topic
+    const lang = note.codingLanguage || 'python';
+    const langSelect = document.getElementById('codingLanguage');
+    if (langSelect) langSelect.value = lang;
+
+    // Build starter code safely — prompt as a comment, then starter code or blank
+    const editor = document.getElementById('codeEditor');
+    if (editor) {
+        if (note.codingStarterCode) {
+            editor.value = note.codingStarterCode;
+        } else if (note.codingPrompt) {
+            // Insert prompt as comment lines safely
+            const commentChar = lang === 'javascript' ? '//' : '#';
+            const promptLines = note.codingPrompt
+                .split('\n')
+                .map(line => `${commentChar} ${line}`)
+                .join('\n');
+            editor.value = `${promptLines}\n\n${lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n'}`;
+        } else {
+            setDefaultCode(lang);
+        }
+    }
+
+    // Clear output
+    const outputDiv = document.getElementById('codeOutput');
+    if (outputDiv) outputDiv.innerHTML = '<span style="color:#94a3b8;">Click "Run Code" to see output…</span>';
+    const timeEl = document.getElementById('executionTime');
+    if (timeEl) timeEl.textContent = '';
+
+    modal.classList.add('active');
+    modal.style.display = 'flex';
 }
     </script>
     <script src="week-structure-student.js"></script>
