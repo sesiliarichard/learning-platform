@@ -3314,10 +3314,16 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
             return '';
         }
         
-     const currentNote = currentCourseNotes.find(n => String(n.id) === String(topicId));
+    const currentNote = currentCourseNotes.find(n => String(n.id) === String(topicId));
         const chapterId = currentNote?.chapterId || null;
         
-        if (!chapterId) return '';
+        // DEBUG - remove after fixing
+        console.log('🔍 buildWeekExtrasHTMLSafe:', { topicId, chapterId, totalAssessments: window._chapterAssessments?.length });
+        
+        if (!chapterId) {
+            console.warn('❌ No chapterId found for topicId:', topicId);
+            return '';
+        }
     
 
    const topicIdStr    = topicId    ? String(topicId)    : null;
@@ -3330,16 +3336,12 @@ const courseChapterIds = new Set(
 
 
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-    // topic-level link
-    if (a.topic_id && topicId && String(a.topic_id) === String(topicId)) return true;
-    // chapter-level link (topic_id is null) — show on FIRST topic of that chapter only
-    if (!a.topic_id && a.chapter_id && chapterId && String(a.chapter_id) === String(chapterId)) {
-        const firstTopicInChapter = currentCourseNotes.find(n => String(n.chapterId) === String(chapterId));
-        return firstTopicInChapter && String(firstTopicInChapter.id) === String(topicId);
-    }
-    return false;
+    const matchesTopic   = a.topic_id   && String(a.topic_id)   === String(topicId);
+    const matchesChapter = a.chapter_id && String(a.chapter_id) === String(chapterId);
+    return matchesTopic || matchesChapter;
 });
 
+console.log('🎯 chapterAssessments found:', chapterAssessments.length, 'for topicId:', topicId);
 console.log('🎯 topicId being checked:', topicId);
 console.log('🎯 All _chapterAssessments:', JSON.stringify(window._chapterAssessments?.map(a => ({
     topic_id: a.topic_id,
