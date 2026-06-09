@@ -6190,31 +6190,33 @@ function renderCourseProgress(enrollments) {
 let currentCodingAssignment = null;
 
 function openCodingEnvironment(assignmentId = null, prompt = null) {
-    // ONLY open if called with an assignment ID
-    if (!assignmentId) {
-        console.log('Coding environment: No assignment ID - not opening');
-        return;
-    }
-    
     const modal = document.getElementById('codingEnvironmentModal');
     const linkDiv = document.getElementById('codingAssignmentLink');
     
     if (!modal) return;
     
-    if (assignmentId && prompt) {
-        currentCodingAssignment = { id: assignmentId, prompt: prompt };
-        document.getElementById('codingAssignmentPrompt').innerHTML = prompt;
-        linkDiv.style.display = 'block';
-    } else {
-        currentCodingAssignment = null;
-        linkDiv.style.display = 'none';
-    }
+    // ALWAYS hide the submit bar — just a run environment
+    if (linkDiv) linkDiv.style.display = 'none';
+    currentCodingAssignment = null;
     
     modal.classList.add('active');
     modal.style.display = 'flex';
     
-    const lang = document.getElementById('codingLanguage').value;
-    setDefaultCode(lang);
+    // Set starter code based on current language
+    const lang = document.getElementById('codingLanguage')?.value || 'python';
+    
+    // If a prompt was passed, pre-fill the editor with it as a comment
+    if (prompt) {
+        document.getElementById('codeEditor').value = `# ${prompt}\n\n# Write your code here\n`;
+    } else {
+        setDefaultCode(lang);
+    }
+    
+    // Clear previous output
+    const outputDiv = document.getElementById('codeOutput');
+    if (outputDiv) outputDiv.innerHTML = '<span style="color:#94a3b8;">Click "Run Code" to see output…</span>';
+    const timeEl = document.getElementById('executionTime');
+    if (timeEl) timeEl.textContent = '';
 }
 
 function closeCodingEnvironment() {
@@ -6300,18 +6302,21 @@ function clearCode() {
 }
 
 async function runCode() {
-    const code = document.getElementById('codeEditor').value;
+    const codeEditor = document.getElementById('codeEditor');
     const language = document.getElementById('codingLanguage').value;
     const outputDiv = document.getElementById('codeOutput');
     const timeEl = document.getElementById('executionTime');
     const runBtn = document.querySelector('.run-btn');
+    
+    const code = codeEditor?.value?.trim();
 
-    if (!code.trim()) {
-        outputDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ Please write some code first.</span>';
+    if (!code) {
+        outputDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ Write some code first!</span>';
         return;
     }
 
-    outputDiv.innerHTML = '<span style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Running your code…</span>';
+    // Show running state
+    outputDiv.innerHTML = '<span style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Running…</span>';
     if (runBtn) { runBtn.disabled = true; runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…'; }
 
     const startTime = performance.now();
@@ -6320,43 +6325,87 @@ async function runCode() {
         let result;
 
         if (language === 'javascript') {
-            result = await runJavaScriptCode(code);
+            result = runJavaScriptSync(code);
+
         } else if (language === 'html') {
-            // HTML: render inline iframe
             outputDiv.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width:100%;height:260px;border:none;background:white;border-radius:8px;';
             outputDiv.appendChild(iframe);
             const blob = new Blob([code], { type: 'text/html' });
             iframe.src = URL.createObjectURL(blob);
-            if (timeEl) timeEl.textContent = 'HTML rendered';
+            if (timeEl) timeEl.textContent = 'HTML preview rendered';
             if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
             return;
+
         } else {
-            // Python → Piston API
-            result = await runPythonCode(code);
+            // Python via Piston API
+            try {
+                const response = await fetch('https://emkc.org/api/v2/piston/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: 'python',
+                        version: '3.10.0',
+                        files: [{ name: 'main.py', content: code }]
+                    })
+                });
+
+                if (!response.ok) throw new Error('API error ' + response.status);
+                const data = await response.json();
+                const stdout = (data.run?.stdout || '').trim();
+                const stderr = (data.run?.stderr || '').trim();
+
+                result = {
+                    output: stdout || (stderr ? '' : '(No output — did you forget print()?)'),
+                    error: stderr && !stdout ? stderr : null
+                };
+            } catch(apiErr) {
+                result = { output: '', error: 'Could not reach execution API. Check your internet connection.\n\n' + apiErr.message };
+            }
         }
 
         const execTime = ((performance.now() - startTime) / 1000).toFixed(2);
-        if (timeEl) timeEl.textContent = `Execution time: ${execTime}s`;
+        if (timeEl) timeEl.textContent = `Ran in ${execTime}s`;
 
-        if (result.error && result.error.trim()) {
-            outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Error:\n${escapeHtml(result.error)}</span>`;
+        if (result.error) {
+            outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;">❌ ${escapeHtml(result.error)}</span>`;
         } else {
-            const out = (result.output || '').trim();
-            outputDiv.innerHTML = out
-                ? `<span style="color:#4ade80;white-space:pre-wrap;">${escapeHtml(out)}</span>`
-                : '<span style="color:#94a3b8;">(No output — did you forget a print statement?)</span>';
+            outputDiv.innerHTML = `<span style="color:#4ade80;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;">${escapeHtml(result.output)}</span>`;
         }
 
     } catch (err) {
-        outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Runtime Error:\n${escapeHtml(err.message)}</span>`;
-        if (timeEl) timeEl.textContent = '';
+        outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Error: ${escapeHtml(err.message)}</span>`;
     }
 
     if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
 }
 
+// Synchronous JS runner (no async needed)
+function runJavaScriptSync(code) {
+    let output = '';
+    const origLog   = console.log;
+    const origWarn  = console.warn;
+    const origError = console.error;
+
+    console.log   = (...args) => { output += args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ') + '\n'; };
+    console.warn  = (...args) => { output += '⚠️ ' + args.join(' ') + '\n'; };
+    console.error = (...args) => { output += '❌ ' + args.join(' ') + '\n'; };
+
+    let error = null;
+    try {
+        const result = new Function(code)();
+        if (result !== undefined && !output) output = String(result);
+    } catch (err) {
+        error = err.message;
+    } finally {
+        console.log   = origLog;
+        console.warn  = origWarn;
+        console.error = origError;
+    }
+
+    return { output: output.trim() || (error ? '' : '(No output)'), error };
+}
 async function runPythonCode(code) {
     try {
         const response = await fetch('https://emkc.org/api/v2/piston/execute', {
