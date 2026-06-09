@@ -3984,26 +3984,30 @@ topics.push({
     .eq('id', t.id);
                 if (error) throw error;
             } else {
-                // Insert new
-                const { data: chapterData } = await db
-                    .from('chapters')
-                    .select('course_id')
-                    .eq('id', chapterId)
-                    .maybeSingle();
+    // Insert new
+    const { data: chapterData } = await db
+        .from('chapters')
+        .select('course_id')
+        .eq('id', chapterId)
+        .maybeSingle();
 
-                const { error } = await db
-                    .from('topics')
-                    .insert({
-                        chapter_id: chapterId,
-                        course_id:  chapterData?.course_id || null,
-                        title:      t.title,
-                        content:    t.content,
-                        duration:   t.duration,
-                        category:   t.category,
-                        order_num:  t.order_num
-                    });
-                if (error) throw error;
-            }
+    const { data: newTopic, error } = await db
+        .from('topics')
+        .insert({
+            chapter_id:          chapterId,
+            course_id:           chapterData?.course_id || null,
+            title:               t.title,
+            content:             t.content,
+            duration:            t.duration,
+            category:            t.category,
+            order_num:           t.order_num,
+            has_coding_exercise: t.has_coding_exercise || false,
+            coding_prompt:       t.coding_prompt || null
+        })
+        .select('id')
+        .single();
+    if (error) throw error;
+}
         }
 
         showToast('✅ Chapter updated successfully!');

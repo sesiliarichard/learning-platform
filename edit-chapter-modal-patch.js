@@ -116,10 +116,9 @@ const [quizzesRes, assignsRes, assessmentsRes, linkedQuizzesRes, linkedAssignsRe
     getSB().from('quizzes').select('id, title').eq('course_id', safeCourseId).order('title'),
     getSB().from('assignments').select('id, title').eq('course_id', safeCourseId).order('title'),
     getSB().from('chapter_assessments')
-    .select('id, assessment_type, quiz_id, assignment_id, quizzes(title), assignments(title)')
+    .select('id, assessment_type, quiz_id, assignment_id, topic_id, quizzes(title), assignments(title)')
     .eq('chapter_id', chapterId)
-    .eq('course_id', safeCourseId)
-    .is('topic_id', null),
+    .eq('course_id', safeCourseId),
     getSB().from('quizzes')
         .select('id, title')
         .eq('chapter_id', chapterId),
