@@ -7665,3 +7665,55 @@ body.dark-mode .notes-chapter-item:hover span span {
     50% { border-color: #fbbf24; background: #fffbeb; }
     100% { border-color: #f59e0b; background: #fef3c7; }
 }
+/* Inline runnable code block */
+.asai-code-block {
+    margin: 14px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid #4338ca;
+    font-family: 'Courier New', monospace;
+}
+.asai-code-block-header {
+    background: #1e1b4b;
+    padding: 8px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.asai-run-btn {
+    background: rgba(255,255,255,0.15);
+    color: white;
+    padding: 4px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    font-family: inherit;
+    transition: background 0.2s;
+}
+.asai-run-btn:hover { background: #7c3aed; }
+.asai-code-block pre {
+    margin: 0;
+    padding: 14px;
+    background: #0f0e2a;
+    color: #c7d2fe;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+.asai-code-output {
+    display: none;
+    background: #0a0a1a;
+    padding: 12px 14px;
+    border-top: 1px solid #4338ca;
+}
+.asai-code-output pre {
+    margin: 0;
+    color: #4ade80;
+    font-size: 12px;
+    white-space: pre-wrap;
+    background: transparent;
+    padding: 0;
+}

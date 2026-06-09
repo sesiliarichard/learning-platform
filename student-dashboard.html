@@ -3265,35 +3265,38 @@ function displayNote(index) {
   reader.scrollTop = 0;
 
     // Wire up Run buttons in code blocks
-    reader.querySelectorAll('.asai-run-btn').forEach(btn => {
-        btn.addEventListener('click', function () {
-            const block  = btn.closest('.asai-code-block');
-            const lang   = block?.dataset?.language || 'python';
-            const code   = block?.querySelector('pre')?.textContent || '';
-            const output = block?.querySelector('.asai-code-output');
-            if (!output) return;
+    // Wire up Run buttons in code blocks
+reader.querySelectorAll('.asai-code-block').forEach(block => {
+    const btn = block.querySelector('.asai-run-btn');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async function() {
+        const lang   = block.dataset.language || 'python';
+        const code   = block.querySelector('pre')?.textContent || '';
+        const output = block.querySelector('.asai-code-output');
+        const outPre = output?.querySelector('pre');
+        if (!output || !outPre) return;
 
-            btn.textContent = '⏳ Running…';
+        btn.textContent = '⏳ Running…';
+        output.style.display = 'block';
+        outPre.textContent = 'Running…';
+        outPre.style.color = '#94a3b8';
 
-            const runIt = lang === 'javascript'
-                ? runJavaScriptCode(code)
-                : lang === 'python'
-                    ? runPythonCode(code)
-                    : Promise.resolve({ output: code, error: null });
+        try {
+            let result;
+            if (lang === 'javascript') result = await runJavaScriptCode(code);
+            else if (lang === 'html') result = await runHtmlCode(code);
+            else result = await runPythonCode(code);
 
-            runIt.then(result => {
-                output.style.display = 'block';
-                const pre = output.querySelector('pre');
-                if (pre) pre.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
-                btn.textContent = '▶ Run';
-            }).catch(err => {
-                output.style.display = 'block';
-                const pre = output.querySelector('pre');
-                if (pre) pre.textContent = '❌ ' + err.message;
-                btn.textContent = '▶ Run';
-            });
-        });
+            outPre.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
+            outPre.style.color = result.error ? '#f87171' : '#4ade80';
+        } catch(err) {
+            outPre.textContent = '❌ ' + err.message;
+            outPre.style.color = '#f87171';
+        }
+        btn.textContent = '▶ Run';
     });
+});
 
     // Update active state in sidebar
     updateActiveSidebarItem(index);
