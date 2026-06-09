@@ -1142,12 +1142,9 @@ window.loadTeacherAnnouncementsUI = async function() {
             </div>`;
     }
 };
-// ========== SIDEBAR TOGGLE FUNCTIONALITY (like student dashboard) ==========
+// Initialize sidebar toggle
 (function initTeacherSidebar() {
     const sidebar = document.getElementById('sidebar');
-    const mobileToggle = document.getElementById('mobileSidebarToggle');
-    const overlay = document.getElementById('sbOverlay');
-    
     if (!sidebar) return;
     
     // Add desktop toggle button if not present
@@ -1174,68 +1171,19 @@ window.loadTeacherAnnouncementsUI = async function() {
         sidebar.classList.add('collapsed');
     }
     
-    // Mobile toggle event
-    if (mobileToggle) {
-        mobileToggle.addEventListener('click', () => {
-            const isOpen = sidebar.classList.contains('open');
-            sidebar.classList.toggle('open', !isOpen);
-            if (overlay) overlay.classList.toggle('open', !isOpen);
-            
-            // Change icon
-            const icon = mobileToggle.querySelector('i');
-            if (icon) {
-                icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
-            }
-        });
-    }
-    
-    // Close sidebar when clicking overlay
-    if (overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('open');
-            if (mobileToggle) {
-                const icon = mobileToggle.querySelector('i');
-                if (icon) icon.className = 'fas fa-bars';
-            }
-        });
-    }
-    
-    // Close sidebar when clicking a nav item (on mobile only)
-    document.querySelectorAll('.nl').forEach(item => {
-        item.addEventListener('click', () => {
-            if (window.innerWidth <= 900) {
-                sidebar.classList.remove('open');
-                if (overlay) overlay.classList.remove('open');
-                if (mobileToggle) {
-                    const icon = mobileToggle.querySelector('i');
-                    if (icon) icon.className = 'fas fa-bars';
-                }
-            }
-        });
-    });
-    
     // Add data-tooltip attributes for collapsed nav items
     document.querySelectorAll('.nl').forEach(nav => {
-        const span = nav.querySelector('span:not(.nb)');
-        if (span && span.textContent) {
-            nav.setAttribute('data-tooltip', span.textContent);
+        const span = nav.querySelector('span:first-child');
+        if (span && span.textContent && !nav.querySelector('.nb')) {
+            nav.setAttribute('data-tooltip', span.textContent.trim());
+        } else if (span && span.textContent) {
+            // For items with badges, get the text span
+            const textSpan = nav.querySelector('span:not(.nb)');
+            if (textSpan) nav.setAttribute('data-tooltip', textSpan.textContent.trim());
         }
     });
     
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        if (window.innerWidth > 900) {
-            sidebar.classList.remove('open');
-            if (overlay) overlay.classList.remove('open');
-            if (mobileToggle) {
-                const icon = mobileToggle.querySelector('i');
-                if (icon) icon.className = 'fas fa-bars';
-            }
-        }
-    });
-    
-    console.log('✅ Teacher sidebar toggle initialized');
+    console.log('✅ Teacher sidebar initialized');
 })();
 
 </script>
