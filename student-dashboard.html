@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
        <!-- Favicon - Multiple sizes for better display -->
 <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
 <link rel="shortcut icon" href="images/favicon-32x32.png">
@@ -3274,32 +3275,50 @@ reader.querySelectorAll('.asai-code-block').forEach(block => {
     const btn = block.querySelector('.asai-run-btn');
     if (!btn || btn.dataset.wired) return;
     btn.dataset.wired = '1';
-    btn.addEventListener('click', async function() {
-        const lang   = block.dataset.language || 'python';
-        const code   = block.querySelector('pre')?.textContent || '';
-        const output = block.querySelector('.asai-code-output');
-        const outPre = output?.querySelector('pre');
-        if (!output || !outPre) return;
+btn.addEventListener('click', async function() {
+    const lang   = block.dataset.language || 'python';
+    const code   = block.querySelector('pre')?.textContent || '';
+    const output = block.querySelector('.asai-code-output');
+    const outPre = output?.querySelector('pre');
+    if (!output || !outPre) return;
 
-        btn.textContent = '⏳ Running…';
-        output.style.display = 'block';
-        outPre.textContent = 'Running…';
-        outPre.style.color = '#94a3b8';
+    btn.textContent = '⏳ Running…';
+    btn.disabled = true;
+    output.style.display = 'block';
+    outPre.textContent = 'Running…';
+    outPre.style.color = '#94a3b8';
 
-        try {
-            let result;
-            if (lang === 'javascript') result = await runJavaScriptCode(code);
-            else if (lang === 'html') result = await runHtmlCode(code);
-            else result = await runPythonCode(code);
-
-            outPre.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
-            outPre.style.color = result.error ? '#f87171' : '#4ade80';
-        } catch(err) {
-            outPre.textContent = '❌ ' + err.message;
-            outPre.style.color = '#f87171';
+    try {
+        let result;
+        if (lang === 'javascript') {
+            result = runJavaScriptSync(code);
+        } else if (lang === 'html') {
+            output.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
+            output.appendChild(iframe);
+            const blob = new Blob([code], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+            btn.textContent = '▶ Run';
+            btn.disabled = false;
+            return;
+        } else {
+            // Use Pyodide — no API needed
+            result = await runPythonPyodide(code, output);
+            if (result === null) { btn.textContent = '▶ Run'; btn.disabled = false; return; }
         }
-        btn.textContent = '▶ Run';
-    });
+
+        outPre.textContent = result.error
+            ? '❌ ' + result.error
+            : (result.output || '(No output — did you forget print()?)');
+        outPre.style.color = result.error ? '#f87171' : '#4ade80';
+    } catch(err) {
+        outPre.textContent = '❌ ' + err.message;
+        outPre.style.color = '#f87171';
+    }
+    btn.textContent = '▶ Run';
+    btn.disabled = false;
+});
 });
 
     // Update active state in sidebar
@@ -6300,6 +6319,26 @@ function resetCode() {
 function clearCode() {
     document.getElementById('codeEditor').value = '';
 }
+// Pyodide instance (loaded once, reused)
+let _pyodide = null;
+let _pyodideLoading = false;
+
+async function getPyodide() {
+    if (_pyodide) return _pyodide;
+    if (_pyodideLoading) {
+        // Wait for it to finish loading
+        while (_pyodideLoading) await new Promise(r => setTimeout(r, 200));
+        return _pyodide;
+    }
+    _pyodideLoading = true;
+    _pyodide = await loadPyodide({
+        stdout: () => {},
+        stderr: () => {}
+    });
+    _pyodideLoading = false;
+    return _pyodide;
+}
+
 
 async function runCode() {
     const codeEditor = document.getElementById('codeEditor');
@@ -6307,7 +6346,7 @@ async function runCode() {
     const outputDiv = document.getElementById('codeOutput');
     const timeEl = document.getElementById('executionTime');
     const runBtn = document.querySelector('.run-btn');
-    
+
     const code = codeEditor?.value?.trim();
 
     if (!code) {
@@ -6315,7 +6354,6 @@ async function runCode() {
         return;
     }
 
-    // Show running state
     outputDiv.innerHTML = '<span style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Running…</span>';
     if (runBtn) { runBtn.disabled = true; runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…'; }
 
@@ -6339,30 +6377,9 @@ async function runCode() {
             return;
 
         } else {
-            // Python via Piston API
-            try {
-                const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        language: 'python',
-                        version: '3.10.0',
-                        files: [{ name: 'main.py', content: code }]
-                    })
-                });
-
-                if (!response.ok) throw new Error('API error ' + response.status);
-                const data = await response.json();
-                const stdout = (data.run?.stdout || '').trim();
-                const stderr = (data.run?.stderr || '').trim();
-
-                result = {
-                    output: stdout || (stderr ? '' : '(No output — did you forget print()?)'),
-                    error: stderr && !stdout ? stderr : null
-                };
-            } catch(apiErr) {
-                result = { output: '', error: 'Could not reach execution API. Check your internet connection.\n\n' + apiErr.message };
-            }
+            // Python via Pyodide (runs in browser, no API needed)
+            result = await runPythonPyodide(code, outputDiv);
+            if (result === null) return; // already handled (loading state shown)
         }
 
         const execTime = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -6371,11 +6388,13 @@ async function runCode() {
         if (result.error) {
             outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;">❌ ${escapeHtml(result.error)}</span>`;
         } else {
-            outputDiv.innerHTML = `<span style="color:#4ade80;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;">${escapeHtml(result.output)}</span>`;
+            outputDiv.innerHTML = result.output
+                ? `<span style="color:#4ade80;white-space:pre-wrap;font-family:'Courier New',monospace;font-size:13px;">${escapeHtml(result.output)}</span>`
+                : '<span style="color:#94a3b8;">(No output — did you forget print()?)</span>';
         }
 
     } catch (err) {
-        outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Error: ${escapeHtml(err.message)}</span>`;
+        outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ ${escapeHtml(err.message)}</span>`;
     }
 
     if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
@@ -6405,6 +6424,37 @@ function runJavaScriptSync(code) {
     }
 
     return { output: output.trim() || (error ? '' : '(No output)'), error };
+}
+async function runPythonPyodide(code, outputDiv) {
+    try {
+        // Show loading message only first time
+        if (!_pyodide) {
+            outputDiv.innerHTML = '<span style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Loading Python engine (first time only)…</span>';
+        }
+
+        const pyodide = await getPyodide();
+
+        // Capture stdout/stderr
+        let output = '';
+        let errorOut = '';
+
+        pyodide.setStdout({ batched: (text) => { output += text + '\n'; } });
+        pyodide.setStderr({ batched: (text) => { errorOut += text + '\n'; } });
+
+        try {
+            await pyodide.runPythonAsync(code);
+        } catch (pyErr) {
+            return { output: '', error: String(pyErr) };
+        }
+
+        return {
+            output: output.trim(),
+            error: errorOut.trim() && !output.trim() ? errorOut.trim() : null
+        };
+
+    } catch (err) {
+        return { output: '', error: 'Python engine failed to load: ' + err.message };
+    }
 }
 async function runPythonCode(code) {
     try {
