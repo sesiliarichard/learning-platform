@@ -3098,77 +3098,81 @@ to{
     }
 }
 /* ============================================
-   TEACHER SIDEBAR — COLLAPSED STATE FIX
+   TEACHER SIDEBAR COLLAPSE — MAIN CONTENT FIX
    Add this at the bottom of techer.css
    ============================================ */
 
-/* Collapsed sidebar base */
+/* Sidebar collapsed width */
 .sb.collapsed {
     width: 70px !important;
     min-width: 70px !important;
-    padding: 16px 8px !important;
-    overflow: hidden !important;
-    align-items: center !important;
 }
 
-/* Hide brand section when collapsed */
-.sb.collapsed .sb-brand {
+/* Main content expands when sidebar is collapsed */
+.sb.collapsed ~ .mn {
+    margin-left: 70px !important;
+}
+
+/* Smooth transition for both sidebar and main content */
+.sb {
+    transition: width 0.3s ease, min-width 0.3s ease;
+}
+
+.mn {
+    transition: margin-left 0.3s ease;
+    margin-left: var(--sw); /* default = 260px */
+}
+
+/* Hide text labels in collapsed state */
+.sb.collapsed .sb-brand div {
     display: none !important;
 }
 
-/* Hide group labels when collapsed */
+.sb.collapsed .sb-brand {
+    justify-content: center !important;
+    padding: 16px 8px !important;
+}
+
+.sb.collapsed .sb-brand img {
+    width: 36px !important;
+    height: 36px !important;
+}
+
 .sb.collapsed .grp-lbl {
     display: none !important;
 }
 
-/* Add spacing between groups when collapsed */
-.sb.collapsed .grp {
-    margin-bottom: 8px !important;
-}
-
-/* Nav item in collapsed state — center the icon */
-.sb.collapsed .nl {
-    justify-content: center !important;
-    padding: 10px 0 !important;
-    width: 50px !important;
-    height: 44px !important;
-    border-radius: 10px !important;
-    margin: 2px auto !important;
-    position: relative !important;
-    display: flex !important;
-    align-items: center !important;
-}
-
-/* Hide nav text labels when collapsed */
 .sb.collapsed .nl span:not(.nb) {
     display: none !important;
 }
 
-/* Make icons larger and centered when collapsed */
+.sb.collapsed .nl {
+    justify-content: center !important;
+    padding: 12px 0 !important;
+    width: 50px !important;
+    margin: 2px auto !important;
+}
+
 .sb.collapsed .nl i {
     font-size: 18px !important;
     width: auto !important;
     margin: 0 !important;
-    text-align: center !important;
-    flex-shrink: 0 !important;
 }
 
-/* Notification badges in collapsed state */
+/* Badge repositioning */
 .sb.collapsed .nb {
     position: absolute !important;
     top: 2px !important;
     right: 2px !important;
     margin: 0 !important;
     font-size: 9px !important;
-    padding: 2px 4px !important;
-    min-width: 16px !important;
-    height: 16px !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
 }
 
-/* Tooltip on hover when collapsed */
+/* Tooltip on hover */
+.sb.collapsed .nl {
+    position: relative !important;
+}
+
 .sb.collapsed .nl::after {
     content: attr(data-tooltip);
     position: absolute;
@@ -3187,119 +3191,79 @@ to{
     opacity: 0;
     transition: opacity 0.15s ease;
     box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-    font-family: 'DM Sans', sans-serif;
 }
 
-/* Show tooltip on hover when collapsed */
 .sb.collapsed .nl:hover::after {
     opacity: 1;
 }
 
-/* Sidebar footer when collapsed */
+/* Footer in collapsed state */
 .sb.collapsed .sb-foot {
     justify-content: center !important;
     padding: 12px 0 !important;
-    gap: 0 !important;
-    width: 100% !important;
+    flex-direction: column !important;
+    gap: 6px !important;
 }
 
 .sb.collapsed .sb-foot .sb-info {
     display: none !important;
 }
 
-.sb.collapsed .sb-foot .sb-av {
-    width: 36px !important;
-    height: 36px !important;
-    font-size: 12px !important;
-    flex-shrink: 0 !important;
-}
-
-/* Hide the logout button text (show only icon) */
-.sb.collapsed .lo-btn {
-    width: 36px !important;
-    height: 36px !important;
-    justify-content: center !important;
-    margin-top: 6px !important;
-}
-
-/* Desktop toggle button — rotate icon when collapsed */
+/* Rotate toggle chevron when collapsed */
 .sb.collapsed .sb-toggle i {
-    transform: rotate(180deg) !important;
+    transform: rotate(180deg);
 }
 
-/* Desktop toggle button base */
-.sb-toggle {
-    position: absolute;
-    top: 20px;
-    right: -15px;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1a9fd4, #1280b0);
-    border: 2px solid white;
-    color: white;
-    cursor: pointer;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    z-index: 210;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.sb-toggle i {
-    transition: transform 0.3s ease;
-    font-size: 12px;
-}
-
-.sb-toggle:hover {
-    transform: scale(1.1);
-    background: linear-gradient(135deg, #0099ff, #0077cc);
-}
-
-/* Ensure the nav scrolls properly when collapsed */
-.sb.collapsed .sb-nav {
-    padding: 8px 4px !important;
-    width: 100% !important;
-}
-
-/* Hide on mobile — mobile uses overlay sidebar */
+/* ── Mobile: disable collapsed behaviour ── */
 @media (max-width: 900px) {
-    .sb-toggle {
-        display: none !important;
-    }
-
     .sb.collapsed {
         width: var(--sw) !important;
         min-width: var(--sw) !important;
-        padding: 20px 12px !important;
     }
 
-    .sb.collapsed .sb-brand,
+    .sb.collapsed ~ .mn {
+        margin-left: 0 !important;
+    }
+
     .sb.collapsed .grp-lbl,
-    .sb.collapsed .nl span:not(.nb) {
+    .sb.collapsed .nl span:not(.nb),
+    .sb.collapsed .sb-brand div,
+    .sb.collapsed .sb-foot .sb-info {
         display: unset !important;
     }
 
     .sb.collapsed .nl {
-        width: auto !important;
-        height: auto !important;
         justify-content: flex-start !important;
         padding: 10px 14px !important;
+        width: auto !important;
         margin: 0 !important;
     }
 
-    .sb.collapsed .nl i {
-        font-size: 14px !important;
-    }
-
     .sb.collapsed .sb-foot {
+        flex-direction: row !important;
         justify-content: flex-start !important;
-        padding: 12px 12px !important;
-        gap: 10px !important;
-    }
-
-    .sb.collapsed .sb-foot .sb-info {
-        display: block !important;
+        padding: 12px !important;
     }
 }
+/* Override the conflicting transition on .sb */
+.sb {
+    transition: width 0.3s ease !important;
+}
+ 
+/* Main content must respond to sidebar width */
+.mn {
+    transition: margin-left 0.3s ease !important;
+}
+ 
+/* When sidebar is collapsed, push main content left */
+.sb.collapsed ~ .mn {
+    margin-left: 70px !important;
+}
+ 
+/* On mobile, always full width regardless */
+@media (max-width: 900px) {
+    .sb.collapsed ~ .mn {
+        margin-left: 0 !important;
+    }
+}
+ 

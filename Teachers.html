@@ -1143,50 +1143,50 @@ window.loadTeacherAnnouncementsUI = async function() {
     }
 };
 
+
 (function initTeacherSidebar() {
     const sidebar = document.getElementById('sidebar');
+    const main    = document.querySelector('.mn');
     if (!sidebar) return;
 
-    // Add desktop toggle button
+    // Add the desktop toggle chevron button
     if (!document.querySelector('.sb-toggle')) {
-        const desktopToggle = document.createElement('button');
-        desktopToggle.className = 'sb-toggle';
-        desktopToggle.id = 'teacherSidebarToggle';
-        desktopToggle.setAttribute('aria-label', 'Toggle sidebar');
-        desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
-        sidebar.insertBefore(desktopToggle, sidebar.firstChild);
+        const btn = document.createElement('button');
+        btn.className = 'sb-toggle';
+        btn.id = 'teacherSidebarToggle';
+        btn.setAttribute('aria-label', 'Toggle sidebar');
+        btn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+        sidebar.insertBefore(btn, sidebar.firstChild);
 
-        desktopToggle.addEventListener('click', (e) => {
+        btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            sidebar.classList.toggle('collapsed');
-            const isCollapsed = sidebar.classList.contains('collapsed');
-            localStorage.setItem('teacherSidebarCollapsed', isCollapsed);
+            const collapsed = sidebar.classList.toggle('collapsed');
+            // Shrink / restore main content margin
+            if (main) {
+                main.style.marginLeft = collapsed ? '70px' : 'var(--sw)';
+            }
+            localStorage.setItem('teacherSidebarCollapsed', collapsed);
         });
     }
 
-    // Restore saved state
-    const savedCollapsed = localStorage.getItem('teacherSidebarCollapsed');
-    if (savedCollapsed === 'true') {
+    // Restore saved collapsed state on load
+    if (localStorage.getItem('teacherSidebarCollapsed') === 'true') {
         sidebar.classList.add('collapsed');
+        if (main) main.style.marginLeft = '70px';
     }
 
-    // Set data-tooltip on each nav link from its text span
+    // Set data-tooltip from each nav item's text label
     document.querySelectorAll('.nl').forEach(nav => {
-        // Find the text span (not a badge span)
-        const spans = nav.querySelectorAll('span');
         let label = '';
-        spans.forEach(span => {
-            // Skip badge spans (.nb class)
+        nav.querySelectorAll('span').forEach(span => {
             if (!span.classList.contains('nb') && span.textContent.trim()) {
                 label = span.textContent.trim();
             }
         });
-        if (label) {
-            nav.setAttribute('data-tooltip', label);
-        }
+        if (label) nav.setAttribute('data-tooltip', label);
     });
 
-    console.log('✅ Teacher sidebar initialized');
+    console.log('✅ Teacher sidebar collapse fix applied');
 })();
 
 </script>
