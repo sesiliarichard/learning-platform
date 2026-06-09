@@ -1142,12 +1142,12 @@ window.loadTeacherAnnouncementsUI = async function() {
             </div>`;
     }
 };
-// Initialize sidebar toggle
+
 (function initTeacherSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
-    
-    // Add desktop toggle button if not present
+
+    // Add desktop toggle button
     if (!document.querySelector('.sb-toggle')) {
         const desktopToggle = document.createElement('button');
         desktopToggle.className = 'sb-toggle';
@@ -1155,8 +1155,7 @@ window.loadTeacherAnnouncementsUI = async function() {
         desktopToggle.setAttribute('aria-label', 'Toggle sidebar');
         desktopToggle.innerHTML = '<i class="fas fa-chevron-left"></i>';
         sidebar.insertBefore(desktopToggle, sidebar.firstChild);
-        
-        // Desktop toggle event
+
         desktopToggle.addEventListener('click', (e) => {
             e.stopPropagation();
             sidebar.classList.toggle('collapsed');
@@ -1164,25 +1163,29 @@ window.loadTeacherAnnouncementsUI = async function() {
             localStorage.setItem('teacherSidebarCollapsed', isCollapsed);
         });
     }
-    
-    // Load saved collapsed state
+
+    // Restore saved state
     const savedCollapsed = localStorage.getItem('teacherSidebarCollapsed');
     if (savedCollapsed === 'true') {
         sidebar.classList.add('collapsed');
     }
-    
-    // Add data-tooltip attributes for collapsed nav items
+
+    // Set data-tooltip on each nav link from its text span
     document.querySelectorAll('.nl').forEach(nav => {
-        const span = nav.querySelector('span:first-child');
-        if (span && span.textContent && !nav.querySelector('.nb')) {
-            nav.setAttribute('data-tooltip', span.textContent.trim());
-        } else if (span && span.textContent) {
-            // For items with badges, get the text span
-            const textSpan = nav.querySelector('span:not(.nb)');
-            if (textSpan) nav.setAttribute('data-tooltip', textSpan.textContent.trim());
+        // Find the text span (not a badge span)
+        const spans = nav.querySelectorAll('span');
+        let label = '';
+        spans.forEach(span => {
+            // Skip badge spans (.nb class)
+            if (!span.classList.contains('nb') && span.textContent.trim()) {
+                label = span.textContent.trim();
+            }
+        });
+        if (label) {
+            nav.setAttribute('data-tooltip', label);
         }
     });
-    
+
     console.log('✅ Teacher sidebar initialized');
 })();
 
