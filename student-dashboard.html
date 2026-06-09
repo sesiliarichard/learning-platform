@@ -6304,42 +6304,60 @@ async function runCode() {
     const language = document.getElementById('codingLanguage').value;
     const outputDiv = document.getElementById('codeOutput');
     const timeEl = document.getElementById('executionTime');
-    
-    outputDiv.innerHTML = '<span style="color: #888;"><i class="fas fa-spinner fa-spin"></i> Executing...</span>';
-    
+    const runBtn = document.querySelector('.run-btn');
+
+    if (!code.trim()) {
+        outputDiv.innerHTML = '<span style="color:#f59e0b;">⚠️ Please write some code first.</span>';
+        return;
+    }
+
+    outputDiv.innerHTML = '<span style="color:#94a3b8;"><i class="fas fa-spinner fa-spin"></i> Running your code…</span>';
+    if (runBtn) { runBtn.disabled = true; runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…'; }
+
     const startTime = performance.now();
-    
+
     try {
         let result;
-        
-        if (language === 'python') {
-            result = await runPythonCode(code);
-        } else if (language === 'javascript') {
+
+        if (language === 'javascript') {
             result = await runJavaScriptCode(code);
         } else if (language === 'html') {
-            result = await runHtmlCode(code);
+            // HTML: render inline iframe
+            outputDiv.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.style.cssText = 'width:100%;height:260px;border:none;background:white;border-radius:8px;';
+            outputDiv.appendChild(iframe);
+            const blob = new Blob([code], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+            if (timeEl) timeEl.textContent = 'HTML rendered';
+            if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
+            return;
         } else {
-            result = { output: 'Unknown language', error: null };
+            // Python → Piston API
+            result = await runPythonCode(code);
         }
-        
-        const endTime = performance.now();
-        const execTime = ((endTime - startTime) / 1000).toFixed(2);
-        timeEl.textContent = `Execution time: ${execTime} seconds`;
-        
-        if (result.error) {
-            outputDiv.innerHTML = `<span style="color: #ef4444;">Error:\n${escapeHtml(result.error)}</span>`;
+
+        const execTime = ((performance.now() - startTime) / 1000).toFixed(2);
+        if (timeEl) timeEl.textContent = `Execution time: ${execTime}s`;
+
+        if (result.error && result.error.trim()) {
+            outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Error:\n${escapeHtml(result.error)}</span>`;
         } else {
-            outputDiv.innerHTML = `<span style="color: #a0e0a0;">${escapeHtml(result.output) || '(No output)'}</span>`;
+            const out = (result.output || '').trim();
+            outputDiv.innerHTML = out
+                ? `<span style="color:#4ade80;white-space:pre-wrap;">${escapeHtml(out)}</span>`
+                : '<span style="color:#94a3b8;">(No output — did you forget a print statement?)</span>';
         }
-        
-    } catch (error) {
-        outputDiv.innerHTML = `<span style="color: #ef4444;">Runtime Error:\n${escapeHtml(error.message)}</span>`;
-        timeEl.textContent = '';
+
+    } catch (err) {
+        outputDiv.innerHTML = `<span style="color:#f87171;white-space:pre-wrap;">❌ Runtime Error:\n${escapeHtml(err.message)}</span>`;
+        if (timeEl) timeEl.textContent = '';
     }
+
+    if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
 }
 
 async function runPythonCode(code) {
-    // Using Piston API (free code execution API)
     try {
         const response = await fetch('https://emkc.org/api/v2/piston/execute', {
             method: 'POST',
@@ -6347,17 +6365,22 @@ async function runPythonCode(code) {
             body: JSON.stringify({
                 language: 'python',
                 version: '3.10.0',
-                files: [{ content: code }]
+                files: [{ name: 'main.py', content: code }]
             })
         });
-        
+
+        if (!response.ok) throw new Error('API returned ' + response.status);
+
         const data = await response.json();
-        return {
-            output: data.run?.output || data.run?.stdout || '',
-            error: data.run?.stderr || null
-        };
+        const stdout = data.run?.stdout || '';
+        const stderr = data.run?.stderr || '';
+
+        // stderr can contain warnings even on success — only treat as error if no stdout
+        if (stderr && !stdout) return { output: '', error: stderr };
+        return { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+
     } catch (err) {
-        // Fallback: client-side simulation for demo
+        // Fallback simulation
         return simulatePythonExecution(code);
     }
 }
