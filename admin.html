@@ -3926,6 +3926,7 @@ const hasCoding = document.getElementById(`topicHasCoding_${idx}`)?.checked || f
 const codingPrompt = document.getElementById(`topicCodingPrompt_${idx}`)?.value?.trim() || '';
 
 topics.push({
+    id:                   topicId,
     title:                titleEl.value.trim(),
     content:              contentEl.innerHTML.trim(),
     duration:             durEl?.value || '15',
