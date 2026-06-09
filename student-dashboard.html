@@ -3237,7 +3237,7 @@ function displayNote(index) {
                     <i class="fas fa-code" style="margin-right:8px;"></i>Coding Exercise
                 </div>
                 <p style="font-size:14px;color:#374151;margin-bottom:14px;line-height:1.6;">${escapeHtml(note.codingPrompt)}</p>
-                <button onclick="openCodingEnvironment('topic-${note.id}', '${note.codingPrompt.replace(/'/g, "\\'")}')"
+                <button onclick="openCodingEnvironmentById('${note.id}')"
                     style="padding:10px 22px;background:#7c3aed;color:white;border:none;
                            border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;
                            font-family:inherit;display:inline-flex;align-items:center;gap:8px;">
@@ -6747,7 +6747,11 @@ async function downloadFile(url, filename) {
     }
     console.log('✅ Coding environment modal hidden on page load');
 })();
-
+function openCodingEnvironmentById(topicId) {
+    const note = currentCourseNotes.find(n => String(n.id) === String(topicId));
+    if (!note) return;
+    openCodingEnvironment('topic-' + note.id, note.codingPrompt || '');
+}
     </script>
     <script src="week-structure-student.js"></script>
 </body>
