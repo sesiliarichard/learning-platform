@@ -6161,3 +6161,89 @@ body.dark-mode .topic-list .empty-topics {
 .sidebar.collapsed .nav-menu {
     margin-top: 5px;
 }
+/* Mobile Sidebar Toggle Button */
+.mobile-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, #289eec, #477fa7);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    cursor: pointer;
+    z-index: 2100;
+    font-size: 18px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+/* Sidebar Overlay */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1999;
+    backdrop-filter: blur(2px);
+}
+
+.sidebar-overlay.active {
+    display: block;
+}
+
+/* Mobile Sidebar Positioning */
+@media (max-width: 768px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+    }
+    
+    .sidebar {
+        position: fixed !important;
+        left: -280px !important;
+        top: 0 !important;
+        z-index: 2000 !important;
+        transition: left 0.3s ease !important;
+    }
+    
+    .sidebar.active {
+        left: 0 !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        width: 100% !important;
+        padding: 70px 16px 20px !important;
+    }
+}
+
+/* Desktop sidebar toggle button positioning */
+.sidebar-toggle {
+    position: absolute;
+    top: 20px;
+    right: -15px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #289eec, #477fa7);
+    border: none;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* On mobile, hide the desktop toggle */
+@media (max-width: 768px) {
+    .sidebar-toggle {
+        display: none;
+    }
+}

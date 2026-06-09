@@ -38,6 +38,14 @@
 body { visibility: hidden }
 </style>
 <body>
+    <!-- Sidebar Overlay (for mobile) -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Mobile Toggle Button -->
+    <button class="mobile-sidebar-toggle" id="mobileSidebarToggle" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+    </button>
+
     <div class="container">
         
         <!-- Sidebar -->
@@ -7329,7 +7337,56 @@ if (window.innerWidth <= 768 && !document.getElementById('mobileLogoutBtn')) {
     document.body.appendChild(logoutBtn);
 }
 }
+// Mobile sidebar functionality for admin
+function initAdminMobileSidebar() {
+    const mobileToggle = document.getElementById('mobileSidebarToggle');
+    const sidebar = document.getElementById('adminSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    
+    if (!mobileToggle || !sidebar) return;
+    
+    // Toggle sidebar on mobile button click
+    mobileToggle.addEventListener('click', () => {
+        const isOpen = sidebar.classList.contains('active');
+        sidebar.classList.toggle('active', !isOpen);
+        if (overlay) overlay.classList.toggle('active', !isOpen);
+        
+        // Change icon
+        const icon = mobileToggle.querySelector('i');
+        if (icon) {
+            icon.className = isOpen ? 'fas fa-bars' : 'fas fa-times';
+        }
+    });
+    
+    // Close sidebar when clicking overlay
+    if (overlay) {
+        overlay.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+            overlay.classList.remove('active');
+            const icon = mobileToggle.querySelector('i');
+            if (icon) icon.className = 'fas fa-bars';
+        });
+    }
+    
+    // Close sidebar when clicking a nav item (on mobile only)
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('active');
+                if (overlay) overlay.classList.remove('active');
+                const icon = mobileToggle.querySelector('i');
+                if (icon) icon.className = 'fas fa-bars';
+            }
+        });
+    });
+}
 
+// Make sure this runs after DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAdminMobileSidebar);
+} else {
+    initAdminMobileSidebar();
+}
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const overlay = document.getElementById('sidebarOverlay');
