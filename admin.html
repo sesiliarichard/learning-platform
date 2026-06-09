@@ -1875,6 +1875,7 @@ let topicCounter = 1;
 const EDITOR_DEFAULT_FONT = "'Plus Jakarta Sans', sans-serif";
 const EDITOR_DEFAULT_SIZE = '14px';
 // Admin sidebar toggle
+// Desktop sidebar toggle
 const adminSidebar = document.getElementById('adminSidebar');
 const adminSidebarToggle = document.getElementById('adminSidebarToggle');
 
@@ -1886,6 +1887,7 @@ if (adminSidebarToggle && adminSidebar) {
     });
 }
 
+// Load saved state on page load
 const savedAdminSidebar = localStorage.getItem('adminSidebarCollapsed');
 if (savedAdminSidebar === 'true' && adminSidebar) {
     adminSidebar.classList.add('collapsed');

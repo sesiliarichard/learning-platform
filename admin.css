@@ -6224,6 +6224,7 @@ body.dark-mode .topic-list .empty-topics {
 }
 
 /* Desktop sidebar toggle button positioning */
+/* Desktop sidebar toggle button - FIXED */
 .sidebar-toggle {
     position: absolute;
     top: 20px;
@@ -6238,9 +6239,60 @@ body.dark-mode .topic-list .empty-topics {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    z-index: 100;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+.sidebar-toggle:hover {
+    transform: scale(1.1);
+    background: linear-gradient(135deg, #0099ff, #0077cc);
+}
+
+/* Sidebar collapsed state - FIXED */
+.sidebar.collapsed {
+    width: 70px !important;
+    min-width: 70px !important;
+    padding: 20px 10px !important;
+}
+
+.sidebar.collapsed .logo-section {
+    display: none;
+}
+
+.sidebar.collapsed .logo-text,
+.sidebar.collapsed .admin-badge {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item span:not(.nav-tooltip) {
+    display: none;
+}
+
+.sidebar.collapsed .nav-item {
+    justify-content: center !important;
+    padding: 14px 10px !important;
+    width: 100%;
+}
+
+.sidebar.collapsed .nav-item i {
+    font-size: 1.3rem;
+    margin: 0;
+}
+
+.sidebar.collapsed .sb-foot .sb-info {
+    display: none;
+}
+
+.sidebar.collapsed .sb-foot {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+/* Rotate the chevron when collapsed - KEY FIX */
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
 /* On mobile, hide the desktop toggle */
 @media (max-width: 768px) {
     .sidebar-toggle {
