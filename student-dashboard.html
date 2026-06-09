@@ -3330,8 +3330,13 @@ const courseChapterIds = new Set(
 
 
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-    if (a.topic_id) return String(a.topic_id) === String(topicId);
-    if (a.chapter_id && chapterId) return String(a.chapter_id) === String(chapterId);
+    // topic-level link
+    if (a.topic_id && topicId && String(a.topic_id) === String(topicId)) return true;
+    // chapter-level link (topic_id is null) — show on FIRST topic of that chapter only
+    if (!a.topic_id && a.chapter_id && chapterId && String(a.chapter_id) === String(chapterId)) {
+        const firstTopicInChapter = currentCourseNotes.find(n => String(n.chapterId) === String(chapterId));
+        return firstTopicInChapter && String(firstTopicInChapter.id) === String(topicId);
+    }
     return false;
 });
 
