@@ -2958,15 +2958,27 @@ function insertInlineCodingBlock(editorIndex) {
             </div>
         </div>`;
 
-    // Save cursor position BEFORE modal opens
-    editor.focus();
-    const sel = window.getSelection();
-    if (sel && sel.rangeCount > 0) {
-        window._savedCodingRange = sel.getRangeAt(0).cloneRange();
-        window._savedCodingEditor = editor;
-    } else {
-        window._savedCodingRange  = null;
-        window._savedCodingEditor = editor;
+   // Save cursor position — must happen before the modal steals focus
+    window._savedCodingEditor = editor;
+    window._savedCodingRange = null;
+    
+    // If editor already has a selection/cursor, save it
+    const selNow = window.getSelection();
+    if (selNow && selNow.rangeCount > 0) {
+        const range = selNow.getRangeAt(0);
+        // Only save if the range is actually inside this editor
+        if (editor.contains(range.commonAncestorContainer)) {
+            window._savedCodingRange = range.cloneRange();
+        }
+    }
+    
+    // If no valid range saved, place cursor at end of editor
+    if (!window._savedCodingRange) {
+        editor.focus();
+        const endRange = document.createRange();
+        endRange.selectNodeContents(editor);
+        endRange.collapse(false);
+        window._savedCodingRange = endRange.cloneRange();
     }
 
     document.body.appendChild(modal);
@@ -4094,7 +4106,6 @@ function addEditTopic(existingTopic = null) {
                 <div class="editor-content" contenteditable="true"
                      id="editEditor_${idx}"
                      style="min-height:120px;padding:12px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;line-height:1.6;outline:none;">
-                    ${existingTopic?.content || '<p>Enter your content here...</p>'}
                 </div>
             </div>
           <div class="form-row">
@@ -4132,13 +4143,62 @@ function addEditTopic(existingTopic = null) {
 
   container.appendChild(div);
     
-    // ✅ FIX: Set editor content AFTER appending to DOM
-    if (existingTopic?.content) {
+  // Set content after append — use setTimeout so the DOM fully settles
+    // This is critical for coding blocks (contenteditable="false" nodes)
+    setTimeout(() => {
         const editorEl = document.getElementById(`editEditor_${idx}`);
         if (editorEl) {
-            editorEl.innerHTML = existingTopic.content;
+            if (existingTopic?.content) {
+                editorEl.innerHTML = existingTopic.content;
+                // Re-wire any Run buttons inside code blocks
+                editorEl.querySelectorAll('.asai-code-block').forEach(block => {
+                    const btn = block.querySelector('.asai-run-btn');
+                    if (btn && !btn.dataset.wired) {
+                        btn.dataset.wired = '1';
+                        btn.addEventListener('click', async function() {
+                            const lang = block.dataset.language || 'python';
+                            const code = block.querySelector('pre')?.textContent || '';
+                            const output = block.querySelector('.asai-code-output');
+                            const outPre = output?.querySelector('pre');
+                            if (!output || !outPre) return;
+                            btn.textContent = '⏳ Running…';
+                            btn.disabled = true;
+                            output.style.display = 'block';
+                            outPre.textContent = 'Running…';
+                            outPre.style.color = '#94a3b8';
+                            try {
+                                let result;
+                                if (lang === 'javascript') {
+                                    result = runJavaScriptSync ? runJavaScriptSync(code) : { output: eval(code), error: null };
+                                } else {
+                                    const r = await fetch('https://emkc.org/api/v2/piston/execute', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ language: 'python', version: '3.10.0', files: [{ content: code }] })
+                                    });
+                                    const d = await r.json();
+                                    result = { output: d.run?.stdout || '', error: d.run?.stderr || null };
+                                }
+                                outPre.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
+                                outPre.style.color = result.error ? '#f87171' : '#4ade80';
+                            } catch(e) {
+                                outPre.textContent = '❌ ' + e.message;
+                                outPre.style.color = '#f87171';
+                            }
+                            btn.textContent = '▶ Run';
+                            btn.disabled = false;
+                        });
+                    }
+                });
+                // Re-wire inline coding blocks
+                editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
+                    block.setAttribute('contenteditable', 'false');
+                });
+            } else {
+                editorEl.innerHTML = '<p>Enter your content here...</p>';
+            }
         }
-    }
+    }, 50);
 }
 function removeEditTopic(idx) {
     const el = document.querySelector(`[data-edit-index="${idx}"]`);
