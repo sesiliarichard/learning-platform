@@ -3336,9 +3336,16 @@ const courseChapterIds = new Set(
 
 
 const chapterAssessments = (window._chapterAssessments || []).filter(a => {
-    const matchesTopic   = a.topic_id   && String(a.topic_id)   === String(topicId);
-    const matchesChapter = a.chapter_id && String(a.chapter_id) === String(chapterId);
-    return matchesTopic || matchesChapter;
+    // If assessment has a topic_id, only show on that exact topic
+    if (a.topic_id) {
+        return String(a.topic_id) === String(topicId);
+    }
+    // If no topic_id (chapter-level), show on first topic of that chapter only
+    if (a.chapter_id && String(a.chapter_id) === String(chapterId)) {
+        const firstTopic = currentCourseNotes.find(n => String(n.chapterId) === String(chapterId));
+        return firstTopic && String(firstTopic.id) === String(topicId);
+    }
+    return false;
 });
 
 console.log('🎯 chapterAssessments found:', chapterAssessments.length, 'for topicId:', topicId);
