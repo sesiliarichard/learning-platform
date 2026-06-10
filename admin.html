@@ -30,7 +30,6 @@
 <script src="presence.js"></script>
 <script src="editor-enhancements.js"></script>
 <script src="editor-font-fix.js"></script>
-<script src="image-editor-fix.js"></script>
 <script src="cert-template-builder.js"></script>
  <style>body{visibility:hidden}</style>
 
@@ -12946,6 +12945,79 @@ grammarStyle.textContent = `
     }
 `;
 document.head.appendChild(grammarStyle);
+</script>
+<script>
+// Final image resize fix - ensures resize handles work
+(function() {
+    function fixImages() {
+        document.querySelectorAll('.editor-content img').forEach(img => {
+            if (img.closest('.wle-img-wrap')) return;
+            
+            // Create wrap
+            const wrap = document.createElement('span');
+            wrap.className = 'wle-img-wrap';
+            wrap.style.display = 'inline-block';
+            wrap.style.position = 'relative';
+            
+            // Move image into wrap
+            img.parentNode.insertBefore(wrap, img);
+            wrap.appendChild(img);
+            
+            // Add resize handles
+            const handles = ['nw','n','ne','e','se','s','sw','w'];
+            handles.forEach(dir => {
+                const h = document.createElement('span');
+                h.className = 'wle-handle';
+                const pos = {
+                    nw: 'top:-5px;left:-5px;cursor:nw-resize;',
+                    n: 'top:-5px;left:calc(50% - 5px);cursor:n-resize;',
+                    ne: 'top:-5px;right:-5px;cursor:ne-resize;',
+                    e: 'top:calc(50% - 5px);right:-5px;cursor:e-resize;',
+                    se: 'bottom:-5px;right:-5px;cursor:se-resize;',
+                    s: 'bottom:-5px;left:calc(50% - 5px);cursor:s-resize;',
+                    sw: 'bottom:-5px;left:-5px;cursor:sw-resize;',
+                    w: 'top:calc(50% - 5px);left:-5px;cursor:w-resize;'
+                };
+                h.style.cssText = `position:absolute;width:10px;height:10px;background:#7c3aed;border:2px solid #fff;border-radius:2px;z-index:100;display:none;${pos[dir]}`;
+                
+                h.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    const startX = e.clientX, startY = e.clientY;
+                    const startW = img.offsetWidth, startH = img.offsetHeight;
+                    const ratio = startH / startW;
+                    
+                    const move = (ev) => {
+                        let dx = ev.clientX - startX, dy = ev.clientY - startY;
+                        let newW = startW, newH = startH;
+                        if (dir.includes('e')) newW = Math.max(40, startW + dx);
+                        if (dir.includes('w')) newW = Math.max(40, startW - dx);
+                        if (dir.includes('s')) newH = Math.max(40, startH + dy);
+                        if (dir.includes('n')) newH = Math.max(40, startH - dy);
+                        if ((dir === 'se' || dir === 'nw' || dir === 'ne' || dir === 'sw') && dx !== 0) newH = Math.round(newW * ratio);
+                        img.style.width = newW + 'px';
+                        img.style.height = newH + 'px';
+                        wrap.style.width = newW + 'px';
+                    };
+                    const up = () => { document.removeEventListener('mousemove', move); document.removeEventListener('mouseup', up); };
+                    document.addEventListener('mousemove', move);
+                    document.addEventListener('mouseup', up);
+                });
+                wrap.appendChild(h);
+            });
+            
+            // Show handles on click
+            wrap.addEventListener('click', (e) => {
+                if (e.target === h) return;
+                document.querySelectorAll('.wle-img-wrap').forEach(w => w.classList.remove('selected'));
+                wrap.classList.add('selected');
+            });
+        });
+    }
+    
+    // Run on all editors
+    setTimeout(fixImages, 500);
+    new MutationObserver(() => fixImages()).observe(document.body, { childList: true, subtree: true });
+})();
 </script>
 <script src="week-structure-admin.js"></script>
 <script src="edit-chapter-modal-patch.js"></script>
