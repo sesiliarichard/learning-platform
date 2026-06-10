@@ -577,12 +577,21 @@ window.wsConfirmInsertCoding = function(globalIdx) {
         editor.appendChild(br);
     }
 
-    // Wire up Run button immediately
+  // Wire up Run button immediately
     _wireInlineCodingBlock(codingNode, lang);
+
+    // Fallback sweep after DOM settles
+    setTimeout(() => {
+        document.querySelectorAll('.editor-content .asai-inline-coding').forEach(block => {
+            _wireInlineCodingBlock(block, block.dataset.lang || 'python');
+        });
+    }, 200);
 };
 
 function _wireInlineCodingBlock(block, lang) {
-    const runBtn = block.querySelector('.asai-inline-run-btn');
+    // Support both selector patterns
+    const runBtn = block.querySelector('.asai-inline-run-btn') 
+                || block.querySelector('[class*="run"]');
     if (!runBtn || runBtn.dataset.wired) return;
     runBtn.dataset.wired = '1';
 
@@ -591,42 +600,75 @@ function _wireInlineCodingBlock(block, lang) {
         e.stopPropagation();
 
         const uid      = runBtn.dataset.uid;
-        const textarea = block.querySelector(`.asai-inline-editor[data-uid="${uid}"]`);
-        const output   = block.querySelector(`.asai-inline-output[data-uid="${uid}"]`);
-        const result   = block.querySelector(`.asai-inline-result[data-uid="${uid}"]`);
-        if (!textarea || !output || !result) return;
+        // Support both uid-based and non-uid editors
+        const textarea = uid
+            ? block.querySelector(`.asai-inline-editor[data-uid="${uid}"]`)
+            : block.querySelector('textarea');
+        const output   = uid
+            ? block.querySelector(`.asai-inline-output[data-uid="${uid}"]`)
+            : block.querySelector('.asai-inline-output, .asai-code-output');
+        const result   = uid
+            ? block.querySelector(`.asai-inline-result[data-uid="${uid}"]`)
+            : (output ? output.querySelector('pre') : null);
+
+        if (!textarea) return;
 
         const code = textarea.value;
+        const resolvedLang = lang || block.dataset.lang || 'python';
+
         runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…';
-        runBtn.disabled = true;
-        output.style.display = 'block';
-        result.textContent = 'Running…';
-        result.style.color = '#94a3b8';
+        runBtn.disabled  = true;
+
+        if (output) {
+            output.style.display = 'block';
+            if (result) {
+                result.textContent = 'Running…';
+                result.style.color = '#94a3b8';
+            }
+        }
 
         try {
             let res;
-            if (lang === 'javascript') {
+            if (resolvedLang === 'javascript') {
                 res = _runJSInline(code);
+            } else if (resolvedLang === 'html') {
+                if (output) {
+                    output.innerHTML = '';
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
+                    output.appendChild(iframe);
+                    const blob = new Blob([code], { type: 'text/html' });
+                    iframe.src = URL.createObjectURL(blob);
+                }
+                runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
+                runBtn.disabled  = false;
+                return;
             } else {
-                // Use Pyodide if available, else Piston
-                if (window._pyodide || typeof loadPyodide !== 'undefined') {
+                // Python — try Pyodide first, then Piston
+                if (typeof loadPyodide !== 'undefined') {
                     res = await _runPyodideInline(code, output);
                 } else {
                     res = await _runPistonInline(code);
                 }
             }
-            result.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output)');
-            result.style.color = res.error ? '#f87171' : '#4ade80';
+
+            if (result) {
+                result.textContent = res.error
+                    ? '❌ ' + res.error
+                    : (res.output || '(No output — did you forget print()?)');
+                result.style.color = res.error ? '#f87171' : '#4ade80';
+            }
         } catch (err) {
-            result.textContent = '❌ ' + err.message;
-            result.style.color = '#f87171';
+            if (result) {
+                result.textContent = '❌ ' + err.message;
+                result.style.color = '#f87171';
+            }
         }
 
         runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
-        runBtn.disabled = false;
+        runBtn.disabled  = false;
     });
 }
-
 function _runJSInline(code) {
     let output = '';
     const orig = console.log;

@@ -171,8 +171,13 @@
 
         // Wire up code block run buttons
         _wireCodeBlocks(container);
-        setTimeout(() => {
+      setTimeout(() => {
     container.querySelectorAll('.asai-inline-coding').forEach(block => {
+        const lang = block.dataset.lang || 'python';
+        _wireInlineCodingBlock(block, lang);
+    });
+    // Also wire any existing blocks inside contenteditable editors
+    document.querySelectorAll('.editor-content .asai-inline-coding').forEach(block => {
         const lang = block.dataset.lang || 'python';
         _wireInlineCodingBlock(block, lang);
     });
