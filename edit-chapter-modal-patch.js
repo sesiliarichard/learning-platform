@@ -86,12 +86,7 @@ if (!chapterFull?.course_id) {
 }
 
 const courseId = chapterFull.course_id;
-        // ── 2. Load existing sub-chapters ─────────────────────
-        const { data: subChapters } = await getSB()
-            .from('sub_chapters')
-            .select('id, title, order_num')
-            .eq('chapter_id', chapterId)
-            .order('order_num', { ascending: true });
+     
 
         // ── 3. Load quizzes / assignments for this course ──────
 
@@ -125,21 +120,7 @@ const linkedQuizIds = new Set(
 const linkedAssignIds = new Set(
     (linkedAssignsRes.data || []).map(a => a.id)
 );
-        // ── 4. Build sub-chapters HTML ─────────────────────────
-        const scListHTML = (subChapters || []).map(sc => `
-            <div class="edit-sc-item" id="editSC_${sc.id}"
-                 style="display:flex;align-items:center;gap:10px;padding:10px 14px;
-                        background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;
-                        margin-bottom:8px;">
-                <i class="fas fa-layer-group" style="color:#7c3aed;flex-shrink:0;"></i>
-                <span style="flex:1;font-weight:600;color:#374151;">${escHTML(sc.title)}</span>
-                <button type="button"
-                        onclick="ecmDeleteSubChapter('${sc.id}','${chapterId}','${courseId}')"
-                        style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;
-                               border-radius:6px;font-size:12px;cursor:pointer;">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>`).join('');
+   
 
         // ── 5. Build linked assessments HTML ───────────────────
         const linkedQuizPills = assessments
@@ -181,53 +162,7 @@ divider.innerHTML = `
 <hr style="margin:20px 0;border:none;border-top:2px solid #f3f4f6;">
 <div id="editModalSubChapterSection">
 
-    <!-- Sub-chapters block -->
-    <div style="background:#f8f7ff;border-radius:14px;padding:18px;margin-bottom:18px;border:1.5px solid #ede9fe;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <div style="font-size:13px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;">
-                <i class="fas fa-layer-group"></i> Sub-chapters
-            </div>
-            <button type="button" onclick="ecmAddSubChapter('${chapterId}','${courseId}')"
-                    style="padding:7px 14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
-                           color:white;border:none;border-radius:10px;font-size:12px;
-                           font-weight:700;cursor:pointer;font-family:inherit;
-                           display:flex;align-items:center;gap:6px;">
-                <i class="fas fa-plus"></i> Add Sub-chapter
-            </button>
-        </div>
-        <div id="editSCList">
-            ${scListHTML || '<p style="font-size:13px;color:#9ca3af;text-align:center;padding:8px 0;">No sub-chapters yet.</p>'}
-        </div>
-        <div id="ecmNewSCForm" style="display:none;margin-top:12px;background:white;
-                                      border-radius:10px;padding:14px;border:1.5px solid #ddd6fe;">
-            <div style="font-size:12px;font-weight:700;color:#7c3aed;margin-bottom:8px;">New Sub-chapter</div>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <input type="text" id="ecmNewSCTitle"
-                       placeholder="Sub-chapter title, e.g. 1.1 Introduction"
-                       style="flex:1;min-width:180px;padding:9px 12px;border:1.5px solid #ddd6fe;
-                              border-radius:8px;font-size:13px;font-family:inherit;outline:none;"
-                       onfocus="this.style.borderColor='#7c3aed'"
-                       onblur="this.style.borderColor='#ddd6fe'"
-                       onkeypress="if(event.key==='Enter'){event.preventDefault();ecmSaveNewSC('${chapterId}','${courseId}');}">
-                <input type="number" id="ecmNewSCOrder" value="1" min="1" placeholder="Order"
-                       style="width:70px;padding:9px 8px;border:1.5px solid #ddd6fe;
-                              border-radius:8px;font-size:13px;font-family:inherit;outline:none;"
-                       onfocus="this.style.borderColor='#7c3aed'"
-                       onblur="this.style.borderColor='#ddd6fe'">
-                <button type="button" onclick="ecmSaveNewSC('${chapterId}','${courseId}')"
-                        style="padding:9px 16px;background:#7c3aed;color:white;border:none;
-                               border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                    <i class="fas fa-save"></i> Save
-                </button>
-                <button type="button" onclick="document.getElementById('ecmNewSCForm').style.display='none'"
-                        style="padding:9px 12px;background:#f3f4f6;color:#6b7280;border:none;
-                               border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-
+    
     <!-- Per-topic assessment blocks -->
     <div id="ecmTopicAssessments">
         <div style="font-size:13px;font-weight:800;color:#374151;text-transform:uppercase;
@@ -254,95 +189,7 @@ await _renderTopicAssessments(chapterId, courseId, quizzes, assignments, assessm
     window._lastEcmChapterId = null;
 }
 
-    // ── Show/hide inline sub-chapter form ─────────────────────
-    window.ecmAddSubChapter = function (chapterId, courseId) {
-        const form = document.getElementById('ecmNewSCForm');
-        if (!form) return;
-        form.style.display = form.style.display === 'none' ? 'block' : 'none';
-        if (form.style.display === 'block') {
-            document.getElementById('ecmNewSCTitle')?.focus();
-        }
-    };
-
-    // ── Save new sub-chapter ───────────────────────────────────
-    window.ecmSaveNewSC = async function (chapterId, courseId) {
-        const title = document.getElementById('ecmNewSCTitle')?.value?.trim();
-        const order = parseInt(document.getElementById('ecmNewSCOrder')?.value) || 1;
-
-        if (!title) {
-            if (typeof showToast === 'function') showToast('Please enter a title', 'error');
-            return;
-        }
-
-        const { data, error } = await getSB().from('sub_chapters').insert({
-            chapter_id: chapterId,
-            course_id:  courseId,
-            title,
-            order_num:  order
-        }).select('id, title, order_num').single();
-
-        if (error) {
-            if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
-            return;
-        }
-
-        // Add pill to list
-        const list = document.getElementById('editSCList');
-        if (list) {
-            // Remove "no sub-chapters" placeholder if present
-            const placeholder = list.querySelector('p');
-            if (placeholder) placeholder.remove();
-
-            const item = document.createElement('div');
-            item.id = `editSC_${data.id}`;
-            item.className = 'edit-sc-item';
-            item.style.cssText = `display:flex;align-items:center;gap:10px;padding:10px 14px;
-                background:#f5f3ff;border:1.5px solid #ddd6fe;border-radius:10px;margin-bottom:8px;`;
-            item.innerHTML = `
-                <i class="fas fa-layer-group" style="color:#7c3aed;flex-shrink:0;"></i>
-                <span style="flex:1;font-weight:600;color:#374151;">${escHTML(data.title)}</span>
-                <button type="button"
-                        onclick="ecmDeleteSubChapter('${data.id}','${chapterId}','${courseId}')"
-                        style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;
-                               border-radius:6px;font-size:12px;cursor:pointer;">
-                    <i class="fas fa-trash"></i>
-                </button>`;
-            list.appendChild(item);
-        }
-
-        // Reset & hide form
-        const form = document.getElementById('ecmNewSCForm');
-        if (form) {
-            document.getElementById('ecmNewSCTitle').value = '';
-            document.getElementById('ecmNewSCOrder').value = '1';
-            form.style.display = 'none';
-        }
-
-        if (typeof showToast === 'function') showToast('✅ Sub-chapter added!');
-    };
-
-    // ── Delete sub-chapter ─────────────────────────────────────
-    window.ecmDeleteSubChapter = async function (scId, chapterId, courseId) {
-        if (!confirm('Delete this sub-chapter? Topics inside will become unassigned.')) return;
-
-        // Unassign topics
-        await getSB().from('topics').update({ sub_chapter_id: null }).eq('sub_chapter_id', scId);
-        const { error } = await getSB().from('sub_chapters').delete().eq('id', scId);
-
-        if (error) {
-            if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error');
-            return;
-        }
-
-        document.getElementById(`editSC_${scId}`)?.remove();
-        if (typeof showToast === 'function') showToast('Sub-chapter deleted.');
-
-        const list = document.getElementById('editSCList');
-        if (list && !list.querySelector('.edit-sc-item')) {
-            list.innerHTML = '<p style="font-size:13px;color:#9ca3af;text-align:center;padding:8px 0;">No sub-chapters yet.</p>';
-        }
-    };
-
+   
     // ── Link a quiz or assignment ──────────────────────────────
     window.ecmLinkAssessment = async function (type, chapterId, courseId) {
         const pickerId = type === 'quiz' ? 'ecmQuizPicker' : 'ecmAssignPicker';

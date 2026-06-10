@@ -72,20 +72,6 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                        <div style="font-size:13px;font-weight:800;color:#1f2937;text-transform:uppercase;letter-spacing:1px;">
-                            <i class="fas fa-layer-group" style="color:#7c3aed;margin-right:6px;"></i>
-                            Sub-chapters
-                        </div>
-                        <button type="button" onclick="wsAddSubChapter()"
-                            style="padding:8px 16px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                            <i class="fas fa-plus"></i> Add Sub-chapter
-                        </button>
-                    </div>
-                    <div id="ws_subChaptersContainer"></div>
-                </div>
-
                 <div style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1.5px solid #bbf7d0;border-radius:14px;padding:20px;margin-bottom:24px;">
                     <div style="font-size:13px;font-weight:800;color:#065f46;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">
                         <i class="fas fa-tasks" style="color:#10b981;margin-right:6px;"></i>
@@ -121,8 +107,7 @@
 
         document.body.appendChild(modal);
         modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-        _populateWsCourses();
-        wsAddSubChapter();
+       _populateWsCourses();
         document.getElementById('weekStructureForm').onsubmit = _handleWsSubmit;
     }
 
@@ -161,49 +146,6 @@
         });
     };
 
-    window.wsAddSubChapter = function () {
-        const idx = _subChapterCounter++;
-        _topicCounters[idx] = 0;
-        const container = document.getElementById('ws_subChaptersContainer');
-        if (!container) return;
-
-        const div = document.createElement('div');
-        div.id = `ws_sc_${idx}`;
-        div.style.cssText = 'background:white;border:1.5px solid #e5e7eb;border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.04);';
-
-        div.innerHTML = `
-            <div style="background:linear-gradient(135deg,#f8f7ff,#f0ecff);padding:14px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e7eb;">
-                <div style="width:28px;height:28px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:8px;display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:800;flex-shrink:0;">${idx + 1}</div>
-                <input type="text" id="ws_sc_title_${idx}"
-                    placeholder="Sub-chapter title, e.g. 1.1 What is Machine Learning?"
-                    style="flex:1;padding:8px 12px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:13px;font-family:inherit;outline:none;font-weight:600;"
-                    onfocus="this.style.borderColor='#7c3aed'" onblur="this.style.borderColor='#ddd6fe'">
-                <button type="button" onclick="wsRemoveSubChapter(${idx})"
-                    style="width:30px;height:30px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;cursor:pointer;font-size:13px;flex-shrink:0;">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-            <div style="padding:14px 18px 10px;">
-                <div id="ws_topics_${idx}" style="margin-bottom:10px;"></div>
-                <button type="button" onclick="wsAddTopic(${idx})"
-                    style="padding:7px 14px;background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;">
-                    <i class="fas fa-plus"></i> Add Topic
-                </button>
-                <!-- Add this button right after the existing code block button -->
-             <button type="button" class="editor-btn" onclick="wsInsertInlineCoding('${globalIdx}')" 
-          title="Insert Interactive Coding Exercise"
-         style="background:linear-gradient(135deg,#10b981,#059669);color:white;border-radius:6px;padding:4px 8px;gap:4px;display:flex;align-items:center;">
-          <i class="fas fa-play-circle"></i> <span style="font-size:10px;">+Code</span>
-         </button>
-            </div>`;
-
-        container.appendChild(div);
-        wsAddTopic(idx);
-    };
-
-    window.wsRemoveSubChapter = function (idx) {
-        document.getElementById(`ws_sc_${idx}`)?.remove();
-    };
 
     window.wsAddTopic = function (scIdx) {
         const topicIdx  = _topicCounters[scIdx]++;
