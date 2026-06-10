@@ -461,24 +461,27 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
         const block    = document.getElementById('codingExBlock_'  + topic.id);
         if (!statusEl || !block) return;
 
-        if (t?.has_coding_exercise && t?.coding_prompt) {
+    if (t?.has_coding_exercise && t?.coding_prompt) {
             const langLabel = (t.coding_language || 'python').charAt(0).toUpperCase() + (t.coding_language || 'python').slice(1);
             block.innerHTML = `
                 <span style="background:#1e1b4b;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
                     <i class="fas fa-code"></i> ${langLabel}: ${escHTML(t.coding_prompt.substring(0, 40))}${t.coding_prompt.length > 40 ? '…' : ''}
                 </span>
-                <button type="button" onclick="ecmEditCodingExercise('${topic.id}','${chapterId}')"
+                <button type="button"
+                    onclick="window._ecmRunning=false;window._lastEcmChapterId=null;ecmEditCodingExercise('${topic.id}','${chapterId}')"
                     style="padding:4px 10px;background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                     <i class="fas fa-edit"></i> Edit
                 </button>
-                <button type="button" onclick="ecmDeleteCodingExercise('${topic.id}','${chapterId}')"
+                <button type="button"
+                    onclick="window._ecmRunning=false;window._lastEcmChapterId=null;ecmDeleteCodingExercise('${topic.id}','${chapterId}')"
                     style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                     <i class="fas fa-trash"></i> Remove
                 </button>`;
         } else {
             block.innerHTML = `
                 <span style="font-size:12px;color:#9ca3af;">None</span>
-                <button type="button" onclick="ecmEditCodingExercise('${topic.id}','${chapterId}')"
+                <button type="button"
+                    onclick="window._ecmRunning=false;window._lastEcmChapterId=null;ecmEditCodingExercise('${topic.id}','${chapterId}')"
                     style="padding:4px 10px;background:#1e1b4b;color:#a5b4fc;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                     <i class="fas fa-plus"></i> Add Coding Exercise
                 </button>`;
@@ -683,7 +686,7 @@ window.ecmEditCodingExercise = async function(topicId, chapterId) {
         document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
         setTimeout(() => window.openEditChapterModal(chapterId), 50);
     };
-    
+
     // ── Tiny HTML escape ───────────────────────────────────────
     function escHTML(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

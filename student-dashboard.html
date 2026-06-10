@@ -3276,7 +3276,7 @@ function displayNote(index) {
                     style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
                            border:1.5px solid #312e81;border-radius:10px;font-size:13px;
                            font-family:'Courier New',monospace;outline:none;resize:vertical;
-                           box-sizing:border-box;line-height:1.6;">${escapeHtml(starter)}</textarea>
+                           box-sizing:border-box;line-height:1.6;"></textarea>
             </div>
 
             <!-- Run button -->
@@ -3328,7 +3328,19 @@ function displayNote(index) {
     `;
 
     reader.innerHTML = contentHtml;
-  reader.scrollTop = 0;
+
+    // Set textarea values AFTER DOM insertion to avoid HTML encoding issues
+    reader.querySelectorAll('textarea[id^="inlineEditor_"]').forEach(ta => {
+        const uid = ta.id.replace('inlineEditor_', '');
+        const matchedNote = currentCourseNotes.find(n => 'inline_' + String(n.id) === uid);
+        if (matchedNote) {
+            const lang = matchedNote.codingLanguage || 'python';
+            ta.value = matchedNote.codingStarterCode ||
+                (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
+        }
+    });
+
+    reader.scrollTop = 0;
 
     // Wire up Run buttons in code blocks
     // Wire up Run buttons in code blocks
