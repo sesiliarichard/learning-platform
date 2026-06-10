@@ -2326,13 +2326,21 @@ function insertHeading(editorIndex) {
         document.execCommand('formatBlock', false, '<h3>');
     }
 }
-// ── TABLE INSERTION ──
 function insertTable(editorIndex) {
     const editor = document.getElementById(`editor-${editorIndex}`) 
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
 
-    // Remove any existing table modal
+    // Save cursor position BEFORE opening modal
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+        window._savedTableRange = sel.getRangeAt(0).cloneRange();
+        window._savedTableEditor = editor;
+    } else {
+        window._savedTableRange = null;
+        window._savedTableEditor = editor;
+    }
+
     document.getElementById('tableInsertModal')?.remove();
 
     const modal = document.createElement('div');
@@ -2495,7 +2503,19 @@ function confirmInsertTable(editorIndex) {
         </div>
         <br>`;
 
-    editor.focus();
+editor.focus();
+    
+    // If there's a saved cursor range from editor-enhancements, restore it
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount === 0) {
+        // Place cursor at end of editor as fallback
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+    
     document.execCommand('insertHTML', false, tableHtml);
 
     // Make table cells navigable with Tab
@@ -11789,7 +11809,19 @@ window.confirmInsertTable = function(editorIndex) {
         </div><br>`;
 
     editor.focus();
+
+    // Restore saved cursor position so table inserts at click location
+    if (window._savedTableRange && window._savedTableEditor === editor) {
+        try {
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(window._savedTableRange);
+        } catch(e) { /* use current position as fallback */ }
+    }
+
     document.execCommand('insertHTML', false, html);
+    window._savedTableRange = null;
+    window._savedTableEditor = null;
 
     setTimeout(() => {
         editor.querySelectorAll('table').forEach(_wireTable);
