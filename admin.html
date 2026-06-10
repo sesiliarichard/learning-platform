@@ -2856,20 +2856,63 @@ function confirmInsertImage(editorIndex) {
     if (!editor) return;
 
     const doInsert = (src) => {
-        const imgHtml = `
-            <div style="display:${align};width:${width};position:relative;display:inline-block;">
-                <img src="${src}"
-                    class="resizable-img"
-                    style="width:${width};max-width:100%;height:auto;
-                           display:block;border-radius:6px;cursor:pointer;
-                           border:2px solid transparent;transition:border 0.2s;"
-                    onclick="selectResizableImage(this)"
-                    title="Click to select, then drag handle to resize">
-            </div><br>`;
+        // Build the image DOM node directly instead of via execCommand
+        // This ensures MutationObserver picks it up for resize handles
+        const wrapper = document.createElement('span');
+        wrapper.className = 'wle-img-wrap';
+        wrapper.setAttribute('contenteditable', 'false');
+        wrapper.style.cssText = `display:inline-block;position:relative;line-height:0;max-width:100%;width:${width};`;
+
+        const img = document.createElement('img');
+        img.src = src;
+        img.className = 'resizable-img';
+        img.style.cssText = `width:100%;max-width:100%;height:auto;display:block;border-radius:6px;`;
+        img.title = 'Click to select, then drag handle to resize';
+
+        wrapper.appendChild(img);
+
+        // Insert at cursor or append
         editor.focus();
-        document.execCommand('insertHTML', false, imgHtml);
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            if (editor.contains(range.commonAncestorContainer)) {
+                range.deleteContents();
+                const br = document.createElement('br');
+                range.insertNode(br);
+                range.insertNode(wrapper);
+                range.setStartAfter(br);
+                range.collapse(true);
+                sel.removeAllRanges();
+                sel.addRange(range);
+            } else {
+                editor.appendChild(wrapper);
+                editor.appendChild(document.createElement('br'));
+            }
+        } else {
+            editor.appendChild(wrapper);
+            editor.appendChild(document.createElement('br'));
+        }
+
         document.getElementById('imageInsertModal')?.remove();
-        initResizableImages(editor);
+
+        // Wire up click-to-select on the image
+        img.addEventListener('click', (e) => {
+            e.stopPropagation();
+            selectResizableImage(img);
+        });
+
+        // Trigger wle-img-wrap selection system from editor-enhancements.js
+        setTimeout(() => {
+            if (typeof initResizableImages === 'function') {
+                initResizableImages(editor);
+            }
+            // Also trigger the editor-enhancements wrapImage if available
+            if (typeof wrapImage === 'function') {
+                // Already wrapped, just select it
+            }
+            selectResizableImage(img);
+        }, 50);
     };
 
     if (fileInput?.files?.length > 0) {
@@ -3127,6 +3170,9 @@ function selectResizableImage(img) {
     img.style.borderRadius = '6px';
 
     const wrap = img.parentNode;
+    
+wrap.style.position = 'relative';
+wrap.style.display = 'inline-block';
 
     // Add resize handle (bottom-right corner)
     let handle = wrap.querySelector('.img-resize-handle');
