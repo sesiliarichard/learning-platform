@@ -1509,19 +1509,6 @@ body { visibility: hidden }
         </select>
     </div>
 </div>
-<div class="form-group">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#374151;">
-        <input type="checkbox" id="topicHasCoding_${idx}"
-            onchange="document.getElementById('topicCodingWrap_${idx}').style.display=this.checked?'block':'none'"
-            style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
-        Add coding exercise to this topic
-    </label>
-    <div id="topicCodingWrap_${idx}" style="display:none;margin-top:10px;">
-        <textarea id="topicCodingPrompt_${idx}" rows="3"
-            placeholder="e.g. Write a Python function that takes a list of numbers and returns the average..."
-            style="width:100%;padding:10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"></textarea>
-    </div>
-</div>
                         </div>
                     </div>
                 </div>
@@ -4151,22 +4138,7 @@ function addEditTopic(existingTopic = null) {
         </select>
     </div>
 </div>
-<div class="form-group">
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#374151;">
-        <input type="checkbox" id="topicHasCoding_${idx}"
-            ${existingTopic?.has_coding_exercise ? 'checked' : ''}
-            onchange="document.getElementById('topicCodingWrap_${idx}').style.display=this.checked?'block':'none'"
-            style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
-        Add coding exercise to this topic
-    </label>
-    <div id="topicCodingWrap_${idx}" style="display:${existingTopic?.has_coding_exercise ? 'block' : 'none'};margin-top:10px;">
-        <textarea id="topicCodingPrompt_${idx}" rows="3"
-            placeholder="e.g. Write a Python function that takes a list of numbers and returns the average..."
-            style="width:100%;padding:10px;border:1.5px solid #ddd6fe;border-radius:8px;font-family:inherit;font-size:13px;resize:vertical;"
-        >${existingTopic?.coding_prompt || ''}</textarea>
-    </div>
-</div>
-        </div>`;
+    </div>`;
 
   container.appendChild(div);
     
