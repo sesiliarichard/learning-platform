@@ -436,8 +436,54 @@ async function _renderTopicAssessments(chapterId, courseId, quizzes, assignments
                     </div>` : '<span style="font-size:11px;color:#9ca3af;margin-left:6px;">(all assignments linked)</span>'}
                 </div>
             </div>
+        <!-- Coding exercise -->
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid #f3f4f6;">
+                <div style="font-size:11px;font-weight:700;color:#1e1b4b;margin-bottom:6px;
+                            text-transform:uppercase;letter-spacing:0.5px;">
+                    <i class="fas fa-code" style="color:#6366f1;"></i> Coding Exercise
+                </div>
+                <div id="codingExBlock_${topic.id}" style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;">
+                    <span style="font-size:12px;color:#9ca3af;" id="codingExStatus_${topic.id}">Loading…</span>
+                </div>
+            </div>
         </div>`;
     }).join('');
+
+    // Load coding exercise status for each topic
+    Promise.all(topics.map(async topic => {
+        const { data: t } = await getSB()
+            .from('topics')
+            .select('has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
+            .eq('id', topic.id)
+            .maybeSingle();
+
+        const statusEl = document.getElementById('codingExStatus_' + topic.id);
+        const block    = document.getElementById('codingExBlock_'  + topic.id);
+        if (!statusEl || !block) return;
+
+        if (t?.has_coding_exercise && t?.coding_prompt) {
+            const langLabel = (t.coding_language || 'python').charAt(0).toUpperCase() + (t.coding_language || 'python').slice(1);
+            block.innerHTML = `
+                <span style="background:#1e1b4b;color:#a5b4fc;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:5px;">
+                    <i class="fas fa-code"></i> ${langLabel}: ${escHTML(t.coding_prompt.substring(0, 40))}${t.coding_prompt.length > 40 ? '…' : ''}
+                </span>
+                <button type="button" onclick="ecmEditCodingExercise('${topic.id}','${chapterId}')"
+                    style="padding:4px 10px;background:#ede9fe;color:#7c3aed;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button type="button" onclick="ecmDeleteCodingExercise('${topic.id}','${chapterId}')"
+                    style="padding:4px 10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-trash"></i> Remove
+                </button>`;
+        } else {
+            block.innerHTML = `
+                <span style="font-size:12px;color:#9ca3af;">None</span>
+                <button type="button" onclick="ecmEditCodingExercise('${topic.id}','${chapterId}')"
+                    style="padding:4px 10px;background:#1e1b4b;color:#a5b4fc;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-plus"></i> Add Coding Exercise
+                </button>`;
+        }
+    }));
 }
 
 // ── Link assessment to a specific topic ──────────────
@@ -535,6 +581,109 @@ setTimeout(() => {
     window.openEditChapterModal(chapterId);
 }, 50);
 };
+window.ecmEditCodingExercise = async function(topicId, chapterId) {
+        const { data: t } = await getSB()
+            .from('topics')
+            .select('has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
+            .eq('id', topicId)
+            .maybeSingle();
+
+        document.getElementById('ecmCodingModal')?.remove();
+        const modal = document.createElement('div');
+        modal.id = 'ecmCodingModal';
+        modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);';
+        modal.innerHTML = `
+        <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border-radius:20px;padding:28px;width:520px;max-width:95vw;box-shadow:0 25px 60px rgba(0,0,0,0.5);">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+                <div style="width:40px;height:40px;background:linear-gradient(135deg,#6366f1,#4f46e5);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-code" style="color:white;font-size:15px;"></i>
+                </div>
+                <div style="flex:1;">
+                    <div style="font-size:16px;font-weight:800;color:white;">Coding Exercise</div>
+                    <div style="font-size:12px;color:#6366f1;">Edit or add a coding exercise to this topic</div>
+                </div>
+                <button onclick="document.getElementById('ecmCodingModal').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;">✕</button>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Language</label>
+                <select id="ecmCodingLang" style="width:100%;padding:10px;background:#1e1b4b;color:#a5b4fc;border:1.5px solid #4338ca;border-radius:10px;font-size:14px;font-family:inherit;outline:none;">
+                    <option value="python"     ${(t?.coding_language||'python')==='python'    ?'selected':''}>Python 3</option>
+                    <option value="javascript" ${(t?.coding_language||'')==='javascript'       ?'selected':''}>JavaScript</option>
+                    <option value="both"       ${(t?.coding_language||'')==='both'             ?'selected':''}>Both</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Problem / Instructions *</label>
+                <textarea id="ecmCodingPrompt" rows="4"
+                    style="width:100%;padding:12px;background:#1e1b4b;color:#c7d2fe;border:1.5px solid #4338ca;border-radius:10px;font-size:13px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;"
+                    placeholder="e.g. Write a function that calculates the average of a list…">${t?.coding_prompt || ''}</textarea>
+            </div>
+
+            <div style="margin-bottom:22px;">
+                <label style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Starter Code (optional)</label>
+                <textarea id="ecmCodingStarter" rows="5"
+                    style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;border:1.5px solid #4338ca;border-radius:10px;font-size:13px;font-family:'Courier New',monospace;outline:none;resize:vertical;box-sizing:border-box;"
+                    placeholder="# Write starter code here">${t?.coding_starter_code || ''}</textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;">
+                <button onclick="document.getElementById('ecmCodingModal').remove()"
+                    style="flex:1;padding:12px;border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;background:transparent;color:#9ca3af;font-weight:700;cursor:pointer;font-family:inherit;">Cancel</button>
+                <button onclick="ecmSaveCodingExercise('${topicId}','${chapterId}')"
+                    style="flex:2;padding:12px;background:linear-gradient(135deg,#6366f1,#4f46e5);border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;font-family:inherit;font-size:14px;">
+                    <i class="fas fa-save"></i> Save Exercise
+                </button>
+            </div>
+        </div>`;
+        document.body.appendChild(modal);
+        modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    };
+
+    window.ecmSaveCodingExercise = async function(topicId, chapterId) {
+        const lang    = document.getElementById('ecmCodingLang')?.value    || 'python';
+        const prompt  = document.getElementById('ecmCodingPrompt')?.value?.trim() || '';
+        const starter = document.getElementById('ecmCodingStarter')?.value || '';
+
+        if (!prompt) { if (typeof showToast === 'function') showToast('Please enter a problem statement', 'error'); return; }
+
+        const { error } = await getSB().from('topics').update({
+            has_coding_exercise: true,
+            coding_prompt:       prompt,
+            coding_language:     lang,
+            coding_starter_code: starter || null
+        }).eq('id', topicId);
+
+        if (error) { if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error'); return; }
+
+        document.getElementById('ecmCodingModal')?.remove();
+        if (typeof showToast === 'function') showToast('✅ Coding exercise saved!');
+        window._ecmRunning = false;
+        window._lastEcmChapterId = null;
+        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+        setTimeout(() => window.openEditChapterModal(chapterId), 50);
+    };
+
+    window.ecmDeleteCodingExercise = async function(topicId, chapterId) {
+        if (!confirm('Remove the coding exercise from this topic?')) return;
+
+        const { error } = await getSB().from('topics').update({
+            has_coding_exercise: false,
+            coding_prompt:       null,
+            coding_language:     null,
+            coding_starter_code: null
+        }).eq('id', topicId);
+
+        if (error) { if (typeof showToast === 'function') showToast('Error: ' + error.message, 'error'); return; }
+
+        if (typeof showToast === 'function') showToast('Coding exercise removed.');
+        window._ecmRunning = false;
+        window._lastEcmChapterId = null;
+        document.getElementById('editModalSubChapterSection')?.closest('div')?.remove();
+        setTimeout(() => window.openEditChapterModal(chapterId), 50);
+    };
+    
     // ── Tiny HTML escape ───────────────────────────────────────
     function escHTML(s) {
         return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

@@ -3230,21 +3230,82 @@ function displayNote(index) {
         contentHtml += weekHtml;
     }
 
-    // Add coding exercise if present
+    // Add coding exercise if present — inline runner
     if (note.hasCodingExercise && note.codingPrompt) {
+        const lang        = note.codingLanguage || 'python';
+        const starter     = note.codingStarterCode || (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
+        const langColors  = { python:'#6366f1', javascript:'#f59e0b', both:'#10b981' };
+        const badgeColor  = langColors[lang] || '#6366f1';
+        const langLabel   = lang === 'both' ? 'Python / JS' : lang.charAt(0).toUpperCase() + lang.slice(1);
+        const uid         = 'inline_' + note.id;
+
         contentHtml += `
-            <div style="margin:20px 0;padding:18px;background:#f5f3ff;border-radius:14px;border:1.5px solid #ddd6fe;">
-                <div style="font-size:14px;font-weight:700;color:#5b21b6;margin-bottom:8px;">
-                    <i class="fas fa-code" style="margin-right:8px;"></i>Coding Exercise
+        <div style="margin:24px 0;border-radius:16px;overflow:hidden;border:2px solid #312e81;background:#0f172a;">
+            <!-- Header -->
+            <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:30px;height:30px;background:${badgeColor};border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-code" style="color:white;font-size:12px;"></i>
+                    </div>
+                    <div>
+                        <div style="font-size:13px;font-weight:800;color:white;">Coding Exercise</div>
+                        <div style="font-size:11px;color:${badgeColor};">${langLabel}</div>
+                    </div>
                 </div>
-                <p style="font-size:14px;color:#374151;margin-bottom:14px;line-height:1.6;">${escapeHtml(note.codingPrompt)}</p>
-                <button onclick="openCodingEnvironmentById('${note.id}')"
-                    style="padding:10px 22px;background:#7c3aed;color:white;border:none;
-                           border-radius:10px;cursor:pointer;font-weight:700;font-size:14px;
-                           font-family:inherit;display:inline-flex;align-items:center;gap:8px;">
-                    <i class="fas fa-play"></i> Open Coding Environment
+                <span style="background:${badgeColor};color:white;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
+            </div>
+
+            <!-- Problem -->
+            <div style="padding:14px 16px;background:rgba(99,102,241,0.1);border-bottom:1px solid rgba(255,255,255,0.06);">
+                <div style="font-size:10px;font-weight:700;color:${badgeColor};text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+                    <i class="fas fa-lightbulb"></i> Problem
+                </div>
+                <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${escapeHtml(note.codingPrompt)}</div>
+            </div>
+
+            <!-- Editor -->
+            <div style="padding:14px 16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:10px;font-weight:700;color:${badgeColor};text-transform:uppercase;letter-spacing:1px;">Your Code</span>
+                    <button onclick="document.getElementById('inlineEditor_${uid}').value = ${JSON.stringify(starter)}"
+                        style="padding:3px 10px;background:rgba(255,255,255,0.1);color:#94a3b8;border:none;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;">
+                        <i class="fas fa-undo"></i> Reset
+                    </button>
+                </div>
+                <textarea id="inlineEditor_${uid}" rows="7" spellcheck="false"
+                    style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
+                           border:1.5px solid #312e81;border-radius:10px;font-size:13px;
+                           font-family:'Courier New',monospace;outline:none;resize:vertical;
+                           box-sizing:border-box;line-height:1.6;">${escapeHtml(starter)}</textarea>
+            </div>
+
+            <!-- Run button -->
+            <div style="padding:0 16px 14px;display:flex;gap:10px;">
+                <button id="inlineRunBtn_${uid}"
+                    onclick="runInlineCode('${uid}','${lang}')"
+                    style="flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                           cursor:pointer;font-family:inherit;display:flex;align-items:center;
+                           justify-content:center;gap:8px;">
+                    <i class="fas fa-play"></i> Run Code
                 </button>
-            </div>`;
+                <button onclick="submitInlineCodingExercise('${uid}','${note.id}','${lang}')"
+                    style="flex:1;padding:11px;background:linear-gradient(135deg,#10b981,#059669);
+                           color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                           cursor:pointer;font-family:inherit;display:flex;align-items:center;
+                           justify-content:center;gap:8px;">
+                    <i class="fas fa-paper-plane"></i> Submit
+                </button>
+            </div>
+
+            <!-- Output -->
+            <div id="inlineOutput_${uid}" style="display:none;padding:14px 16px;background:#0a0a1a;border-top:1px solid #312e81;">
+                <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+                    <i class="fas fa-terminal"></i> Output
+                </div>
+                <pre id="inlineResult_${uid}" style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+            </div>
+        </div>`;
     }
 
     // Add complete button
@@ -6918,6 +6979,73 @@ function openCodingEnvironmentById(topicId) {
 
     modal.classList.add('active');
     modal.style.display = 'flex';
+}
+async function runInlineCode(uid, lang) {
+    const editor  = document.getElementById('inlineEditor_'  + uid);
+    const output  = document.getElementById('inlineOutput_'  + uid);
+    const result  = document.getElementById('inlineResult_'  + uid);
+    const runBtn  = document.getElementById('inlineRunBtn_'  + uid);
+    if (!editor || !output || !result) return;
+
+    const code = editor.value;
+    runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…';
+    runBtn.disabled  = true;
+    output.style.display = 'block';
+    result.style.color   = '#94a3b8';
+    result.textContent   = 'Running…';
+
+    try {
+        let res;
+        if (lang === 'javascript') {
+            res = runJavaScriptSync(code);
+        } else {
+            res = await runPythonPyodide(code, output);
+            if (res === null) { runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; runBtn.disabled = false; return; }
+        }
+        result.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output — did you forget print()?)');
+        result.style.color  = res.error ? '#f87171' : '#4ade80';
+    } catch(err) {
+        result.textContent = '❌ ' + err.message;
+        result.style.color  = '#f87171';
+    }
+    runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
+    runBtn.disabled  = false;
+}
+
+async function submitInlineCodingExercise(uid, topicId, lang) {
+    const editor = document.getElementById('inlineEditor_' + uid);
+    const result = document.getElementById('inlineResult_' + uid);
+    const output = document.getElementById('inlineOutput_' + uid);
+    if (!editor) return;
+
+    const code      = editor.value;
+    const outputTxt = result?.textContent || '';
+
+    try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        if (!user) { showToast('Please log in first.', 'error'); return; }
+
+        const courseId = window.currentCourseId || window.currentCourse;
+        const { error } = await supabaseClient.from('coding_submissions').insert({
+            student_id:   user.id,
+            topic_id:     topicId,
+            course_id:    courseId || null,
+            language:     lang,
+            code:         code,
+            output:       outputTxt,
+            submitted_at: new Date().toISOString()
+        });
+        if (error) throw error;
+
+        if (output) output.style.display = 'block';
+        if (result) {
+            result.style.color   = '#4ade80';
+            result.textContent   = '✅ Solution submitted! Your instructor will review it.';
+        }
+        showToast('✅ Coding exercise submitted!');
+    } catch (err) {
+        showToast('Error submitting: ' + err.message, 'error');
+    }
 }
     </script>
     <script src="week-structure-student.js"></script>
