@@ -39,8 +39,8 @@
             ?.closest('div')?.remove();
 
         document.getElementById('editChapterId').value = chapterId;
-       document.getElementById('editChapterTitle').value = chapterFull?.title || '';
-        document.getElementById('editChapterDescription').value = chapterFull?.description || '';
+        document.getElementById('editChapterTitle').value = '';
+        document.getElementById('editChapterDescription').value = '';
 
         // Build topics in editTopicsContainer
         const { data: topicsForEdit } = await getSB()
