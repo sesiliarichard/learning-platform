@@ -14,13 +14,8 @@
         if (typeof showToast === 'function') showToast(msg, type);
         else console.log(msg);
     }
-
-    window.openCreateChapterModal = function () {
-        _subChapterCounter = 0;
-        _topicCounters     = {};
-        document.getElementById('createChapterModal')?.classList.remove('active');
-        _buildWeekModal();
-    };
+// Week structure modal disabled — using default chapter modal instead
+// window.openCreateChapterModal is left to admin.html's original function
 
     function _buildWeekModal() {
         document.getElementById('weekStructureModal')?.remove();
