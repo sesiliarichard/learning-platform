@@ -996,20 +996,78 @@ function tableAct (act, table, wrap) {
               });
           });
           
-          // Also apply on paste
-          editor.addEventListener('paste', function() {
-              setTimeout(() => {
-                  const storedFont = this.getAttribute('data-stored-font');
-                  const storedSize = this.getAttribute('data-stored-size');
-                  if (storedFont || storedSize) {
-                      const allElements = this.querySelectorAll('*');
-                      allElements.forEach(el => {
-                          if (storedFont) el.style.fontFamily = storedFont;
-                          if (storedSize) el.style.fontSize = storedSize;
-                      });
-                  }
-              }, 10);
-          });
+         editor.addEventListener('paste', function(e) {
+    e.preventDefault();
+    const clipData = e.clipboardData || window.clipboardData;
+    
+    // Try rich HTML first (preserves formatting from Word/Docs/web)
+    let html = clipData.getData('text/html');
+    
+    if (html) {
+        // Clean up Word/Docs-specific junk but keep structure
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        
+        // Remove Word/Docs metadata tags but keep formatting
+        tmp.querySelectorAll('meta, link, style[data-mce], script').forEach(el => el.remove());
+        tmp.querySelectorAll('[class*="Mso"], [class*="mso"]').forEach(el => {
+            // Keep the element but strip the Word class
+            el.removeAttribute('class');
+        });
+        
+        // Strip dangerous attributes but keep style/formatting attrs
+        tmp.querySelectorAll('*').forEach(el => {
+            const allowed = ['style', 'href', 'src', 'alt', 'width', 'height', 
+                             'colspan', 'rowspan', 'border', 'cellpadding', 'cellspacing'];
+            Array.from(el.attributes).forEach(attr => {
+                if (!allowed.includes(attr.name)) {
+                    el.removeAttribute(attr.name);
+                }
+            });
+        });
+        
+        // Apply editor font to pasted content without destroying structure
+        const storedFont = this.getAttribute('data-stored-font');
+        if (storedFont) {
+            tmp.querySelectorAll('p, div, span, li, td, th, h1, h2, h3, h4, h5').forEach(el => {
+                if (!el.style.fontFamily) el.style.fontFamily = storedFont;
+            });
+        }
+        
+        // Insert at cursor
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            const frag = document.createRange().createContextualFragment(tmp.innerHTML);
+            range.insertNode(frag);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } else {
+            this.innerHTML += tmp.innerHTML;
+        }
+    } else {
+        // Fallback: plain text — preserve line breaks as <br>
+        const text = clipData.getData('text/plain');
+        if (!text) return;
+        const lines = text.split('\n');
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            lines.forEach((line, i) => {
+                if (i > 0) range.insertNode(document.createElement('br'));
+                if (line) range.insertNode(document.createTextNode(line));
+            });
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        } else {
+            this.innerHTML += text.replace(/\n/g, '<br>');
+        }
+    }
+});
       });
   }
   

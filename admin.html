@@ -2734,10 +2734,33 @@ function insertImage(editorIndex) {
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
 
-    document.getElementById('imageInsertModal')?.remove();
+   document.getElementById('imageInsertModal')?.remove();
 
-    const modal = document.createElement('div');
-    modal.id = 'imageInsertModal';
+// Save cursor position BEFORE modal opens (modal click will steal focus)
+const _imgEditor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
+window._savedImageRange  = null;
+window._savedImageEditor = _imgEditor;
+
+if (_imgEditor) {
+    const selNow = window.getSelection();
+    if (selNow && selNow.rangeCount > 0) {
+        const r = selNow.getRangeAt(0);
+        if (_imgEditor.contains(r.commonAncestorContainer)) {
+            window._savedImageRange = r.cloneRange();
+        }
+    }
+    // If no valid selection, place cursor at end of editor
+    if (!window._savedImageRange) {
+        const endRange = document.createRange();
+        endRange.selectNodeContents(_imgEditor);
+        endRange.collapse(false);
+        window._savedImageRange = endRange.cloneRange();
+    }
+}
+
+const modal = document.createElement('div');
+modal.id = 'imageInsertModal';
     modal.style.cssText = `
         position:fixed;top:0;left:0;width:100%;height:100%;
         background:rgba(0,0,0,0.5);z-index:99999;
@@ -2856,8 +2879,6 @@ function confirmInsertImage(editorIndex) {
     if (!editor) return;
 
     const doInsert = (src) => {
-        // Build the image DOM node directly instead of via execCommand
-        // This ensures MutationObserver picks it up for resize handles
         const wrapper = document.createElement('span');
         wrapper.className = 'wle-img-wrap';
         wrapper.setAttribute('contenteditable', 'false');
@@ -2871,21 +2892,27 @@ function confirmInsertImage(editorIndex) {
 
         wrapper.appendChild(img);
 
-        // Insert at cursor or append
-        editor.focus();
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            if (editor.contains(range.commonAncestorContainer)) {
+        // Use the saved range from BEFORE the modal opened
+        const savedRange  = window._savedImageRange;
+        const savedEditor = window._savedImageEditor;
+
+        if (savedRange && savedEditor && savedEditor === editor) {
+            try {
+                editor.focus();
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+                const range = sel.getRangeAt(0);
                 range.deleteContents();
-                const br = document.createElement('br');
-                range.insertNode(br);
+                const brAfter = document.createElement('br');
+                range.insertNode(brAfter);
+                range.insertNode(document.createElement('br'));
                 range.insertNode(wrapper);
-                range.setStartAfter(br);
+                range.setStartAfter(brAfter);
                 range.collapse(true);
                 sel.removeAllRanges();
                 sel.addRange(range);
-            } else {
+            } catch(e) {
                 editor.appendChild(wrapper);
                 editor.appendChild(document.createElement('br'));
             }
@@ -2894,22 +2921,20 @@ function confirmInsertImage(editorIndex) {
             editor.appendChild(document.createElement('br'));
         }
 
+        // Clear saved state
+        window._savedImageRange  = null;
+        window._savedImageEditor = null;
+
         document.getElementById('imageInsertModal')?.remove();
 
-        // Wire up click-to-select on the image
         img.addEventListener('click', (e) => {
             e.stopPropagation();
             selectResizableImage(img);
         });
 
-        // Trigger wle-img-wrap selection system from editor-enhancements.js
         setTimeout(() => {
             if (typeof initResizableImages === 'function') {
                 initResizableImages(editor);
-            }
-            // Also trigger the editor-enhancements wrapImage if available
-            if (typeof wrapImage === 'function') {
-                // Already wrapped, just select it
             }
             selectResizableImage(img);
         }, 50);
@@ -2925,6 +2950,7 @@ function confirmInsertImage(editorIndex) {
         showToast('Please select an image or enter a URL', 'error');
     }
 }
+ 
 // ── INSERT INLINE CODING BLOCK AT CURSOR ──────────────────────
 function insertInlineCodingBlock(editorIndex) {
     const editor = document.getElementById(`editor-${editorIndex}`)
