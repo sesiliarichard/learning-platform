@@ -3141,12 +3141,14 @@ function confirmInlineCodingBlock(editorIndex) {
 
     // Build DOM node (not innerHTML via execCommand — avoids stripping)
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = `<div class="asai-inline-coding" data-lang="${lang}" 
+   wrapper.innerHTML = `
+    <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
          contenteditable="false"
          style="margin:16px 0;border-radius:14px;overflow:hidden;
                 border:2px solid ${lc.border};background:${lc.bg};display:block;">
 
-       <div style="padding:10px 16px;display:flex;align-items:center;
+        <!-- HEADER with Edit/Delete buttons -->
+        <div style="padding:10px 16px;display:flex;align-items:center;
                     justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:28px;height:28px;background:${lc.badge};border-radius:8px;
@@ -3161,29 +3163,33 @@ function confirmInlineCodingBlock(editorIndex) {
             <div style="display:flex;align-items:center;gap:6px;">
                 <span style="background:${lc.badge};color:white;padding:3px 10px;
                              border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
-                <button onclick="editInlineCodingBlock(this)" title="Edit"
-                    style="background:rgba(255,255,255,0.15);border:none;color:white;
-                           width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;">
+                <button onclick="editInlineCodingBlock(this)" title="Edit this coding block"
+                    style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.3);
+                           color:white;width:30px;height:30px;border-radius:7px;cursor:pointer;
+                           font-size:13px;display:flex;align-items:center;justify-content:center;">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteInlineCodingBlock(this)" title="Delete"
-                    style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);
-                           color:#fca5a5;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;">
+                <button onclick="deleteInlineCodingBlock(this)" title="Delete this coding block"
+                    style="background:rgba(239,68,68,0.3);border:1.5px solid rgba(239,68,68,0.6);
+                           color:#fca5a5;width:30px;height:30px;border-radius:7px;cursor:pointer;
+                           font-size:13px;display:flex;align-items:center;justify-content:center;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
 
         ${prompt ? `
+        <!-- PROBLEM statement -->
         <div style="padding:12px 16px;background:rgba(99,102,241,0.12);
                     border-bottom:1px solid rgba(255,255,255,0.06);">
-            <div style="font-size:10px;font-weight:700;color:${lc.badge};">
+            <div style="font-size:10px;font-weight:700;color:${lc.badge};
                         text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">
                 <i class="fas fa-lightbulb"></i> Problem
             </div>
             <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${esc(prompt)}</div>
         </div>` : ''}
 
+        <!-- STARTER CODE preview -->
         <div style="padding:12px 16px;">
             <div style="font-size:10px;font-weight:700;color:${lc.badge};
                         text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
@@ -3241,14 +3247,22 @@ function editInlineCodingBlock(btn) {
     if (!block) return;
 
     const lang    = block.dataset.lang || 'python';
-    const prompt  = block.querySelector('[style*="Problem"]')?.nextElementSibling?.textContent?.trim() || '';
-    const starter = block.querySelector('pre')?.textContent?.trim() || '';
+    // Get current prompt text
+    const promptDiv = block.querySelectorAll('div[style*="Problem"]');
+    let currentPrompt = '';
+    if (promptDiv.length > 0) {
+        const nextDiv = promptDiv[0].nextElementSibling;
+        if (nextDiv) currentPrompt = nextDiv.textContent.trim();
+    }
+    // Get current starter code
+    const pre = block.querySelector('pre');
+    const currentStarter = pre ? pre.textContent.trim() : '';
 
-    // Remove old block so we can re-insert edited version
+    // Get the editor this block is inside
     const editor = block.closest('.editor-content');
     window._savedCodingEditor = editor;
 
-    // Place cursor after the block before removing it
+    // Place cursor after block before removing
     if (editor) {
         const range = document.createRange();
         range.setStartAfter(block);
@@ -3259,21 +3273,38 @@ function editInlineCodingBlock(btn) {
         window._savedCodingRange = range.cloneRange();
     }
 
+    // Remove old block
     block.remove();
 
-    // Open the picker modal pre-filled
-    insertInlineCodingBlock(0); // opens modal
+    // Find which editor index this is
+    let editorIndex = 0;
+    if (editor && editor.id) {
+        const match = editor.id.match(/(\d+)$/);
+        if (match) editorIndex = parseInt(match[1]);
+    }
 
+    // Open the coding picker modal
+    insertInlineCodingBlock(editorIndex);
+
+    // Pre-fill the modal with existing values
     setTimeout(() => {
-        const langSel = document.getElementById('inlineCodingLang');
+        const langSel  = document.getElementById('inlineCodingLang');
         const promptEl = document.getElementById('inlineCodingPrompt');
         const starterEl = document.getElementById('inlineCodingStarter');
-        if (langSel) langSel.value = lang;
-        if (promptEl) promptEl.value = prompt;
-        if (starterEl) starterEl.value = starter;
-    }, 100);
+        if (langSel)   langSel.value   = lang;
+        if (promptEl)  promptEl.value  = currentPrompt;
+        if (starterEl) starterEl.value = currentStarter;
+    }, 150);
 }
 
+function deleteInlineCodingBlock(btn) {
+    const block = btn.closest('.asai-inline-coding');
+    if (!block) return;
+    if (confirm('Delete this coding exercise block?')) {
+        block.remove();
+        showToast('Coding block deleted.');
+    }
+}
 function deleteInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
     if (!block) return;
