@@ -3286,11 +3286,11 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const wrapper = document.createElement('div');
    wrapper.innerHTML = `
-    <div class="asai-inline-coding" data-lang="${lang}"
+   <div class="asai-inline-coding" data-lang="${lang}"
          contenteditable="false"
-         style="margin:16px auto;border-radius:14px;overflow:hidden;
-                border:2px solid ${lc.border};background:${lc.bg};display:table;
-                min-width:300px;max-width:560px;box-sizing:border-box;">
+         style="margin:16px 0;border-radius:14px;overflow:hidden;
+                border:2px solid ${lc.border};background:${lc.bg};display:block;
+                width:100%;max-width:560px;box-sizing:border-box;">
 
         <div style="padding:10px 16px;display:flex;align-items:center;
                     justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
@@ -3357,10 +3357,8 @@ function confirmInlineCodingBlock(editorIndex) {
     codingNode.style.display = 'block';
     codingNode.style.userSelect = 'none';
 
-    // Wrap in a paragraph so cursor can get past it
-    const codingWrapper = document.createElement('p');
-    wrapper.setAttribute('contenteditable', 'true');
-    wrapper.style.margin = '8px 0';
+   wrapper.setAttribute('contenteditable', 'false');
+    wrapper.style.cssText = 'display:block;margin:8px 0;max-width:560px;';
     wrapper.appendChild(codingNode);
 
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
