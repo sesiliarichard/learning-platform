@@ -995,46 +995,99 @@ function tableAct (act, table, wrap) {
                   }
               });
           });
-          
-         editor.addEventListener('paste', function(e) {
+        editor.addEventListener('paste', function(e) {
     e.preventDefault();
     const clipData = e.clipboardData || window.clipboardData;
-    
-    // Try rich HTML first (preserves formatting from Word/Docs/web)
+    const storedFont = this.getAttribute('data-stored-font') || "'Plus Jakarta Sans', sans-serif";
+    const editorEl = this;
+
+    // ── PRIORITY 1: Rich HTML (Word, Google Docs, web pages) ──
     let html = clipData.getData('text/html');
-    
-    if (html) {
-        // Clean up Word/Docs-specific junk but keep structure
+
+    if (html && html.trim()) {
         const tmp = document.createElement('div');
         tmp.innerHTML = html;
-        
-        // Remove Word/Docs metadata tags but keep formatting
-        tmp.querySelectorAll('meta, link, style[data-mce], script').forEach(el => el.remove());
-        tmp.querySelectorAll('[class*="Mso"], [class*="mso"]').forEach(el => {
-            // Keep the element but strip the Word class
-            el.removeAttribute('class');
+
+        // Remove only true junk — keep ALL structural elements
+        tmp.querySelectorAll('script, style, meta, link, head, xml').forEach(el => el.remove());
+
+        // Replace Word's <o:p> (empty paragraph markers) with nothing
+        tmp.querySelectorAll('o\\:p').forEach(el => el.remove());
+
+        // Remove class attributes that are Word/Docs garbage, keep others
+        tmp.querySelectorAll('[class]').forEach(el => {
+            if (/^(Mso|mso|Normal|Default|Heading|Body)/i.test(el.className || '')) {
+                el.removeAttribute('class');
+            }
         });
-        
-        // Strip dangerous attributes but keep style/formatting attrs
+
+        // Strip only dangerous attributes — keep style, href, src, colspan etc.
+        const keepAttrs = ['style','href','src','alt','width','height',
+                           'colspan','rowspan','border','cellpadding',
+                           'cellspacing','type','start','value'];
         tmp.querySelectorAll('*').forEach(el => {
-            const allowed = ['style', 'href', 'src', 'alt', 'width', 'height', 
-                             'colspan', 'rowspan', 'border', 'cellpadding', 'cellspacing'];
-            Array.from(el.attributes).forEach(attr => {
-                if (!allowed.includes(attr.name)) {
-                    el.removeAttribute(attr.name);
+            const toRemove = [];
+            for (const attr of el.attributes) {
+                if (!keepAttrs.includes(attr.name) && !attr.name.startsWith('data-')) {
+                    toRemove.push(attr.name);
                 }
-            });
+            }
+            toRemove.forEach(a => el.removeAttribute(a));
         });
-        
-        // Apply editor font to pasted content without destroying structure
-        const storedFont = this.getAttribute('data-stored-font');
-        if (storedFont) {
-            tmp.querySelectorAll('p, div, span, li, td, th, h1, h2, h3, h4, h5').forEach(el => {
-                if (!el.style.fontFamily) el.style.fontFamily = storedFont;
-            });
-        }
-        
-        // Insert at cursor
+
+        // Convert plain-div paragraphs → <p> so they get spacing
+        tmp.querySelectorAll('div').forEach(div => {
+            const hasBlock = div.querySelector('div,p,h1,h2,h3,h4,h5,h6,ul,ol,table,blockquote');
+            if (!hasBlock && div.textContent.trim()) {
+                const p = document.createElement('p');
+                p.innerHTML = div.innerHTML;
+                if (div.getAttribute('style')) p.setAttribute('style', div.getAttribute('style'));
+                div.parentNode.replaceChild(p, div);
+            }
+        });
+
+        // Detect plain-text numbered/bullet lists inside <p> tags
+        // (Word/Docs sometimes pastes lists as "1. text" paragraphs)
+        const allParas = Array.from(tmp.querySelectorAll('p'));
+        let currentList = null, currentListType = null;
+
+        allParas.forEach(p => {
+            const text = p.textContent.trim();
+            const numMatch    = text.match(/^(\d+)[.)]\s+(.+)/s);
+            const bulletMatch = text.match(/^[•·◦▪▸\-–—*]\s+(.+)/s);
+
+            if (numMatch) {
+                if (!currentList || currentListType !== 'ol') {
+                    currentList = document.createElement('ol');
+                    currentListType = 'ol';
+                    p.parentNode.insertBefore(currentList, p);
+                }
+                const li = document.createElement('li');
+                li.innerHTML = p.innerHTML.replace(/^(\d+)[.)]\s+/, '');
+                currentList.appendChild(li);
+                p.remove();
+            } else if (bulletMatch) {
+                if (!currentList || currentListType !== 'ul') {
+                    currentList = document.createElement('ul');
+                    currentListType = 'ul';
+                    p.parentNode.insertBefore(currentList, p);
+                }
+                const li = document.createElement('li');
+                li.innerHTML = p.innerHTML.replace(/^[•·◦▪▸\-–—*]\s+/, '');
+                currentList.appendChild(li);
+                p.remove();
+            } else {
+                currentList = null;
+                currentListType = null;
+            }
+        });
+
+        // Apply editor font without overriding existing inline fonts
+        tmp.querySelectorAll('p,div,li,td,th,h1,h2,h3,h4,h5,blockquote').forEach(el => {
+            if (!el.style.fontFamily) el.style.fontFamily = storedFont;
+        });
+
+        // Insert at cursor position
         const sel = window.getSelection();
         if (sel && sel.rangeCount > 0) {
             const range = sel.getRangeAt(0);
@@ -1045,27 +1098,62 @@ function tableAct (act, table, wrap) {
             sel.removeAllRanges();
             sel.addRange(range);
         } else {
-            this.innerHTML += tmp.innerHTML;
+            editorEl.innerHTML += tmp.innerHTML;
         }
-    } else {
-        // Fallback: plain text — preserve line breaks as <br>
-        const text = clipData.getData('text/plain');
-        if (!text) return;
-        const lines = text.split('\n');
-        const sel = window.getSelection();
-        if (sel && sel.rangeCount > 0) {
-            const range = sel.getRangeAt(0);
-            range.deleteContents();
-            lines.forEach((line, i) => {
-                if (i > 0) range.insertNode(document.createElement('br'));
-                if (line) range.insertNode(document.createTextNode(line));
+        return;
+    }
+
+    // ── PRIORITY 2: Plain text fallback ──
+    const text = clipData.getData('text/plain');
+    if (!text) return;
+
+    // Split into paragraphs (double newline = new paragraph)
+    const paragraphs = text.split(/\r?\n\r?\n/);
+    let resultHtml = '';
+
+    paragraphs.forEach(para => {
+        const trimmed = para.trim();
+        if (!trimmed) return;
+
+        const lines = trimmed.split(/\r?\n/);
+
+        // Detect if ALL non-empty lines are numbered list items
+        const nonEmpty = lines.filter(l => l.trim());
+        const isNumbered = nonEmpty.length > 1 && nonEmpty.every(l => /^\d+[.)]\s/.test(l.trim()));
+        const isBullet   = nonEmpty.length > 1 && nonEmpty.every(l => /^[•·◦▪▸\-–—*]\s/.test(l.trim()));
+
+        if (isNumbered) {
+            resultHtml += '<ol style="font-family:' + storedFont + '">';
+            lines.forEach(l => {
+                const m = l.trim().match(/^\d+[.)]\s+(.*)/);
+                if (m) resultHtml += `<li>${m[1]}</li>`;
             });
-            range.collapse(false);
-            sel.removeAllRanges();
-            sel.addRange(range);
+            resultHtml += '</ol>';
+        } else if (isBullet) {
+            resultHtml += '<ul style="font-family:' + storedFont + '">';
+            lines.forEach(l => {
+                const m = l.trim().match(/^[•·◦▪▸\-–—*]\s+(.*)/);
+                if (m) resultHtml += `<li>${m[1]}</li>`;
+            });
+            resultHtml += '</ul>';
         } else {
-            this.innerHTML += text.replace(/\n/g, '<br>');
+            // Normal paragraph — join lines with <br> for single line breaks
+            const lineHtml = lines.map(l => l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('<br>');
+            resultHtml += `<p style="font-family:${storedFont}">${lineHtml}</p>`;
         }
+    });
+
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0);
+        range.deleteContents();
+        const frag = document.createRange().createContextualFragment(resultHtml);
+        range.insertNode(frag);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else {
+        editorEl.innerHTML += resultHtml;
     }
 });
       });

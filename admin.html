@@ -2301,17 +2301,159 @@ function removeTopic(index) {
 }
 
 function formatText(editorIndex, command, value = null) {
-    // Try both editor ID formats (create vs edit)
     const editor = document.getElementById(`editor-${editorIndex}`) 
                 || document.getElementById(`editEditor_${editorIndex}`);
-    if (editor) {
-        editor.focus();
-        // Small delay ensures focus is restored before execCommand
-        setTimeout(() => {
+    if (!editor) return;
+
+    editor.focus();
+
+    setTimeout(() => {
+        if (command === 'undo') {
+            if (window._editorUndo) window._editorUndo(editor);
+            else document.execCommand('undo', false, null);
+        } else if (command === 'redo') {
+            if (window._editorRedo) window._editorRedo(editor);
+            else document.execCommand('redo', false, null);
+        } else {
+            // Save snapshot before formatting so it can be undone
+            if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
             document.execCommand(command, false, value);
-        }, 10);
-    }
+            // Save snapshot after formatting
+            setTimeout(() => {
+                if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+            }, 50);
+        }
+    }, 10);
 }
+// ── UNDO/REDO HISTORY MANAGER ──
+// Fixes Ctrl+Z and toolbar undo/redo for contenteditable editors
+(function initUndoHistory() {
+    const DEBOUNCE_MS = 500;
+    const MAX_HISTORY = 50;
+
+    // Map of editorId → { stack: [], index: 0 }
+    const histories = {};
+
+    function getHistory(editorId) {
+        if (!histories[editorId]) {
+            histories[editorId] = { stack: [], index: -1 };
+        }
+        return histories[editorId];
+    }
+
+    function saveSnapshot(editor) {
+        const id = editor.id;
+        if (!id) return;
+        const hist = getHistory(id);
+        const current = editor.innerHTML;
+
+        // Don't save duplicate
+        if (hist.stack[hist.index] === current) return;
+
+        // Truncate forward history if we branched
+        hist.stack = hist.stack.slice(0, hist.index + 1);
+        hist.stack.push(current);
+        if (hist.stack.length > MAX_HISTORY) hist.stack.shift();
+        hist.index = hist.stack.length - 1;
+    }
+
+    function undoEditor(editor) {
+        const id = editor.id;
+        if (!id) return;
+        const hist = getHistory(id);
+        if (hist.index <= 0) return;
+        hist.index--;
+        editor.innerHTML = hist.stack[hist.index];
+        // Restore cursor to end
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    function redoEditor(editor) {
+        const id = editor.id;
+        if (!id) return;
+        const hist = getHistory(id);
+        if (hist.index >= hist.stack.length - 1) return;
+        hist.index++;
+        editor.innerHTML = hist.stack[hist.index];
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+
+    // Debounce timer per editor
+    const debounceTimers = {};
+
+    function attachToEditor(editor) {
+        if (editor.dataset.undoWired) return;
+        editor.dataset.undoWired = '1';
+
+        // Save initial state
+        saveSnapshot(editor);
+
+        // Save snapshot on input (debounced)
+        editor.addEventListener('input', () => {
+            const id = editor.id;
+            clearTimeout(debounceTimers[id]);
+            debounceTimers[id] = setTimeout(() => saveSnapshot(editor), DEBOUNCE_MS);
+        });
+
+        // Save snapshot before paste (so paste can be undone)
+        editor.addEventListener('paste', () => {
+            saveSnapshot(editor);
+            // Also save after paste completes
+            setTimeout(() => saveSnapshot(editor), 100);
+        }, true);
+
+        // Intercept Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z
+        editor.addEventListener('keydown', (e) => {
+            const isUndo = (e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey;
+            const isRedo = (e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey));
+
+            if (isUndo) {
+                e.preventDefault();
+                undoEditor(editor);
+            } else if (isRedo) {
+                e.preventDefault();
+                redoEditor(editor);
+            }
+        });
+    }
+
+    // Wire all current editors
+    function wireAll() {
+        document.querySelectorAll('.editor-content[contenteditable="true"]').forEach(attachToEditor);
+    }
+
+    // Watch for new editors added to DOM
+    const obs = new MutationObserver(() => wireAll());
+    obs.observe(document.body, { childList: true, subtree: true });
+
+    // Initial wire
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(wireAll, 300);
+            setTimeout(wireAll, 1000);
+        });
+    } else {
+        setTimeout(wireAll, 300);
+        setTimeout(wireAll, 1000);
+    }
+
+    // Expose so formatText can call it
+    window._editorUndo = undoEditor;
+    window._editorRedo = redoEditor;
+    window._editorSaveSnapshot = saveSnapshot;
+
+    console.log('✅ Undo/Redo history manager loaded');
+})();
 
 function insertHeading(editorIndex) {
     const editor = document.getElementById(`editor-${editorIndex}`);
