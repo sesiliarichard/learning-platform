@@ -3147,11 +3147,12 @@ function confirmInlineCodingBlock(editorIndex) {
     const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
     const wrapper = document.createElement('div');
-    wrapper.innerHTML = `
+   wrapper.innerHTML = `
     <div class="asai-inline-coding" data-lang="${lang}"
          contenteditable="false"
          style="margin:16px 0;border-radius:14px;overflow:hidden;
-                border:2px solid ${lc.border};background:${lc.bg};display:block;">
+                border:2px solid ${lc.border};background:${lc.bg};display:block;
+                max-width:600px;width:100%;box-sizing:border-box;">
 
         <div style="padding:10px 16px;display:flex;align-items:center;
                     justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
@@ -4440,9 +4441,12 @@ function addEditTopic(existingTopic = null) {
                         });
                     }
                 });
-              // Re-wire inline coding blocks
+             // Re-wire inline coding blocks
                 editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
                     block.setAttribute('contenteditable', 'false');
+                    block.style.maxWidth = '600px';
+                    block.style.width = '100%';
+                    block.style.boxSizing = 'border-box';
 
                     // Inject edit/delete buttons if missing
                     const hasButtons = block.querySelector('button[title="Edit coding block"]');
