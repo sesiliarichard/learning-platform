@@ -4357,6 +4357,13 @@ function addEditTopic(existingTopic = null) {
         if (editorEl) {
             if (existingTopic?.content) {
                 editorEl.innerHTML = existingTopic.content;
+
+                editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
+    const eb = block.querySelector('[title="Edit coding block"]');
+    const db = block.querySelector('[title="Delete coding block"]');
+    if (eb) { eb.removeAttribute('onclick'); eb.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); editInlineCodingBlock(eb); }); }
+    if (db) { db.removeAttribute('onclick'); db.addEventListener('mousedown', e => { e.preventDefault(); e.stopPropagation(); deleteInlineCodingBlock(db); }); }
+});
                 // Re-wire any Run buttons inside code blocks
                 editorEl.querySelectorAll('.asai-code-block').forEach(block => {
                     const btn = block.querySelector('.asai-run-btn');
