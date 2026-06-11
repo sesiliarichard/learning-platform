@@ -3234,25 +3234,25 @@ function confirmInlineCodingBlock(editorIndex) {
     window._savedCodingRange  = null;
     window._savedCodingEditor = null;
 
-    // Wire edit and delete buttons via mousedown (works inside contenteditable)
-    const editBtn = codingNode.querySelector('button[title="Edit coding block"]');
-    const delBtn  = codingNode.querySelector('button[title="Delete coding block"]');
+   // Wire edit and delete buttons via mousedown (works inside contenteditable)
+    const _editBtn = codingNode.querySelector('button[title="Edit coding block"]');
+    const _delBtn  = codingNode.querySelector('button[title="Delete coding block"]');
 
-    if (editBtn) {
-        editBtn.removeAttribute('onclick');
-        editBtn.addEventListener('mousedown', (e) => {
+    if (_editBtn) {
+        _editBtn.removeAttribute('onclick');
+        _editBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            editInlineCodingBlock(editBtn);
+            editInlineCodingBlock(_editBtn);
         });
     }
 
-    if (delBtn) {
-        delBtn.removeAttribute('onclick');
-        delBtn.addEventListener('mousedown', (e) => {
+    if (_delBtn) {
+        _delBtn.removeAttribute('onclick');
+        _delBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            deleteInlineCodingBlock(delBtn);
+            deleteInlineCodingBlock(_delBtn);
         });
     }
 
