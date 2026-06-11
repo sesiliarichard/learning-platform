@@ -4444,8 +4444,11 @@ function addEditTopic(existingTopic = null) {
              // Re-wire inline coding blocks
                 editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
                     block.setAttribute('contenteditable', 'false');
-                    block.style.maxWidth = '600px';
-                    block.style.width = '100%';
+                    block.style.display = 'table';
+                    block.style.minWidth = '300px';
+                    block.style.maxWidth = '560px';
+                    block.style.width = 'auto';
+                    block.style.margin = '16px 0';
                     block.style.boxSizing = 'border-box';
 
                     // Inject edit/delete buttons if missing
