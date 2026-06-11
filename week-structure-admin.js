@@ -697,14 +697,14 @@ function _wireInlineCodingBlock(block, lang) {
                 runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
                 runBtn.disabled  = false;
                 return;
-            } else {
-                // Python — try Pyodide first, then Piston
-                if (typeof loadPyodide !== 'undefined') {
-                    res = await _runPyodideInline(code, output);
-                } else {
-                    res = await _runPistonInline(code);
-                }
-            }
+           } else {
+    // Always use Pyodide - it's loaded on both admin and student pages
+    if (typeof loadPyodide !== 'undefined') {
+        res = await _runPyodideInline(code, output);
+    } else {
+        res = { output: '', error: 'Python engine not available. Please refresh the page.' };
+    }
+}
 
             if (result) {
                 result.textContent = res.error
@@ -751,18 +751,18 @@ async function _runPyodideInline(code, outputEl) {
 }
 
 async function _runPistonInline(code) {
+    // Pyodide is already loaded on admin page - use it directly
     try {
-        const r = await fetch('https://emkc.org/api/v2/piston/execute', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ language:'python', version:'3.10.0', files:[{ content: code }] })
-        });
-        const d = await r.json();
-        const out = (d.run?.stdout || '').trim();
-        const err = (d.run?.stderr || '').trim();
-        return { output: out || (err ? '' : '(No output)'), error: err && !out ? err : null };
+        if (!window._adminPyodide) {
+            window._adminPyodide = await loadPyodide({ stdout: () => {}, stderr: () => {} });
+        }
+        let out = '', err = '';
+        window._adminPyodide.setStdout({ batched: t => { out += t + '\n'; } });
+        window._adminPyodide.setStderr({ batched: t => { err += t + '\n'; } });
+        await window._adminPyodide.runPythonAsync(code);
+        return { output: out.trim(), error: err.trim() && !out.trim() ? err.trim() : null };
     } catch(e) {
-        return { output: '', error: 'Could not run: ' + e.message };
+        return { output: '', error: String(e) };
     }
 }
     async function _handleWsSubmit(e) {
