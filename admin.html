@@ -2304,9 +2304,7 @@ function formatText(editorIndex, command, value = null) {
     const editor = document.getElementById(`editor-${editorIndex}`) 
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
-
     editor.focus();
-
     setTimeout(() => {
         if (command === 'undo') {
             if (window._editorUndo) window._editorUndo(editor);
@@ -2315,10 +2313,8 @@ function formatText(editorIndex, command, value = null) {
             if (window._editorRedo) window._editorRedo(editor);
             else document.execCommand('redo', false, null);
         } else {
-            // Save snapshot before formatting so it can be undone
             if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
             document.execCommand(command, false, value);
-            // Save snapshot after formatting
             setTimeout(() => {
                 if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
             }, 50);
