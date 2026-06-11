@@ -3139,15 +3139,13 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    // Build DOM node (not innerHTML via execCommand — avoids stripping)
     const wrapper = document.createElement('div');
-   wrapper.innerHTML = `
-    <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
+    wrapper.innerHTML = `
+    <div class="asai-inline-coding" data-lang="${lang}"
          contenteditable="false"
          style="margin:16px 0;border-radius:14px;overflow:hidden;
                 border:2px solid ${lc.border};background:${lc.bg};display:block;">
 
-        <!-- HEADER with Edit/Delete buttons -->
         <div style="padding:10px 16px;display:flex;align-items:center;
                     justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
             <div style="display:flex;align-items:center;gap:10px;">
@@ -3162,24 +3160,29 @@ function confirmInlineCodingBlock(editorIndex) {
             </div>
             <div style="display:flex;align-items:center;gap:6px;">
                 <span style="background:${lc.badge};color:white;padding:3px 10px;
-                             border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
-                <button onclick="editInlineCodingBlock(this)" title="Edit this coding block"
-                    style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.3);
-                           color:white;width:30px;height:30px;border-radius:7px;cursor:pointer;
-                           font-size:13px;display:flex;align-items:center;justify-content:center;">
+                             border-radius:20px;font-size:11px;font-weight:700;">
+                    Interactive
+                </span>
+                <button onclick="editInlineCodingBlock(this)" title="Edit coding block"
+                    style="background:rgba(255,255,255,0.2);
+                           border:1.5px solid rgba(255,255,255,0.4);
+                           color:white;width:30px;height:30px;border-radius:7px;
+                           cursor:pointer;font-size:13px;display:flex;align-items:center;
+                           justify-content:center;">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteInlineCodingBlock(this)" title="Delete this coding block"
-                    style="background:rgba(239,68,68,0.3);border:1.5px solid rgba(239,68,68,0.6);
-                           color:#fca5a5;width:30px;height:30px;border-radius:7px;cursor:pointer;
-                           font-size:13px;display:flex;align-items:center;justify-content:center;">
+                <button onclick="deleteInlineCodingBlock(this)" title="Delete coding block"
+                    style="background:rgba(239,68,68,0.3);
+                           border:1.5px solid rgba(239,68,68,0.6);
+                           color:#fca5a5;width:30px;height:30px;border-radius:7px;
+                           cursor:pointer;font-size:13px;display:flex;align-items:center;
+                           justify-content:center;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
         </div>
 
         ${prompt ? `
-        <!-- PROBLEM statement -->
         <div style="padding:12px 16px;background:rgba(99,102,241,0.12);
                     border-bottom:1px solid rgba(255,255,255,0.06);">
             <div style="font-size:10px;font-weight:700;color:${lc.badge};
@@ -3189,7 +3192,6 @@ function confirmInlineCodingBlock(editorIndex) {
             <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${esc(prompt)}</div>
         </div>` : ''}
 
-        <!-- STARTER CODE preview -->
         <div style="padding:12px 16px;">
             <div style="font-size:10px;font-weight:700;color:${lc.badge};
                         text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
@@ -3204,29 +3206,22 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const codingNode = wrapper.firstElementChild;
 
-    // Insert at saved cursor position, or append
+    // Insert at saved cursor or append
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
         try {
-            const range = window._savedCodingRange;
-            // Re-select and insert
             const sel = window.getSelection();
             sel.removeAllRanges();
-            sel.addRange(range);
+            sel.addRange(window._savedCodingRange);
+            const range = sel.getRangeAt(0);
             range.deleteContents();
-            // Insert a line break before and after for clean spacing
-            const brBefore = document.createElement('br');
-            const brAfter  = document.createElement('br');
-            range.insertNode(brAfter);
+            const br = document.createElement('br');
+            range.insertNode(br);
             range.insertNode(codingNode);
-            range.insertNode(brBefore);
-            // Move cursor after the block
-            range.setStartAfter(brAfter);
+            range.setStartAfter(br);
             range.collapse(true);
             sel.removeAllRanges();
             sel.addRange(range);
         } catch(e) {
-            // Fallback: append
-            editor.appendChild(document.createElement('br'));
             editor.appendChild(codingNode);
             editor.appendChild(document.createElement('br'));
         }
@@ -3239,80 +3234,67 @@ function confirmInlineCodingBlock(editorIndex) {
     window._savedCodingRange  = null;
     window._savedCodingEditor = null;
 
-    showToast('✅ Coding exercise inserted at cursor!');
+    showToast('✅ Coding exercise inserted!');
 }
 
 function editInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
     if (!block) return;
 
-    const lang    = block.dataset.lang || 'python';
-    // Get current prompt text
-    const promptDiv = block.querySelectorAll('div[style*="Problem"]');
+    const lang = block.dataset.lang || 'python';
+    
+    // Extract current prompt
     let currentPrompt = '';
-    if (promptDiv.length > 0) {
-        const nextDiv = promptDiv[0].nextElementSibling;
-        if (nextDiv) currentPrompt = nextDiv.textContent.trim();
-    }
-    // Get current starter code
+    const promptContent = block.querySelector('[style*="c7d2fe"]');
+    if (promptContent) currentPrompt = promptContent.textContent.trim();
+
+    // Extract current starter code
     const pre = block.querySelector('pre');
     const currentStarter = pre ? pre.textContent.trim() : '';
 
-    // Get the editor this block is inside
+    // Save position
     const editor = block.closest('.editor-content');
     window._savedCodingEditor = editor;
-
-    // Place cursor after block before removing
     if (editor) {
         const range = document.createRange();
         range.setStartAfter(block);
         range.collapse(true);
-        const sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
         window._savedCodingRange = range.cloneRange();
     }
 
     // Remove old block
     block.remove();
 
-    // Find which editor index this is
+    // Find editor index
     let editorIndex = 0;
-    if (editor && editor.id) {
+    if (editor?.id) {
         const match = editor.id.match(/(\d+)$/);
         if (match) editorIndex = parseInt(match[1]);
     }
 
-    // Open the coding picker modal
+    // Open modal
     insertInlineCodingBlock(editorIndex);
 
-    // Pre-fill the modal with existing values
+    // Pre-fill with existing values
     setTimeout(() => {
-        const langSel  = document.getElementById('inlineCodingLang');
-        const promptEl = document.getElementById('inlineCodingPrompt');
+        const langSel   = document.getElementById('inlineCodingLang');
+        const promptEl  = document.getElementById('inlineCodingPrompt');
         const starterEl = document.getElementById('inlineCodingStarter');
         if (langSel)   langSel.value   = lang;
         if (promptEl)  promptEl.value  = currentPrompt;
         if (starterEl) starterEl.value = currentStarter;
-    }, 150);
+    }, 200);
 }
 
 function deleteInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
     if (!block) return;
-    if (confirm('Delete this coding exercise block?')) {
+    if (confirm('Delete this coding exercise?')) {
         block.remove();
         showToast('Coding block deleted.');
     }
 }
-function deleteInlineCodingBlock(btn) {
-    const block = btn.closest('.asai-inline-coding');
-    if (!block) return;
-    if (confirm('Delete this coding exercise block?')) {
-        block.remove();
-        showToast('Coding block deleted.');
-    }
-}
+
 // ── RESIZABLE IMAGES ──
 let _selectedImg = null;
 
