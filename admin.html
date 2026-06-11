@@ -2396,6 +2396,50 @@ function insertTable(editorIndex) {
     document.body.appendChild(modal);
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 
+    document.getElementById('inlineCodingPrompt')?.focus();
+// Wire run buttons inside editors immediately after insertion
+setTimeout(() => {
+    document.querySelectorAll('.editor-content .asai-inline-coding').forEach(block => {
+        const rb = block.querySelector('.asai-inline-run-btn');
+        if (!rb || rb.dataset.wired) return;
+        rb.dataset.wired = '1';
+        const lang = block.dataset.lang || 'python';
+        rb.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const ta = block.querySelector('textarea');
+            const outDiv = block.querySelector('.asai-inline-output');
+            const outPre = outDiv?.querySelector('pre');
+            if (!ta || !outPre) return;
+            rb.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            rb.disabled = true;
+            outDiv.style.display = 'block';
+            outPre.textContent = 'Running…';
+            outPre.style.color = '#94a3b8';
+            try {
+                let res;
+                if (lang === 'javascript') {
+                    res = _runJSInline ? _runJSInline(ta.value) : { output: '', error: 'JS runner not ready' };
+                } else {
+                    const r = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ language: 'python', version: '3.10.0', files: [{ content: ta.value }] })
+                    });
+                    const d = await r.json();
+                    res = { output: (d.run?.stdout || '').trim(), error: (d.run?.stderr || '') && !d.run?.stdout ? d.run.stderr : null };
+                }
+                outPre.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output)');
+                outPre.style.color = res.error ? '#f87171' : '#4ade80';
+            } catch(err) {
+                outPre.textContent = '❌ ' + err.message;
+                outPre.style.color = '#f87171';
+            }
+            rb.innerHTML = '<i class="fas fa-play"></i> Run';
+            rb.disabled = false;
+        });
+    });
+}, 200);
     // Build visual grid
     const grid = document.getElementById('tableGrid');
     const MAXR = 8, MAXC = 8;
