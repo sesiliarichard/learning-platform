@@ -4444,11 +4444,15 @@ function addEditTopic(existingTopic = null) {
              // Re-wire inline coding blocks
                 editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
                     block.setAttribute('contenteditable', 'false');
-                    block.style.display = 'table';
-                    block.style.minWidth = '300px';
-                    block.style.maxWidth = '560px';
-                    block.style.width = 'auto';
-                    block.style.margin = '16px 0';
+                    block.style.cssText = block.style.cssText + 
+    ';display:table!important;min-width:300px;max-width:560px;' +
+    'width:auto!important;margin:16px 0;box-sizing:border-box;';
+block.setAttribute('style', 
+    'display:table;min-width:300px;max-width:560px;width:auto;' +
+    'margin:16px 0;box-sizing:border-box;border-radius:14px;overflow:hidden;' +
+    'border:2px solid ' + (block.style.borderColor || '#4338ca') + ';' +
+    'background:' + (block.style.background || '#1e1b4b') + ';'
+);
                     block.style.boxSizing = 'border-box';
 
                     // Inject edit/delete buttons if missing
