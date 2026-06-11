@@ -4405,9 +4405,51 @@ function addEditTopic(existingTopic = null) {
                         });
                     }
                 });
-                // Re-wire inline coding blocks
+              // Re-wire inline coding blocks
                 editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
                     block.setAttribute('contenteditable', 'false');
+
+                    // Inject edit/delete buttons if missing
+                    const hasButtons = block.querySelector('button[title="Edit coding block"]');
+                    if (!hasButtons) {
+                        const headerRow = block.querySelector('div:first-child');
+                        if (headerRow) {
+                            const btnWrap = document.createElement('div');
+                            btnWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+                            btnWrap.innerHTML = `
+                                <button title="Edit coding block"
+                                    style="background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);
+                                           color:white;width:30px;height:30px;border-radius:7px;cursor:pointer;
+                                           font-size:13px;display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button title="Delete coding block"
+                                    style="background:rgba(239,68,68,0.3);border:1.5px solid rgba(239,68,68,0.6);
+                                           color:#fca5a5;width:30px;height:30px;border-radius:7px;cursor:pointer;
+                                           font-size:13px;display:flex;align-items:center;justify-content:center;">
+                                    <i class="fas fa-trash"></i>
+                                </button>`;
+                            headerRow.appendChild(btnWrap);
+                        }
+                    }
+
+                    // Wire buttons
+                    const _eb = block.querySelector('button[title="Edit coding block"]');
+                    const _db = block.querySelector('button[title="Delete coding block"]');
+                    if (_eb) {
+                        _eb.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            editInlineCodingBlock(_eb);
+                        });
+                    }
+                    if (_db) {
+                        _db.addEventListener('mousedown', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            deleteInlineCodingBlock(_db);
+                        });
+                    }
                 });
             } else {
                 editorEl.innerHTML = '<p>Enter your content here...</p>';
