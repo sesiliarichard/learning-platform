@@ -3352,7 +3352,17 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const codingNode = wrapper.firstElementChild;
  
-   // Insert at saved cursor or append
+   // Ensure block is non-editable and self-contained
+    codingNode.setAttribute('contenteditable', 'false');
+    codingNode.style.display = 'block';
+    codingNode.style.userSelect = 'none';
+
+    // Wrap in a paragraph so cursor can get past it
+    const wrapper = document.createElement('p');
+    wrapper.setAttribute('contenteditable', 'true');
+    wrapper.style.margin = '8px 0';
+    wrapper.appendChild(codingNode);
+
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
         try {
             const sel = window.getSelection();
@@ -3360,21 +3370,30 @@ function confirmInlineCodingBlock(editorIndex) {
             sel.addRange(window._savedCodingRange);
             const range = sel.getRangeAt(0);
             range.deleteContents();
+            // Insert before a safe cursor position
             const br = document.createElement('br');
             range.insertNode(br);
-            range.insertNode(codingNode);
-            range.setStartAfter(br);
-            range.collapse(true);
+            range.insertNode(wrapper);
+            // Move cursor after the block
+            const after = document.createElement('p');
+            after.innerHTML = '<br>';
+            wrapper.parentNode.insertBefore(after, wrapper.nextSibling);
+            const newRange = document.createRange();
+            newRange.setStart(after, 0);
+            newRange.collapse(true);
             sel.removeAllRanges();
-            sel.addRange(range);
+            sel.addRange(newRange);
         } catch(e) {
-            editor.appendChild(codingNode);
-            editor.appendChild(document.createElement('br'));
+            editor.appendChild(wrapper);
+            const after = document.createElement('p');
+            after.innerHTML = '<br>';
+            editor.appendChild(after);
         }
     } else {
-        editor.appendChild(document.createElement('br'));
-        editor.appendChild(codingNode);
-        editor.appendChild(document.createElement('br'));
+        editor.appendChild(wrapper);
+        const after = document.createElement('p');
+        after.innerHTML = '<br>';
+        editor.appendChild(after);
     }
 
     window._savedCodingRange  = null;
@@ -11998,9 +12017,9 @@ function _wireTable(tbl) {
     if (tbl.dataset.wired) return;
     if (!_isInAdminEditor(tbl)) return;
     tbl.dataset.wired = '1';
-    tbl.addEventListener('mouseenter', () => _showOverlay(tbl));
-    tbl.addEventListener('mouseleave', _hideOverlay);
-    tbl.addEventListener('click',      () => _showOverlay(tbl));
+    tbl.addEventListener('mouseenter', () => { if (typeof _showOverlay === 'function') _showOverlay(tbl); });
+    tbl.addEventListener('mouseleave', () => { if (typeof _hideOverlay === 'function') _hideOverlay(); });
+    tbl.addEventListener('click',      () => { if (typeof _showOverlay === 'function') _showOverlay(tbl); });
 }
 
 // ── Wire ALL tables in all editors (no modal restriction) ──
