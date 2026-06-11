@@ -3226,8 +3226,7 @@ if (delBtn) {
         deleteInlineCodingBlock(delBtn);
     });
 }
-
-    // Insert at saved cursor or append
+// Insert at saved cursor or append
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
         try {
             const sel = window.getSelection();
@@ -3255,8 +3254,29 @@ if (delBtn) {
     window._savedCodingRange  = null;
     window._savedCodingEditor = null;
 
+    // Wire edit and delete buttons via mousedown (works inside contenteditable)
+    const editBtn = codingNode.querySelector('button[title="Edit coding block"]');
+    const delBtn  = codingNode.querySelector('button[title="Delete coding block"]');
+
+    if (editBtn) {
+        editBtn.removeAttribute('onclick');
+        editBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            editInlineCodingBlock(editBtn);
+        });
+    }
+
+    if (delBtn) {
+        delBtn.removeAttribute('onclick');
+        delBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            deleteInlineCodingBlock(delBtn);
+        });
+    }
+
     showToast('✅ Coding exercise inserted!');
-}
 
 function editInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
