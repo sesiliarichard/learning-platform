@@ -3082,6 +3082,13 @@ function insertInlineCodingBlock(editorIndex) {
                            display:flex;align-items:center;justify-content:center;gap:8px;">
                     <i class="fas fa-plus-circle"></i> Insert into Notes
                 </button>
+                <button onclick="saveInlineCodingBlock(${editorIndex})"
+                    style="flex:2;padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                           border:none;border-radius:12px;color:white;font-weight:800;
+                           cursor:pointer;font-family:inherit;font-size:14px;
+                           display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
             </div>
         </div>`;
 
@@ -3258,7 +3265,35 @@ function confirmInlineCodingBlock(editorIndex) {
 
     showToast('✅ Coding exercise inserted!');
 }
+function saveInlineCodingBlock(editorIndex) {
+    const lang    = document.getElementById('inlineCodingLang')?.value    || 'python';
+    const prompt  = document.getElementById('inlineCodingPrompt')?.value?.trim() || '';
+    const starter = document.getElementById('inlineCodingStarter')?.value || '';
 
+    // If editing an existing block, update it in place
+    if (window._editingCodingBlock) {
+        const block = window._editingCodingBlock;
+
+        // Update lang
+        block.dataset.lang = lang;
+
+        // Update problem text
+        const promptEl = block.querySelector('[style*="c7d2fe"]');
+        if (promptEl) promptEl.textContent = prompt;
+
+        // Update starter code
+        const pre = block.querySelector('pre');
+        if (pre) pre.textContent = starter;
+
+        document.getElementById('inlineCodingPickerModal')?.remove();
+        window._editingCodingBlock = null;
+        showToast('✅ Coding exercise updated!');
+        return;
+    }
+
+    // Otherwise just insert as new
+    confirmInlineCodingBlock(editorIndex);
+}
 function editInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
     if (!block) return;
@@ -3284,8 +3319,8 @@ function editInlineCodingBlock(btn) {
         window._savedCodingRange = range.cloneRange();
     }
 
-    // Remove old block
-    block.remove();
+  // Store reference for save button, don't remove yet
+    window._editingCodingBlock = block;
 
     // Find editor index
     let editorIndex = 0;
