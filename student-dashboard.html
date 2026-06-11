@@ -3329,6 +3329,97 @@ function displayNote(index) {
 
     reader.innerHTML = contentHtml;
 
+    // Wire static asai-inline-coding blocks inside topic content
+reader.querySelectorAll('.asai-inline-coding').forEach(block => {
+    const lang    = block.dataset.lang || 'python';
+    const uid     = 'sc_' + Date.now() + '_' + Math.random().toString(36).substr(2,5);
+    const prompt  = block.querySelector('div[style*="Problem"] + div')?.textContent?.trim() || '';
+    const starter = block.querySelector('pre')?.textContent?.trim() || '';
+
+    const lc = {
+        python:     { badge:'#6366f1', border:'#4338ca', bg:'#1e1b4b', label:'Python 3' },
+        javascript: { badge:'#f59e0b', border:'#d97706', bg:'#1c1917', label:'JavaScript' },
+        both:       { badge:'#34d399', border:'#10b981', bg:'#0f2027', label:'Python / JS' }
+    }[lang] || { badge:'#6366f1', border:'#4338ca', bg:'#1e1b4b', label:'Python' };
+
+    block.outerHTML = `
+    <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
+         style="margin:16px 0;border-radius:14px;overflow:hidden;border:2px solid ${lc.border};background:${lc.bg};">
+        <div style="padding:10px 16px;display:flex;align-items:center;
+                    justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:28px;height:28px;background:${lc.badge};border-radius:8px;
+                            display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-code" style="color:white;font-size:11px;"></i>
+                </div>
+                <div>
+                    <div style="font-size:13px;font-weight:800;color:white;">Coding Exercise</div>
+                    <div style="font-size:11px;color:${lc.badge};">${lc.label}</div>
+                </div>
+            </div>
+            <span style="background:${lc.badge};color:white;padding:3px 10px;
+                         border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
+        </div>
+        ${prompt ? `<div style="padding:12px 16px;background:rgba(99,102,241,0.12);
+                    border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:10px;font-weight:700;color:${lc.badge};
+                        text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">
+                <i class="fas fa-lightbulb"></i> Problem
+            </div>
+            <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${prompt}</div>
+        </div>` : ''}
+        <div style="padding:12px 16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <span style="font-size:10px;font-weight:700;color:${lc.badge};
+                             text-transform:uppercase;letter-spacing:1px;">Your Code</span>
+                <button onclick="document.getElementById('inlineEditor_${uid}').value=${JSON.stringify(starter)}"
+                    style="padding:3px 10px;background:rgba(255,255,255,0.1);color:#94a3b8;
+                           border:none;border-radius:6px;font-size:11px;cursor:pointer;">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
+            <textarea id="inlineEditor_${uid}" rows="7" spellcheck="false"
+                style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
+                       border:1.5px solid ${lc.border};border-radius:10px;font-size:13px;
+                       font-family:'Courier New',monospace;outline:none;resize:vertical;
+                       box-sizing:border-box;line-height:1.6;"></textarea>
+        </div>
+        <div style="padding:0 16px 14px;display:flex;gap:10px;">
+            <button id="inlineRunBtn_${uid}" onclick="runInlineCode('${uid}','${lang}')"
+                style="flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                       color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                       cursor:pointer;font-family:inherit;">
+                <i class="fas fa-play"></i> Run Code
+            </button>
+            <button onclick="submitInlineCodingExercise('${uid}','${note.id}','${lang}')"
+                style="flex:1;padding:11px;background:linear-gradient(135deg,#10b981,#059669);
+                       color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                       cursor:pointer;font-family:inherit;">
+                <i class="fas fa-paper-plane"></i> Submit
+            </button>
+        </div>
+        <div id="inlineOutput_${uid}" style="display:none;padding:14px 16px;background:#0a0a1a;
+             border-top:1px solid ${lc.border}30;">
+            <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;
+                        letter-spacing:1px;margin-bottom:8px;">
+                <i class="fas fa-terminal"></i> Output
+            </div>
+            <pre id="inlineResult_${uid}" style="margin:0;font-family:'Courier New',monospace;
+                 font-size:12px;color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+        </div>
+    </div>`;
+});
+
+// Set textarea values after DOM insertion
+reader.querySelectorAll('textarea[id^="inlineEditor_sc_"]').forEach(ta => {
+    const uid = ta.id.replace('inlineEditor_', '');
+    const block = ta.closest('.asai-inline-coding');
+    if (block) {
+        const pre = block.querySelector('pre[style*="Courier"]');
+        if (pre) ta.value = pre.textContent.trim();
+    }
+});
+
     // Set textarea values AFTER DOM insertion to avoid HTML encoding issues
     reader.querySelectorAll('textarea[id^="inlineEditor_"]').forEach(ta => {
         const uid = ta.id.replace('inlineEditor_', '');

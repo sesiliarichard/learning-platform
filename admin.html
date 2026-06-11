@@ -3114,8 +3114,20 @@ function confirmInlineCodingBlock(editorIndex) {
                     <div style="font-size:11px;color:${lc.badge};">${lc.label}</div>
                 </div>
             </div>
-            <span style="background:${lc.badge};color:white;padding:3px 10px;
-                         border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
+           <div style="display:flex;align-items:center;gap:8px;">
+                <span style="background:${lc.badge};color:white;padding:3px 10px;
+                             border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
+                <button onclick="editInlineCodingBlock(this)" title="Edit"
+                    style="background:rgba(255,255,255,0.15);border:none;color:white;
+                           width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteInlineCodingBlock(this)" title="Delete"
+                    style="background:rgba(239,68,68,0.25);border:1px solid rgba(239,68,68,0.5);
+                           color:#fca5a5;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:13px;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
 
         ${prompt ? `
@@ -3180,6 +3192,52 @@ function confirmInlineCodingBlock(editorIndex) {
     showToast('✅ Coding exercise inserted at cursor!');
 }
 
+function editInlineCodingBlock(btn) {
+    const block = btn.closest('.asai-inline-coding');
+    if (!block) return;
+
+    const lang    = block.dataset.lang || 'python';
+    const prompt  = block.querySelector('[style*="Problem"]')?.nextElementSibling?.textContent?.trim() || '';
+    const starter = block.querySelector('pre')?.textContent?.trim() || '';
+
+    // Remove old block so we can re-insert edited version
+    const editor = block.closest('.editor-content');
+    window._savedCodingEditor = editor;
+
+    // Place cursor after the block before removing it
+    if (editor) {
+        const range = document.createRange();
+        range.setStartAfter(block);
+        range.collapse(true);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        window._savedCodingRange = range.cloneRange();
+    }
+
+    block.remove();
+
+    // Open the picker modal pre-filled
+    insertInlineCodingBlock(0); // opens modal
+
+    setTimeout(() => {
+        const langSel = document.getElementById('inlineCodingLang');
+        const promptEl = document.getElementById('inlineCodingPrompt');
+        const starterEl = document.getElementById('inlineCodingStarter');
+        if (langSel) langSel.value = lang;
+        if (promptEl) promptEl.value = prompt;
+        if (starterEl) starterEl.value = starter;
+    }, 100);
+}
+
+function deleteInlineCodingBlock(btn) {
+    const block = btn.closest('.asai-inline-coding');
+    if (!block) return;
+    if (confirm('Delete this coding exercise block?')) {
+        block.remove();
+        showToast('Coding block deleted.');
+    }
+}
 // ── RESIZABLE IMAGES ──
 let _selectedImg = null;
 
