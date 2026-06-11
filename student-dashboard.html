@@ -6595,7 +6595,7 @@ async function runCode() {
 
         } else {
             // Python via Pyodide (runs in browser, no API needed)
-            result = await runPythonPyodide(code, outputDiv);
+           result = await _runPistonAPI(code, 'python', '3.10.0');
             if (result === null) return; // already handled (loading state shown)
         }
 
@@ -7131,74 +7131,90 @@ function openCodingEnvironmentById(topicId) {
     modal.style.display = 'flex';
 }
 async function runInlineCode(uid, lang) {
-    const editor  = document.getElementById('inlineEditor_'  + uid);
-    const output  = document.getElementById('inlineOutput_'  + uid);
-    const result  = document.getElementById('inlineResult_'  + uid);
-    const runBtn  = document.getElementById('inlineRunBtn_'  + uid);
+    const editor = document.getElementById('inlineEditor_' + uid);
+    const output = document.getElementById('inlineOutput_' + uid);
+    const result = document.getElementById('inlineResult_' + uid);
+    const runBtn = document.getElementById('inlineRunBtn_' + uid);
     if (!editor || !output || !result) return;
 
-    // Get code directly from textarea VALUE (not innerHTML — avoids HTML encoding)
     const code = editor.value;
     if (!code.trim()) {
+        output.style.display = 'block';
         result.textContent = '⚠️ Write some code first!';
         result.style.color = '#f59e0b';
-        output.style.display = 'block';
         return;
     }
 
     runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…';
-    runBtn.disabled  = true;
+    runBtn.disabled = true;
     output.style.display = 'block';
-    result.style.color   = '#94a3b8';
-    result.textContent   = '⏳ Running…';
+    result.style.color = '#94a3b8';
+    result.textContent = '⏳ Running your code…';
 
     try {
         let res;
         if (lang === 'javascript') {
-            res = runJavaScriptSync(code);
+            res = _runJSSafe(code);
         } else if (lang === 'html') {
             output.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
             output.appendChild(iframe);
-            const blob = new Blob([code], { type: 'text/html' });
-            iframe.src = URL.createObjectURL(blob);
+            iframe.src = URL.createObjectURL(new Blob([code], { type: 'text/html' }));
             runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
             runBtn.disabled = false;
             return;
         } else {
-            // Python — use Pyodide if loaded, else Piston API fallback
-            if (window._pyodide) {
-                res = await runPythonPyodide(code, output);
-            } else {
-                // Show loading message while Pyodide loads
-                result.textContent = '⏳ Loading Python engine (first time only)…';
-                result.style.color = '#94a3b8';
-                try {
-                    res = await runPythonPyodide(code, output);
-                } catch(e) {
-                    // Fallback to Piston API if Pyodide fails
-                    res = await _runViaPiston(code);
-                }
-            }
-            if (res === null) {
-                runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
-                runBtn.disabled = false;
-                return;
-            }
+            // Use Piston API directly — no Pyodide loading wait
+            res = await _runPistonAPI(code, 'python', '3.10.0');
         }
         result.textContent = res.error
             ? '❌ ' + res.error
             : (res.output || '(No output — did you forget print()?)');
         result.style.color = res.error ? '#f87171' : '#4ade80';
-    } catch(err) {
+    } catch (err) {
         result.textContent = '❌ ' + err.message;
         result.style.color = '#f87171';
     }
     runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
-    runBtn.disabled  = false;
+    runBtn.disabled = false;
 }
 
+// Safe JS runner
+function _runJSSafe(code) {
+    let output = '';
+    const orig = console.log;
+    console.log = (...args) => {
+        output += args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ') + '\n';
+    };
+    let error = null;
+    try { new Function(code)(); } catch (e) { error = e.message; }
+    finally { console.log = orig; }
+    return { output: output.trim() || (error ? '' : '(No output)'), error };
+}
+
+// Piston API runner — works instantly, no loading
+async function _runPistonAPI(code, language, version) {
+    try {
+        const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                language,
+                version: version || '3.10.0',
+                files: [{ content: code }]
+            })
+        });
+        if (!res.ok) throw new Error('API error ' + res.status);
+        const data = await res.json();
+        const stdout = (data.run?.stdout || '').trim();
+        const stderr = (data.run?.stderr || '').trim();
+        if (stderr && !stdout) return { output: '', error: stderr };
+        return { output: stdout || '(No output)', error: null };
+    } catch (e) {
+        return { output: '', error: 'Could not reach Python runner: ' + e.message };
+    }
+}
 // Piston API fallback for Python (when Pyodide not ready)
 async function _runViaPiston(code) {
     try {

@@ -472,100 +472,77 @@ window.wsConfirmInsertCoding = function(globalIdx) {
     if (!editor) return;
 
     const langColors = {
-        python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
+        python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python 3' },
         javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
         both:       { bg: '#0f2027', border: '#10b981', badge: '#34d399', label: 'Python / JS' }
     };
     const lc = langColors[lang] || langColors.python;
-
-    // Build unique ID for this inline exercise
-    const uid = 'ce_' + Date.now();
-
     const defaultStarter = starter || (lang === 'javascript'
-        ? `// Write your solution here\nfunction solution() {\n    \n}`
-        : `# Write your solution here\ndef solution():\n    pass`);
+        ? '// Write your solution here\nfunction solution() {\n    \n}'
+        : '# Write your solution here\ndef solution():\n    pass');
+    const uid = 'ce_' + Date.now();
+    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-    const placeholder = document.createElement('div');
-    placeholder.innerHTML = `
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
     <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
-         style="margin:16px 0;border-radius:14px;overflow:hidden;
-                border:2px solid ${lc.border};background:${lc.bg};">
-
-        <!-- Header -->
-        <div style="padding:12px 16px;display:flex;align-items:center;
-                    justify-content:space-between;border-bottom:1px solid ${lc.border}30;">
+         contenteditable="false"
+         style="margin:16px 0;border-radius:14px;overflow:hidden;border:2px solid ${lc.border};background:${lc.bg};display:block;">
+        <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
             <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:30px;height:30px;background:${lc.badge};border-radius:8px;
-                            display:flex;align-items:center;justify-content:center;">
-                    <i class="fas fa-code" style="color:white;font-size:12px;"></i>
+                <div style="width:28px;height:28px;background:${lc.badge};border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                    <i class="fas fa-code" style="color:white;font-size:11px;"></i>
                 </div>
                 <div>
                     <div style="font-size:13px;font-weight:800;color:white;">Coding Exercise</div>
                     <div style="font-size:11px;color:${lc.badge};">${lc.label}</div>
                 </div>
             </div>
-            <span style="background:${lc.badge};color:white;padding:3px 10px;
-                         border-radius:20px;font-size:11px;font-weight:700;">
-                Interactive
-            </span>
+            <div style="display:flex;gap:6px;">
+                <button class="asai-inline-edit-btn" title="Edit"
+                    style="background:rgba(255,255,255,0.15);border:none;color:white;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:12px;">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="asai-inline-delete-btn" title="Delete"
+                    style="background:rgba(239,68,68,0.3);border:1px solid rgba(239,68,68,0.5);color:#fca5a5;width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:12px;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
-
         ${prompt ? `
-        <!-- Problem statement -->
-        <div style="padding:14px 16px;background:rgba(99,102,241,0.1);
-                    border-bottom:1px solid ${lc.border}20;">
-            <div style="font-size:11px;font-weight:700;color:${lc.badge};
-                        text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
+        <div style="padding:12px 16px;background:rgba(99,102,241,0.12);border-bottom:1px solid rgba(255,255,255,0.06);">
+            <div style="font-size:10px;font-weight:700;color:${lc.badge};text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">
                 <i class="fas fa-lightbulb"></i> Problem
             </div>
-            <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${_esc(prompt)}</div>
+            <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${esc(prompt)}</div>
         </div>` : ''}
-
-        <!-- Code editor -->
-        <div style="padding:14px 16px;">
+        <div style="padding:12px 16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                <span style="font-size:11px;font-weight:700;color:${lc.badge};
-                             text-transform:uppercase;letter-spacing:1px;">Your Code</span>
-                <div style="display:flex;gap:6px;">
-                    <button class="asai-inline-run-btn"
-                        data-uid="${uid}"
-                        style="padding:5px 14px;background:${lc.badge};color:white;border:none;
-                               border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;
-                               font-family:inherit;display:flex;align-items:center;gap:5px;">
-                        <i class="fas fa-play"></i> Run
-                    </button>
-                </div>
+                <span style="font-size:10px;font-weight:700;color:${lc.badge};text-transform:uppercase;letter-spacing:1px;">Your Code</span>
+                <button class="asai-inline-run-btn"
+                    style="padding:4px 12px;background:${lc.badge};color:white;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;">
+                    <i class="fas fa-play"></i> Run
+                </button>
             </div>
-            <textarea class="asai-inline-editor" data-uid="${uid}" rows="6"
-                spellcheck="false"
-                style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
-                       border:1.5px solid ${lc.border};border-radius:10px;font-size:13px;
-                       font-family:'Courier New',monospace;outline:none;resize:vertical;
-                       box-sizing:border-box;line-height:1.6;">${_esc(defaultStarter)}</textarea>
+            <textarea class="asai-inline-editor" rows="5" spellcheck="false"
+                style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;border:1.5px solid ${lc.border};border-radius:10px;font-size:13px;font-family:'Courier New',monospace;outline:none;resize:vertical;box-sizing:border-box;line-height:1.6;"></textarea>
         </div>
-
-        <!-- Output area (hidden by default) -->
-        <div class="asai-inline-output" data-uid="${uid}"
-             style="display:none;padding:14px 16px;background:#0a0a1a;
-                    border-top:1px solid ${lc.border}30;">
-            <div style="font-size:11px;font-weight:700;color:#64748b;
-                        text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
+        <div class="asai-inline-output" style="display:none;padding:14px 16px;background:#0a0a1a;border-top:1px solid ${lc.border}30;">
+            <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
                 <i class="fas fa-terminal"></i> Output
             </div>
-            <pre class="asai-inline-result" data-uid="${uid}"
-                 style="margin:0;font-family:'Courier New',monospace;font-size:12px;
-                        color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+            <pre class="asai-inline-result" style="margin:0;font-family:'Courier New',monospace;font-size:12px;color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
         </div>
     </div>`;
 
-    const codingNode = placeholder.firstElementChild;
-    const br = document.createElement('br');
+    const codingNode = wrapper.firstElementChild;
 
     // Insert at cursor or append
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
         const range = sel.getRangeAt(0);
         range.deleteContents();
+        const br = document.createElement('br');
         range.insertNode(br);
         range.insertNode(codingNode);
         range.setStartAfter(br);
@@ -573,19 +550,96 @@ window.wsConfirmInsertCoding = function(globalIdx) {
         sel.removeAllRanges();
         sel.addRange(range);
     } else {
+        editor.appendChild(document.createElement('br'));
         editor.appendChild(codingNode);
-        editor.appendChild(br);
+        editor.appendChild(document.createElement('br'));
     }
 
-  // Wire up Run button immediately
-    _wireInlineCodingBlock(codingNode, lang);
+    // Set textarea value AFTER it is in the DOM
+    const ta = codingNode.querySelector('.asai-inline-editor');
+    if (ta) ta.value = defaultStarter;
 
-    // Fallback sweep after DOM settles
-    setTimeout(() => {
-        document.querySelectorAll('.editor-content .asai-inline-coding').forEach(block => {
-            _wireInlineCodingBlock(block, block.dataset.lang || 'python');
+    // Wire Run button
+    const runBtn = codingNode.querySelector('.asai-inline-run-btn');
+    if (runBtn) {
+        runBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const textarea = codingNode.querySelector('.asai-inline-editor');
+            const outDiv   = codingNode.querySelector('.asai-inline-output');
+            const outPre   = outDiv?.querySelector('.asai-inline-result');
+            if (!textarea || !outPre) return;
+            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            runBtn.disabled = true;
+            outDiv.style.display = 'block';
+            outPre.style.color = '#94a3b8';
+            outPre.textContent = 'Running…';
+            try {
+                let res;
+                if (lang === 'javascript') {
+                    let out = '';
+                    const orig = console.log;
+                    console.log = (...a) => { out += a.join(' ') + '\n'; };
+                    let err = null;
+                    try { new Function(textarea.value)(); } catch(ex) { err = ex.message; }
+                    finally { console.log = orig; }
+                    res = { output: out.trim() || (err ? '' : '(No output)'), error: err };
+                } else {
+                    const r = await fetch('https://emkc.org/api/v2/piston/execute', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ language: 'python', version: '3.10.0', files: [{ content: textarea.value }] })
+                    });
+                    const d = await r.json();
+                    const stdout = (d.run?.stdout || '').trim();
+                    const stderr = (d.run?.stderr || '').trim();
+                    res = { output: stdout || (stderr ? '' : '(No output)'), error: stderr && !stdout ? stderr : null };
+                }
+                outPre.textContent = res.error ? '❌ ' + res.error : res.output;
+                outPre.style.color = res.error ? '#f87171' : '#4ade80';
+            } catch (err) {
+                outPre.textContent = '❌ ' + err.message;
+                outPre.style.color = '#f87171';
+            }
+            runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
+            runBtn.disabled = false;
         });
-    }, 200);
+    }
+
+    // Wire Delete button
+    const delBtn = codingNode.querySelector('.asai-inline-delete-btn');
+    if (delBtn) {
+        delBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (confirm('Delete this coding exercise?')) {
+                codingNode.remove();
+                showToast('Coding block deleted.');
+            }
+        });
+    }
+
+    // Wire Edit button
+    const editBtn = codingNode.querySelector('.asai-inline-edit-btn');
+    if (editBtn) {
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const currentPrompt  = codingNode.querySelector('[style*="Problem"]')?.nextElementSibling?.textContent?.trim() || '';
+            const currentStarter = codingNode.querySelector('.asai-inline-editor')?.value || '';
+            // Re-open the insert modal pre-filled
+            wsInsertInlineCoding(globalIdx);
+            setTimeout(() => {
+                const lSel = document.getElementById('wsCodingLangSelect');
+                const pEl  = document.getElementById('wsCodingPromptInput');
+                const sEl  = document.getElementById('wsCodingStarterInput');
+                if (lSel) lSel.value = lang;
+                if (pEl)  pEl.value  = currentPrompt;
+                if (sEl)  sEl.value  = currentStarter;
+            }, 150);
+            codingNode.remove();
+        });
+    }
+
+    showToast('✅ Coding exercise inserted!');
 };
 
 function _wireInlineCodingBlock(block, lang) {
