@@ -3352,13 +3352,13 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const codingNode = wrapper.firstElementChild;
  
-   // Ensure block is non-editable and self-contained
+  // Ensure block is non-editable and self-contained
     codingNode.setAttribute('contenteditable', 'false');
     codingNode.style.display = 'block';
     codingNode.style.userSelect = 'none';
 
     // Wrap in a paragraph so cursor can get past it
-    const wrapper = document.createElement('p');
+    const codingWrapper = document.createElement('p');
     wrapper.setAttribute('contenteditable', 'true');
     wrapper.style.margin = '8px 0';
     wrapper.appendChild(codingNode);
