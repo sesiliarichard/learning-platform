@@ -3226,7 +3226,8 @@ if (delBtn) {
         deleteInlineCodingBlock(delBtn);
     });
 }
-// Insert at saved cursor or append
+
+   // Insert at saved cursor or append
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
         try {
             const sel = window.getSelection();
@@ -3277,6 +3278,7 @@ if (delBtn) {
     }
 
     showToast('✅ Coding exercise inserted!');
+}
 
 function editInlineCodingBlock(btn) {
     const block = btn.closest('.asai-inline-coding');
