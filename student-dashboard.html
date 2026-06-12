@@ -4009,10 +4009,10 @@ async function syncCourseProgressToDB(studentId, courseId) {
         }
 
         // ── WEIGHTED CALCULATION ───────────────────────────────
-        const categories = [
-            { total: totalTopics,          done: doneTopics,       weight: 0.40 },
-            { total: totalQuizzes  || 0,   done: doneQuizzes,      weight: 0.30 },
-            { total: totalAssignments || 0, done: doneAssignments, weight: 0.30 },
+       const categories = [
+            { total: totalTopics,           done: doneTopics,      weight: 0.50 },
+            { total: totalQuizzes  || 0,    done: doneQuizzes,     weight: 0.25 },
+            { total: totalAssignments || 0, done: doneAssignments, weight: 0.25 },
         ];
 
         const active = categories.filter(c => c.total > 0);

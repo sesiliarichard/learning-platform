@@ -1361,14 +1361,25 @@ window.submitQuizAnswers = async function(quizId) {
 closeQuizModal();
     showToast(`✅ Submitted! You got ${result.correct}/${result.total} correct (${result.score}%)`, 'success');
 
-    const courseId = window.currentCourseId || window.currentCourse;
+   const courseId = window.currentCourseId || window.currentCourse;
     if (courseId && typeof loadCourseQuizzesUI === 'function') loadCourseQuizzesUI(courseId);
 
-    // ✅ Sync progress after quiz submission
-    if (typeof syncCourseProgressToDB === 'function' && courseId) {
+    // ── sync progress even if courseId came from the quiz record ──
+    try {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) await syncCourseProgressToDB(user.id, courseId);
-    }
+        if (user) {
+            let cid = courseId;
+            if (!cid) {
+                // fallback: read course_id from the quiz itself
+                const { data: qz } = await supabaseClient
+                    .from('quizzes').select('course_id').eq('id', quizId).maybeSingle();
+                cid = qz?.course_id;
+            }
+            if (cid && typeof syncCourseProgressToDB === 'function') {
+                await syncCourseProgressToDB(user.id, cid);
+            }
+        }
+    } catch(e) { console.error('Progress sync error:', e.message); }
 };
 
 window.closeQuizModal = function() {

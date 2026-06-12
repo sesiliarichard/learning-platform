@@ -1571,13 +1571,25 @@ window.handleSubmitAssignment = async function(assignmentId, submissionType) {
     document.getElementById('submitAssignmentModal')?.remove();
     showToast('Assignment submitted successfully! ✅', 'success');
 
-    const courseId = window.currentCourseId || window.currentCourse;
+  const courseId = window.currentCourseId || window.currentCourse;
     if (courseId && typeof loadCourseAssignmentsUI === 'function') loadCourseAssignmentsUI(courseId);
 
-    if (typeof syncCourseProgressToDB === 'function' && courseId) {
+    // ── sync progress even if courseId came from the assignment record ──
+    try {
         const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) await syncCourseProgressToDB(user.id, courseId);
-    }
+        if (user) {
+            let cid = courseId;
+            if (!cid) {
+                // fallback: read course_id from the assignment itself
+                const { data: asgn } = await supabaseClient
+                    .from('assignments').select('course_id').eq('id', assignmentId).maybeSingle();
+                cid = asgn?.course_id;
+            }
+            if (cid && typeof syncCourseProgressToDB === 'function') {
+                await syncCourseProgressToDB(user.id, cid);
+            }
+        }
+    } catch(e) { console.error('Progress sync error:', e.message); }
 };
 
 // ─────────────────────────────────────────────
