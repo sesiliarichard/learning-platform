@@ -3289,13 +3289,6 @@ function displayNote(index) {
                            justify-content:center;gap:8px;">
                     <i class="fas fa-play"></i> Run Code
                 </button>
-                <button onclick="submitInlineCodingExercise('${uid}','${note.id}','${lang}')"
-                    style="flex:1;padding:11px;background:linear-gradient(135deg,#10b981,#059669);
-                           color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
-                           cursor:pointer;font-family:inherit;display:flex;align-items:center;
-                           justify-content:center;gap:8px;">
-                    <i class="fas fa-paper-plane"></i> Submit
-                </button>
             </div>
 
             <!-- Output -->
@@ -3414,13 +3407,6 @@ reader.querySelectorAll('.asai-inline-coding').forEach(block => {
                        justify-content:center;gap:8px;">
                 <i class="fas fa-play"></i> Run Code
             </button>
-            <button id="submitBtn_${uid}"
-                style="flex:1;padding:11px;background:linear-gradient(135deg,#10b981,#059669);
-                       color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
-                       cursor:pointer;font-family:inherit;display:flex;align-items:center;
-                       justify-content:center;gap:8px;">
-                <i class="fas fa-paper-plane"></i> Submit
-            </button>
         </div>
 
         <div id="inlineOutput_${uid}"
@@ -3454,10 +3440,6 @@ reader.querySelectorAll('.asai-inline-coding').forEach(block => {
         runInlineCode(uid, lang);
     });
 
-    // Wire Submit button
-    document.getElementById('submitBtn_' + uid)?.addEventListener('click', () => {
-        submitInlineCodingExercise(uid, note.id, lang);
-    });
 });
 
     // Set textarea values AFTER DOM insertion to avoid HTML encoding issues
