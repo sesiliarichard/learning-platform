@@ -1939,12 +1939,42 @@ window.runAssignmentQCode = async function(questionId, lang) {
         resEl.style.color = errMsg ? '#f87171' : '#4ade80';
         resEl.textContent = errMsg ? '❌ ' + errMsg : (output || '(No output)');
     } catch(e) {
-        // Basic Python print simulation as last resort
+    // Basic Python print simulation as last resort
         if (lang === 'python') {
+            const code = editor.value.trim();
+            // Check for obvious syntax errors first
+            const errorPatterns = [
+                { pattern: /^\s*def\s+\w+[^:]*$/, msg: 'SyntaxError: invalid syntax (missing colon?)' },
+                { pattern: /^\s*if\s+.+[^:]\s*$/m, msg: 'SyntaxError: invalid syntax (missing colon?)' },
+                { pattern: /^\s*for\s+.+[^:]\s*$/m, msg: 'SyntaxError: invalid syntax (missing colon?)' },
+                { pattern: /^\s*while\s+.+[^:]\s*$/m, msg: 'SyntaxError: invalid syntax (missing colon?)' },
+            ];
+            for (const ep of errorPatterns) {
+                if (ep.pattern.test(code)) {
+                    resEl.style.color = '#f87171';
+                    resEl.textContent = '❌ ' + ep.msg;
+                    return;
+                }
+            }
+            // Check for unmatched brackets/quotes
+            const opens  = (code.match(/\(/g) || []).length;
+            const closes = (code.match(/\)/g) || []).length;
+            if (opens !== closes) {
+                resEl.style.color = '#f87171';
+                resEl.textContent = '❌ SyntaxError: unmatched parentheses';
+                return;
+            }
+            // Extract print statements
             let simOutput = '';
-            const matches = editor.value.matchAll(/print\s*\(([^)]+)\)/g);
+            const matches = code.matchAll(/print\s*\(([^)]+)\)/g);
             for (const m of matches) {
                 try { simOutput += m[1].trim().replace(/^["']|["']$/g, '') + '\n'; } catch(_) {}
+            }
+            // If code has no print but has other statements, warn
+            if (!simOutput && code.length > 0) {
+                resEl.style.color = '#f87171';
+                resEl.textContent = '❌ No output — make sure your code uses print() to display results';
+                return;
             }
             resEl.style.color = '#4ade80';
             resEl.textContent = simOutput || '(No output)';
