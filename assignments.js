@@ -1933,16 +1933,8 @@ window.runAssignmentQCode = async function(questionId, lang) {
             console.log = (...a) => { output += a.join(' ') + '\n'; origLog(...a); };
             try { new Function(editor.value)(); } catch(e) { errMsg = e.message; }
             console.log = origLog;
-        } else {
-            const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ language: 'python', version: '3.10.0', files: [{ content: editor.value }] })
-            });
-            if (!res.ok) throw new Error('API error ' + res.status);
-            const data = await res.json();
-            output = data.run?.stdout || '';
-            errMsg = data.run?.stderr || null;
+       } else {
+            throw new Error('use simulator');
         }
         resEl.style.color = errMsg ? '#f87171' : '#4ade80';
         resEl.textContent = errMsg ? '❌ ' + errMsg : (output || '(No output)');
