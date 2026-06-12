@@ -412,8 +412,24 @@ async function openEditAssignmentModal(assignmentId) {
             </div>
             <div class="form-group">
                 <label>Instructions *</label>
-                <textarea id="editAssignmentInstructions" rows="6"
-                    style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:inherit;font-size:14px;">${assignment.instructions}</textarea>
+                <div class="editor-toolbar">
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','undo')" title="Undo"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','redo')" title="Redo"><i class="fas fa-redo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','bold')"><b>B</b></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','italic')"><i>I</i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','underline')"><u>U</u></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','strikeThrough')"><s>S</s></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" class="editor-btn" onclick="document.getElementById('editAssignInstr').focus();document.execCommand('formatBlock',false,'<h3>')"><i class="fas fa-heading"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','justifyLeft')"><i class="fas fa-align-left"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editAssignInstr','justifyRight')"><i class="fas fa-align-right"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertTable('editAssignInstr')" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertImage('editAssignInstr')" title="Insert Image"><i class="fas fa-image"></i></button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="editAssignInstr"
+                     style="min-height:140px;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;">${assignment.instructions || ''}</div>
             </div>
             <div style="display:flex;gap:15px;">
                 <div class="form-group" style="flex:1;">
@@ -453,13 +469,13 @@ async function openEditAssignmentModal(assignmentId) {
 
 async function saveEditedAssignment(assignmentId, publishAfterSave = false) {
     const title        = document.getElementById('editAssignmentTitle')?.value?.trim();
-    const instructions = document.getElementById('editAssignmentInstructions')?.value?.trim();
+   const instructions = document.getElementById('editAssignInstr')?.innerHTML?.trim();
     const dueDate      = document.getElementById('editAssignmentDueDate')?.value;
     const maxPoints    = parseInt(document.getElementById('editAssignmentMaxPoints')?.value) || 100;
     const subType      = document.getElementById('editAssignmentSubmissionType')?.value;
 
     if (!title)        { showToast('Title cannot be empty', 'error'); return; }
-    if (!instructions) { showToast('Instructions cannot be empty', 'error'); return; }
+    if (!instructions || instructions.replace(/<[^>]*>/g, '').trim() === '') { showToast('Instructions cannot be empty', 'error'); return; }
     if (!dueDate)      { showToast('Due date is required', 'error'); return; }
 
     const updateData = { title, instructions, due_date: dueDate, max_points: maxPoints, submission_type: subType };

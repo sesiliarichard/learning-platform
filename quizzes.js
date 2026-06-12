@@ -1519,10 +1519,31 @@ async function openEditQuizModal(quizId) {
                 <input type="text" id="editQuizTitle" value="${quiz.title}"
                     style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:inherit;font-size:14px;">
             </div>
-            <div class="form-group">
+          <div class="form-group">
                 <label>Time Limit (minutes)</label>
                 <input type="number" id="editQuizTimeLimit" value="${quiz.time_limit || ''}" min="1"
                     style="width:150px;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-family:inherit;font-size:14px;">
+            </div>
+            <div class="form-group">
+                <label>Description / Instructions</label>
+                <div class="editor-toolbar">
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','undo')" title="Undo"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','redo')" title="Redo"><i class="fas fa-redo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','bold')"><b>B</b></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','italic')"><i>I</i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','underline')"><u>U</u></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','strikeThrough')"><s>S</s></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" class="editor-btn" onclick="document.getElementById('editQuizInstr').focus();document.execCommand('formatBlock',false,'<h3>')"><i class="fas fa-heading"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','justifyLeft')"><i class="fas fa-align-left"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('editQuizInstr','justifyRight')"><i class="fas fa-align-right"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertTable('editQuizInstr')" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertImage('editQuizInstr')" title="Insert Image"><i class="fas fa-image"></i></button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="editQuizInstr"
+                     style="min-height:120px;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;">${quiz.description || ''}</div>
             </div>
             <hr style="margin:20px 0;border:none;border-top:1.5px solid #e5e7eb;">
             <h3 style="margin-bottom:15px;color:#1f2937;">Questions</h3>
@@ -1547,7 +1568,8 @@ async function saveEditedQuiz(quizId, publishAfterSave = false) {
     const timeLimit = parseInt(document.getElementById('editQuizTimeLimit')?.value) || null;
     if (!title) { showToast('Quiz title cannot be empty', 'error'); return; }
 
-    const updateData = { title, time_limit: timeLimit };
+    const description = document.getElementById('editQuizInstr')?.innerHTML?.trim() || '';
+    const updateData = { title, time_limit: timeLimit, description };
     if (publishAfterSave) updateData.published = true;
 
     const { error: quizError } = await supabaseClient.from('quizzes').update(updateData).eq('id', quizId);
