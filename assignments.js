@@ -1856,14 +1856,21 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
                 <div id="assignQModalList">${questionsHTML}</div>
             </div>
 
-            <!-- Fixed footer -->
+           <!-- Fixed footer -->
             <div style="flex-shrink:0;padding:16px 28px;background:#f9fafb;
-                        border-top:2px solid #f3f4f6;display:flex;gap:12px;">
+                        border-top:2px solid #f3f4f6;display:flex;gap:12px;flex-wrap:wrap;">
                 <button onclick="document.getElementById('assignQuestionsModal').remove()"
                         style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
                                background:white;color:#6b7280;font-weight:700;cursor:pointer;
                                font-family:inherit;font-size:14px;">
                     Cancel
+                </button>
+                <button onclick="saveAssignmentQuestionsDraft('${assignmentId}')"
+                        style="flex:1;padding:13px;border:2px solid #f59e0b;border-radius:12px;
+                               background:#fffbeb;color:#92400e;font-weight:700;cursor:pointer;
+                               font-family:inherit;font-size:14px;display:flex;align-items:center;
+                               justify-content:center;gap:6px;">
+                    <i class="fas fa-save"></i> Save Draft
                 </button>
                 <button onclick="submitAssignmentAnswers('${assignmentId}')"
                         style="flex:2;padding:13px;background:linear-gradient(135deg,#10b981,#059669);
@@ -1874,7 +1881,30 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
                 </button>
             </div>
         </div>`;
-    document.body.appendChild(modal);
+   document.body.appendChild(modal);
+    loadAssignmentQuestionsDraft(assignmentId);
+}
+
+function saveAssignmentQuestionsDraft(assignmentId) {
+    const answers = {};
+    document.querySelectorAll('#assignQModalList textarea[id^="aq_"]').forEach(el => {
+        answers[el.id.replace('aq_', '')] = el.value;
+    });
+    localStorage.setItem('assignDraft_' + assignmentId, JSON.stringify(answers));
+    showToast('Draft saved! You can continue later. ✅', 'success');
+}
+
+function loadAssignmentQuestionsDraft(assignmentId) {
+    try {
+        const raw = localStorage.getItem('assignDraft_' + assignmentId);
+        if (!raw) return;
+        const answers = JSON.parse(raw);
+        Object.entries(answers).forEach(([qId, val]) => {
+            const el = document.getElementById('aq_' + qId);
+            if (el) el.value = val;
+        });
+        showToast('Draft restored! ✅', 'success');
+    } catch(e) { /* no draft */ }
 }
 
 window.runAssignmentQCode = async function(questionId, lang) {
@@ -1898,7 +1928,7 @@ window.runAssignmentQCode = async function(questionId, lang) {
             const res  = await fetch('https://emkc.org/api/v2/piston/execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ language:'python', version:'3.10.0', files:[{ content: editor.value }] })
+                body: JSON.stringify({ language:'python', version:'3.10', files:[{ content: editor.value }] })
             });
             const data = await res.json();
             output  = data.run?.stdout || '';
@@ -1937,6 +1967,7 @@ window.submitAssignmentAnswers = async function(assignmentId) {
 
     if (error) { showToast('Submission failed: ' + error.message, 'error'); return; }
 
+    localStorage.removeItem('assignDraft_' + assignmentId);
     document.getElementById('assignQuestionsModal')?.remove();
     showToast('Assignment submitted successfully! ✅', 'success');
 
