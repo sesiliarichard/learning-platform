@@ -12,7 +12,7 @@ async function createAssignment({ title, courseId, instructions, dueDate, maxPoi
 
         if (!title?.trim())        throw new Error('Assignment title is required');
         if (!courseId)             throw new Error('Course is required');
-        if (!instructions?.trim()) throw new Error('Instructions are required');
+        if (!instructions ||      instructions.replace(/<[^>]*>/g, '').trim() === '') throw new Error('Instructions are required');
         if (!dueDate)              throw new Error('Due date is required');
 
         const { data, error } = await supabaseClient
@@ -491,7 +491,7 @@ async function handleCreateAssignmentDB(event) {
     const result = await createAssignment({
         title:          formData.get('title'),
         courseId:       formData.get('courseId'),
-        instructions:   formData.get('instructions'),
+       instructions:   document.getElementById('assignInstr')?.innerHTML?.trim() || '',
         dueDate:        formData.get('dueDate'),
         maxPoints:      parseInt(formData.get('maxPoints')) || 100,
         submissionType: formData.get('submissionType'),
@@ -1661,7 +1661,7 @@ async function createAssignment({ title, courseId, instructions, dueDate, maxPoi
 
         if (!title?.trim())        throw new Error('Assignment title is required');
         if (!courseId)             throw new Error('Course is required');
-        if (!instructions?.trim()) throw new Error('Instructions are required');
+        if (!instructions || instructions.replace(/<[^>]*>/g, '').trim() === '') throw new Error('Instructions are required');
         if (!dueDate)              throw new Error('Due date is required');
 
         const { data, error } = await supabaseClient

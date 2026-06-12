@@ -1556,6 +1556,29 @@ body { visibility: hidden }
                 </div>
             </div>
 
+            <div class="form-group">
+                <label>Description / Instructions</label>
+                <div class="editor-toolbar">
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','undo')" title="Undo"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','redo')" title="Redo"><i class="fas fa-redo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','bold')"><b>B</b></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','italic')"><i>I</i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','underline')"><u>U</u></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','strikeThrough')"><s>S</s></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" class="editor-btn" onclick="document.getElementById('quizInstr').focus();document.execCommand('formatBlock',false,'<h3>')"><i class="fas fa-heading"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','justifyLeft')"><i class="fas fa-align-left"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('quizInstr','justifyRight')"><i class="fas fa-align-right"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertTable('quizInstr')" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertImage('quizInstr')" title="Insert Image"><i class="fas fa-image"></i></button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="quizInstr"
+                     data-placeholder="Write quiz description or instructions here…"
+                     style="min-height:120px;padding:12px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:14px;"></div>
+            </div>
+
             <hr class="form-divider">
 
             <h3 class="section-heading">Quiz Questions</h3>
@@ -1647,8 +1670,26 @@ body { visibility: hidden }
             </div>
 
             <div class="form-group">
-                <label for="assignmentInstructions">Instructions *</label>
-                <textarea id="assignmentInstructions" name="instructions" rows="6" required></textarea>
+                <label>Instructions *</label>
+                <div class="editor-toolbar">
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','undo')" title="Undo"><i class="fas fa-undo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','redo')" title="Redo"><i class="fas fa-redo"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','bold')"><b>B</b></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','italic')"><i>I</i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','underline')"><u>U</u></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','strikeThrough')"><s>S</s></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','insertOrderedList')"><i class="fas fa-list-ol"></i></button>
+                    <button type="button" class="editor-btn" onclick="document.getElementById('assignInstr').focus();document.execCommand('formatBlock',false,'<h3>')"><i class="fas fa-heading"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','justifyLeft')"><i class="fas fa-align-left"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','justifyCenter')"><i class="fas fa-align-center"></i></button>
+                    <button type="button" class="editor-btn" onclick="formatText('assignInstr','justifyRight')"><i class="fas fa-align-right"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertTable('assignInstr')" title="Insert Table"><i class="fas fa-table"></i></button>
+                    <button type="button" class="editor-btn" onclick="insertImage('assignInstr')" title="Insert Image"><i class="fas fa-image"></i></button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="assignInstr"
+                     data-placeholder="Write assignment instructions here…"
+                     style="min-height:140px;padding:12px;border:1.5px solid #ddd6fe;border-radius:8px;font-size:14px;"></div>
             </div>
 
             <div class="form-row">
@@ -2301,7 +2342,9 @@ function removeTopic(index) {
 }
 
 function formatText(editorIndex, command, value = null) {
-    const editor = document.getElementById(`editor-${editorIndex}`) 
+    const editor = typeof editorIndex === 'string'
+                ? document.getElementById(editorIndex)
+                : document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
     editor.focus();
@@ -2480,7 +2523,9 @@ function insertHeading(editorIndex) {
     }
 }
 function insertTable(editorIndex) {
-    const editor = document.getElementById(`editor-${editorIndex}`) 
+  const editor = typeof editorIndex === 'string'
+                ? document.getElementById(editorIndex)
+                : document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
 
@@ -3668,7 +3713,9 @@ function initResizableImages(editor) {
 }
 
 function setEditorFontFamily(editorIndex, select) {
-    const editor = document.getElementById(`editor-${editorIndex}`) 
+    const editor = typeof editorIndex === 'string'
+                ? document.getElementById(editorIndex)
+                : document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
@@ -3682,7 +3729,9 @@ function setEditorFontFamily(editorIndex, select) {
 }
 
 function setEditorFontSize(editorIndex, select) {
-    const editor = document.getElementById(`editor-${editorIndex}`) 
+    const editor = typeof editorIndex === 'string'
+                ? document.getElementById(editorIndex)
+                : document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
     
