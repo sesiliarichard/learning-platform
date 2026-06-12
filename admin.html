@@ -1645,7 +1645,40 @@ body { visibility: hidden }
     </div>
 </div>
 
-    <!-- CREATE ASSIGNMENT MODAL -->
+    <!-- ADD ASSIGNMENT QUESTION MODAL -->
+<div class="modal" id="addAssignmentQuestionModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Add Question</h2>
+            <button class="modal-close" onclick="closeModal('addAssignmentQuestionModal')" aria-label="Close modal">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="form-group">
+            <label>Question Type *</label>
+            <select id="assignQType" onchange="updateAssignQuestionForm()">
+                <option value="short">Short Answer</option>
+                <option value="essay">Long Answer (Essay)</option>
+                <option value="coding">Coding</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Question Text *</label>
+            <textarea id="assignQText" rows="3" placeholder="Write the question here..."></textarea>
+        </div>
+        <div id="assignQOptionsContainer"></div>
+        <div class="form-group">
+            <label>Points</label>
+            <input type="number" id="assignQPoints" value="1" min="1">
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-secondary" onclick="closeModal('addAssignmentQuestionModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveAssignmentQuestion()">
+                <i class="fas fa-plus"></i> Add Question
+            </button>
+        </div>
+    </div>
+</div>
    <div class="modal" id="createAssignmentModal">
     <div class="modal-content">
         <div class="modal-header">
@@ -1712,12 +1745,12 @@ body { visibility: hidden }
                 </select>
             </div>
 
-            <div class="form-group">
-    <label>
-        <input type="checkbox" id="assignmentIsCoding">
-        This is a coding assignment (opens coding environment)
-    </label>
-</div>
+           <hr class="form-divider">
+            <h3 class="section-heading">Questions</h3>
+            <div id="assignmentQuestionsContainer"></div>
+            <button type="button" class="btn-secondary add-question-btn" onclick="openAddAssignmentQuestionModal()">
+                <i class="fas fa-plus"></i> Add Question
+            </button>
 
             <div class="modal-actions">
                 <button type="button" class="btn-secondary" onclick="closeModal('createAssignmentModal')">Cancel</button>
@@ -7059,7 +7092,88 @@ function openAddQuestionModal() {
 }
 
 function openCreateAssignmentModal() {
+    window.currentAssignmentQuestions = [];
+    document.getElementById('assignmentQuestionsContainer').innerHTML = '';
     document.getElementById('createAssignmentModal')?.classList.add('active');
+}
+
+window.currentAssignmentQuestions = [];
+
+function openAddAssignmentQuestionModal() {
+    document.getElementById('assignQText').value = '';
+    document.getElementById('assignQPoints').value = '1';
+    document.getElementById('assignQType').value = 'short';
+    updateAssignQuestionForm();
+    document.getElementById('addAssignmentQuestionModal')?.classList.add('active');
+}
+
+function updateAssignQuestionForm() {
+    const type = document.getElementById('assignQType').value;
+    const container = document.getElementById('assignQOptionsContainer');
+    if (!container) return;
+    if (type === 'coding') {
+        container.innerHTML = `
+            <div class="form-group">
+                <label>Language</label>
+                <select id="assignQCodingLang">
+                    <option value="python">Python 3</option>
+                    <option value="javascript">JavaScript</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Starter Code (optional)</label>
+                <textarea id="assignQStarterCode" rows="5"
+                    style="font-family:'Courier New',monospace;font-size:13px;"
+                    placeholder="# Starter code for student..."></textarea>
+            </div>`;
+    } else {
+        container.innerHTML = '';
+    }
+}
+
+function saveAssignmentQuestion() {
+    const text   = document.getElementById('assignQText')?.value?.trim();
+    const type   = document.getElementById('assignQType')?.value;
+    const points = parseInt(document.getElementById('assignQPoints')?.value) || 1;
+    if (!text) { showToast('Please enter question text', 'error'); return; }
+
+    const q = { text, type, points };
+    if (type === 'coding') {
+        q.codingLanguage    = document.getElementById('assignQCodingLang')?.value || 'python';
+        q.codingStarterCode = document.getElementById('assignQStarterCode')?.value || '';
+    }
+
+    window.currentAssignmentQuestions.push(q);
+    displayAssignmentQuestions();
+    closeModal('addAssignmentQuestionModal');
+}
+
+function displayAssignmentQuestions() {
+    const container = document.getElementById('assignmentQuestionsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const typeLabels = { short: 'Short Answer', essay: 'Long Answer', coding: 'Coding' };
+    window.currentAssignmentQuestions.forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <span style="font-size:11px;font-weight:700;color:#6366f1;text-transform:uppercase;
+                                 background:#ede9fe;padding:2px 8px;border-radius:6px;">
+                        ${typeLabels[q.type] || q.type}
+                    </span>
+                    <p style="margin:6px 0 0;font-size:14px;color:#1f2937;">${q.text}</p>
+                    <span style="font-size:12px;color:#6b7280;">${q.points} pt${q.points > 1 ? 's' : ''}</span>
+                </div>
+                <button type="button"
+                    onclick="window.currentAssignmentQuestions.splice(${i},1);displayAssignmentQuestions();"
+                    style="background:#fee2e2;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#ef4444;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`;
+        container.appendChild(div);
+    });
 }
 
 function openCreateAnnouncementModal() {

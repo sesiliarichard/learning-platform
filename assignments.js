@@ -514,7 +514,24 @@ async function handleCreateAssignmentDB(event) {
         isCoding:       isCoding  
     });
 
-    if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
+   if (!result.success) { showToast('Error: ' + result.error, 'error'); return; }
+
+    // Save questions
+    const questions = window.currentAssignmentQuestions || [];
+    if (questions.length > 0 && result.assignment?.id) {
+        const rows = questions.map((q, i) => ({
+            assignment_id:       result.assignment.id,
+            question_text:       q.text,
+            question_type:       q.type,
+            coding_language:     q.codingLanguage || null,
+            coding_starter_code: q.codingStarterCode || null,
+            points:              q.points || 1,
+            order_num:           i
+        }));
+        const { error: qErr } = await supabaseClient.from('assignment_questions').insert(rows);
+        if (qErr) console.error('Questions save error:', qErr.message);
+    }
+    window.currentAssignmentQuestions = [];
 
     showToast('Assignment created successfully! ✅');
     closeModal('createAssignmentModal');
@@ -821,13 +838,22 @@ window.closeModal = function(modalId) {
 
 window.submitAssignmentModal = async function(assignmentId) {
     try {
-        const { data, error } = await supabaseClient
-            .from('assignments')
-            .select('title, submission_type, instructions, max_points, due_date, is_coding')
-            .eq('id', assignmentId)
-            .maybeSingle();
+        const [{ data, error }, { data: questions }] = await Promise.all([
+            supabaseClient.from('assignments')
+                .select('title, submission_type, instructions, max_points, due_date, is_coding')
+                .eq('id', assignmentId).maybeSingle(),
+            supabaseClient.from('assignment_questions')
+                .select('*').eq('assignment_id', assignmentId).order('order_num')
+        ]);
 
         if (error || !data) { showToast('Could not load assignment details', 'error'); return; }
+
+        // If questions exist, show question-based modal
+        if (questions && questions.length > 0) {
+            openAssignmentQuestionsModal(assignmentId, data, questions);
+            return;
+        }
+
         openSubmitAssignmentModal(assignmentId, data.submission_type || 'file', data);
     } catch (e) {
         showToast('Error: ' + e.message, 'error');
@@ -1664,6 +1690,172 @@ if (typeof escapeHtml === 'undefined') {
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     };
 }
+// ─────────────────────────────────────────────
+// STUDENT — ASSIGNMENT QUESTIONS MODAL
+// ─────────────────────────────────────────────
+function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
+    document.getElementById('assignQuestionsModal')?.remove();
+
+    const typeLabels = { short: 'Short Answer', essay: 'Long Answer', coding: 'Coding' };
+
+    const questionsHTML = questions.map((q, i) => {
+        let answerHTML = '';
+        if (q.question_type === 'short') {
+            answerHTML = `<textarea id="aq_${q.id}" rows="3" placeholder="Write your short answer here..."
+                style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;
+                       font-family:inherit;font-size:14px;box-sizing:border-box;resize:vertical;"></textarea>`;
+
+        } else if (q.question_type === 'essay') {
+            answerHTML = `<textarea id="aq_${q.id}" rows="8" placeholder="Write your detailed answer here..."
+                style="width:100%;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;
+                       font-family:inherit;font-size:14px;box-sizing:border-box;resize:vertical;"></textarea>`;
+
+        } else if (q.question_type === 'coding') {
+            const lang    = q.coding_language || 'python';
+            const starter = q.coding_starter_code || (lang === 'python' ? '# Write your solution here\n' : '// Write your solution here\n');
+            answerHTML = `
+                <div style="border:1.5px solid #4338ca;border-radius:10px;overflow:hidden;">
+                    <div style="padding:8px 14px;background:#312e81;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="color:#a5b4fc;font-size:12px;font-weight:700;">${lang.toUpperCase()}</span>
+                        <button onclick="runAssignmentQCode('${q.id}','${lang}')"
+                            style="padding:4px 14px;background:#6366f1;color:white;border:none;
+                                   border-radius:6px;font-size:12px;cursor:pointer;">
+                            <i class="fas fa-play"></i> Run
+                        </button>
+                    </div>
+                    <textarea id="aq_${q.id}" rows="8" spellcheck="false"
+                        style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;border:none;
+                               font-family:'Courier New',monospace;font-size:13px;
+                               box-sizing:border-box;resize:vertical;outline:none;">${starter}</textarea>
+                    <div id="aqout_${q.id}" style="display:none;padding:10px 14px;background:#0a0a1a;border-top:1px solid #312e81;">
+                        <div style="font-size:10px;color:#6366f1;font-weight:700;margin-bottom:6px;">
+                            <i class="fas fa-terminal"></i> OUTPUT
+                        </div>
+                        <pre id="aqres_${q.id}" style="margin:0;font-family:'Courier New',monospace;
+                             font-size:12px;color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+                    </div>
+                </div>`;
+        }
+
+        return `
+        <div style="background:white;border:1.5px solid #e5e7eb;border-radius:14px;
+                    padding:20px 24px;margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                <span style="font-size:11px;font-weight:700;color:#6366f1;background:#ede9fe;
+                             padding:2px 10px;border-radius:20px;">
+                    Q${i + 1} · ${typeLabels[q.question_type] || q.question_type}
+                </span>
+                <span style="font-size:12px;color:#6b7280;">${q.points || 1} pt${q.points > 1 ? 's' : ''}</span>
+            </div>
+            <p style="font-size:15px;color:#1f2937;font-weight:600;margin:0 0 14px;line-height:1.6;">
+                ${escapeHtml(q.question_text)}
+            </p>
+            ${answerHTML}
+        </div>`;
+    }).join('');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'assignQuestionsModal';
+    modal.innerHTML = `
+        <div class="modal-content modal-content-wide" style="max-width:720px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-file-alt"></i> ${escapeHtml(assignmentData.title || 'Assignment')}</h2>
+                <button class="modal-close" onclick="document.getElementById('assignQuestionsModal').remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            ${assignmentData.instructions ? `
+            <div style="background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;
+                        padding:16px 20px;margin-bottom:20px;font-size:14px;color:#374151;line-height:1.7;">
+                <div style="font-weight:700;color:#059669;margin-bottom:6px;">
+                    <i class="fas fa-info-circle"></i> Instructions
+                </div>
+                ${assignmentData.instructions}
+            </div>` : ''}
+            <div id="assignQModalList">${questionsHTML}</div>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button class="btn-secondary"
+                    onclick="document.getElementById('assignQuestionsModal').remove()"
+                    style="flex:1;">Cancel</button>
+                <button class="btn-primary" onclick="submitAssignmentAnswers('${assignmentId}')" style="flex:1;">
+                    <i class="fas fa-paper-plane"></i> Submit Assignment
+                </button>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+}
+
+window.runAssignmentQCode = async function(questionId, lang) {
+    const editor = document.getElementById('aq_' + questionId);
+    const outDiv = document.getElementById('aqout_' + questionId);
+    const resEl  = document.getElementById('aqres_' + questionId);
+    if (!editor || !outDiv || !resEl) return;
+
+    outDiv.style.display = 'block';
+    resEl.style.color    = '#94a3b8';
+    resEl.textContent    = '⏳ Running…';
+
+    try {
+        let output = '', errMsg = null;
+        if (lang === 'javascript') {
+            const origLog = console.log;
+            console.log = (...a) => { output += a.join(' ') + '\n'; origLog(...a); };
+            try { eval(editor.value); } catch(e) { errMsg = e.message; }
+            console.log = origLog;
+        } else {
+            const res  = await fetch('https://emkc.org/api/v2/piston/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language:'python', version:'3.10.0', files:[{ content: editor.value }] })
+            });
+            const data = await res.json();
+            output  = data.run?.stdout || '';
+            errMsg  = data.run?.stderr || null;
+        }
+        resEl.style.color = errMsg ? '#f87171' : '#4ade80';
+        resEl.textContent = errMsg ? '❌ ' + errMsg : (output || '(No output)');
+    } catch(e) {
+        resEl.style.color = '#f87171';
+        resEl.textContent = 'Error: ' + e.message;
+    }
+};
+
+window.submitAssignmentAnswers = async function(assignmentId) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) { showToast('Not authenticated', 'error'); return; }
+
+    const answers = {};
+
+    // Collect textarea answers
+    document.querySelectorAll('#assignQModalList textarea[id^="aq_"]').forEach(el => {
+        answers[el.id.replace('aq_', '')] = el.value?.trim();
+    });
+
+    if (Object.keys(answers).length === 0) {
+        showToast('Please answer at least one question', 'error');
+        return;
+    }
+
+    const { error } = await supabaseClient.from('assignment_submissions').insert({
+        assignment_id:    assignmentId,
+        student_id:       user.id,
+        question_answers: answers,
+        submitted_at:     new Date().toISOString()
+    });
+
+    if (error) { showToast('Submission failed: ' + error.message, 'error'); return; }
+
+    document.getElementById('assignQuestionsModal')?.remove();
+    showToast('Assignment submitted successfully! ✅', 'success');
+
+    const courseId = window.currentCourseId || window.currentCourse;
+    if (courseId && typeof syncCourseProgressToDB === 'function') {
+        const { data: { user: u } } = await supabaseClient.auth.getUser();
+        if (u) await syncCourseProgressToDB(u.id, courseId);
+    }
+};
 // ============================================
 // CODING ASSIGNMENT SUPPORT
 // ============================================
