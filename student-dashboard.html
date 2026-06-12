@@ -2886,7 +2886,7 @@ async function loadCourseNotes(courseId) {
             await loadWeekQuizzesAndAssignments(courseId);
             displayNote(0);
         }
-        if (typeof updateNotesProgress === 'function') updateNotesProgress();
+        
 
         if (user && courseId) {
             await syncCourseProgressToDB(user.id, courseId);
@@ -3765,7 +3765,7 @@ async function toggleNoteComplete(index) {
     note.completed = isNowComplete;
 
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) { displayNote(index); updateNotesProgress(); return; }
+    if (!user) { displayNote(index); return; }
 
     const courseId = window.currentCourseId || window.currentCourse;
 
@@ -3784,7 +3784,6 @@ async function toggleNoteComplete(index) {
     }
 
     displayNote(index);
-    updateNotesProgress();
 
     if (courseId) {
         await syncCourseProgressToDB(user.id, courseId);
@@ -4009,7 +4008,7 @@ async function syncCourseProgressToDB(studentId, courseId) {
         }
 
         // ── WEIGHTED CALCULATION ───────────────────────────────
-       const categories = [
+      const categories = [
             { total: totalTopics,           done: doneTopics,      weight: 0.50 },
             { total: totalQuizzes  || 0,    done: doneQuizzes,     weight: 0.25 },
             { total: totalAssignments || 0, done: doneAssignments, weight: 0.25 },
@@ -4021,12 +4020,15 @@ async function syncCourseProgressToDB(studentId, courseId) {
         if (active.length > 0) {
             const totalWeight = active.reduce((s, c) => s + c.weight, 0);
             pct = Math.round(
-                active.reduce((s, c) =>
-                    s + (c.done / c.total) * (c.weight / totalWeight), 0
-                ) * 100
+                active.reduce((s, c) => {
+                    // quizzes and assignments: only count when ALL are done
+                    const ratio = (c.weight === 0.50)
+                        ? (c.done / c.total)           // notes: partial credit per topic
+                        : (c.done >= c.total ? 1 : 0); // quiz/assignment: all-or-nothing
+                    return s + ratio * (c.weight / totalWeight);
+                }, 0) * 100
             );
         }
-
         console.log(`📊 Progress ${courseId}: topics ${doneTopics}/${totalTopics} | quizzes ${doneQuizzes}/${totalQuizzes||0} | assignments ${doneAssignments}/${totalAssignments||0} → ${pct}%`);
 
         // ── SAVE ───────────────────────────────────────────────
