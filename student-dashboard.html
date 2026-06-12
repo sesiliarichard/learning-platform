@@ -3924,7 +3924,7 @@ window.addEventListener('beforeunload', () => {
 // ============================================
 
 
-async function syncCourseProgressToDB(studentId, courseId) {
+window.syncCourseProgressToDB = async function syncCourseProgressToDB(studentId, courseId) {
     try {
         // ── NOTES ──────────────────────────────────────────────
         const { data: chapters } = await supabaseClient
@@ -4069,7 +4069,7 @@ async function syncCourseProgressToDB(studentId, courseId) {
         console.error('syncCourseProgressToDB error:', err.message);
         return 0;
     }
-}
+};
 function updateCourseProgressUI(pct) {
     const progressEl   = document.getElementById('courseProgress');
     const progressText = document.getElementById('progressText');
