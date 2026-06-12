@@ -1813,24 +1813,28 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.id = 'assignQuestionsModal';
-    modal.innerHTML = `
-        <div class="modal-content modal-content-wide" style="max-width:720px;">
-            <div class="modal-header">
+   modal.innerHTML = `
+        <div class="modal-content modal-content-wide" style="max-width:720px;max-height:90vh;
+             display:flex;flex-direction:column;padding:0;overflow:hidden;">
+            <div class="modal-header" style="flex-shrink:0;padding:20px 24px;">
                 <h2><i class="fas fa-file-alt"></i> ${escapeHtml(assignmentData.title || 'Assignment')}</h2>
                 <button class="modal-close" onclick="document.getElementById('assignQuestionsModal').remove()">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            ${assignmentData.instructions ? `
-            <div style="background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;
-                        padding:16px 20px;margin-bottom:20px;font-size:14px;color:#374151;line-height:1.7;">
-                <div style="font-weight:700;color:#059669;margin-bottom:6px;">
-                    <i class="fas fa-info-circle"></i> Instructions
-                </div>
-                ${assignmentData.instructions}
-            </div>` : ''}
-            <div id="assignQModalList">${questionsHTML}</div>
-            <div style="display:flex;gap:10px;margin-top:20px;">
+            <div style="flex:1;overflow-y:auto;padding:0 24px 8px;">
+                ${assignmentData.instructions ? `
+                <div style="background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;
+                            padding:16px 20px;margin-bottom:20px;font-size:14px;color:#374151;line-height:1.7;">
+                    <div style="font-weight:700;color:#059669;margin-bottom:6px;">
+                        <i class="fas fa-info-circle"></i> Instructions
+                    </div>
+                    ${assignmentData.instructions}
+                </div>` : ''}
+                <div id="assignQModalList">${questionsHTML}</div>
+            </div>
+            <div style="flex-shrink:0;padding:16px 24px;border-top:1.5px solid #e5e7eb;
+                        display:flex;gap:10px;">
                 <button class="btn-secondary"
                     onclick="document.getElementById('assignQuestionsModal').remove()"
                     style="flex:1;">Cancel</button>
@@ -1839,7 +1843,6 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
                 </button>
             </div>
         </div>`;
-
     document.body.appendChild(modal);
 }
 
