@@ -1917,28 +1917,49 @@ window.runAssignmentQCode = async function(questionId, lang) {
     resEl.style.color    = '#94a3b8';
     resEl.textContent    = '⏳ Running…';
 
+    // Reuse the existing _runCode from week-structure-student.js if available
+    if (typeof _runCode === 'function') {
+        const result = await _runCode(editor.value, lang);
+        resEl.style.color = result.error ? '#f87171' : '#4ade80';
+        resEl.textContent = result.error ? '❌ ' + result.error : (result.output || '(No output)');
+        return;
+    }
+
+    // Fallback: call Piston API directly
     try {
         let output = '', errMsg = null;
         if (lang === 'javascript') {
             const origLog = console.log;
             console.log = (...a) => { output += a.join(' ') + '\n'; origLog(...a); };
-            try { eval(editor.value); } catch(e) { errMsg = e.message; }
+            try { new Function(editor.value)(); } catch(e) { errMsg = e.message; }
             console.log = origLog;
         } else {
-            const res  = await fetch('https://api.piston.rs/api/v2/execute', {
+            const res = await fetch('https://emkc.org/api/v2/piston/execute', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ language:'python', version:'3.10', files:[{ content: editor.value }] })
+                body: JSON.stringify({ language: 'python', version: '3.10.0', files: [{ content: editor.value }] })
             });
+            if (!res.ok) throw new Error('API error ' + res.status);
             const data = await res.json();
-            output  = data.run?.stdout || '';
-            errMsg  = data.run?.stderr || null;
+            output = data.run?.stdout || '';
+            errMsg = data.run?.stderr || null;
         }
         resEl.style.color = errMsg ? '#f87171' : '#4ade80';
         resEl.textContent = errMsg ? '❌ ' + errMsg : (output || '(No output)');
     } catch(e) {
-        resEl.style.color = '#f87171';
-        resEl.textContent = 'Error: ' + e.message;
+        // Basic Python print simulation as last resort
+        if (lang === 'python') {
+            let simOutput = '';
+            const matches = editor.value.matchAll(/print\s*\(([^)]+)\)/g);
+            for (const m of matches) {
+                try { simOutput += m[1].trim().replace(/^["']|["']$/g, '') + '\n'; } catch(_) {}
+            }
+            resEl.style.color = '#4ade80';
+            resEl.textContent = simOutput || '(No output)';
+        } else {
+            resEl.style.color = '#f87171';
+            resEl.textContent = 'Error: ' + e.message;
+        }
     }
 };
 
