@@ -1813,18 +1813,40 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.id = 'assignQuestionsModal';
-   modal.innerHTML = `
+ modal.innerHTML = `
         <div style="background:white;border-radius:24px;max-width:720px;width:100%;max-height:90vh;
              display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
-            <div class="modal-header" style="flex-shrink:0;padding:20px 24px;">
-                <h2><i class="fas fa-file-alt"></i> ${escapeHtml(assignmentData.title || 'Assignment')}</h2>
-                <button class="modal-close" onclick="document.getElementById('assignQuestionsModal').remove()">
+
+            <!-- Green gradient header matching assignViewModal -->
+            <div style="background:linear-gradient(135deg,#10b981,#047857);
+                        padding:28px 30px;color:white;flex-shrink:0;position:relative;overflow:hidden;">
+                <div style="position:absolute;right:-30px;top:-30px;width:130px;height:130px;
+                            border-radius:50%;background:rgba(255,255,255,0.1);"></div>
+                <div style="position:relative;">
+                    <div style="font-size:11px;font-weight:700;letter-spacing:2px;
+                                text-transform:uppercase;opacity:0.8;margin-bottom:8px;">
+                        <i class="fas fa-tasks"></i> Assignment
+                    </div>
+                    <div style="font-size:22px;font-weight:800;line-height:1.3;margin-bottom:12px;">
+                        ${escapeHtml(assignmentData.title || 'Assignment')}
+                    </div>
+                    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;opacity:0.9;">
+                        <span><i class="fas fa-star"></i> ${assignmentData.max_points || 100} Points</span>
+                        <span><i class="fas fa-calendar-alt"></i> Due: ${assignmentData.due_date ? new Date(assignmentData.due_date).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : 'TBD'}</span>
+                    </div>
+                </div>
+                <button onclick="document.getElementById('assignQuestionsModal').remove()"
+                        style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.2);
+                               border:none;color:white;width:36px;height:36px;border-radius:50%;
+                               cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div style="flex:1;overflow-y:auto;padding:0 24px 8px;">
+
+            <!-- Scrollable body -->
+            <div style="flex:1;overflow-y:auto;padding:24px 28px;">
                 ${assignmentData.instructions ? `
-                <div style="background:#f0fdf4;border:1.5px solid #10b981;border-radius:12px;
+                <div style="background:#f0fdf4;border-left:4px solid #10b981;border-radius:0 12px 12px 0;
                             padding:16px 20px;margin-bottom:20px;font-size:14px;color:#374151;line-height:1.7;">
                     <div style="font-weight:700;color:#059669;margin-bottom:6px;">
                         <i class="fas fa-info-circle"></i> Instructions
@@ -1833,12 +1855,21 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
                 </div>` : ''}
                 <div id="assignQModalList">${questionsHTML}</div>
             </div>
-            <div style="flex-shrink:0;padding:16px 24px;border-top:1.5px solid #e5e7eb;
-                        display:flex;gap:10px;">
-                <button class="btn-secondary"
-                    onclick="document.getElementById('assignQuestionsModal').remove()"
-                    style="flex:1;">Cancel</button>
-                <button class="btn-primary" onclick="submitAssignmentAnswers('${assignmentId}')" style="flex:1;">
+
+            <!-- Fixed footer -->
+            <div style="flex-shrink:0;padding:16px 28px;background:#f9fafb;
+                        border-top:2px solid #f3f4f6;display:flex;gap:12px;">
+                <button onclick="document.getElementById('assignQuestionsModal').remove()"
+                        style="flex:1;padding:13px;border:2px solid #e5e7eb;border-radius:12px;
+                               background:white;color:#6b7280;font-weight:700;cursor:pointer;
+                               font-family:inherit;font-size:14px;">
+                    Cancel
+                </button>
+                <button onclick="submitAssignmentAnswers('${assignmentId}')"
+                        style="flex:2;padding:13px;background:linear-gradient(135deg,#10b981,#059669);
+                               border:none;border-radius:12px;color:white;font-weight:800;cursor:pointer;
+                               font-family:inherit;font-size:14px;display:flex;align-items:center;
+                               justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(16,185,129,0.35);">
                     <i class="fas fa-paper-plane"></i> Submit Assignment
                 </button>
             </div>
