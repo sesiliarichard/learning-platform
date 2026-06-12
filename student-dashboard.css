@@ -7717,3 +7717,15 @@ body.dark-mode .notes-chapter-item:hover span span {
     background: transparent;
     padding: 0;
 }
+#assignQuestionsModal .modal-content {
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+#assignQuestionsModal .modal-content > div[style*="overflow-y:auto"],
+#assignQuestionsModal .modal-content > div[style*="overflow-y: auto"] {
+    flex: 1;
+    overflow-y: auto !important;
+}

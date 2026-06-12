@@ -1814,8 +1814,8 @@ function openAssignmentQuestionsModal(assignmentId, assignmentData, questions) {
     modal.className = 'modal active';
     modal.id = 'assignQuestionsModal';
    modal.innerHTML = `
-        <div class="modal-content modal-content-wide" style="max-width:720px;max-height:90vh;
-             display:flex;flex-direction:column;padding:0;overflow:hidden;">
+        <div style="background:white;border-radius:24px;max-width:720px;width:100%;max-height:90vh;
+             display:flex;flex-direction:column;overflow:hidden;box-shadow:0 25px 60px rgba(0,0,0,0.3);">
             <div class="modal-header" style="flex-shrink:0;padding:20px 24px;">
                 <h2><i class="fas fa-file-alt"></i> ${escapeHtml(assignmentData.title || 'Assignment')}</h2>
                 <button class="modal-close" onclick="document.getElementById('assignQuestionsModal').remove()">
