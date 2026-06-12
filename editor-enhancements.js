@@ -472,7 +472,8 @@
   /* ============================================================
    * 2.  TABLE — wrap, col resize, row resize, toolbar
    * ============================================================ */
-  function enhanceTable (table) {
+ window.enhanceTable = enhanceTable;
+function enhanceTable (table) {
     if (table.classList.contains('wle-enhanced')) return;
     table.classList.add('wle-enhanced', 'wle-editor-table');
 

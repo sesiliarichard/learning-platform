@@ -642,6 +642,7 @@ window.wsConfirmInsertCoding = function(globalIdx) {
     showToast('✅ Coding exercise inserted!');
 };
 
+window._wireInlineCodingBlock = _wireInlineCodingBlock;
 function _wireInlineCodingBlock(block, lang) {
     // Support both selector patterns
     const runBtn = block.querySelector('.asai-inline-run-btn') 

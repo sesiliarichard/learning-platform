@@ -6314,7 +6314,7 @@ body.dark-mode .topic-list .empty-topics {
 
 /* Make all block elements actually display as blocks */
 .editor-content p,
-.editor-content div:not(.asai-inline-coding):not(.asai-code-block):not(.wle-table-wrap) {
+.editor-content div:not(.asai-inline-coding, .asai-code-block, .wle-table-wrap) {
     display: block !important;
     margin-top: 0;
     margin-bottom: 10px;

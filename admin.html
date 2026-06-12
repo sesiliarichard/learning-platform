@@ -2353,6 +2353,25 @@ function formatText(editorIndex, command, value = null) {
         hist.index = hist.stack.length - 1;
     }
 
+   function reinitDynamicBlocks(editor) {
+        // Re-enable table toolbars: strip enhancement markers, unwrap, re-enhance
+        editor.querySelectorAll('table.wle-enhanced').forEach(table => {
+            table.classList.remove('wle-enhanced', 'wle-editor-table');
+            const wrap = table.closest('.wle-table-wrap');
+            if (wrap) wrap.replaceWith(table);
+        });
+        editor.querySelectorAll('table').forEach(table => {
+            if (window.enhanceTable) window.enhanceTable(table);
+        });
+
+        // Re-wire coding exercise blocks (run/delete/edit buttons)
+        editor.querySelectorAll('.asai-inline-coding').forEach(block => {
+            if (window._wireInlineCodingBlock) {
+                window._wireInlineCodingBlock(block, block.dataset.lang);
+            }
+        });
+    }
+
     function undoEditor(editor) {
         const id = editor.id;
         if (!id) return;
@@ -2360,6 +2379,7 @@ function formatText(editorIndex, command, value = null) {
         if (hist.index <= 0) return;
         hist.index--;
         editor.innerHTML = hist.stack[hist.index];
+        reinitDynamicBlocks(editor);
         // Restore cursor to end
         const range = document.createRange();
         range.selectNodeContents(editor);
@@ -2376,6 +2396,7 @@ function formatText(editorIndex, command, value = null) {
         if (hist.index >= hist.stack.length - 1) return;
         hist.index++;
         editor.innerHTML = hist.stack[hist.index];
+        reinitDynamicBlocks(editor);
         const range = document.createRange();
         range.selectNodeContents(editor);
         range.collapse(false);
