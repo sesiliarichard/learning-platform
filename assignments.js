@@ -389,11 +389,18 @@ async function togglePublishAssignment(assignmentId, currentlyPublished) {
 }
 
 async function openEditAssignmentModal(assignmentId) {
-    const { data: assignment, error } = await supabaseClient
-        .from('assignments').select('*').eq('id', assignmentId).maybeSingle();
+    const [{ data: assignment, error }, { data: existingQuestions }] = await Promise.all([
+        supabaseClient.from('assignments').select('*').eq('id', assignmentId).maybeSingle(),
+        supabaseClient.from('assignment_questions').select('*').eq('assignment_id', assignmentId).order('order_num')
+    ]);
 
     if (error) { showToast('Could not load assignment', 'error'); return; }
 
+    window.editAssignmentQuestions = (existingQuestions || []).map(q => ({
+        id: q.id, text: q.question_text, type: q.question_type,
+        points: q.points || 1, codingLanguage: q.coding_language || 'python',
+        codingStarterCode: q.coding_starter_code || ''
+    }));
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.id = 'editAssignmentModal';
@@ -453,7 +460,15 @@ async function openEditAssignmentModal(assignmentId) {
                     <option value="both" ${assignment.submission_type === 'both' ? 'selected' : ''}>Both</option>
                 </select>
             </div>
-            <div style="display:flex;gap:10px;margin-top:20px;">
+           <hr style="margin:20px 0;border:none;border-top:1.5px solid #e5e7eb;">
+            <h3 style="font-size:15px;font-weight:700;color:#1f2937;margin-bottom:12px;">Questions</h3>
+            <div id="editAssignmentQuestionsContainer"></div>
+            <button type="button" class="btn-secondary add-question-btn"
+                onclick="openAddAssignmentQuestionModal('edit')" style="margin-bottom:20px;">
+                <i class="fas fa-plus"></i> Add Question
+            </button>
+
+            <div style="display:flex;gap:10px;margin-top:4px;">
                 <button class="btn-secondary" onclick="document.getElementById('editAssignmentModal').remove()" style="flex:1;">Cancel</button>
                 <button class="btn-primary" onclick="saveEditedAssignment('${assignmentId}')" style="flex:1;">
                     <i class="fas fa-save"></i> Save Changes
@@ -466,6 +481,32 @@ async function openEditAssignmentModal(assignmentId) {
         </div>`;
 
     document.body.appendChild(modal);
+    displayEditAssignmentQuestions();
+}
+
+function displayEditAssignmentQuestions() {
+    const container = document.getElementById('editAssignmentQuestionsContainer');
+    if (!container) return;
+    container.innerHTML = '';
+    const typeLabels = { short: 'Short Answer', essay: 'Long Answer', coding: 'Coding' };
+    (window.editAssignmentQuestions || []).forEach((q, i) => {
+        const div = document.createElement('div');
+        div.className = 'question-item';
+        div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <span style="font-size:11px;font-weight:700;color:#6366f1;background:#ede9fe;padding:2px 8px;border-radius:6px;">${typeLabels[q.type] || q.type}</span>
+                    <p style="margin:6px 0 0;font-size:14px;color:#1f2937;">${q.text}</p>
+                    <span style="font-size:12px;color:#6b7280;">${q.points} pt${q.points > 1 ? 's' : ''}</span>
+                </div>
+                <button type="button"
+                    onclick="window.editAssignmentQuestions.splice(${i},1);displayEditAssignmentQuestions();"
+                    style="background:#fee2e2;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;color:#ef4444;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>`;
+        container.appendChild(div);
+    });
 }
 
 async function saveEditedAssignment(assignmentId, publishAfterSave = false) {
@@ -482,8 +523,22 @@ async function saveEditedAssignment(assignmentId, publishAfterSave = false) {
     const updateData = { title, instructions, due_date: dueDate, max_points: maxPoints, submission_type: subType };
     if (publishAfterSave) updateData.published = true;
 
-    const { error } = await supabaseClient.from('assignments').update(updateData).eq('id', assignmentId);
+  const { error } = await supabaseClient.from('assignments').update(updateData).eq('id', assignmentId);
     if (error) { showToast('Error saving: ' + error.message, 'error'); return; }
+
+    // Replace all questions
+    await supabaseClient.from('assignment_questions').delete().eq('assignment_id', assignmentId);
+    const questions = window.editAssignmentQuestions || [];
+    if (questions.length > 0) {
+        const rows = questions.map((q, i) => ({
+            assignment_id: assignmentId, question_text: q.text, question_type: q.type,
+            coding_language: q.codingLanguage || null, coding_starter_code: q.codingStarterCode || null,
+            points: q.points || 1, order_num: i
+        }));
+        const { error: qErr } = await supabaseClient.from('assignment_questions').insert(rows);
+        if (qErr) console.error('Questions save error:', qErr.message);
+    }
+    window.editAssignmentQuestions = [];
 
     document.getElementById('editAssignmentModal')?.remove();
     showToast(publishAfterSave ? '✅ Assignment saved and published!' : '✅ Assignment updated successfully!');

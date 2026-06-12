@@ -7099,7 +7099,8 @@ function openCreateAssignmentModal() {
 
 window.currentAssignmentQuestions = [];
 
-function openAddAssignmentQuestionModal() {
+function openAddAssignmentQuestionModal(context) {
+    window._assignQContext = context || 'create';
     document.getElementById('assignQText').value = '';
     document.getElementById('assignQPoints').value = '1';
     document.getElementById('assignQType').value = 'short';
@@ -7143,8 +7144,14 @@ function saveAssignmentQuestion() {
         q.codingStarterCode = document.getElementById('assignQStarterCode')?.value || '';
     }
 
-    window.currentAssignmentQuestions.push(q);
-    displayAssignmentQuestions();
+    if (window._assignQContext === 'edit') {
+        window.editAssignmentQuestions = window.editAssignmentQuestions || [];
+        window.editAssignmentQuestions.push(q);
+        if (typeof displayEditAssignmentQuestions === 'function') displayEditAssignmentQuestions();
+    } else {
+        window.currentAssignmentQuestions.push(q);
+        displayAssignmentQuestions();
+    }
     closeModal('addAssignmentQuestionModal');
 }
 
