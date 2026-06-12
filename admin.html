@@ -4702,6 +4702,14 @@ function insertEditHeading(idx) {
 async function handleEditChapter(event) {
     event.preventDefault();
 
+    // Guard: ensure session is still valid before any DB writes
+    const { data: { session: _editSession } } = await db.auth.getSession();
+    if (!_editSession) {
+        showToast('Your session has expired. Please log in again.', 'error');
+        setTimeout(() => window.location.replace('admin-login.html'), 1500);
+        return;
+    }
+
     const chapterId = document.getElementById('editChapterId').value;
     const title     = document.getElementById('editChapterTitle').value.trim();
     const desc      = document.getElementById('editChapterDescription').value.trim();
