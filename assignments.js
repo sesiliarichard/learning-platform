@@ -5,14 +5,14 @@
 // ─────────────────────────────────────────────
 // 1. CREATE ASSIGNMENT (Admin only)
 // ─────────────────────────────────────────────
-async function createAssignment({ title, courseId, instructions, dueDate, maxPoints, submissionType }) {
+async function createAssignment({ title, courseId, instructions, dueDate, maxPoints, submissionType, isCoding = false }) {
     try {
         const { data: { user } } = await supabaseClient.auth.getUser();
         if (!user) throw new Error('Not authenticated');
 
         if (!title?.trim())        throw new Error('Assignment title is required');
         if (!courseId)             throw new Error('Course is required');
-        if (!instructions ||      instructions.replace(/<[^>]*>/g, '').trim() === '') throw new Error('Instructions are required');
+        if (!instructions || instructions.replace(/<[^>]*>/g, '').trim() === '') throw new Error('Instructions are required');
         if (!dueDate)              throw new Error('Due date is required');
 
         const { data, error } = await supabaseClient
@@ -24,6 +24,7 @@ async function createAssignment({ title, courseId, instructions, dueDate, maxPoi
                 due_date:        dueDate,
                 max_points:      maxPoints || 100,
                 submission_type: submissionType || 'file',
+                is_coding:       isCoding,
                 created_by:      user.id,
                 created_at:      new Date().toISOString()
             })
@@ -575,7 +576,7 @@ async function loadCourseAssignmentsUI(courseId) {
 }
 
 function renderAssignmentsInUI(assignments) {
-    const container = document.getElementById('courseAssignmentsGrid') || document.getElementById('assignmentsList');
+    const container = document.getElementById('courseAssignmentsGrid');
     if (!container) return;
 
     if (assignments.length === 0) {
@@ -1856,48 +1857,6 @@ window.submitAssignmentAnswers = async function(assignmentId) {
         if (u) await syncCourseProgressToDB(u.id, courseId);
     }
 };
-// ============================================
-// CODING ASSIGNMENT SUPPORT
-// ============================================
-
-// Add is_coding field to createAssignment function
-// REPLACE your existing createAssignment function with this one:
-async function createAssignment({ title, courseId, instructions, dueDate, maxPoints, submissionType, isCoding = false }) {
-    try {
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (!user) throw new Error('Not authenticated');
-
-        if (!title?.trim())        throw new Error('Assignment title is required');
-        if (!courseId)             throw new Error('Course is required');
-        if (!instructions || instructions.replace(/<[^>]*>/g, '').trim() === '') throw new Error('Instructions are required');
-        if (!dueDate)              throw new Error('Due date is required');
-
-        const { data, error } = await supabaseClient
-            .from('assignments')
-            .insert({
-                course_id:       courseId,
-                title:           title.trim(),
-                instructions:    instructions.trim(),
-                due_date:        dueDate,
-                max_points:      maxPoints || 100,
-                submission_type: submissionType || 'file',
-                is_coding:       isCoding,  
-                created_by:      user.id,
-                created_at:      new Date().toISOString()
-            })
-            .select()
-            .maybeSingle();
-
-        if (error) throw error;
-
-        return { success: true, assignment: data, message: 'Assignment created successfully!' };
-
-    } catch (error) {
-        console.error('❌ createAssignment error:', error.message);
-        return { success: false, error: error.message };
-    }
-}
-
 // Add this new function to fetch coding submissions
 async function getCodingSubmissions(assignmentId) {
     try {
@@ -1969,14 +1928,6 @@ window.updateWordCount = function() {
 // ─────────────────────────────────────────────
 // AUTO-INIT
 // ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    const isAdmin = !!document.getElementById('assignmentsList');
-    if (isAdmin) {
-        loadAdminAssignments();
-        const form = document.getElementById('createAssignmentForm');
-        if (form) form.onsubmit = handleCreateAssignmentDB;
-    }
-});
 window.loadCourseAssignmentsUI = loadCourseAssignmentsUI;
 
 console.log('✅ Assignments.js loaded');
