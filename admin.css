@@ -6347,6 +6347,12 @@ body.dark-mode .topic-list .empty-topics {
 .editor-content div.asai-code-block > div > div > div {
     display: block !important;
 }
+
+.editor-content.editor-content.editor-content div.asai-inline-coding *,
+.editor-content.editor-content.editor-content div.asai-code-block * {
+    margin-bottom: 0 !important;
+    min-height: 0 !important;
+}
 .editor-content h1,
 .editor-content h2,
 .editor-content h3,
