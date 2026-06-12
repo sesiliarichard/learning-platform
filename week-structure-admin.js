@@ -485,9 +485,9 @@ window.wsConfirmInsertCoding = function(globalIdx) {
 
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
-    <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
-         contenteditable="false"
-         style="margin:16px 0;border-radius:14px;overflow:hidden;border:2px solid ${lc.border};background:${lc.bg};display:block;">
+   <div class="asai-inline-coding" data-lang="${lang}" data-uid="${uid}"
+     contenteditable="false"
+     style="margin:16px 0;border-radius:14px;overflow:hidden;border:2px solid ${lc.border};background:${lc.bg};display:block;width:100%;max-width:560px;box-sizing:border-box;">
         <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
             <div style="display:flex;align-items:center;gap:10px;">
                 <div style="width:28px;height:28px;background:${lc.badge};border-radius:8px;display:flex;align-items:center;justify-content:center;">

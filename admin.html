@@ -3343,10 +3343,10 @@ function confirmInlineCodingBlock(editorIndex) {
                         text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">
                 Starter Code
             </div>
-            <pre style="margin:0;padding:12px;background:#0a0a1a;color:#a5b4fc;
+           <pre style="margin:0;padding:12px;background:#0a0a1a;color:#a5b4fc;
                         border:1px solid ${lc.border};border-radius:8px;font-size:12px;
                         font-family:'Courier New',monospace;white-space:pre-wrap;
-                        word-break:break-all;">${esc(defaultStarter)}</pre>
+                        word-break:break-all;max-width:100%;box-sizing:border-box;">${esc(defaultStarter)}</pre>
         </div>
     </div>`;
 
@@ -3358,8 +3358,8 @@ function confirmInlineCodingBlock(editorIndex) {
     codingNode.style.userSelect = 'none';
 
    wrapper.setAttribute('contenteditable', 'false');
-    wrapper.style.cssText = 'display:block;margin:8px 0;max-width:560px;';
-    wrapper.appendChild(codingNode);
+   wrapper.style.cssText = 'display:block;margin:8px 0;width:100%;max-width:560px;box-sizing:border-box;';
+   wrapper.appendChild(codingNode);
 
     if (window._savedCodingRange && window._savedCodingEditor === editor) {
         try {
@@ -4597,18 +4597,23 @@ function addEditTopic(existingTopic = null) {
                     }
                 });
              // Re-wire inline coding blocks
-                editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
-                    block.setAttribute('contenteditable', 'false');
-                    block.style.cssText = block.style.cssText + 
-    ';display:table!important;min-width:300px;max-width:560px;' +
-    'width:auto!important;margin:16px 0;box-sizing:border-box;';
-block.setAttribute('style', 
-    'display:table;min-width:300px;max-width:560px;width:auto;' +
-    'margin:16px 0;box-sizing:border-box;border-radius:14px;overflow:hidden;' +
-    'border:2px solid ' + (block.style.borderColor || '#4338ca') + ';' +
-    'background:' + (block.style.background || '#1e1b4b') + ';'
-);
-                    block.style.boxSizing = 'border-box';
+      editorEl.querySelectorAll('.asai-inline-coding').forEach(block => {
+    block.setAttribute('contenteditable', 'false');
+
+    const computed    = getComputedStyle(block);
+    const borderColor = block.style.borderColor || computed.borderColor || '#4338ca';
+    const background  = block.style.background  || computed.backgroundColor || '#1e1b4b';
+
+    block.style.cssText =
+        'display:block;' +
+        'width:100%;' +
+        'max-width:560px;' +
+        'margin:16px 0;' +
+        'box-sizing:border-box;' +
+        'border-radius:14px;' +
+        'overflow:hidden;' +
+        'border:2px solid ' + borderColor + ';' +
+        'background:' + background + ';';
 
                     // Inject edit/delete buttons if missing
                     const hasButtons = block.querySelector('button[title="Edit coding block"]');
