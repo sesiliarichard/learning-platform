@@ -432,6 +432,11 @@
             display: flex;
         }
 
+        /* Nested modal — must appear above createAssignmentModal */
+        #addAssignmentQuestionModal {
+            z-index: 2100;
+        }
+
         .modal-content {
             background: white;
             border-radius: 24px;
