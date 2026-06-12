@@ -427,7 +427,7 @@
         const langDisplay = lang === 'both' ? 'Python / JavaScript' : lang.charAt(0).toUpperCase() + lang.slice(1);
 
         const langOptions = lang === 'both'
-            ? `<option value="python">Python</option><option value="javascript">JavaScript</option>`
+           ? `<option value="python">Python 3</option>`
             : `<option value="${lang}">${langDisplay}</option>`;
 
         return `
@@ -476,12 +476,8 @@
             <!-- Run button -->
             <div style="display:flex;gap:10px;margin-bottom:12px;">
                 <button onclick="wsRunCodingExercise('${topic.id}','${lang}')"
-                    style="flex:2;padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+                    style="flex:1;padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
                     <i class="fas fa-play"></i> Run Code
-                </button>
-                <button onclick="wsSubmitCodingExercise('${topic.id}','${courseId || ''}')"
-                    style="flex:1;padding:12px;background:linear-gradient(135deg,#10b981,#059669);color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
-                    <i class="fas fa-paper-plane"></i> Submit
                 </button>
             </div>
 
