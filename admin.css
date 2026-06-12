@@ -6321,6 +6321,28 @@ body.dark-mode .topic-list .empty-topics {
     min-height: 1em;
 }
 
+/* Restore flex layout for divs inside coding exercise blocks —
+   the rule above forces display:block !important on every div,
+   which breaks the flex header/badge rows in coding blocks */
+.editor-content .asai-inline-coding div,
+.editor-content .asai-code-block div {
+    display: revert !important;
+}
+
+.editor-content .asai-inline-coding > div:first-child,
+.editor-content .asai-code-block > div:first-child {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+}
+
+.editor-content .asai-inline-coding > div:first-child > div {
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+}
+
 .editor-content h1,
 .editor-content h2,
 .editor-content h3,
