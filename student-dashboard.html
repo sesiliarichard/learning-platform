@@ -1995,7 +1995,11 @@ document.querySelectorAll('.nav-item').forEach(item => {
         }
     });
 });
-
+// Restore last active section on reload
+const savedSection = localStorage.getItem('activeSection');
+if (savedSection) {
+    showSection(savedSection);
+}
 // Load saved sidebar state
 const savedSidebarState = localStorage.getItem('sidebarCollapsed');
 if (savedSidebarState === 'true') {
@@ -2147,12 +2151,18 @@ function logout() {
     }, 1500);
 }
 
-  function showSection(sectionId) {
+function showSection(sectionId) {
     dashboardSections.forEach(section => section.classList.remove('active'));
     const section = document.getElementById(`${sectionId}Section`);
     if (section) {
         section.classList.add('active');
     }
+    // Update active nav item
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const activeNav = document.querySelector(`.nav-item[data-section="${sectionId}"]`);
+    if (activeNav) activeNav.classList.add('active');
+    // Save to localStorage so it persists on reload
+    localStorage.setItem('activeSection', sectionId);
 
     switch(sectionId) {
         case 'dashboard':
