@@ -390,12 +390,8 @@ function renderStudentCourseCards(courses, progressMap = {}, topicCountMap = {})
 
            const isCompleted = progress >= 90;
 const isStarted   = progress > 0 && !isCompleted;
-
-// ── Lock logic ──
-const sortedCourses = courses.slice().sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
-const courseIdx = sortedCourses.findIndex(c => c.id === course.id);
-const prevCourse = sortedCourses[courseIdx - 1];
-const unlocked = courseIdx === 0 || (progressMap[prevCourse?.id] || 0) >= 90;
+// comment my codes
+const unlocked = true;
 
 const btnLabel = isCompleted ? '✓ Completed'
                : !unlocked  ? '🔒 Locked'
