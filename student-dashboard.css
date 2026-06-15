@@ -89,7 +89,22 @@ body.dark-mode .container {
 .nav-menu::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.6);
 }
+html.sidebar-pre-collapsed .sidebar {
+    width: 70px !important;
+    padding: 20px 10px !important;
+    overflow: hidden !important;
+}
 
+html.sidebar-pre-collapsed .sidebar .logo-section,
+html.sidebar-pre-collapsed .sidebar .nav-item span,
+html.sidebar-pre-collapsed .sidebar .unread-count {
+    display: none !important;
+}
+
+html.sidebar-pre-collapsed .sidebar .nav-item {
+    justify-content: center !important;
+    padding: 14px !important;
+}
 .logo-section {
     margin-bottom: 30px;
 }
