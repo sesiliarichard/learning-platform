@@ -285,6 +285,15 @@ async function loadStudentDashboardCourses() {
     // Fetch ALL courses (not just enrolled) so student can see everything
     const result = await getAllCourses();
 
+    // Fetch real topic counts per course
+    const { data: topicRows } = await supabaseClient
+        .from('topics')
+        .select('course_id');
+    const topicCountMap = {};
+    (topicRows || []).forEach(t => {
+        topicCountMap[t.course_id] = (topicCountMap[t.course_id] || 0) + 1;
+    });
+
     if (!result.success || result.courses.length === 0) {
         console.warn('⚠️ No courses found in database');
         const grid = document.getElementById('courseSelection');
@@ -335,12 +344,20 @@ window.coursesData = coursesData;
         console.log('✅ coursesData populated:', Object.keys(coursesData));
     }
 
-    // ── Render course cards ──
-    renderStudentCourseCards(result.courses, progressMap);
-}
+ // Fetch real topic counts per course
+    const { data: topicRows } = await supabaseClient
+        .from('topics')
+        .select('course_id');
+    const topicCountMap = {};
+    (topicRows || []).forEach(t => {
+        topicCountMap[t.course_id] = (topicCountMap[t.course_id] || 0) + 1;
+    });
 
+    // ── Render course cards ──
+    renderStudentCourseCards(result.courses, progressMap, topicCountMap);
+}
 // Renders cards into BOTH grids on the student dashboard
-function renderStudentCourseCards(courses, progressMap = {}) {
+function renderStudentCourseCards(courses, progressMap = {}, topicCountMap = {}) {
 
     const thumbColors = {
         purple: '#7F77DD',
@@ -364,11 +381,10 @@ function renderStudentCourseCards(courses, progressMap = {}) {
             const progress    = progressMap[course.id] || 0;
             const thumbColor  = thumbColors[course.thumbnail_color] || fallbackColors[index % fallbackColors.length];
             const fallbackIcons       = ['fa-robot', 'fa-database', 'fa-code', 'fa-brain'];
-            const fallbackLessons     = [24, 18, 20, 16];
             const fallbackStudents    = ['45+', '30+', '28+', '22+'];
 
             const icon        = course.icon          || fallbackIcons[index % fallbackIcons.length];
-            const lessonCount = course.lesson_count  || fallbackLessons[index % fallbackLessons.length];
+            const lessonCount = topicCountMap[course.id] || 0;
             const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
             const instructor  = course.instructor    || 'ASAI Instructor';
 
