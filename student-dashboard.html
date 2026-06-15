@@ -1675,6 +1675,18 @@ async function loadCoursesFromDB() {
         .order('order_num', { ascending: true });
     
     if (!courses) return;
+
+    // Fetch real topic counts for all courses at once
+    const { data: topicCounts } = await db
+        .from('topics')
+        .select('course_id');
+
+    const topicCountMap = {};
+    if (topicCounts) {
+        topicCounts.forEach(t => {
+            topicCountMap[t.course_id] = (topicCountMap[t.course_id] || 0) + 1;
+        });
+    }
     
     courses.forEach(course => {
         coursesData[course.id] = {
@@ -1684,7 +1696,7 @@ async function loadCoursesFromDB() {
             description: course.description || '',
             progress: 0,
             order_num: course.order_num ?? 999,
-            lesson_count: course.lesson_count || 0,
+            lesson_count: topicCountMap[course.id] || course.lesson_count || 0,
             icon: course.icon || null,
             category: course.category || null,
             student_count: course.student_count || null,
@@ -1694,7 +1706,6 @@ async function loadCoursesFromDB() {
             assignments: []
         };
     });
-    
     console.log('✅ Courses loaded:', coursesData);
 
     // Load real progress from enrollments table
