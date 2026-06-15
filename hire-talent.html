@@ -1616,7 +1616,8 @@ async function lookupHirerByEmail() {
     logoUrl: data.logo_url,
   }));
 
-  document.getElementById('returningBanner').remove();
+ const banner = document.getElementById('returningBanner');
+  if (banner) banner.remove();
   await showExistingProfileIfAny();
 }
   </script>
