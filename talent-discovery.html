@@ -1343,15 +1343,12 @@ const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirer
     
     console.log('🔐 PERMISSIONS:', { isHirer, isTalent, isHirerFromUrl, hasHireRef });
 
-// Only hirers can access talent-discovery page
-if (isTalent && !isHirer) {
-    window.location.href = 'jobs.html';
-    return;
-}
+// Block only public users with no registration
 if (!isTalent && !isHirer) {
     window.location.href = 'career-support.html';
     return;
 }
+
     
     function updateNavigation() {
         const navOpportunity = document.getElementById('navOpportunity');
