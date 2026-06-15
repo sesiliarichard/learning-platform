@@ -1,6 +1,6 @@
 
 
-const _supabase = window.supabaseClient;
+const _supabase = window.supabaseClient || window.supabase?.createClient;
 
 // ─────────────────────────────────────────────────────────────
 // TALENT PROFILES
@@ -146,12 +146,12 @@ async function fetchTalentProfiles(opts = {}) {
   const from = (page - 1) * pageSize;
   const to   = from + pageSize - 1;
 
- let query = _supabase
+ const sb = window.supabaseClient || _supabase;
+ let query = sb
     .from('talent_profiles')
     .select('*', { count: 'exact' })
     .order(opts.sort === 'name' ? 'full_name' : 'created_at', { ascending: opts.sort === 'name' })
     .range(from, to);
-
   // Free-text search across role and bio using Postgres ilike
   if (search) {
     query = query.or(`role.ilike.%${search}%,bio.ilike.%${search}%,full_name.ilike.%${search}%`);
@@ -176,7 +176,8 @@ async function fetchTalentProfiles(opts = {}) {
  * @param {string} id
  */
 async function fetchTalentById(id) {
-  const { data, error } = await _supabase
+  const sb = window.supabaseClient || _supabase;
+  const { data, error } = await sb
     .from('talent_profiles')
     .select('*')
     .eq('id', id)
