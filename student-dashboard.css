@@ -1710,7 +1710,6 @@ body.dark-mode .empty-state h3 {
     padding: 15px;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
-    max-width: 900px;
 }
 
 body.dark-mode .course-nav {
@@ -1908,7 +1907,6 @@ body.dark-mode .course-assignment-card {
     padding: 25px;
     border-radius: 18px;
     margin-bottom: 30px;
-    max-width: 900px;
 }
 
 .course-info-header {
@@ -1992,7 +1990,6 @@ body.dark-mode .course-empty-state i {
     min-height: 600px;
     height: auto;
     align-items: flex-start;
-    max-width: 900px;
 }
 /* Notes Navigation Sidebar */
 .notes-sidebar {
@@ -2164,30 +2161,25 @@ body.dark-mode .notes-content {
 }
 
 .notes-content h2 {
-    font-size: 17px;
+    font-size: 22px;
     font-weight: 700;
-    color: #0099ff;
-    letter-spacing: 0.04em;
-    margin: 32px 0 14px;
-    padding-left: 12px;
-    border-left: 3px solid #0099ff;
+    color: #1f2937;
+    margin: 30px 0 15px;
 }
 
 body.dark-mode .notes-content h2 {
-    color: #4db8ff;
-    border-left-color: #4db8ff;
+    color: #ffffff;
 }
 
 .notes-content h3 {
-    font-size: 15px;
+    font-size: 18px;
     font-weight: 600;
     color: #1f2937;
-    letter-spacing: 0.02em;
-    margin: 24px 0 10px;
+    margin: 25px 0 12px;
 }
 
 body.dark-mode .notes-content h3 {
-    color: #f3f4f6;
+    color: #ffffff;
 }
 
 .notes-content p {
