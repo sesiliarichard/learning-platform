@@ -1710,6 +1710,7 @@ body.dark-mode .empty-state h3 {
     padding: 15px;
     border-radius: 12px;
     border: 1px solid #e5e7eb;
+    max-width: 900px;
 }
 
 body.dark-mode .course-nav {
@@ -1991,6 +1992,7 @@ body.dark-mode .course-empty-state i {
     min-height: 600px;
     height: auto;
     align-items: flex-start;
+    max-width: 900px;
 }
 /* Notes Navigation Sidebar */
 .notes-sidebar {
