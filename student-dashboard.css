@@ -2101,6 +2101,11 @@ body.dark-mode .notes-chapter-item:hover {
     min-height: 600px;
     max-height: calc(100vh - 150px);
     overflow-y: auto;
+    font-family: 'Georgia', 'Charter', serif;
+    font-size: 17px;
+    line-height: 1.8;
+    color: #1a1a1a;
+    letter-spacing: 0.01em;
 }
 
 body.dark-mode .notes-reader {
@@ -7261,8 +7266,8 @@ body.dark-mode #discussionsSection .message-input-area {
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;
-    overflow: hidden;
-    min-width: 0; /* critical for grid children */
+    overflow-x: hidden;
+    min-width: 0;
 }
 
 .notes-content {
@@ -7274,7 +7279,7 @@ body.dark-mode #discussionsSection .message-input-area {
     word-wrap: break-word;
     word-break: break-word;
     min-width: 0;
-    overflow: hidden;
+    overflow-x: hidden;
 }
 
 .notes-content {
