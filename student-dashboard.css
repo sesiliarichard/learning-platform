@@ -1907,6 +1907,7 @@ body.dark-mode .course-assignment-card {
     padding: 25px;
     border-radius: 18px;
     margin-bottom: 30px;
+    max-width: 900px;
 }
 
 .course-info-header {
