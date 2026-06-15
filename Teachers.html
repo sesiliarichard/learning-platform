@@ -485,7 +485,20 @@
     </form>
   </div>
 </div>
-
+<div class="modal" id="viewSubModal">
+  <div class="mb">
+    <div class="mh">
+      <h3 id="viewSubTitle">Student Submission</h3>
+      <button onclick="closeM('viewSubModal')" title="Close" aria-label="Close"><i class="fas fa-times"></i></button>
+    </div>
+    <div id="viewSubContent"
+         style="padding:10px;background:var(--s2);border-radius:8px;
+                max-height:50vh;overflow:auto;font-size:13px;line-height:1.6"></div>
+    <div class="ma">
+      <button type="button" class="btn bg" onclick="closeM('viewSubModal')">Close</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="announModal">
   <div class="mb">
     <div class="mh">

@@ -2,6 +2,7 @@
 // teacher-assignments.js  — FIXED
 // FIX: student name lookup resolves user_id OR student_id
 // ============================================================
+let currentSubmissions = [];
 
 async function loadAssignmentsFromDB() {
   if (!teacherState.courses.length) return;
@@ -202,7 +203,8 @@ async function renderAssignmentSubmissions(filterAssignmentId = null) {
       <p>Loading submissions…</p>
     </div>`;
 
-  const submissions = await fetchAssignmentSubmissions(filterAssignmentId);
+ const submissions = await fetchAssignmentSubmissions(filterAssignmentId);
+  currentSubmissions = submissions;
 
   if (!submissions.length) {
     sg.innerHTML = `
@@ -280,12 +282,15 @@ function buildSubmissionRow(s, isGraded) {
         <div style="font-size:10px;color:var(--mut)">
           ${_esc(c?.title || '')}
         </div>
-        ${s.file_url ? `
+     ${s.file_url ? `
   <a href="${_esc(s.file_url)}" target="_blank" rel="noopener noreferrer"
      onclick="event.stopPropagation()"
      style="font-size:10px;color:var(--acc);cursor:pointer">
     <i class="fas fa-paperclip"></i> View File
-  </a>` : ''}
+  </a>` : s.text_response ? `
+  <span style="font-size:10px;color:var(--acc)">
+    <i class="fas fa-align-left"></i> Text Submission
+  </span>` : ''}
       </div>
       <div style="text-align:center">
         <div style="font-size:11px;color:var(--mut)">${date}</div>
@@ -318,8 +323,32 @@ ${s.file_url ? `
      style="padding:5px 9px;font-size:11px">
     <i class="fas fa-download"></i>
   </a>` : ''}
+${s.text_response ? `
+  <button class="btn bg" title="View Submission" style="padding:5px 9px;font-size:11px"
+          onclick="event.stopPropagation();viewSubmissionText('${s.id}')">
+    <i class="fas fa-eye"></i>
+  </button>` : ''}
       </div>
     </div>`;
+}
+
+// ─────────────────────────────────────────────────────────────
+// VIEW TEXT SUBMISSION — quick preview modal
+// ─────────────────────────────────────────────────────────────
+function viewSubmissionText(submissionId) {
+  const sub = currentSubmissions.find(x => x.id === submissionId);
+  if (!sub) return;
+
+  const titleEl = document.getElementById('viewSubTitle');
+  if (titleEl) titleEl.textContent = `${sub.student_name} — ${sub.assignment_title}`;
+
+  const contentEl = document.getElementById('viewSubContent');
+  if (contentEl) {
+    contentEl.innerHTML = sub.text_response
+      || '<p style="color:var(--mut)">No content submitted.</p>';
+  }
+
+  openM('viewSubModal');
 }
 
 function viewAssignmentSubmissions(assignmentId) {
@@ -329,6 +358,8 @@ function viewAssignmentSubmissions(assignmentId) {
 }
 
 function openGradePanel(submissionId, studentName, assignmentTitle, maxPoints) {
+  const sub = currentSubmissions.find(x => x.id === submissionId);
+
   const gmInfo = document.getElementById('gmInfo');
   if (gmInfo) {
     gmInfo.innerHTML = `
@@ -337,7 +368,25 @@ function openGradePanel(submissionId, studentName, assignmentTitle, maxPoints) {
         <div style="color:var(--mut);font-size:11px;margin-top:3px">
           Student: ${_esc(studentName)}
         </div>
-      </div>`;
+      </div>
+      ${sub?.text_response ? `
+        <div style="margin-top:10px;padding:10px;background:var(--s2);
+                    border-radius:8px;max-height:220px;overflow:auto;
+                    font-size:12px;line-height:1.5">
+          <div style="font-size:10px;font-weight:700;color:var(--mut);
+                      text-transform:uppercase;margin-bottom:6px">
+            Student Submission
+          </div>
+          ${sub.text_response}
+        </div>
+      ` : sub?.file_url ? `
+        <div style="margin-top:10px">
+          <a href="${_esc(sub.file_url)}" target="_blank" rel="noopener noreferrer"
+             class="btn bg" style="font-size:11px">
+            <i class="fas fa-paperclip"></i> View Submitted File
+          </a>
+        </div>
+      ` : ''}`;
   }
   const gmMax = document.getElementById('gmMax');
   if (gmMax) gmMax.textContent = maxPoints;
