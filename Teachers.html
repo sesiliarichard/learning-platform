@@ -1188,53 +1188,38 @@ window.loadTeacherAnnouncementsUI = async function() {
         if (main) main.style.marginLeft = '70px';
     }
 
-   // Set data-tooltip from each nav item's text label
-document.querySelectorAll('.nl').forEach(nav => {
-    let label = '';
-    nav.querySelectorAll('span').forEach(span => {
-        if (!span.classList.contains('nb') && span.textContent.trim()) {
-            label = span.textContent.trim();
-        }
+ // Set data-tooltip from each nav item's text label
+    document.querySelectorAll('.nl').forEach(nav => {
+        let label = '';
+        nav.querySelectorAll('span').forEach(span => {
+            if (!span.classList.contains('nb') && span.textContent.trim()) {
+                label = span.textContent.trim();
+            }
+        });
+        if (label) nav.setAttribute('data-tooltip', label);
     });
-    if (label) nav.setAttribute('data-tooltip', label);
-});
 
-// JS tooltip that renders at page level — never clipped
-const tip = document.createElement('div');
-tip.id = 'sbTooltip';
-tip.style.cssText = `
-    position: fixed;
-    background: #1f2937;
-    color: white;
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 12px;
-    font-weight: 500;
-    white-space: nowrap;
-    z-index: 99999;
-    pointer-events: none;
-    display: none;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: opacity 0.15s ease;
-`;
-document.body.appendChild(tip);
+    // JS tooltip rendered at body level — never clipped by sidebar overflow
+    const tip = document.createElement('div');
+    tip.id = 'sbTooltip';
+    tip.style.cssText = 'position:fixed;background:#1f2937;color:white;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:500;white-space:nowrap;z-index:99999;pointer-events:none;display:none;box-shadow:0 4px 12px rgba(0,0,0,0.3);';
+    document.body.appendChild(tip);
 
-document.querySelectorAll('.nl').forEach(nav => {
-    nav.addEventListener('mouseenter', () => {
-        const sidebar = document.getElementById('sidebar');
-        if (!sidebar.classList.contains('collapsed')) return;
-        const label = nav.getAttribute('data-tooltip');
-        if (!label) return;
-        const rect = nav.getBoundingClientRect();
-        tip.textContent = label;
-        tip.style.display = 'block';
-        tip.style.top = (rect.top + rect.height / 2 - tip.offsetHeight / 2) + 'px';
-        tip.style.left = (rect.right + 10) + 'px';
+    document.querySelectorAll('.nl').forEach(nav => {
+        nav.addEventListener('mouseenter', () => {
+            if (!sidebar.classList.contains('collapsed')) return;
+            const label = nav.getAttribute('data-tooltip');
+            if (!label) return;
+            tip.textContent = label;
+            tip.style.display = 'block';
+            const rect = nav.getBoundingClientRect();
+            tip.style.top = (rect.top + rect.height / 2 - tip.offsetHeight / 2) + 'px';
+            tip.style.left = (rect.right + 10) + 'px';
+        });
+        nav.addEventListener('mouseleave', () => {
+            tip.style.display = 'none';
+        });
     });
-    nav.addEventListener('mouseleave', () => {
-        tip.style.display = 'none';
-    });
-});
 
     console.log('✅ Teacher sidebar collapse fix applied');
 })();
