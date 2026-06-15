@@ -1654,18 +1654,9 @@ function getCoursesSortedByOrder() {
         .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
 }
 
-//function isCourseUnlocked(courseId) {
-//    const sorted = Object.values(window.coursesData || {})
-//        .filter(c => c.order_num !== undefined && c.order_num !== null)
-//        .sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
-//    
-//    console.log('🔒 Sorted courses for lock check:', sorted.map(c => `${c.title}(order:${c.order_num},progress:${c.progress})`));
-//    
-//    const idx = sorted.findIndex(c => c.id === courseId);
-//    if (idx <= 0) return true;
-//    const prev = sorted[idx - 1];
-//    return (prev?.progress || 0) >= 90;
-// }
+function isCourseUnlocked(courseId) {
+    return true;
+}
 
 async function loadCoursesFromDB() {
     const { data: courses } = await db

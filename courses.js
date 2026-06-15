@@ -285,14 +285,7 @@ async function loadStudentDashboardCourses() {
     // Fetch ALL courses (not just enrolled) so student can see everything
     const result = await getAllCourses();
 
-    // Fetch real topic counts per course
-    const { data: topicRows } = await supabaseClient
-        .from('topics')
-        .select('course_id');
-    const topicCountMap = {};
-    (topicRows || []).forEach(t => {
-        topicCountMap[t.course_id] = (topicCountMap[t.course_id] || 0) + 1;
-    });
+    
 
     if (!result.success || result.courses.length === 0) {
         console.warn('⚠️ No courses found in database');
