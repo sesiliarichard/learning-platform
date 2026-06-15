@@ -2765,8 +2765,7 @@ to{
     z-index: 200;
     transition: all 0.3s ease;
     box-shadow: 4px 0 20px rgba(26,159,212,0.25);
-    overflow-y: auto;
-    overflow-x: hidden;
+    overflow: hidden;
 }
 
 /* Sidebar brand */
