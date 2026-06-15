@@ -394,7 +394,7 @@ const isStarted   = progress > 0 && !isCompleted;
 const unlocked = true;
 
 const btnLabel = isCompleted ? '✓ Completed'
-               : !unlocked  ? '🔒 Locked'
+               : !unlocked  ? '🔒 Locked'//comment
                : isStarted  ? 'Continue'
                : 'Start';
 
