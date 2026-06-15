@@ -1941,8 +1941,10 @@ async function initDashboard() {
     loadResults();
     calculateProfileStats();
     setMemberSinceDate();
-    await loadDashboardStats();
-    await loadDashboardExtras(); 
+   await Promise.all([
+        loadDashboardStats(),
+        loadDashboardExtras()
+    ]);
 }
 
         // Setup event listeners
@@ -2869,7 +2871,7 @@ async function loadCourseNotes(courseId) {
             }
         }
 
-        // ✅ CRITICAL: Load chapter assessments BEFORE rendering
+    // ✅ CRITICAL: Load chapter assessments BEFORE rendering
         // This loads the link between topics and quizzes/assignments
         await loadTopicAssessments(courseId);
 
@@ -2882,7 +2884,6 @@ async function loadCourseNotes(courseId) {
         }
 
         if (currentCourseNotes.length > 0) {
-            await loadTopicAssessments(courseId);
             await loadWeekQuizzesAndAssignments(courseId);
             displayNote(0);
         }
