@@ -2416,6 +2416,17 @@ body.dark-mode .notes-progress-bar {
     border-left: 4px solid transparent;
 }
 
+.sidebar.collapsed .nav-item.active {
+    background: rgba(255, 255, 255, 0.18);
+    border-left-color: #fbbf24;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.sidebar.collapsed .nav-item.active i {
+    color: #fbbf24;
+    transform: scale(1.1);
+}
+
 .sidebar.collapsed .nav-item i {
     width: auto;
     font-size: 1.3rem;
