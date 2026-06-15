@@ -1345,16 +1345,13 @@ const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirer
 
 // Only hirers can access talent-discovery page
 if (isTalent && !isHirer) {
-    // Talent users → see opportunities instead
-    window.location.href = 'view-opportunity.html';
+    window.location.href = 'jobs.html';
     return;
 }
 if (!isTalent && !isHirer) {
-    // Public with no registration → back to home
     window.location.href = 'career-support.html';
     return;
 }
-
     
     function updateNavigation() {
         const navOpportunity = document.getElementById('navOpportunity');
