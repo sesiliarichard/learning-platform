@@ -1343,15 +1343,18 @@ const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirer
     
     console.log('🔐 PERMISSIONS:', { isHirer, isTalent, isHirerFromUrl, hasHireRef });
 
-// Guard: block talent users from this page
+// Only hirers can access talent-discovery page
 if (isTalent && !isHirer) {
-    window.location.href = 'career-support.html';
+    // Talent users → see opportunities instead
+    window.location.href = 'view-opportunity.html';
     return;
 }
 if (!isTalent && !isHirer) {
-    window.location.href = 'hire-talent.html';
+    // Public with no registration → back to home
+    window.location.href = 'career-support.html';
     return;
 }
+
     
     function updateNavigation() {
         const navOpportunity = document.getElementById('navOpportunity');
