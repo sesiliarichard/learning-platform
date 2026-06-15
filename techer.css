@@ -2831,6 +2831,7 @@ to{
     width: 70px !important;
     min-width: 70px !important;
     padding: 16px 8px !important;
+    overflow: hidden !important;
 }
 
 .sb.collapsed .sb-brand {
@@ -2906,6 +2907,7 @@ to{
     flex: 1;
     padding: 8px 12px;
     overflow-y: auto;
+    overflow-x: hidden;
     min-height: 0;
 }
 
