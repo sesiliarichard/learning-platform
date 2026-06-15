@@ -1908,11 +1908,7 @@ body.dark-mode .course-assignment-card {
     border-radius: 18px;
     margin-bottom: 30px;
 }
-#courseDetailsArea {
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
-}
+
 .course-info-header {
     display: flex;
     justify-content: space-between;
