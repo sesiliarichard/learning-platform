@@ -2161,25 +2161,30 @@ body.dark-mode .notes-content {
 }
 
 .notes-content h2 {
-    font-size: 22px;
+    font-size: 17px;
     font-weight: 700;
-    color: #1f2937;
-    margin: 30px 0 15px;
+    color: #0099ff;
+    letter-spacing: 0.04em;
+    margin: 32px 0 14px;
+    padding-left: 12px;
+    border-left: 3px solid #0099ff;
 }
 
 body.dark-mode .notes-content h2 {
-    color: #ffffff;
+    color: #4db8ff;
+    border-left-color: #4db8ff;
 }
 
 .notes-content h3 {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: 600;
     color: #1f2937;
-    margin: 25px 0 12px;
+    letter-spacing: 0.02em;
+    margin: 24px 0 10px;
 }
 
 body.dark-mode .notes-content h3 {
-    color: #ffffff;
+    color: #f3f4f6;
 }
 
 .notes-content p {
