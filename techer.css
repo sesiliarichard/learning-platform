@@ -2830,10 +2830,9 @@ to{
 .sb.collapsed {
     width: 70px !important;
     min-width: 70px !important;
-    padding: 16px 8px !important;
+    padding: 16px 0 !important;
     overflow: hidden !important;
 }
-
 .sb.collapsed .sb-brand {
     display: none !important;
 }
@@ -2905,7 +2904,7 @@ to{
 /* Navigation items */
 .sb-nav {
     flex: 1;
-    padding: 8px 12px;
+    padding: 8px 4px;
     overflow-y: auto;
     overflow-x: hidden;
     min-height: 0;
@@ -3149,11 +3148,11 @@ to{
 
 .sb.collapsed .nl {
     justify-content: center !important;
-    padding: 12px 0 !important;
-    width: 50px !important;
-    margin: 2px auto !important;
+    padding: 10px 0 !important;
+    width: 100% !important;
+    margin: 2px 0 !important;
+    text-align: center !important;
 }
-
 .sb.collapsed .nl i {
     font-size: 18px !important;
     width: auto !important;
