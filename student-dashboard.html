@@ -1655,13 +1655,27 @@ function getCoursesSortedByOrder() {
 }
 
 function isCourseUnlocked(courseId) {
-    return true;
+    const course = (window.coursesData || coursesData)[courseId];
+    if (!course) return true;
+
+    // Admin emergency override always wins
+    if (course.admin_lock_override === 'locked')   return false;
+    if (course.admin_lock_override === 'unlocked') return true;
+
+    // Default rule: must complete the previous course (by order_num)
+    const sorted = getCoursesSortedByOrder();
+    const index  = sorted.findIndex(c => c.id === courseId);
+    if (index <= 0) return true; // first course is always unlocked
+
+    const prevCourse = sorted[index - 1];
+    const prevProgress = prevCourse.progress || 0;
+    return prevProgress >= 90; // matches isCompleted threshold used elsewhere
 }
 
 async function loadCoursesFromDB() {
-    const { data: courses } = await db
+   const { data: courses } = await db
         .from('courses')
-        .select('id, title, description, order_num, lesson_count, icon, category, student_count, instructor')
+        .select('id, title, description, order_num, lesson_count, icon, category, student_count, instructor, admin_lock_override')
         .order('order_num', { ascending: true });
     
     if (!courses) return;
@@ -1679,7 +1693,7 @@ async function loadCoursesFromDB() {
     }
     
     courses.forEach(course => {
-        coursesData[course.id] = {
+       coursesData[course.id] = {
             id: course.id,
             title: course.title,
             instructor: course.instructor || 'ASAI Instructor',
@@ -1690,6 +1704,7 @@ async function loadCoursesFromDB() {
             icon: course.icon || null,
             category: course.category || null,
             student_count: course.student_count || null,
+            admin_lock_override: course.admin_lock_override || null,
             notes: [],
             videos: [],
             quizzes: [],

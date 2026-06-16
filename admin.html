@@ -2111,9 +2111,9 @@ async function loadCourses() {
 
     container.innerHTML = '<div class="card"><p style="color:#6b7280;">Loading courses...</p></div>';
 
-    const { data: courses, error } = await db
+   const { data: courses, error } = await db
         .from('courses')
-        .select('id, title, description, order_num')
+        .select('id, title, description, order_num, admin_lock_override')
         .order('order_num', { ascending: true });
 
     if (error) {
@@ -2129,6 +2129,18 @@ async function loadCourses() {
     container.innerHTML = '';
 
     courses.forEach(course => {
+        const lockState = course.admin_lock_override || 'auto';
+        const isForcedLocked   = lockState === 'locked';
+        const isForcedUnlocked = lockState === 'unlocked';
+
+        const lockBtnLabel = isForcedLocked
+            ? '<i class="fas fa-lock"></i> Locked (Admin)'
+            : isForcedUnlocked
+            ? '<i class="fas fa-lock-open"></i> Unlocked (Admin)'
+            : '<i class="fas fa-unlock"></i> Auto (Sequential)';
+
+        const lockBtnColor = isForcedLocked ? '#ef4444' : isForcedUnlocked ? '#10b981' : '#6b7280';
+
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
@@ -2146,12 +2158,42 @@ async function loadCourses() {
             <p style="color:#6b7280;margin-bottom:15px;">
                 ${course.description || 'No description'}
             </p>
-            <div style="display:flex;gap:20px;font-size:14px;color:#6b7280;">
-          <span><i class="fas fa-book-open"></i> Active Course</span>
-          </div>
+            <div style="display:flex;gap:20px;align-items:center;font-size:14px;color:#6b7280;">
+                <span><i class="fas fa-book-open"></i> Active Course</span>
+                <button onclick="cycleCourseLockState('${course.id}', '${lockState}')"
+                        style="margin-left:auto;border:1px solid ${lockBtnColor};color:${lockBtnColor};
+                               background:transparent;border-radius:8px;padding:6px 12px;
+                               font-size:12px;font-weight:600;cursor:pointer;">
+                    ${lockBtnLabel}
+                </button>
+            </div>
         `;
         container.appendChild(card);
     });
+}
+
+async function cycleCourseLockState(courseId, currentState) {
+    // auto -> locked -> unlocked -> auto
+    const next = currentState === 'auto'   ? 'locked'
+               : currentState === 'locked' ? 'unlocked'
+               : null; // null = back to auto
+
+    const { error } = await db
+        .from('courses')
+        .update({ admin_lock_override: next })
+        .eq('id', courseId);
+
+    if (error) {
+        if (typeof showToast === 'function') showToast('Failed to update lock state: ' + error.message, 'error');
+        return;
+    }
+
+    if (typeof showToast === 'function') {
+        const label = next === 'locked' ? 'Course force-locked.' : next === 'unlocked' ? 'Course force-unlocked.' : 'Course reset to automatic unlock rule.';
+        showToast(label, 'success');
+    }
+
+    loadCourses();
 }
 
 async function loadCourseSelects() {

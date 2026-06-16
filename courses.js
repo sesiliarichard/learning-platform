@@ -9,7 +9,7 @@ async function getAllCourses() {
     try {
        const { data, error } = await supabaseClient
         .from('courses')
-        .select('id, title, description, duration_weeks, instructor, thumbnail_color, icon, status, created_at, order_num, lesson_count, student_count, category')
+        .select('id, title, description, duration_weeks, instructor, thumbnail_color, icon, status, created_at, order_num, lesson_count, student_count, category, admin_lock_override')
         .order('order_num', { ascending: true });
 
         if (error) throw error;
@@ -380,10 +380,22 @@ function renderStudentCourseCards(courses, progressMap = {}, topicCountMap = {})
             const studentNum  = course.student_count || fallbackStudents[index % fallbackStudents.length];
             const instructor  = course.instructor    || 'ASAI Instructor';
 
-           const isCompleted = progress >= 90;
+          const isCompleted = progress >= 90;
 const isStarted   = progress > 0 && !isCompleted;
-// comment my codes
-const unlocked = true;
+
+const prevCourse = index > 0 ? courses[index - 1] : null;
+
+let unlocked;
+if (course.admin_lock_override === 'locked') {
+    unlocked = false;
+} else if (course.admin_lock_override === 'unlocked') {
+    unlocked = true;
+} else if (!prevCourse) {
+    unlocked = true;
+} else {
+    const prevProgress = progressMap[prevCourse.id] || 0;
+    unlocked = prevProgress >= 90;
+}
 
 const btnLabel = isCompleted ? '✓ Completed'
                : !unlocked  ? '🔒 Locked'//comment
