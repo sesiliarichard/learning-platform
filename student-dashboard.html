@@ -3568,7 +3568,7 @@ btn.addEventListener('click', async function() {
             };
             const pistonLang = langMap[lang] || { language: lang, version: '18.15.0' };
             try {
-               const res = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/run-code', {
+               const res = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -6753,7 +6753,7 @@ async function runPythonPyodide(code, outputDiv) {
 }
 async function runPythonCode(code) {
     try {
-       const response = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/run-code', {
+       const response = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -7339,7 +7339,7 @@ function _runJSSafe(code) {
 async function _runPistonAPI(code, language, version) {
     try {
         // Get Supabase URL from the existing client config
-        const res = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/run-code', {
+        const res = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -7361,7 +7361,7 @@ async function _runPistonAPI(code, language, version) {
 // Piston API fallback for Python (when Pyodide not ready)
 async function _runViaPiston(code) {
     try {
-       const r = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/run-code', {
+       const r = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
