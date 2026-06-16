@@ -3542,11 +3542,9 @@ btn.addEventListener('click', async function() {
     outPre.textContent = 'Running…';
     outPre.style.color = '#94a3b8';
 
-    try {
+   try {
         let result;
-        if (lang === 'javascript') {
-            result = runJavaScriptSync(code);
-        } else if (lang === 'html') {
+        if (lang === 'html') {
             output.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
@@ -3556,10 +3554,38 @@ btn.addEventListener('click', async function() {
             btn.textContent = '▶ Run';
             btn.disabled = false;
             return;
-        } else {
-            // Use Pyodide — no API needed
+        } else if (lang === 'python') {
+            // Use Pyodide for Python
             result = await runPythonPyodide(code, output);
             if (result === null) { btn.textContent = '▶ Run'; btn.disabled = false; return; }
+        } else {
+            // JavaScript, Java, SQL, Bash — all via Piston API
+            const langMap = {
+                javascript: { language: 'javascript', version: '18.15.0' },
+                java:       { language: 'java',       version: '15.0.2'  },
+                sql:        { language: 'sqlite3',    version: '3.36.0'  },
+                bash:       { language: 'bash',       version: '5.2.0'   }
+            };
+            const pistonLang = langMap[lang] || { language: lang, version: '18.15.0' };
+            try {
+                const res = await fetch('https://emkc.org/api/v2/piston/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        language: pistonLang.language,
+                        version:  pistonLang.version,
+                        files: [{ content: code }]
+                    })
+                });
+                const data = await res.json();
+                const stdout = data.run?.stdout || '';
+                const stderr = data.run?.stderr || '';
+                result = (stderr && !stdout)
+                    ? { output: '', error: stderr }
+                    : { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+            } catch(e) {
+                result = { output: '', error: 'Could not run code: ' + e.message };
+            }
         }
 
         outPre.textContent = result.error
