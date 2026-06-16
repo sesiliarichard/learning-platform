@@ -6650,10 +6650,7 @@ async function runCode() {
     try {
         let result;
 
-        if (language === 'javascript') {
-            result = runJavaScriptSync(code);
-
-        } else if (language === 'html') {
+      if (language === 'html') {
             outputDiv.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width:100%;height:260px;border:none;background:white;border-radius:8px;';
@@ -6664,10 +6661,20 @@ async function runCode() {
             if (runBtn) { runBtn.disabled = false; runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code'; }
             return;
 
+        } else if (language === 'python') {
+            result = await runPythonPyodide(code, outputDiv);
+            if (result === null) return;
+
         } else {
-            // Python via Pyodide (runs in browser, no API needed)
-           result = await _runPistonAPI(code, 'python', '3.10.0');
-            if (result === null) return; // already handled (loading state shown)
+            // JavaScript, Java, SQL, Bash — Piston API
+            const langMap = {
+                javascript: { language: 'javascript', version: '18.15.0' },
+                java:       { language: 'java',       version: '15.0.2'  },
+                sql:        { language: 'sqlite3',    version: '3.36.0'  },
+                bash:       { language: 'bash',       version: '5.2.0'   }
+            };
+            const pl = langMap[language] || { language: language, version: '18.15.0' };
+            result = await _runPistonAPI(code, pl.language, pl.version);
         }
 
         const execTime = ((performance.now() - startTime) / 1000).toFixed(2);
@@ -7327,12 +7334,7 @@ function _runJSSafe(code) {
 // Piston API runner — works instantly, no loading
 async function _runPistonAPI(code, language, version) {
     try {
-        const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
+       const res = await fetch('https://emkc.org/api/v2/piston/execute', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
