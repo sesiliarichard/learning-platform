@@ -2324,15 +2324,20 @@ to{
 
 .notes-reader {
   background: #fff;
-  padding: 40px 48px;
+  padding: 0 48px 40px;
   min-height: 600px;
+  max-height: calc(100vh - 220px);
   overflow-y: auto;
 }
 
 .notes-header {
-  margin-bottom: 28px;
-  padding-bottom: 20px;
+  margin: 0 -48px 28px;
+  padding: 40px 48px 20px;
   border-bottom: 1px solid #f1f5f9;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .notes-category-badge {

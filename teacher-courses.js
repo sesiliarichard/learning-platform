@@ -252,15 +252,16 @@ async function loadContentChapters() {
     });
   });
 
-  // Render chapter list with Week badges; clicking a chapter jumps the
-  // reader to the first topic in that chapter.
+ // Render chapter list with Week badges, each followed by its own
+  // topic rows (so the sidebar mirrors the student dashboard layout).
   sortedChapters.forEach((chapter, chIdx) => {
     const topics = topicMap[chapter.id] || [];
-    const li = document.createElement('li');
-    li.className = 'notes-chapter-item' + (chIdx === 0 ? ' active' : '');
-    li.dataset.chapterId = chapter.id;
 
-    li.innerHTML = `
+    const chapterLi = document.createElement('li');
+    chapterLi.className = 'notes-chapter-item' + (chIdx === 0 ? ' active' : '');
+    chapterLi.dataset.chapterId = chapter.id;
+
+    chapterLi.innerHTML = `
       <span style="display:flex;align-items:center;gap:6px;width:100%;">
         <span style="background:#ede9fe;color:#7c3aed;padding:1px 7px;
                      border-radius:20px;font-size:9px;font-weight:800;
@@ -273,15 +274,15 @@ async function loadContentChapters() {
         </span>
       </span>`;
 
-    li.onclick = () => {
-      document.querySelectorAll('#teacherChapterList .notes-chapter-item')
-        .forEach(x => x.classList.remove('active'));
-      li.classList.add('active');
+    chapterLi.onclick = () => {
       const firstTopic = topics[0];
       if (firstTopic) {
         const flatIndex = window._teacherNotesFlat.findIndex(t => t.id === firstTopic.id);
         if (flatIndex !== -1) displayTeacherNote(flatIndex);
       } else {
+        document.querySelectorAll('#teacherChapterList .notes-chapter-item')
+          .forEach(x => x.classList.remove('active'));
+        chapterLi.classList.add('active');
         const reader = document.getElementById('teacherNotesReader');
         if (reader) {
           reader.innerHTML = `
@@ -295,9 +296,35 @@ async function loadContentChapters() {
       }
     };
 
-    chapterListEl.appendChild(li);
-  });
+    chapterListEl.appendChild(chapterLi);
 
+    // Topic sub-rows under this chapter
+    topics.forEach((topic, tIdx) => {
+      const topicLi = document.createElement('li');
+      topicLi.className = 'notes-chapter-item teacher-topic-subitem';
+      topicLi.dataset.topicId = topic.id;
+      topicLi.style.cssText = 'padding-left:28px;font-weight:500;';
+
+      let title = topic.title;
+      if (title.length > 32) title = title.substring(0, 29) + '...';
+
+      topicLi.innerHTML = `
+        <span style="display:flex;align-items:center;gap:6px;width:100%;">
+          <i class="fas fa-circle" style="color:#d1d5db;font-size:7px;flex-shrink:0;"></i>
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;">
+            ${_esc(title)}
+          </span>
+        </span>`;
+
+      topicLi.onclick = (e) => {
+        e.stopPropagation();
+        const flatIndex = window._teacherNotesFlat.findIndex(t => t.id === topic.id);
+        if (flatIndex !== -1) displayTeacherNote(flatIndex);
+      };
+
+      chapterListEl.appendChild(topicLi);
+    });
+  });
   // Auto-load the very first topic across all chapters
   if (window._teacherNotesFlat.length > 0) {
     displayTeacherNote(0);
@@ -335,9 +362,11 @@ async function displayTeacherNote(index) {
     return;
   }
 
-  // Highlight the matching chapter in the sidebar
+  // Highlight the matching topic row (and its parent chapter pill) in the sidebar
   document.querySelectorAll('#teacherChapterList .notes-chapter-item').forEach(li => {
-    li.classList.toggle('active', li.dataset.chapterId === topicRef.chapter_id);
+    const isMatchChapter = li.dataset.chapterId === topicRef.chapter_id;
+    const isMatchTopic   = li.dataset.topicId === topicRef.id;
+    li.classList.toggle('active', isMatchChapter || isMatchTopic);
   });
 
   reader.innerHTML = `
