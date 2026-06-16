@@ -7252,17 +7252,28 @@ async function runInlineCode(uid, lang) {
                 bash:       { language: 'bash',       version: '5.2.0'   }
             };
             const pl = langMap[lang] || { language: lang, version: '18.15.0' };
-        const apiRes = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
+       const apiRes = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code, language: pl.language, version: pl.version })
             });
             const apiData = await apiRes.json();
-            const stdout = apiData.run?.stdout || '';
-            const stderr = apiData.run?.stderr || '';
-            res = (stderr && !stdout)
-                ? { output: '', error: stderr }
-                : { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+            console.log('[runInlineCode] lang:', pl.language, 'version:', pl.version, 'raw response:', apiData);
+
+            if (!apiData.run && !apiData.compile) {
+                res = { output: '', error: 'Runner returned unexpected response: ' + JSON.stringify(apiData) };
+            } else {
+                const compileErr = (apiData.compile?.stderr || '').trim();
+                const stdout = apiData.run?.stdout || '';
+                const stderr = apiData.run?.stderr || '';
+                if (compileErr) {
+                    res = { output: '', error: compileErr };
+                } else if (stderr && !stdout) {
+                    res = { output: '', error: stderr };
+                } else {
+                    res = { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+                }
+            }
         }
         if (res) {
             result.textContent = res.error
