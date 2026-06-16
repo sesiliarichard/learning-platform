@@ -7222,11 +7222,9 @@ async function runInlineCode(uid, lang) {
     result.style.color = '#94a3b8';
     result.textContent = '⏳ Running your code…';
 
-    try {
+   try {
         let res;
-        if (lang === 'javascript') {
-            res = _runJSSafe(code);
-        } else if (lang === 'html') {
+        if (lang === 'html') {
             output.innerHTML = '';
             const iframe = document.createElement('iframe');
             iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
@@ -7235,9 +7233,29 @@ async function runInlineCode(uid, lang) {
             runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
             runBtn.disabled  = false;
             return;
-        } else {
-            // Python - use Pyodide (already loaded on page, no API needed)
+        } else if (lang === 'python') {
+            // Python - use Pyodide (fast, offline)
             res = await _runWithPyodide(code, output, result);
+        } else {
+            // JavaScript, Java, SQL, Bash — use Piston API
+            const langMap = {
+                javascript: { language: 'javascript', version: '18.15.0' },
+                java:       { language: 'java',       version: '15.0.2'  },
+                sql:        { language: 'sqlite3',    version: '3.36.0'  },
+                bash:       { language: 'bash',       version: '5.2.0'   }
+            };
+            const pl = langMap[lang] || { language: lang, version: '18.15.0' };
+            const apiRes = await fetch('https://emkc.org/api/v2/piston/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ language: pl.language, version: pl.version, files: [{ content: code }] })
+            });
+            const apiData = await apiRes.json();
+            const stdout = apiData.run?.stdout || '';
+            const stderr = apiData.run?.stderr || '';
+            res = (stderr && !stdout)
+                ? { output: '', error: stderr }
+                : { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
         }
         if (res) {
             result.textContent = res.error
