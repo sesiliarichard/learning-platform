@@ -7258,11 +7258,19 @@ async function runInlineCode(uid, lang) {
                 body: JSON.stringify({ code, language: pl.language, version: pl.version })
             });
             const apiData = await apiRes.json();
+            console.log('[super-processor response]', apiData);
+            const compileErr = apiData.compile?.stderr || apiData.compile?.output || '';
             const stdout = apiData.run?.stdout || '';
             const stderr = apiData.run?.stderr || '';
-            res = (stderr && !stdout)
-                ? { output: '', error: stderr }
-                : { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+            if (compileErr && !stdout) {
+                res = { output: '', error: '(compile error)\n' + compileErr };
+            } else if (stderr && !stdout) {
+                res = { output: '', error: stderr };
+            } else if (!stdout && !stderr && !compileErr) {
+                res = { output: '', error: 'Runner returned an unexpected response: ' + JSON.stringify(apiData) };
+            } else {
+                res = { output: stdout + (stderr ? '\n⚠️ ' + stderr : ''), error: null };
+            }
         }
         if (res) {
             result.textContent = res.error
