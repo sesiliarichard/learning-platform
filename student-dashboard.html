@@ -7252,10 +7252,7 @@ async function runInlineCode(uid, lang) {
                 bash:       { language: 'bash',       version: '5.2.0'   }
             };
             const pl = langMap[lang] || { language: lang, version: '18.15.0' };
-         const supabaseUrl = window.SUPABASE_URL || window._supabaseUrl
-                || (window.supabaseClient?.supabaseUrl)
-                || document.querySelector('meta[name="supabase-url"]')?.content;
-            const apiRes = await fetch(`${supabaseUrl}/functions/v1/run-code`, {
+        const apiRes = await fetch('https://tnuztjayhzkrjhxjtgkf.supabase.co/functions/v1/super-processor', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ code, language: pl.language, version: pl.version })
