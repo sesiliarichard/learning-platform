@@ -7243,10 +7243,12 @@ async function runInlineCode(uid, lang) {
         } else if (lang === 'python') {
             // Python - use Pyodide (fast, offline)
             res = await _runWithPyodide(code, output, result);
+       } else if (lang === 'javascript') {
+            // Run JS locally — no Piston needed, and Piston is currently blocked anyway
+            res = runJavaScriptSync(code);
         } else {
-            // JavaScript, Java, SQL, Bash — use Piston API
+            // Java, SQL, Bash — Piston API (currently returns a whitelist error, see note)
             const langMap = {
-                javascript: { language: 'javascript', version: '18.15.0' },
                 java:       { language: 'java',       version: '15.0.2'  },
                 sql:        { language: 'sqlite3',    version: '3.36.0'  },
                 bash:       { language: 'bash',       version: '5.2.0'   }
