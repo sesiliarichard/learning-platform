@@ -606,9 +606,10 @@
 
         // Python and others - use Piston API
         try {
-            const langMap = {
+           const langMap = {
                 python:     { language: 'python',     version: '3.10.0' },
                 javascript: { language: 'javascript', version: '18.15.0' },
+                java:       { language: 'java',       version: '15.0.2'  },
                 sql:        { language: 'sqlite3',    version: '3.36.0' },
                 bash:       { language: 'bash',       version: '5.2.0' },
                 html:       { language: 'javascript', version: '18.15.0' }

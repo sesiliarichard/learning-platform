@@ -230,6 +230,7 @@
                             style="width:100%;padding:8px 12px;border:1.5px solid #4338ca;border-radius:8px;font-size:13px;font-family:inherit;background:#1e1b4b;color:#a5b4fc;outline:none;">
                             <option value="python">Python</option>
                             <option value="javascript">JavaScript</option>
+                            <option value="java">Java</option>
                             <option value="both">Both (student chooses)</option>
                         </select>
                     </div>
@@ -282,6 +283,7 @@
                     style="width:100%;padding:10px;border:2px solid #e5e7eb;border-radius:8px;font-size:14px;font-family:inherit;outline:none;">
                     <option value="python">Python</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
                     <option value="html">HTML/CSS</option>
                     <option value="sql">SQL</option>
                     <option value="bash">Bash</option>
@@ -321,6 +323,7 @@
     const langColors = {
         python:     { bg: '#1e1b4b', border: '#4338ca', badge: '#6366f1', label: 'Python' },
         javascript: { bg: '#1c1917', border: '#d97706', badge: '#f59e0b', label: 'JavaScript' },
+        java:       { bg: '#1a0a00', border: '#b45309', badge: '#d97706', label: 'Java' },
         html:       { bg: '#1c1917', border: '#dc2626', badge: '#ef4444', label: 'HTML/CSS' },
         sql:        { bg: '#0c1a2e', border: '#0ea5e9', badge: '#38bdf8', label: 'SQL' },
         bash:       { bg: '#0a1628', border: '#10b981', badge: '#34d399', label: 'Bash' }
