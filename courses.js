@@ -832,13 +832,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (form) form.onsubmit = handleAddCourseDB;
     }
 
+    // Student dashboard rendering is now handled exclusively by
+    // loadCoursesFromDB()/renderCourseCards() inside student-dashboard.html.
+    // courses.js's loadStudentDashboardCourses() was rendering the same
+    // grid a second time and overwriting the lock-overlay/lesson-count fixes.
     if (isStudentPage) {
-        console.log('🎓 Student page detected — loading student courses');
-        // Small delay so the inline script's variables (coursesData, selectCourse) are ready
-        setTimeout(async () => {
-            await loadStudentDashboardCourses();
-        }, 300);
+        console.log('🎓 Student page detected — skipping courses.js render (handled by student-dashboard.html)');
     }
 });
-
 console.log('✅ Courses.js loaded');
