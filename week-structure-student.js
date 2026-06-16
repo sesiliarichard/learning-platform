@@ -599,11 +599,7 @@
     // ─────────────────────────────────────────────────────────
     // CODE RUNNER - supports Python and JavaScript
     // ─────────────────────────────────────────────────────────
-    async function _runCode(code, lang) {
-        if (lang === 'javascript') {
-            return _runJavaScript(code);
-        }
-
+   async function _runCode(code, lang) {
         // Python and others - use Piston API
         try {
            const langMap = {
