@@ -389,7 +389,7 @@ async function displayTeacherNote(index) {
       ${topic.content || '<p>No content available for this topic.</p>'}
     </div>
 
-    <div class="notes-navigation">
+ <div class="notes-navigation">
       <button class="notes-nav-btn" onclick="displayTeacherNote(${index - 1})" ${index === 0 ? 'disabled' : ''}>
         <i class="fas fa-arrow-left"></i>
         Previous
@@ -400,8 +400,235 @@ async function displayTeacherNote(index) {
       </button>
     </div>`;
 
+  _teacherWireCodingBlocks(reader);
   reader.scrollTop = 0;
 }
+// ─────────────────────────────────────────────────────────────
+// CONVERT STATIC CODING BLOCKS TO INTERACTIVE RUNNERS (teacher view)
+// Mirrors the student dashboard's conversion logic so admin-inserted
+// asai-inline-coding blocks get a live editor + Run button here too.
+// ─────────────────────────────────────────────────────────────
+function _teacherWireCodingBlocks(container) {
+  container.querySelectorAll('.asai-inline-coding').forEach(block => {
+    const lang = block.dataset.lang || 'python';
+    const uid  = 'tc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+
+    let prompt = '';
+    block.querySelectorAll('div').forEach(d => {
+      if (d.textContent.includes('Problem') || d.style.cssText.includes('lightbulb')) {
+        const next = d.nextElementSibling;
+        if (next) prompt = next.textContent.trim();
+      }
+    });
+
+    const starter = block.querySelector('pre')?.textContent?.trim() ||
+      (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
+
+    const lc = {
+      python:     { badge:'#6366f1', border:'#4338ca', bg:'#1e1b4b', label:'Python 3' },
+      javascript: { badge:'#f59e0b', border:'#d97706', bg:'#1c1917', label:'JavaScript' },
+      both:       { badge:'#34d399', border:'#10b981', bg:'#0f2027', label:'Python / JS' },
+      sql:        { badge:'#38bdf8', border:'#0ea5e9', bg:'#0c1a2e', label:'SQL' },
+      html:       { badge:'#ef4444', border:'#dc2626', bg:'#1c1917', label:'HTML/CSS' }
+    }[lang] || { badge:'#6366f1', border:'#4338ca', bg:'#1e1b4b', label:'Python' };
+
+    const newBlock = document.createElement('div');
+    newBlock.className = 'asai-inline-coding';
+    newBlock.dataset.lang = lang;
+    newBlock.dataset.uid  = uid;
+    newBlock.style.cssText = `margin:16px 0;border-radius:14px;overflow:hidden;border:2px solid ${lc.border};background:${lc.bg};`;
+
+    newBlock.innerHTML = `
+      <div style="padding:10px 16px;display:flex;align-items:center;
+                  justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:28px;height:28px;background:${lc.badge};border-radius:8px;
+                      display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-code" style="color:white;font-size:11px;"></i>
+          </div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:white;">Coding Exercise</div>
+            <div style="font-size:11px;color:${lc.badge};">${lc.label}</div>
+          </div>
+        </div>
+        <span style="background:${lc.badge};color:white;padding:3px 10px;
+                     border-radius:20px;font-size:11px;font-weight:700;">Interactive</span>
+      </div>
+
+      ${prompt ? `
+      <div style="padding:12px 16px;background:rgba(99,102,241,0.12);
+                  border-bottom:1px solid rgba(255,255,255,0.06);">
+        <div style="font-size:10px;font-weight:700;color:${lc.badge};
+                    text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;">
+          <i class="fas fa-lightbulb"></i> Problem
+        </div>
+        <div style="font-size:13px;color:#c7d2fe;line-height:1.6;">${prompt}</div>
+      </div>` : ''}
+
+      <div style="padding:12px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:700;color:${lc.badge};
+                       text-transform:uppercase;letter-spacing:1px;">Your Code</span>
+          <button id="resetBtn_${uid}"
+              style="padding:3px 10px;background:rgba(255,255,255,0.1);color:#94a3b8;
+                     border:none;border-radius:6px;font-size:11px;cursor:pointer;">
+            <i class="fas fa-undo"></i> Reset
+          </button>
+        </div>
+        <textarea id="inlineEditor_${uid}" rows="7" spellcheck="false"
+            style="width:100%;padding:12px;background:#0a0a1a;color:#a5b4fc;
+                   border:1.5px solid ${lc.border};border-radius:10px;font-size:13px;
+                   font-family:'Courier New',monospace;outline:none;resize:vertical;
+                   box-sizing:border-box;line-height:1.6;"></textarea>
+      </div>
+
+      <div style="padding:0 16px 14px;display:flex;gap:10px;">
+        <button id="inlineRunBtn_${uid}"
+            style="flex:2;padding:11px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
+                   color:white;border:none;border-radius:10px;font-size:14px;font-weight:700;
+                   cursor:pointer;font-family:inherit;display:flex;align-items:center;
+                   justify-content:center;gap:8px;">
+          <i class="fas fa-play"></i> Run Code
+        </button>
+      </div>
+
+      <div id="inlineOutput_${uid}"
+           style="display:none;padding:14px 16px;background:#0a0a1a;
+                  border-top:1px solid ${lc.border}30;">
+        <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;
+                    letter-spacing:1px;margin-bottom:8px;">
+          <i class="fas fa-terminal"></i> Output
+        </div>
+        <pre id="inlineResult_${uid}"
+             style="margin:0;font-family:'Courier New',monospace;font-size:12px;
+                    color:#4ade80;white-space:pre-wrap;word-break:break-all;"></pre>
+      </div>
+    `;
+
+    block.replaceWith(newBlock);
+
+    const ta = document.getElementById('inlineEditor_' + uid);
+    if (ta) ta.value = starter;
+
+    document.getElementById('resetBtn_' + uid)?.addEventListener('click', () => {
+      const t = document.getElementById('inlineEditor_' + uid);
+      if (t) t.value = starter;
+    });
+
+    document.getElementById('inlineRunBtn_' + uid)?.addEventListener('click', () => {
+      _teacherRunInlineCode(uid, lang);
+    });
+  });
+
+  // Also wire any static (non-inline) asai-code-block Run buttons
+  container.querySelectorAll('.asai-code-block').forEach(block => {
+    const btn = block.querySelector('.asai-run-btn');
+    if (!btn || btn.dataset.wired) return;
+    btn.dataset.wired = '1';
+    btn.addEventListener('click', async function () {
+      const lang   = block.dataset.language || 'python';
+      const code   = block.querySelector('pre')?.textContent || '';
+      const output = block.querySelector('.asai-code-output');
+      const outPre = output?.querySelector('pre');
+      if (!output || !outPre) return;
+
+      btn.textContent = '⏳ Running…';
+      btn.disabled = true;
+      output.style.display = 'block';
+      outPre.textContent = 'Running…';
+      outPre.style.color = '#94a3b8';
+
+      try {
+        const res = lang === 'javascript' ? _teacherRunJS(code) : await _teacherRunPyodide(code);
+        outPre.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output)');
+        outPre.style.color = res.error ? '#f87171' : '#4ade80';
+      } catch (err) {
+        outPre.textContent = '❌ ' + err.message;
+        outPre.style.color = '#f87171';
+      }
+      btn.textContent = '▶ Run';
+      btn.disabled = false;
+    });
+  });
+}
+
+async function _teacherRunInlineCode(uid, lang) {
+  const editor = document.getElementById('inlineEditor_' + uid);
+  const output = document.getElementById('inlineOutput_' + uid);
+  const result = document.getElementById('inlineResult_' + uid);
+  const runBtn = document.getElementById('inlineRunBtn_' + uid);
+  if (!editor || !output || !result) return;
+
+  const code = editor.value;
+  if (!code.trim()) {
+    output.style.display = 'block';
+    result.textContent = '⚠️ Write some code first!';
+    result.style.color = '#f59e0b';
+    return;
+  }
+
+  runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running…';
+  runBtn.disabled  = true;
+  output.style.display = 'block';
+  result.style.color = '#94a3b8';
+  result.textContent = '⏳ Running your code…';
+
+  try {
+    let res;
+    if (lang === 'javascript') {
+      res = _teacherRunJS(code);
+    } else if (lang === 'html') {
+      output.innerHTML = '';
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width:100%;height:200px;border:none;background:white;border-radius:8px;';
+      output.appendChild(iframe);
+      iframe.src = URL.createObjectURL(new Blob([code], { type: 'text/html' }));
+      runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
+      runBtn.disabled  = false;
+      return;
+    } else {
+      res = await _teacherRunPyodide(code);
+    }
+    result.textContent = res.error ? '❌ ' + res.error : (res.output || '(No output — did you forget print()?)');
+    result.style.color = res.error ? '#f87171' : '#4ade80';
+  } catch (err) {
+    result.textContent = '❌ ' + err.message;
+    result.style.color = '#f87171';
+  }
+  runBtn.innerHTML = '<i class="fas fa-play"></i> Run Code';
+  runBtn.disabled = false;
+}
+
+function _teacherRunJS(code) {
+  let output = '';
+  const originalLog = console.log;
+  try {
+    console.log = (...args) => { output += args.join(' ') + '\n'; };
+    // eslint-disable-next-line no-new-func
+    new Function(code)();
+    console.log = originalLog;
+    return { output: output.trim() };
+  } catch (err) {
+    console.log = originalLog;
+    return { error: err.message };
+  }
+}
+
+async function _teacherRunPyodide(code) {
+  try {
+    if (!window._pyodideInstance) {
+      window._pyodideInstance = await loadPyodide();
+    }
+    const pyodide = window._pyodideInstance;
+    let output = '';
+    pyodide.setStdout({ batched: (s) => { output += s + '\n'; } });
+    await pyodide.runPythonAsync(code);
+    return { output: output.trim() };
+  } catch (err) {
+    return { error: err.message };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────
 // KEEP OLD FUNCTION NAMES AS ALIASES (backward compatibility)
 // ─────────────────────────────────────────────────────────────
