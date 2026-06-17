@@ -571,7 +571,6 @@ function applyFontFamily(cssValue, editorEl) {
       closeAllDropdowns();
       if (!isOpen) {
        panel.classList.add('open');
-        console.log('🟢 OPENED', panel.className);
         positionPanel(btn, panel);
         searchInput.value = '';
         renderItems('');
@@ -627,7 +626,6 @@ function applyFontFamily(cssValue, editorEl) {
       e.preventDefault();
       saveSelection();
       const isOpen = panel.classList.contains('open');
-      console.log('🔍 isOpen check:', panel.className, '→', isOpen);
       closeAllDropdowns();
       if (!isOpen) {
         panel.classList.add('open');
@@ -687,8 +685,6 @@ function positionPanel(btn, panel) {
 
  function closeAllDropdowns() {
     document.querySelectorAll('.asai-dd-panel.open').forEach(p => {
-      console.log('🔴 CLOSING', p.className);
-      console.trace();
       p.classList.remove('open');
     });
   }
@@ -697,15 +693,14 @@ function positionPanel(btn, panel) {
   });
    
   
-  // Instead, keep dropdowns open when scrolling inside them
+  // Keep dropdowns open when scrolling inside them
   document.addEventListener('scroll', function(e) {
-    // Check if scroll happened inside an open dropdown panel
-    const openPanel = document.querySelector('.asai-dd-panel.open');
-    if (openPanel && openPanel.contains(e.target)) {
-      // Don't close if scrolling inside the dropdown
-      return;
+    // e.target may be the panel itself or a child element inside it
+    // Use closest() to robustly detect scroll inside any open panel
+    if (e.target && typeof e.target.closest === 'function' &&
+        e.target.closest('.asai-dd-panel')) {
+      return; // scrolling inside a dropdown — keep it open
     }
-    // Close only if scrolling outside
     closeAllDropdowns();
   }, true);
 
