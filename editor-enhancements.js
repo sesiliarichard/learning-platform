@@ -503,11 +503,14 @@ function enhanceTable (table) {
         const btn = e.target.closest('button[data-act]');
         if (!btn) return;
         const tbl = wrap.querySelector('table');
-        if (btn.dataset.act === 'setWidth') {
+       if (btn.dataset.act === 'setWidth') {
           const input = tb.querySelector('.wle-table-width-input');
           const pct = Math.min(100, Math.max(10, parseInt(input.value) || 100));
           tbl.style.width = pct + '%';
           wrap.style.width = pct + '%';
+          wrap.style.display = 'block';
+          wrap.style.marginLeft = 'auto';
+          wrap.style.marginRight = 'auto';
           input.value = pct;
           return;
         }
