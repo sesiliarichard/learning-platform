@@ -1384,9 +1384,10 @@
                 Coding Environment
             </h2>
             <div class="coding-language-selector">
-                <select id="codingLanguage" onchange="switchCodingLanguage()">
+               <select id="codingLanguage" onchange="switchCodingLanguage()">
                     <option value="python">Python 3</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
                     <option value="html">HTML/CSS</option>
                 </select>
             </div>
@@ -3294,8 +3295,8 @@ function displayNote(index) {
     // Add coding exercise if present — inline runner
     if (note.hasCodingExercise && note.codingPrompt) {
         const lang        = note.codingLanguage || 'python';
-        const starter     = note.codingStarterCode || (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
-        const langColors  = { python:'#6366f1', javascript:'#f59e0b', both:'#10b981' };
+        const starter     = note.codingStarterCode || (lang === 'javascript' ? '// Write your solution here\n' : lang === 'java' ? 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n' : '# Write your solution here\n');
+        const langColors  = { python:'#6366f1', javascript:'#f59e0b', java:'#f97316', both:'#10b981' };
         const badgeColor  = langColors[lang] || '#6366f1';
         const langLabel   = lang === 'both' ? 'Python / JS' : lang.charAt(0).toUpperCase() + lang.slice(1);
         const uid         = 'inline_' + note.id;
@@ -3397,13 +3398,14 @@ reader.querySelectorAll('.asai-inline-coding').forEach(block => {
         }
     });
 
-    // Extract starter code from the pre tag
+   // Extract starter code from the pre tag
     const starter = block.querySelector('pre')?.textContent?.trim() || 
-        (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
+        (lang === 'javascript' ? '// Write your solution here\n' : lang === 'java' ? 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n' : '# Write your solution here\n');
 
     const lc = {
         python:     { badge:'#6366f1', border:'#4338ca', bg:'#1e1b4b', label:'Python 3' },
         javascript: { badge:'#f59e0b', border:'#d97706', bg:'#1c1917', label:'JavaScript' },
+        java:       { badge:'#f97316', border:'#b45309', bg:'#1a1410', label:'Java' },
         both:       { badge:'#34d399', border:'#10b981', bg:'#0f2027', label:'Python / JS' },
         sql:        { badge:'#38bdf8', border:'#0ea5e9', bg:'#0c1a2e', label:'SQL' },
         html:       { badge:'#ef4444', border:'#dc2626', bg:'#1c1917', label:'HTML/CSS' }
@@ -3515,7 +3517,7 @@ reader.querySelectorAll('textarea[id^="inlineEditor_"]').forEach(ta => {
     if (matchedNote) {
         const lang = matchedNote.codingLanguage || 'python';
         const starter = matchedNote.codingStarterCode ||
-            (lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n');
+            (lang === 'javascript' ? '// Write your solution here\n' : lang === 'java' ? 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n' : '# Write your solution here\n');
         // Use .value to avoid HTML entity encoding (&quot; etc.)
         ta.value = starter;
     }
@@ -6498,9 +6500,9 @@ function openCodingEnvironment(assignmentId = null, prompt = null) {
     if (linkDiv) linkDiv.style.display = 'none';
     currentCodingAssignment = null;
 
-    // Default to Python (most common for this platform)
+   // Default to Python (most common for this platform)
     const langSelect = document.getElementById('codingLanguage');
-    if (langSelect && langSelect.value !== 'javascript' && langSelect.value !== 'html') {
+    if (langSelect && !['javascript', 'java', 'html'].includes(langSelect.value)) {
         langSelect.value = 'python';
     }
 
@@ -6509,11 +6511,16 @@ function openCodingEnvironment(assignmentId = null, prompt = null) {
 
     if (prompt && editor) {
         // Safe comment insertion — no raw string injection
-        const commentChar = lang === 'javascript' ? '//' : '#';
+        const commentChar = (lang === 'javascript' || lang === 'java') ? '//' : '#';
         const promptLines = prompt.split('\n')
             .map(line => `${commentChar} ${line}`)
             .join('\n');
-        editor.value = `${promptLines}\n\n# Write your solution here\n`;
+        const blankStarter = lang === 'javascript'
+            ? '// Write your solution here\n'
+            : lang === 'java'
+            ? 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n'
+            : '# Write your solution here\n';
+        editor.value = `${promptLines}\n\n${blankStarter}`;
     } else {
         setDefaultCode(lang);
     }
@@ -6572,6 +6579,22 @@ console.log(result);
 const numbers = [1, 2, 3, 4, 5];
 const squares = numbers.map(x => x * x);
 console.log("Squares:", squares);`,
+
+        java: `// Java Code Example
+public class Main {
+    public static void main(String[] args) {
+        System.out.println(greet("Student"));
+
+        int[] numbers = {1, 2, 3, 4, 5};
+        for (int n : numbers) {
+            System.out.println("Square: " + (n * n));
+        }
+    }
+
+    public static String greet(String name) {
+        return "Hello, " + name + "!";
+    }
+}`,
         
         html: `<!-- HTML/CSS Example -->
 <div style="font-family: Arial; padding: 20px;">
@@ -7188,12 +7211,17 @@ function openCodingEnvironmentById(topicId) {
             editor.value = note.codingStarterCode;
         } else if (note.codingPrompt) {
             // Insert prompt as comment lines safely
-            const commentChar = lang === 'javascript' ? '//' : '#';
+            const commentChar = (lang === 'javascript' || lang === 'java') ? '//' : '#';
             const promptLines = note.codingPrompt
                 .split('\n')
                 .map(line => `${commentChar} ${line}`)
                 .join('\n');
-            editor.value = `${promptLines}\n\n${lang === 'javascript' ? '// Write your solution here\n' : '# Write your solution here\n'}`;
+            const blankStarter = lang === 'javascript'
+                ? '// Write your solution here\n'
+                : lang === 'java'
+                ? 'public class Main {\n    public static void main(String[] args) {\n        \n    }\n}\n'
+                : '# Write your solution here\n';
+            editor.value = `${promptLines}\n\n${blankStarter}`;
         } else {
             setDefaultCode(lang);
         }

@@ -3343,6 +3343,13 @@ function insertInlineCodingBlock(editorIndex) {
                            font-family:inherit;outline:none;">
                     <option value="python">Python 3</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
+                    <option value="both">Both (student chooses)</option>
+                    <option value="sql">SQL</option>
+                    <option value="html">HTML/CSS</option>
+                </select><option value="python">Python 3</option>
+                    <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
                     <option value="both">Both (student chooses)</option>
                     <option value="sql">SQL</option>
                     <option value="html">HTML/CSS</option>
@@ -3439,6 +3446,7 @@ function confirmInlineCodingBlock(editorIndex) {
     const langColors = {
         python:     { bg:'#1e1b4b', border:'#4338ca', badge:'#6366f1', label:'Python 3'    },
         javascript: { bg:'#1c1917', border:'#d97706', badge:'#f59e0b', label:'JavaScript'   },
+        java:       { bg:'#1a1410', border:'#b45309', badge:'#f97316', label:'Java'         },
         both:       { bg:'#0f2027', border:'#10b981', badge:'#34d399', label:'Python / JS'  },
         sql:        { bg:'#0c1a2e', border:'#0ea5e9', badge:'#38bdf8', label:'SQL'          },
         html:       { bg:'#1c1917', border:'#dc2626', badge:'#ef4444', label:'HTML/CSS'     }
@@ -3447,6 +3455,8 @@ function confirmInlineCodingBlock(editorIndex) {
 
     const defaultStarter = starter || (lang === 'javascript'
         ? `// Write your solution here\nfunction solution() {\n    \n}`
+        : lang === 'java'
+        ? `public class Main {\n    public static void main(String[] args) {\n        \n    }\n}`
         : `# Write your solution here\ndef solution():\n    pass`);
 
     const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -7184,9 +7194,10 @@ function updateAssignQuestionForm() {
         container.innerHTML = `
             <div class="form-group">
                 <label>Language</label>
-                <select id="assignQCodingLang">
+               <select id="assignQCodingLang">
                     <option value="python">Python 3</option>
                     <option value="javascript">JavaScript</option>
+                    <option value="java">Java</option>
                 </select>
             </div>
             <div class="form-group">
