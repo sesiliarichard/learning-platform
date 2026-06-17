@@ -85,6 +85,11 @@ if (!chapterFull?.course_id) {
     return;
 }
 
+// Restore the title/description now that we have the real chapter data —
+// they were cleared to '' earlier in this function before this fetch completed.
+document.getElementById('editChapterTitle').value = chapterFull.title || '';
+document.getElementById('editChapterDescription').value = chapterFull.description || '';
+
 const courseId = chapterFull.course_id;
      
 
