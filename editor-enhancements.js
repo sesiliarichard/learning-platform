@@ -947,7 +947,15 @@ function tableAct (act, table, wrap) {
   /* ============================================================
    * 7.  CLICK-OUTSIDE deselects everything
    * ============================================================ */
-  document.addEventListener('mousedown', e => {
+ document.addEventListener('mousedown', e => {
+    // If clicking a bare table (pasted/copied, not yet enhanced) — enhance it first
+    const bareTable = e.target.closest('table');
+    if (bareTable && bareTable.closest('.editor-content') && !bareTable.closest('.wle-table-wrap')) {
+      enhanceTable(bareTable);
+      // Let the click proceed so toolbar appears
+      return;
+    }
+
     if (!e.target.closest('.wle-img-wrap, .wle-table-wrap, .wle-img-toolbar, #wleTableModal')) {
       deselectAll();
     }
