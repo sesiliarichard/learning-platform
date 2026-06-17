@@ -151,12 +151,15 @@
      .wle-editor-table {
         border-collapse: collapse; width: 100%; max-width: 100%; table-layout: fixed;
       }
-      .wle-editor-table td,
+     .wle-editor-table td,
       .wle-editor-table th {
         border: 1.5px solid #374151;
         padding: 8px 10px;
         min-width: ${MIN_COL_WIDTH}px;
         position: relative; vertical-align: top;
+        white-space: normal !important;
+        overflow-wrap: break-word;
+        word-break: break-word;
       }
       .wle-editor-table th {
         background: #f5f3ff; font-weight: 700;
