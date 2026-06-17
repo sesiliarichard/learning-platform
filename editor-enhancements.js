@@ -148,8 +148,8 @@
       }
 
       /* ── table base ── */
-      .wle-editor-table {
-        border-collapse: collapse; width: 100%; table-layout: fixed;
+     .wle-editor-table {
+        border-collapse: collapse; width: 100%; max-width: 100%; table-layout: fixed;
       }
       .wle-editor-table td,
       .wle-editor-table th {

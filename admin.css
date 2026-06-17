@@ -6322,6 +6322,8 @@ body.dark-mode .topic-list .empty-topics {
     white-space: normal !important;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 /* Make all block elements actually display as blocks */
