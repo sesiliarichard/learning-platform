@@ -180,7 +180,19 @@
       .wle-row-dragger:hover, .wle-row-dragger.active { background: rgba(124,58,237,.35); }
 
       /* ── table wrapper / toolbar ── */
-      .wle-table-wrap { position: relative; display: inline-block; width: 100%; }
+      .wle-table-wrap {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  box-sizing: border-box;
+}
+.wle-table-wrap .wle-editor-table {
+  table-layout: fixed;
+  width: 100%;
+  max-width: 100%;
+}
       .wle-table-wrap.selected .wle-editor-table { outline: 2px solid #7c3aed; outline-offset: 2px; }
       .wle-table-toolbar {
         display: none; position: absolute;

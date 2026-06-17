@@ -6405,9 +6405,19 @@ body.dark-mode .topic-list .empty-topics {
 .editor-content table {
     border-collapse: collapse;
     width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
     margin: 12px 0;
 }
 
+.editor-content .wle-table-wrap,
+.editor-content .resizable-table-wrap {
+    display: block !important;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
+}
 .editor-content td,
 .editor-content th {
     border: 1px solid #d1d5db;
