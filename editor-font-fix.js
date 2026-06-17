@@ -558,14 +558,15 @@ function applyFontFamily(cssValue, editorEl) {
 
     renderItems('');
     panel.appendChild(itemsContainer);
-    wrap.appendChild(btn);
-    wrap.appendChild(panel);
+   wrap.appendChild(btn);
+    document.body.appendChild(panel);
 
     searchInput.addEventListener('input',     () => renderItems(searchInput.value));
     searchInput.addEventListener('mousedown', e => e.stopPropagation());
 
     btn.addEventListener('mousedown', e => {
       e.preventDefault();
+      e.stopPropagation();
       saveSelection();
       const isOpen = panel.classList.contains('open');
       closeAllDropdowns();
@@ -619,11 +620,12 @@ function applyFontFamily(cssValue, editorEl) {
       panel.appendChild(item);
     });
 
-    wrap.appendChild(btn);
-    wrap.appendChild(panel);
+   wrap.appendChild(btn);
+    document.body.appendChild(panel);
 
        btn.addEventListener('mousedown', e => {
       e.preventDefault();
+      e.stopPropagation();
       saveSelection();
       const isOpen = panel.classList.contains('open');
       closeAllDropdowns();
@@ -689,7 +691,7 @@ function positionPanel(btn, panel) {
     });
   }
   document.addEventListener('mousedown', e => {
-    if (!e.target.closest('.asai-dd-wrap')) closeAllDropdowns();
+    if (!e.target.closest('.asai-dd-wrap') && !e.target.closest('.asai-dd-panel')) closeAllDropdowns();
   });
    
   
