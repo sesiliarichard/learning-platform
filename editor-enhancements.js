@@ -492,6 +492,20 @@ function enhanceTable (table) {
     if (table.classList.contains('wle-enhanced')) return;
     table.classList.add('wle-enhanced', 'wle-editor-table');
 
+    // Strip stale fixed-pixel widths that may already be baked into this
+    // table from an earlier paste (Word/Google Docs), so our responsive
+    // CSS (table-layout:fixed, max-width:100%) can actually take effect.
+    table.removeAttribute('width');
+    table.style.removeProperty('min-width');
+    table.style.removeProperty('max-width');
+    table.style.width = '100%';
+    table.querySelectorAll('col, tr, td, th').forEach(el => {
+      el.removeAttribute('width');
+      el.style.removeProperty('width');
+      el.style.removeProperty('min-width');
+      el.style.removeProperty('max-width');
+    });
+
     if (!table.closest('.wle-table-wrap')) {
       const wrap = document.createElement('div');
       wrap.className = 'wle-table-wrap';
@@ -1152,7 +1166,7 @@ function tableAct (act, table, wrap) {
             }
         });
 
-        // Strip only dangerous attributes — keep style, colspan, etc.
+      // Strip only dangerous attributes — keep style, colspan, etc.
         const keepAttrs = ['style','href','src','alt','width','height',
                            'colspan','rowspan','border','cellpadding',
                            'cellspacing','type','start','value'];
@@ -1166,6 +1180,21 @@ function tableAct (act, table, wrap) {
             toRemove.forEach(a => el.removeAttribute(a));
         });
 
+        // Strip fixed pixel widths from pasted tables (Word/Google Docs bake
+        // these in as inline styles/attrs, which override our responsive CSS
+        // and cause the table to overflow/clip instead of fitting the editor)
+        tmp.querySelectorAll('table, col, colgroup, tr, td, th').forEach(el => {
+            el.removeAttribute('width');
+            el.removeAttribute('height');
+            if (el.style) {
+                el.style.removeProperty('width');
+                el.style.removeProperty('min-width');
+                el.style.removeProperty('max-width');
+            }
+        });
+        tmp.querySelectorAll('table').forEach(t => {
+            t.style.width = '100%';
+        });
         // Apply editor font to block elements (don't override inline fonts)
         tmp.querySelectorAll('p,div,li,td,th,h1,h2,h3,h4,h5,blockquote').forEach(el => {
             if (!el.style.fontFamily) el.style.fontFamily = storedFont;
