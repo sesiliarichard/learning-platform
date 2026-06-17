@@ -2952,6 +2952,17 @@ function showTableContextMenu(e, cell) {
         { icon: 'fa-minus',      label: 'Delete Row',       action: () => deleteTableRow(cell), danger: true },
         { icon: 'fa-minus',      label: 'Delete Column',    action: () => deleteTableCol(cell), danger: true },
         { icon: 'fa-trash',      label: 'Delete Table',     action: () => deleteTable(cell), danger: true },
+        { icon: 'fa-arrows-alt-h', label: 'Table Width…',  action: () => {
+            const table = cell.closest('table');
+            if (!table) return;
+            const current = parseInt(table.style.width) || 100;
+            const val = prompt('Enter table width (10–100):', current);
+            if (val === null) return;
+            const pct = Math.min(100, Math.max(10, parseInt(val) || 100));
+            table.style.width = pct + '%';
+            const wrap = table.closest('.wle-table-wrap');
+            if (wrap) wrap.style.width = pct + '%';
+        }},
     ];
 
     items.forEach(item => {
