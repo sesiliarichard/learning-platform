@@ -570,7 +570,8 @@ function applyFontFamily(cssValue, editorEl) {
       const isOpen = panel.classList.contains('open');
       closeAllDropdowns();
       if (!isOpen) {
-        panel.classList.add('open');
+       panel.classList.add('open');
+        console.log('🟢 OPENED', panel.className);
         positionPanel(btn, panel);
         searchInput.value = '';
         renderItems('');
@@ -683,10 +684,13 @@ function positionPanel(btn, panel) {
     }, 0);
   }
 
-  function closeAllDropdowns() {
-    document.querySelectorAll('.asai-dd-panel.open').forEach(p => p.classList.remove('open'));
+ function closeAllDropdowns() {
+    document.querySelectorAll('.asai-dd-panel.open').forEach(p => {
+      console.log('🔴 CLOSING', p.className);
+      console.trace();
+      p.classList.remove('open');
+    });
   }
-
   document.addEventListener('mousedown', e => {
     if (!e.target.closest('.asai-dd-wrap')) closeAllDropdowns();
   });
