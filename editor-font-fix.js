@@ -183,6 +183,11 @@
 function applyFontFamily(cssValue, editorEl) {
     if (!editorEl) return;
     
+    // Keep editor-enhancements.js's font-persistence logic in sync —
+    // otherwise it reapplies its own stale cached font on every keystroke
+    // and silently undoes whatever font was just picked here.
+    editorEl.setAttribute('data-stored-font', cssValue);
+    
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     
