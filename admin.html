@@ -2456,11 +2456,13 @@ function formatText(editorIndex, command, value = null) {
         } else if (command === 'redo') {
             if (window._editorRedo) window._editorRedo(editor);
             else document.execCommand('redo', false, null);
-        } else {
+       } else {
             if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
             document.execCommand(command, false, value);
             setTimeout(() => {
                 if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+                // Dispatch input event so MutationObserver-based systems also pick it up
+                editor.dispatchEvent(new Event('input', { bubbles: true }));
             }, 50);
         }
     }, 10);
@@ -2481,7 +2483,8 @@ function formatText(editorIndex, command, value = null) {
         return histories[editorId];
     }
 
-   function saveSnapshot(editor) {
+  function saveSnapshot(editor) {
+        if (!editor) return;
         // Support editors without an id by using a generated key stored on the element
         if (!editor.id) {
             if (!editor._asaiUndoKey) {
@@ -2564,9 +2567,9 @@ function formatText(editorIndex, command, value = null) {
         // Save initial state
         saveSnapshot(editor);
 
-        // Save snapshot on input (debounced)
+      // Save snapshot on input (debounced)
         editor.addEventListener('input', () => {
-            const id = editor.id;
+            const id = editor.id || editor._asaiUndoKey;
             clearTimeout(debounceTimers[id]);
             debounceTimers[id] = setTimeout(() => saveSnapshot(editor), DEBOUNCE_MS);
         });

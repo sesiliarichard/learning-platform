@@ -183,11 +183,13 @@
 function applyFontFamily(cssValue, editorEl) {
     if (!editorEl) return;
     
+    // Save snapshot BEFORE change so it can be undone
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editorEl);
+
     // Keep editor-enhancements.js's font-persistence logic in sync —
     // otherwise it reapplies its own stale cached font on every keystroke
     // and silently undoes whatever font was just picked here.
     editorEl.setAttribute('data-stored-font', cssValue);
-    
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     
@@ -217,12 +219,14 @@ function applyFontFamily(cssValue, editorEl) {
                 node.parentElement.style.fontFamily = cssValue;
             }
         });
-    } else {
+   } else {
         // Has selection - apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontFamily: cssValue });
         });
     }
+    // Save snapshot AFTER change so redo works
+    setTimeout(() => { if (window._editorSaveSnapshot) window._editorSaveSnapshot(editorEl); }, 80);
 }
 
   /* ─────────────────────────────────────────────────────────
@@ -230,7 +234,10 @@ function applyFontFamily(cssValue, editorEl) {
    * ───────────────────────────────────────────────────────── */
  function applyFontSize(pxValue, editorEl) {
     if (!editorEl) return;
-    
+
+    // Save snapshot BEFORE change so it can be undone
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editorEl);
+
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     
@@ -260,12 +267,14 @@ function applyFontFamily(cssValue, editorEl) {
                 node.parentElement.style.fontSize = pxValue;
             }
         });
-    } else {
+   } else {
         // Has selection - apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontSize: pxValue });
         });
     }
+    // Save snapshot AFTER change so redo works
+    setTimeout(() => { if (window._editorSaveSnapshot) window._editorSaveSnapshot(editorEl); }, 80);
 }
 
   /* ─────────────────────────────────────────────────────────
