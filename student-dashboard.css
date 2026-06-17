@@ -2101,7 +2101,7 @@ body.dark-mode .notes-chapter-item:hover {
     min-height: 600px;
     max-height: calc(100vh - 150px);
     overflow-y: auto;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+   font-family: 'Plus Jakarta Sans', sans-serif;
     font-size: 17px;
     line-height: 1.8;
     color: #1a1a1a;
@@ -2174,9 +2174,6 @@ body.dark-mode .notes-meta {
     line-height: 1.8;
     color: #374151;
     margin-bottom: 30px;
-}
-.notes-content *:not(pre):not(code):not(.code-block):not(textarea) {
-    font-family: 'Plus Jakarta Sans', sans-serif !important;
 }
 
 body.dark-mode .notes-content {
