@@ -966,13 +966,14 @@ function tableAct (act, table, wrap) {
           editor.setAttribute('data-stored-size', currentSize);
           
           // Apply font to all new content
-          editor.addEventListener('input', function() {
+         editor.addEventListener('input', function() {
               const storedFont = this.getAttribute('data-stored-font');
               const storedSize = this.getAttribute('data-stored-size');
-              
-              // Apply to any new elements without styles
+
+              // Apply to any new elements without styles, skip UI overlays
               const allElements = this.querySelectorAll('*');
               allElements.forEach(el => {
+                  if (el.closest('.wle-table-toolbar, .tbl-ui-overlay, .asai-dd-wrap, .editor-toolbar')) return;
                   if (storedFont && (!el.style.fontFamily || el.style.fontFamily === '')) {
                       el.style.fontFamily = storedFont;
                   }
@@ -980,12 +981,12 @@ function tableAct (act, table, wrap) {
                       el.style.fontSize = storedSize;
                   }
               });
-              
+
               // Wrap bare text nodes
               const walker = document.createTreeWalker(this, NodeFilter.SHOW_TEXT);
               const textNodes = [];
               while (walker.nextNode()) textNodes.push(walker.currentNode);
-              
+
               textNodes.forEach(node => {
                   if (node.textContent.trim() && node.parentElement === this) {
                       const span = document.createElement('span');

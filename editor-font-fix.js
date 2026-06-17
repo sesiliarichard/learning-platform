@@ -193,34 +193,17 @@ function applyFontFamily(cssValue, editorEl) {
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     
-    if (isCollapsed) {
-        // No selection - apply to entire editor
+   if (isCollapsed) {
+        // No selection — apply to entire editor content only
         editorEl.style.fontFamily = cssValue;
         editorEl.dataset.pendingFont = cssValue;
-        
-        // Apply to all content
-        const allElements = editorEl.querySelectorAll('*');
-        allElements.forEach(el => {
+
+        editorEl.querySelectorAll('*').forEach(el => {
+            if (el.closest('.wle-table-toolbar, .tbl-ui-overlay, .asai-dd-wrap, .editor-toolbar')) return;
             el.style.fontFamily = cssValue;
         });
-        
-        // Wrap text nodes
-        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
-        const textNodes = [];
-        while (walker.nextNode()) textNodes.push(walker.currentNode);
-        
-        textNodes.forEach(node => {
-            if (node.textContent.trim() && node.parentElement === editorEl) {
-                const span = document.createElement('span');
-                span.style.fontFamily = cssValue;
-                node.parentNode.insertBefore(span, node);
-                span.appendChild(node);
-            } else if (node.parentElement && node.parentElement !== editorEl) {
-                node.parentElement.style.fontFamily = cssValue;
-            }
-        });
-   } else {
-        // Has selection - apply only to selection
+    } else {
+        // Has selection — apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontFamily: cssValue });
         });
@@ -241,34 +224,17 @@ function applyFontFamily(cssValue, editorEl) {
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
     
-    if (isCollapsed) {
-        // No selection - apply to entire editor
+   if (isCollapsed) {
+        // No selection — apply to entire editor content only
         editorEl.style.fontSize = pxValue;
         editorEl.dataset.pendingSize = pxValue;
-        
-        // Apply to all elements
-        const allElements = editorEl.querySelectorAll('*');
-        allElements.forEach(el => {
+
+        editorEl.querySelectorAll('*').forEach(el => {
+            if (el.closest('.wle-table-toolbar, .tbl-ui-overlay, .asai-dd-wrap, .editor-toolbar')) return;
             el.style.fontSize = pxValue;
         });
-        
-        // Wrap text nodes
-        const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT);
-        const textNodes = [];
-        while (walker.nextNode()) textNodes.push(walker.currentNode);
-        
-        textNodes.forEach(node => {
-            if (node.textContent.trim() && node.parentElement === editorEl) {
-                const span = document.createElement('span');
-                span.style.fontSize = pxValue;
-                node.parentNode.insertBefore(span, node);
-                span.appendChild(node);
-            } else if (node.parentElement && node.parentElement !== editorEl) {
-                node.parentElement.style.fontSize = pxValue;
-            }
-        });
-   } else {
-        // Has selection - apply only to selection
+    } else {
+        // Has selection — apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontSize: pxValue });
         });
