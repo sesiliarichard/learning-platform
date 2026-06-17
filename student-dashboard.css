@@ -2177,6 +2177,8 @@ body.dark-mode .notes-meta {
 }
 .notes-content *:not(pre):not(code):not(.code-block):not(textarea) {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.8 !important;
 }
 
 body.dark-mode .notes-content {
