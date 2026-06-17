@@ -574,7 +574,7 @@ function applyFontFamily(cssValue, editorEl) {
         positionPanel(btn, panel);
         searchInput.value = '';
         renderItems('');
-        setTimeout(() => searchInput.focus(), 50);
+        setTimeout(() => searchInput.focus({ preventScroll: true }), 50);
       }
     });
 
