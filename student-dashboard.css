@@ -7303,8 +7303,17 @@ body.dark-mode #discussionsSection .message-input-area {
 .notes-content table {
     table-layout: fixed;
     width: 100%;
-    overflow-x: auto;
+    max-width: 100%;
+    border-collapse: collapse;
+}
+
+.notes-content .wle-table-wrap,
+.notes-content .resizable-table-wrap {
     display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    box-sizing: border-box;
 }
 
 .notes-content pre, 
