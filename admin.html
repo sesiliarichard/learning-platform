@@ -12580,17 +12580,27 @@ window.confirmInsertTable = function(editorIndex) {
 // ── MutationObserver: wire any new tables added to editors ──
 window._tblObserver = new MutationObserver((mutations) => {
     let needsWire = false;
+    const touchedEditors = new Set();
     for (const m of mutations) {
         for (const node of m.addedNodes) {
             if (node.nodeType !== 1) continue;
-            if (node.tagName === 'TABLE' || node.querySelector?.('table')) {
+            const hasTable = node.tagName === 'TABLE' || node.querySelector?.('table');
+            if (hasTable) {
                 needsWire = true;
-                break;
+                const editor = node.closest?.('.editor-content[contenteditable="true"]')
+                    || (node.tagName === 'TABLE' ? node.closest('.editor-content[contenteditable="true"]') : null);
+                if (editor) touchedEditors.add(editor);
             }
         }
-        if (needsWire) break;
     }
-    if (needsWire) _wireAll();
+    if (needsWire) {
+        _wireAll();
+        if (touchedEditors.size) {
+            touchedEditors.forEach(makeTableNavigable);
+        } else {
+            document.querySelectorAll('.editor-content[contenteditable="true"]').forEach(makeTableNavigable);
+        }
+    }
 });
 window._tblObserver.observe(document.body, { childList: true, subtree: true });
 
