@@ -483,17 +483,34 @@ function enhanceTable (table) {
 
       const tb = document.createElement('div');
       tb.className = 'wle-table-toolbar';
-      tb.innerHTML = `
+   tb.innerHTML = `
         <button data-act="addRow">＋ Row</button>
         <button data-act="addCol">＋ Col</button>
         <button data-act="delRow" class="danger">− Row</button>
         <button data-act="delCol" class="danger">− Col</button>
         <button data-act="delTable" class="danger">🗑 Delete</button>
+        <span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;border-left:1px solid #e5e7eb;padding-left:8px;">
+          <label style="font-size:11px;color:#6b7280;font-weight:600;">Width:</label>
+          <input type="number" min="10" max="100" step="5"
+            class="wle-table-width-input"
+            style="width:54px;padding:2px 5px;border:1.5px solid #d1d5db;border-radius:5px;font-size:12px;font-weight:700;color:#374151;outline:none;"
+            placeholder="100">
+          <span style="font-size:11px;color:#6b7280;">%</span>
+          <button data-act="setWidth" style="padding:2px 8px;font-size:11px;">✓ Set</button>
+        </span>
       `;
       tb.addEventListener('click', e => {
         const btn = e.target.closest('button[data-act]');
         if (!btn) return;
         const tbl = wrap.querySelector('table');
+        if (btn.dataset.act === 'setWidth') {
+          const input = tb.querySelector('.wle-table-width-input');
+          const pct = Math.min(100, Math.max(10, parseInt(input.value) || 100));
+          tbl.style.width = pct + '%';
+          wrap.style.width = pct + '%';
+          input.value = pct;
+          return;
+        }
         tableAct(btn.dataset.act, tbl, wrap);
       });
 
