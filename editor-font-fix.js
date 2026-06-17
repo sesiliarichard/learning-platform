@@ -627,6 +627,7 @@ function applyFontFamily(cssValue, editorEl) {
       e.preventDefault();
       saveSelection();
       const isOpen = panel.classList.contains('open');
+      console.log('🔍 isOpen check:', panel.className, '→', isOpen);
       closeAllDropdowns();
       if (!isOpen) {
         panel.classList.add('open');
