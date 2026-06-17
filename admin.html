@@ -2481,9 +2481,14 @@ function formatText(editorIndex, command, value = null) {
         return histories[editorId];
     }
 
-    function saveSnapshot(editor) {
-        const id = editor.id;
-        if (!id) return;
+   function saveSnapshot(editor) {
+        // Support editors without an id by using a generated key stored on the element
+        if (!editor.id) {
+            if (!editor._asaiUndoKey) {
+                editor._asaiUndoKey = 'editor_anon_' + Math.random().toString(36).slice(2);
+            }
+        }
+        const id = editor.id || editor._asaiUndoKey;
         const hist = getHistory(id);
         const current = editor.innerHTML;
 
@@ -2496,7 +2501,6 @@ function formatText(editorIndex, command, value = null) {
         if (hist.stack.length > MAX_HISTORY) hist.stack.shift();
         hist.index = hist.stack.length - 1;
     }
-
    function reinitDynamicBlocks(editor) {
         // Re-enable table toolbars: strip enhancement markers, unwrap, re-enhance
         editor.querySelectorAll('table.wle-enhanced').forEach(table => {
@@ -2517,7 +2521,7 @@ function formatText(editorIndex, command, value = null) {
     }
 
     function undoEditor(editor) {
-        const id = editor.id;
+        const id = editor.id || editor._asaiUndoKey;
         if (!id) return;
         const hist = getHistory(id);
         if (hist.index <= 0) return;
@@ -2534,7 +2538,7 @@ function formatText(editorIndex, command, value = null) {
     }
 
     function redoEditor(editor) {
-        const id = editor.id;
+        const id = editor.id || editor._asaiUndoKey;
         if (!id) return;
         const hist = getHistory(id);
         if (hist.index >= hist.stack.length - 1) return;
@@ -2552,9 +2556,10 @@ function formatText(editorIndex, command, value = null) {
     // Debounce timer per editor
     const debounceTimers = {};
 
-    function attachToEditor(editor) {
+   function attachToEditor(editor) {
         if (editor.dataset.undoWired) return;
         editor.dataset.undoWired = '1';
+        editor._asaiUndoAttached = true;
 
         // Save initial state
         saveSnapshot(editor);
@@ -2588,9 +2593,15 @@ function formatText(editorIndex, command, value = null) {
         });
     }
 
-    // Wire all current editors
+   // Wire all current editors (including re-created ones after modal reopen)
     function wireAll() {
-        document.querySelectorAll('.editor-content[contenteditable="true"]').forEach(attachToEditor);
+        document.querySelectorAll('.editor-content[contenteditable="true"]').forEach(ed => {
+            // Re-wire if the element was recreated (undoWired set but element is fresh)
+            if (ed.dataset.undoWired && !ed._asaiUndoAttached) {
+                delete ed.dataset.undoWired;
+            }
+            attachToEditor(ed);
+        });
     }
 
     // Watch for new editors added to DOM

@@ -537,12 +537,20 @@ function applyFontFamily(cssValue, editorEl) {
           item.innerHTML = `
             <span class="asai-font-preview" style="font-family:${font.value}">Aa</span>
             <span style="font-family:${font.value}">${font.label}</span>`;
-          item.addEventListener('mousedown', e => {
+         item.addEventListener('mousedown', e => {
             e.preventDefault();
+            e.stopPropagation();
             panel.classList.remove('open');
             btn.querySelector('.asai-dd-label').textContent       = font.label;
             btn.querySelector('.asai-dd-label').style.fontFamily  = font.value;
             loadGoogleFont(font.google);
+            // Restore saved selection first (captures Ctrl+A full selection)
+            if (_savedRange) {
+              editorEl.focus();
+              const sel = window.getSelection();
+              sel.removeAllRanges();
+              sel.addRange(_savedRange);
+            }
             applyFontFamily(font.value, editorEl);
             itemsContainer.querySelectorAll('.asai-dd-item').forEach(i => i.classList.remove('active'));
             item.classList.add('active');
@@ -609,10 +617,18 @@ function applyFontFamily(cssValue, editorEl) {
       item.innerHTML = `
         <span class="asai-size-number">${size.label}</span>
         <span class="asai-size-bar" style="width:${barW}px;"></span>`;
-      item.addEventListener('mousedown', e => {
+     item.addEventListener('mousedown', e => {
         e.preventDefault();
+        e.stopPropagation();
         panel.classList.remove('open');
         btn.querySelector('.asai-dd-label').textContent = size.label;
+        // Restore saved selection first (captures Ctrl+A full selection)
+        if (_savedRange) {
+          editorEl.focus();
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(_savedRange);
+        }
         applyFontSize(size.px, editorEl);
         panel.querySelectorAll('.asai-size-item').forEach(i => i.classList.remove('active'));
         item.classList.add('active');
