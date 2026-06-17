@@ -654,14 +654,30 @@ function applyFontFamily(cssValue, editorEl) {
   /* ─────────────────────────────────────────────────────────
    * PANEL POSITIONING
    * ───────────────────────────────────────────────────────── */
-  function positionPanel(btn, panel) {
+function positionPanel(btn, panel) {
     const rect = btn.getBoundingClientRect();
     panel.style.top  = (rect.bottom + 4) + 'px';
     panel.style.left = rect.left + 'px';
     setTimeout(() => {
       const pr = panel.getBoundingClientRect();
-      if (pr.bottom > window.innerHeight - 10)
-        panel.style.top  = (rect.top - pr.height - 4) + 'px';
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      if (pr.bottom > window.innerHeight - 10) {
+        if (spaceAbove >= pr.height + 4) {
+          // Enough room above — flip up normally
+          panel.style.top = (rect.top - pr.height - 4) + 'px';
+        } else if (spaceAbove > spaceBelow) {
+          // Not quite enough room above, but more than below —
+          // clamp to viewport top instead of going negative/off-screen
+          panel.style.top = '10px';
+          panel.style.maxHeight = (spaceAbove - 14) + 'px';
+        } else {
+          // Stay below the button and let it scroll within available space
+          panel.style.top = (rect.bottom + 4) + 'px';
+          panel.style.maxHeight = (spaceBelow - 14) + 'px';
+        }
+      }
       if (pr.right > window.innerWidth - 10)
         panel.style.left = (rect.right - pr.width) + 'px';
     }, 0);
