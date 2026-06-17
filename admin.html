@@ -2880,6 +2880,15 @@ editor.focus();
 }
 
 function makeTableNavigable(editor) {
+    // Also wire pasted tables — listen for paste on the editor
+    // and re-run makeTableNavigable after paste completes
+    if (editor && editor.addEventListener && !editor._pasteTableWired) {
+        editor._pasteTableWired = true;
+        editor.addEventListener('paste', () => {
+            setTimeout(() => makeTableNavigable(editor), 300);
+        });
+    }
+
     // Find all tables inside the editor
     const tables = editor.querySelectorAll('table');
     
