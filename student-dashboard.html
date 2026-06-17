@@ -7289,6 +7289,7 @@ async function runInlineCode(uid, lang) {
             });
             const apiData = await apiRes.json();
             console.log('[runInlineCode] lang:', pl.language, 'version:', pl.version, 'raw response:', apiData);
+            console.log('[runInlineCode] FULL JSON:', JSON.stringify(apiData, null, 2));
 
             if (!apiData.run && !apiData.compile) {
                 res = { output: '', error: 'Runner returned unexpected response: ' + JSON.stringify(apiData) };
