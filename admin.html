@@ -2827,14 +2827,12 @@ function confirmInsertTable(editorIndex) {
 
     let tableHtml = `
         <br>
-        <div class="resizable-table-wrap" style="display:block;position:relative;overflow:auto;width:100%;max-width:100%;">
+        <div class="resizable-table-wrap" style="display:block;position:relative;overflow:auto;width:100%;max-width:100%;border-radius:4px;">
             <table class="editor-table" style="
                 border-collapse:collapse;
                 width:100%;
                 table-layout:fixed;
-                border:1.5px solid #374151;
-                border-radius:4px;
-                overflow:hidden;">
+                border:1.5px solid #374151;">
                 <colgroup>
                     ${Array(cols).fill(`<col style="width:${Math.floor(100/cols)}%">`).join('')}
                 </colgroup>
