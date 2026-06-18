@@ -178,6 +178,36 @@
   }
 
   /* ─────────────────────────────────────────────────────────
+   * DETECT "SELECT ALL" RANGES
+   *
+   * Ctrl+A (or any selection spanning multiple block-level
+   * children — paragraphs, headings, tables, lists) breaks
+   * wrapSelectionWithStyle(), because range.extractContents()
+   * on a multi-block range returns a fragment with several
+   * top-level nodes, and stuffing that into one <span> produces
+   * invalid nesting (block elements inside an inline span) that
+   * browsers silently un-nest — so the font/size never visibly
+   * changes for most of the content.
+   *
+   * If the range covers (essentially) the whole editor, we treat
+   * it like the "no selection" case and walk + style every
+   * element directly instead of trying to wrap it in one span.
+   * ───────────────────────────────────────────────────────── */
+  function isFullEditorSelection(range, editorEl) {
+    if (!range || !editorEl) return false;
+    if (!editorEl.contains(range.commonAncestorContainer) &&
+        range.commonAncestorContainer !== editorEl) return false;
+
+    const full = document.createRange();
+    full.selectNodeContents(editorEl);
+
+    // Range covers from the very start to the very end of the editor
+    const startsAtBeginning = range.compareBoundaryPoints(Range.START_TO_START, full) <= 0;
+    const endsAtEnd = range.compareBoundaryPoints(Range.END_TO_END, full) >= 0;
+    return startsAtBeginning && endsAtEnd;
+  }
+
+  /* ─────────────────────────────────────────────────────────
    * APPLY FONT FAMILY
    * ───────────────────────────────────────────────────────── */
 function applyFontFamily(cssValue, editorEl) {
@@ -192,9 +222,11 @@ function applyFontFamily(cssValue, editorEl) {
     editorEl.setAttribute('data-stored-font', cssValue);
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
-    
-   if (isCollapsed) {
-        // No selection — apply to entire editor content only
+    const fullSelection = !isCollapsed && isFullEditorSelection(sel.getRangeAt(0), editorEl);
+
+   if (isCollapsed || fullSelection) {
+        // No selection, or selection covers the whole editor (Ctrl+A) —
+        // apply directly to every element instead of wrapping in one span
         editorEl.style.fontFamily = cssValue;
         editorEl.dataset.pendingFont = cssValue;
 
@@ -203,7 +235,7 @@ function applyFontFamily(cssValue, editorEl) {
             el.style.fontFamily = cssValue;
         });
     } else {
-        // Has selection — apply only to selection
+        // Has a partial selection — apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontFamily: cssValue });
         });
@@ -223,9 +255,11 @@ function applyFontFamily(cssValue, editorEl) {
 
     const sel = window.getSelection();
     const isCollapsed = !sel || sel.isCollapsed || sel.rangeCount === 0;
-    
-   if (isCollapsed) {
-        // No selection — apply to entire editor content only
+    const fullSelection = !isCollapsed && isFullEditorSelection(sel.getRangeAt(0), editorEl);
+
+   if (isCollapsed || fullSelection) {
+        // No selection, or selection covers the whole editor (Ctrl+A) —
+        // apply directly to every element instead of wrapping in one span
         editorEl.style.fontSize = pxValue;
         editorEl.dataset.pendingSize = pxValue;
 
@@ -234,7 +268,7 @@ function applyFontFamily(cssValue, editorEl) {
             el.style.fontSize = pxValue;
         });
     } else {
-        // Has selection — apply only to selection
+        // Has a partial selection — apply only to selection
         withRestoredSelection(editorEl, () => {
             wrapSelectionWithStyle({ fontSize: pxValue });
         });
