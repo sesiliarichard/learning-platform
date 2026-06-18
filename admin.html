@@ -2827,7 +2827,7 @@ function confirmInsertTable(editorIndex) {
 
     let tableHtml = `
         <br>
-        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
+        <div class="resizable-table-wrap" style="display:block;position:relative;overflow:auto;width:100%;max-width:100%;">
             <table class="editor-table" style="
                 border-collapse:collapse;
                 width:100%;
@@ -12534,7 +12534,7 @@ window.confirmInsertTable = function(editorIndex) {
     const cs = 'border:1.5px solid #374151;padding:8px 12px;min-width:80px;min-height:30px;text-align:left;vertical-align:top;font-size:14px;';
     const html = `
         <br>
-        <div class="resizable-table-wrap" style="display:inline-block;position:relative;overflow:auto;max-width:100%;">
+        <div class="resizable-table-wrap" style="display:block;position:relative;overflow:auto;width:100%;max-width:100%;">
             <table class="editor-table" style="border-collapse:collapse;width:100%;table-layout:fixed;border:1.5px solid #374151;">
                 <colgroup>${Array(cols).fill(0).map(()=>`<col style="width:${Math.floor(100/cols)}%">`).join('')}</colgroup>
                 <thead>
