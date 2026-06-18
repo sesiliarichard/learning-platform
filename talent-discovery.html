@@ -1331,7 +1331,7 @@ if (localStorage.getItem('is_talent') === 'true') {
     localStorage.removeItem('hire_request_data');
 }
 
-const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirerFlag);
+const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData);
     
     // User is Talent only if explicitly set and not a hirer
     const hasTalentId = !!localStorage.getItem('talent_profile_id');
