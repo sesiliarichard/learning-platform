@@ -2622,10 +2622,18 @@ function formatText(editorIndex, command, value = null) {
         setTimeout(wireAll, 1000);
     }
 
+   function resetHistory(editor) {
+        if (!editor) return;
+        const id = editor.id || editor._asaiUndoKey;
+        if (!id) return;
+        histories[id] = { stack: [editor.innerHTML], index: 0 };
+    }
+
     // Expose so formatText can call it
     window._editorUndo = undoEditor;
     window._editorRedo = redoEditor;
     window._editorSaveSnapshot = saveSnapshot;
+    window._editorResetHistory = resetHistory;
 
     console.log('✅ Undo/Redo history manager loaded');
 })();
@@ -4875,9 +4883,10 @@ function addEditTopic(existingTopic = null) {
                         });
                     }
                 });
-            } else {
+         } else {
                 editorEl.innerHTML = '<p>Enter your content here...</p>';
             }
+            if (window._editorResetHistory) window._editorResetHistory(editorEl);
         }
     }, 50);
 }
