@@ -57,16 +57,21 @@ async function submitTalentProfile(params) {
     const { data, error } = await _supabase
       .from('talent_profiles')
       .insert([{
-        full_name:    params.full_name,
-        email:        params.email,
-        country_code: params.country_code,
-        country_name: params.country_name,
-        role:         params.role,
-        bio:          params.bio,
-        experience:   params.experience,
+        full_name:       params.full_name,
+        email:           params.email,
+        country_code:    params.country_code,
+        country_name:    params.country_name,
+        role:            params.role,
+        bio:             params.bio,
+        experience:      params.experience,
+        skills:          params.skills || null,
+        education_level: params.education_level || null,
+        institution:     params.institution || null,
+        work_experience: params.work_experience || null,
         headshot_url,
         project_url,
       }])
+      
       .select()
       .single();
 
