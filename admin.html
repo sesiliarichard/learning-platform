@@ -3946,8 +3946,9 @@ function setEditorColor(editorIndex, input) {
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
+        document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, input.value);
-        if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+        document.execCommand('styleWithCSS', false, false);
         // Update the color bar indicator
         const bar = document.getElementById(`colorBar_${editorIndex}`);
         if (bar) bar.style.background = input.value;
@@ -3959,8 +3960,9 @@ function setEditorHighlight(editorIndex, input) {
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
+        document.execCommand('styleWithCSS', false, true);
         document.execCommand('hiliteColor', false, input.value);
-        if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+        document.execCommand('styleWithCSS', false, false);
         const bar = document.getElementById(`hlBar_${editorIndex}`);
         if (bar) bar.style.background = input.value;
     }
