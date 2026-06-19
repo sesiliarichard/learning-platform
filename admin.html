@@ -3987,6 +3987,8 @@ function setEditorColor(editorIndex, input) {
     }
     const bar = document.getElementById(`colorBar_${editorIndex}`);
     if (bar) bar.style.background = input.value;
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 function setEditorHighlight(editorIndex, input) {
@@ -4007,6 +4009,8 @@ function setEditorHighlight(editorIndex, input) {
     }
     const bar = document.getElementById(`hlBar_${editorIndex}`);
     if (bar) bar.style.background = input.value;
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
+    editor.dispatchEvent(new Event('input', { bubbles: true }));
 }
 async function handleCreateChapter(event) {
     event.preventDefault();
