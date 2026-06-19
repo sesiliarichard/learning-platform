@@ -3940,12 +3940,11 @@ function stripInlineFontStyles(html) {
                .replace(/<\/font>/gi, '');
     // Do NOT remove font-size or font-family from inline styles
 }
-
 function setEditorColor(editorIndex, input) {
     const editor = document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
-        editor.focus();
+        editor.focus({ preventScroll: true });
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, input.value);
         document.execCommand('styleWithCSS', false, false);
@@ -3959,7 +3958,7 @@ function setEditorHighlight(editorIndex, input) {
     const editor = document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
-        editor.focus();
+        editor.focus({ preventScroll: true });
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('hiliteColor', false, input.value);
         document.execCommand('styleWithCSS', false, false);
