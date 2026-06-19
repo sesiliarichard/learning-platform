@@ -3938,9 +3938,21 @@ function stripInlineFontStyles(html) {
 }
 function applyStyleToSelectionRange(range, styleProp, value) {
     const root = range.commonAncestorContainer;
-    if (root.nodeType === Node.TEXT_NODE) {
+
+    const makeSpan = (refNode) => {
         const span = document.createElement('span');
+        const refEl = refNode.nodeType === Node.TEXT_NODE ? refNode.parentElement : refNode;
+        if (refEl) {
+            const computed = getComputedStyle(refEl);
+            span.style.fontSize = computed.fontSize;
+            span.style.fontWeight = computed.fontWeight;
+        }
         span.style[styleProp] = value;
+        return span;
+    };
+
+    if (root.nodeType === Node.TEXT_NODE) {
+        const span = makeSpan(root);
         range.surroundContents(span);
         return span;
     }
@@ -3961,14 +3973,12 @@ function applyStyleToSelectionRange(range, styleProp, value) {
         const subRange = document.createRange();
         subRange.setStart(node, start);
         subRange.setEnd(node, end);
-        const span = document.createElement('span');
-        span.style[styleProp] = value;
+        const span = makeSpan(node);
         subRange.surroundContents(span);
         lastSpan = span;
     });
     return lastSpan;
 }
-
 function setEditorColor(editorIndex, input) {
     const editor = document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
