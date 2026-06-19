@@ -3310,10 +3310,12 @@ function confirmInsertImage(editorIndex) {
                 editor.appendChild(wrapper);
                 editor.appendChild(document.createElement('br'));
             }
-        } else {
+       } else {
             editor.appendChild(wrapper);
             editor.appendChild(document.createElement('br'));
         }
+
+        if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
 
         // Clear saved state
         window._savedImageRange  = null;
@@ -3609,12 +3611,14 @@ function confirmInlineCodingBlock(editorIndex) {
             after.innerHTML = '<br>';
             editor.appendChild(after);
         }
-    } else {
+  } else {
         editor.appendChild(wrapper);
         const after = document.createElement('p');
         after.innerHTML = '<br>';
         editor.appendChild(after);
     }
+
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
 
     window._savedCodingRange  = null;
     window._savedCodingEditor = null;
