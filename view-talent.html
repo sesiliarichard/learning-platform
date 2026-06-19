@@ -224,7 +224,7 @@
     .card-dark  .stat-pill svg { stroke:rgba(255,255,255,0.5); }
     .card-light .stat-pill svg { stroke:#555555; }
     .stat-pill.star-pill { 
-      
+
     }
     .star-icon { color:#e6a817; font-size:12px; }
 
@@ -576,7 +576,7 @@
       : `<div class="card-photo-initials">${initials}</div>`;
 
     // star rating — placeholder 4.5–5.0 based on index, replace with real field if you add one
-    const rating = (4.5 + (i % 3) * 0.1).toFixed(1);
+    
 
     return `
       <div class="talent-card ${cardClass}" style="animation-delay:${i*0.06}s" onclick="viewProfile('${t.id}')">
@@ -594,7 +594,7 @@
           <div class="card-loc">${countryFlag(t.country_code)}${escHtml(t.country_name||'')}</div>
           ${bio ? `<div class="card-bio">${escHtml(bio)}</div>` : ''}
         </div>
-        <div class="card-stats">
+       <div class="card-stats">
           <span class="stat-pill">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
             ${yrs}
@@ -603,9 +603,8 @@
             <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
             ${skills} skills
           </span>` : ''}
-          <span class="stat-pill star-pill">
-            <span class="star-icon">★</span> ${rating}
-          </span>
+          ${t.skills ? t.skills.split(',').map(s=>s.trim()).filter(Boolean).slice(0,2).map(s=>`
+            <span class="stat-pill">${escHtml(s)}</span>`).join('') : ''}
         </div>
         <button class="card-btn" onclick="event.stopPropagation();viewProfile('${t.id}')">
           View Profile +
