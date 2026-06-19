@@ -1322,24 +1322,25 @@ const hasHireId = localStorage.getItem('hire_request_id');
 const hasHireData = localStorage.getItem('hire_request_data');
 const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
 
-// Check talent first — talent identity wins over stale hirer signals
+// Talent is checked FIRST — wins over every hirer signal including URL
 const hasTalentId = !!localStorage.getItem('talent_profile_id');
 const hasTalentFlag = localStorage.getItem('is_talent') === 'true';
 const isTalentUser = hasTalentId || hasTalentFlag;
 
-const hasHirerSignal = isHirerFromUrl || isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData;
+const hasHirerSignal = isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData;
 
 if (isTalentUser) {
-    // Talent takes priority — clear any stale hirer data
+    // TALENT wins — wipe all stale hirer data and clean the URL
     localStorage.removeItem('is_hirer');
     localStorage.removeItem('hire_request_ref');
     localStorage.removeItem('hire_request_id');
     localStorage.removeItem('hire_request_data');
-} else if (hasHirerSignal) {
+    if (isHirerFromUrl) history.replaceState(null, '', 'talent-discovery.html');
+} else if (isHirerFromUrl || hasHirerSignal) {
     localStorage.setItem('is_hirer', 'true');
 }
 
-const isHirer = !isTalentUser && hasHirerSignal;
+const isHirer = !isTalentUser && (isHirerFromUrl || hasHirerSignal);
 const isTalent = isTalentUser;
 
     window._isTalent = isTalent;
@@ -1359,13 +1360,28 @@ if (!isTalent && !isHirer) {
         const navSaved = document.getElementById('navSaved');
         const saveSearchBtn = document.getElementById('saveSearchBtn');
         
-        if (isHirer && !isTalent) {
-            console.log('👔 HIRER - Hiding Opportunity Board and Saved');
+        if (isTalent) {
+            // TALENT view — show job board nav, hide hirer-only features
+            if (navOpportunity) navOpportunity.style.display = '';
+            if (navSaved) navSaved.style.display = '';
+            if (saveSearchBtn) saveSearchBtn.style.display = 'none';
+
+            const talentData = localStorage.getItem('talent_profile_data');
+            if (talentData) {
+                try {
+                    const parsed = JSON.parse(talentData);
+                    const nameEl = document.querySelector('#navUserName');
+                    const companyEl = document.querySelector('#navUserCompany');
+                    if (nameEl) nameEl.textContent = parsed.fullName || 'Talent';
+                    if (companyEl) companyEl.textContent = parsed.role || 'AI Professional';
+                } catch(e) {}
+            }
+        } else if (isHirer) {
+            // HIRER view — hide job board nav and hirer-only features
             if (navOpportunity) navOpportunity.style.display = 'none';
             if (navSaved) navSaved.style.display = 'none';
             if (saveSearchBtn) saveSearchBtn.style.display = 'none';
-            
-            // Update user chip with company name
+
             const companyData = localStorage.getItem('hire_request_data');
             if (companyData) {
                 try {
@@ -1376,27 +1392,6 @@ if (!isTalent && !isHirer) {
                     if (companyEl) companyEl.textContent = parsed.company || 'Company';
                 } catch(e) {}
             }
-       } else if (isTalent) {
-    // ✅ TALENT: show Opportunity Board and Saved, hide hirer-only features
-    if (navOpportunity) navOpportunity.style.display = '';
-    if (navSaved) navSaved.style.display = '';
-    if (saveSearchBtn) saveSearchBtn.style.display = 'none';
-
-    const talentData = localStorage.getItem('talent_profile_data');
-    if (talentData) {
-        try {
-            const parsed = JSON.parse(talentData);
-            const nameEl = document.querySelector('#navUserName');
-            const companyEl = document.querySelector('#navUserCompany');
-            if (nameEl) nameEl.textContent = parsed.fullName || 'Talent';
-            if (companyEl) companyEl.textContent = parsed.role || 'AI Professional';
-        } catch(e) {}
-    }
-
-} else {
-            console.log('👤 TALENT/GUEST - Showing all navigation');
-            if (navOpportunity) navOpportunity.style.display = '';
-            if (navSaved) navSaved.style.display = '';
         }
     }
     
@@ -1405,8 +1400,8 @@ if (!isTalent && !isHirer) {
     } else {
         updateNavigation();
     }
-    setTimeout(updateNavigation, 100);
 })();
+
   // ── State ─────────────────────────────────────────────────
   let currentPage = 1;
   const PAGE_SIZE  = 6;
