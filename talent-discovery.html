@@ -1329,20 +1329,24 @@ const isTalentUser = hasTalentId || hasTalentFlag;
 
 const hasHirerSignal = isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData;
 
-if (isTalentUser) {
-    // TALENT wins — wipe all stale hirer data and clean the URL
+// If arriving explicitly from hire-talent.html, treat as hirer regardless of talent flags
+if (isHirerFromUrl) {
+    localStorage.setItem('is_hirer', 'true');
+    localStorage.removeItem('is_talent');
+    localStorage.removeItem('talent_profile_id');
+    localStorage.removeItem('talent_profile_data');
+} else if (isTalentUser) {
+    // Talent session — wipe stale hirer data
     localStorage.removeItem('is_hirer');
     localStorage.removeItem('hire_request_ref');
     localStorage.removeItem('hire_request_id');
     localStorage.removeItem('hire_request_data');
-    if (isHirerFromUrl) history.replaceState(null, '', 'talent-discovery.html');
-} else if (isHirerFromUrl || hasHirerSignal) {
+} else if (hasHirerSignal) {
     localStorage.setItem('is_hirer', 'true');
 }
 
-const isHirer = !isTalentUser && (isHirerFromUrl || hasHirerSignal);
-const isTalent = isTalentUser;
-
+const isHirer = isHirerFromUrl || (!isTalentUser && hasHirerSignal);
+const isTalent = !isHirerFromUrl && isTalentUser;
     window._isTalent = isTalent;
     window._isHirer = isHirer;
     
