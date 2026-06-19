@@ -340,7 +340,8 @@
       color: var(--text);
     }
     .card-country .flag {
-      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
       line-height: 1;
     }
 
@@ -745,8 +746,8 @@
   }
 
   /* ── Country code → flag emoji ── */
+  /* ── Country code → flag image (flagcdn.com, not emoji) ── */
   function countryFlag(countryName) {
-    // Map country names to ISO codes for flag emoji
     const MAP = {
       'Tanzania':'TZ','Kenya':'KE','Nigeria':'NG','Ghana':'GH','Uganda':'UG',
       'Rwanda':'RW','Ethiopia':'ET','South Africa':'ZA','Egypt':'EG','Morocco':'MA',
@@ -760,10 +761,8 @@
     };
     const code = MAP[countryName];
     if (!code) return '🌍';
-    // Convert ISO 2-letter code to flag emoji (regional indicator symbols)
-    return code.toUpperCase().split('').map(c =>
-      String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
-    ).join('');
+    const c = code.toLowerCase();
+    return `<img src="https://flagcdn.com/w20/${c}.png" srcset="https://flagcdn.com/w40/${c}.png 2x" width="18" alt="${countryName}" style="display:inline-block;vertical-align:middle;border-radius:2px;">`;
   }
 
   /* ── Build card matching image 1 + image 2 style ── */
