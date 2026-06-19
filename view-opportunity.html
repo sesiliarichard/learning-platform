@@ -219,7 +219,7 @@
     .job-card {
       border-radius: 20px;
       border: none;
-      padding: 20px 20px 16px;
+      padding: 22px 22px 20px;
       display: flex;
       flex-direction: column;
       gap: 0;
@@ -228,6 +228,7 @@
       animation: cardIn 0.35s ease both;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
       position: relative;
+      min-height: 320px;       /* taller cards */
     }
     .job-card:hover {
       transform: translateY(-4px);
@@ -243,7 +244,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
     .card-date {
       font-size: 11px;
@@ -251,25 +252,25 @@
       color: var(--muted);
     }
     .card-bookmark {
-      width: 28px; height: 28px;
+      width: 30px; height: 30px;
       border-radius: 8px;
-      background: rgba(255,255,255,0.55);
+      background: rgba(255,255,255,0.65);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer;
       border: none;
       transition: background 0.15s;
     }
-    .card-bookmark:hover { background: rgba(255,255,255,0.9); }
+    .card-bookmark:hover { background: rgba(255,255,255,0.95); }
     .card-bookmark svg { width:14px; height:14px; stroke:#555; fill:none; stroke-width:2; }
 
     /* Company name (small, above title) */
     .card-company-name {
-      font-size: 11px;
+      font-size: 10px;
       font-weight: 700;
       color: var(--muted);
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
     }
 
     /* Job title + logo row */
@@ -278,26 +279,26 @@
       align-items: flex-start;
       justify-content: space-between;
       gap: 10px;
-      margin-bottom: 14px;
+      margin-bottom: 18px;
     }
     .card-job-title {
       font-family: 'Syne', sans-serif;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       color: var(--text);
       line-height: 1.2;
       flex: 1;
     }
     .card-logo {
-      width: 40px; height: 40px;
+      width: 44px; height: 44px;
       border-radius: 50%;
       flex-shrink: 0;
       display: flex; align-items: center; justify-content: center;
       font-family: 'Syne', sans-serif;
-      font-size: 13px; font-weight: 800; color: white;
+      font-size: 14px; font-weight: 800; color: white;
       overflow: hidden;
       background: rgba(255,255,255,0.5);
-      border: 2px solid rgba(255,255,255,0.7);
+      border: 2px solid rgba(255,255,255,0.8);
     }
     .card-logo img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
     .logo-blue  { background: linear-gradient(135deg, #0099ff, #0077cc); }
@@ -308,65 +309,77 @@
     /* Pills */
     .card-pills {
       display: flex;
-      gap: 6px;
+      gap: 7px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
     .pill {
       display: inline-flex; align-items: center;
       border-radius: 99px;
       font-size: 11px; font-weight: 500;
-      padding: 4px 11px;
-      background: rgba(255,255,255,0.55);
+      padding: 5px 13px;
+      background: rgba(255,255,255,0.65);
       color: var(--text);
-      border: none;
+      border: 1px solid rgba(255,255,255,0.9);
     }
 
-    /* Card bottom: salary left, Details button right */
+    /* Card bottom: country left, Details pill right */
     .card-bottom {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-top: auto;
-    }
-    .card-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      margin-bottom: 14px;
     }
     .card-country {
-      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
       font-weight: 500;
-      color: var(--muted);
+      color: var(--text);
+    }
+    .card-country .flag {
+      font-size: 16px;
+      line-height: 1;
     }
 
-    /* Dark "Details" button — matching image 1 */
+    /* Dark "Details" pill button */
     .btn-details {
-      padding: 10px 20px;
+      padding: 10px 22px;
       background: #1a1a2e;
       color: white;
       border: none;
       border-radius: 99px;
       font-family: 'DM Sans', sans-serif;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: background 0.18s;
       white-space: nowrap;
     }
     .btn-details:hover { background: #0a1a4a; }
 
-    /* Apply button (secondary, in modal only) */
-    .btn-apply-card {
-      padding: 10px 20px;
-      background: linear-gradient(135deg, var(--blue-mid), var(--blue));
-      color: white; border: none; border-radius: 99px;
+    /* Full-width Apply button at very bottom — matching image 2 */
+    .btn-apply-full {
+      width: 100%;
+      padding: 13px;
+      background: #1a1a2e;
+      color: white;
+      border: none;
+      border-radius: 12px;
       font-family: 'DM Sans', sans-serif;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.18s;
-      white-space: nowrap;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.15s;
+      text-align: center;
+      margin-top: 0;
     }
-    .btn-apply-card:hover { transform: translateY(-1px); }
+    .btn-apply-full:hover {
+      background: var(--blue);
+      transform: translateY(-1px);
+    }
 
     /* ===== SKELETON CARDS ===== */
     .skel-card {
@@ -649,26 +662,26 @@
   /* ── Skeleton cards ── */
   function showSkeletons() {
     document.getElementById('tableBody').innerHTML = Array(6).fill('').map((_,i) => `
-      <div class="skel-card ${PASTEL_CLASSES[i % 6]}">
-        <div style="display:flex;justify-content:space-between;margin-bottom:16px;">
+      <div class="skel-card ${PASTEL_CLASSES[i % 6]}" style="min-height:320px;display:flex;flex-direction:column;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:18px;">
           <div class="skel" style="width:55px;height:12px;"></div>
+          <div class="skel" style="width:28px;height:28px;border-radius:8px;"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
-          <div style="flex:1;display:flex;flex-direction:column;gap:7px;">
-            <div class="skel" style="width:50%;height:11px;"></div>
-            <div class="skel" style="width:75%;height:20px;"></div>
-          </div>
+        <div class="skel" style="width:45%;height:10px;margin-bottom:8px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
+          <div class="skel" style="width:65%;height:22px;border-radius:6px;"></div>
           <div class="skel-logo-c"></div>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:24px;">
-          <div class="skel" style="width:64px;height:22px;border-radius:99px;"></div>
-          <div class="skel" style="width:56px;height:22px;border-radius:99px;"></div>
-          <div class="skel" style="width:50px;height:22px;border-radius:99px;"></div>
+        <div style="display:flex;gap:7px;margin-bottom:22px;">
+          <div class="skel" style="width:68px;height:26px;border-radius:99px;"></div>
+          <div class="skel" style="width:58px;height:26px;border-radius:99px;"></div>
+          <div class="skel" style="width:70px;height:26px;border-radius:99px;"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div class="skel" style="width:80px;height:13px;"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;margin-top:auto;">
+          <div class="skel" style="width:80px;height:14px;"></div>
           <div class="skel" style="width:80px;height:36px;border-radius:99px;"></div>
         </div>
+        <div class="skel" style="width:100%;height:44px;border-radius:12px;"></div>
       </div>`).join('');
   }
 
@@ -731,12 +744,35 @@
     }
   }
 
-  /* ── Build card matching image 1 exactly ── */
+  /* ── Country code → flag emoji ── */
+  function countryFlag(countryName) {
+    // Map country names to ISO codes for flag emoji
+    const MAP = {
+      'Tanzania':'TZ','Kenya':'KE','Nigeria':'NG','Ghana':'GH','Uganda':'UG',
+      'Rwanda':'RW','Ethiopia':'ET','South Africa':'ZA','Egypt':'EG','Morocco':'MA',
+      'Senegal':'SN','Ivory Coast':'CI','Cameroon':'CM','Zimbabwe':'ZW','Zambia':'ZM',
+      'Mozambique':'MZ','Angola':'AO','Sudan':'SD','Libya':'LY','Tunisia':'TN',
+      'Algeria':'DZ','Mali':'ML','Burkina Faso':'BF','Niger':'NE','Chad':'TD',
+      'Malawi':'MW','Botswana':'BW','Namibia':'NA','Somalia':'SO','Madagascar':'MG',
+      'United States':'US','United Kingdom':'GB','Germany':'DE','France':'FR',
+      'Canada':'CA','Australia':'AU','India':'IN','China':'CN','Japan':'JP',
+      'Brazil':'BR','Portugal':'PT','Spain':'ES','Italy':'IT','Netherlands':'NL',
+    };
+    const code = MAP[countryName];
+    if (!code) return '🌍';
+    // Convert ISO 2-letter code to flag emoji (regional indicator symbols)
+    return code.toUpperCase().split('').map(c =>
+      String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
+    ).join('');
+  }
+
+  /* ── Build card matching image 1 + image 2 style ── */
   function buildRow(j, i) {
-    const title    = (j.talent_needs || 'Open Position').split('\n')[0].slice(0, 50);
-    const initials = (j.company_name || '?').slice(0, 2).toUpperCase();
+    const title     = (j.talent_needs || 'Open Position').split('\n')[0].slice(0, 50);
+    const initials  = (j.company_name || '?').slice(0, 2).toUpperCase();
     const typeLabel = (TYPE_BADGES[j.job_type] || { label: j.job_type || 'Full-time' }).label;
     const locLabel  = LOC_LABELS[j.location_type] || j.location_type || '';
+    const flag      = j.country ? countryFlag(j.country) : '';
 
     const logoHtml = j.logo_url
       ? `<img src="${escHtml(j.logo_url)}" alt="${escHtml(j.company_name)}"
@@ -770,11 +806,15 @@
         </div>
 
         <div class="card-bottom">
-          <div class="card-meta">
-            ${j.country ? `<span class="card-country">📍 ${escHtml(j.country)}</span>` : ''}
-          </div>
+          ${j.country ? `
+            <div class="card-country">
+              <span class="flag">${flag}</span>
+              <span>${escHtml(j.country)}</span>
+            </div>` : '<div></div>'}
           <button class="btn-details" onclick="event.stopPropagation();openJob('${j.id}')">Details</button>
         </div>
+
+        <button class="btn-apply-full" onclick="event.stopPropagation();applyJob('${j.id}')">Apply Now →</button>
 
       </div>`;
   }
