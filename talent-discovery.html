@@ -1316,22 +1316,28 @@
 (function() {
     // Check multiple ways to identify a Hirer
     const urlParams = new URLSearchParams(window.location.search);
-    const isHirerFromUrl = urlParams.get('from') === 'hire';
-    const hasHireRef = localStorage.getItem('hire_request_ref');
-    const hasHireId = localStorage.getItem('hire_request_id');
-    const hasHireData = localStorage.getItem('hire_request_data');
-    const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
-    
-    // User is Hirer if ANY of these are true
-   // ✅ If talent flag is set, wipe any stale hirer data first
-if (localStorage.getItem('is_talent') === 'true') {
+const isHirerFromUrl = urlParams.get('from') === 'hire';
+const hasHireRef = localStorage.getItem('hire_request_ref');
+const hasHireId = localStorage.getItem('hire_request_id');
+const hasHireData = localStorage.getItem('hire_request_data');
+const isHirerFlag = localStorage.getItem('is_hirer') === 'true';
+
+// Hirer signals take priority. If any are present, this is a hirer —
+// wipe any stale talent flags instead of letting them silently win.
+const hasHirerSignal = isHirerFromUrl || isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData;
+
+if (hasHirerSignal) {
+    localStorage.removeItem('is_talent');
+    localStorage.removeItem('talent_profile_id');
+    localStorage.setItem('is_hirer', 'true');
+} else if (localStorage.getItem('is_talent') === 'true') {
     localStorage.removeItem('is_hirer');
     localStorage.removeItem('hire_request_ref');
     localStorage.removeItem('hire_request_id');
     localStorage.removeItem('hire_request_data');
 }
 
-const isHirer = !localStorage.getItem('is_talent') && (isHirerFromUrl || isHirerFlag || !!hasHireRef || !!hasHireId || !!hasHireData);
+const isHirer = hasHirerSignal;
     
     // User is Talent only if explicitly set and not a hirer
     const hasTalentId = !!localStorage.getItem('talent_profile_id');
