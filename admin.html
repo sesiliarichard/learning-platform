@@ -3942,10 +3942,12 @@ function stripInlineFontStyles(html) {
 }
 
 function setEditorColor(editorIndex, input) {
-    const editor = document.getElementById(`editor-${editorIndex}`);
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
         document.execCommand('foreColor', false, input.value);
+        if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
         // Update the color bar indicator
         const bar = document.getElementById(`colorBar_${editorIndex}`);
         if (bar) bar.style.background = input.value;
@@ -3953,10 +3955,12 @@ function setEditorColor(editorIndex, input) {
 }
 
 function setEditorHighlight(editorIndex, input) {
-    const editor = document.getElementById(`editor-${editorIndex}`);
+    const editor = document.getElementById(`editor-${editorIndex}`)
+                || document.getElementById(`editEditor_${editorIndex}`);
     if (editor) {
         editor.focus();
         document.execCommand('hiliteColor', false, input.value);
+        if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
         const bar = document.getElementById(`hlBar_${editorIndex}`);
         if (bar) bar.style.background = input.value;
     }
