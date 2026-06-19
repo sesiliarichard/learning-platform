@@ -955,7 +955,15 @@ document.getElementById('headshot').addEventListener('change', function () {
         return;
       }
 
-      setLoading(true);
+    setLoading(true);
+
+  // Same as fresh registration: clear stale hirer flags, mark as talent
+  localStorage.removeItem('is_hirer');
+  localStorage.removeItem('hire_request_ref');
+  localStorage.removeItem('hire_request_id');
+  localStorage.removeItem('hire_request_data');
+  localStorage.setItem('is_talent', 'true');
+  localStorage.setItem('talent_profile_id', profileId);
 
  // ── Get project data & call Supabase via talent-hub.js ─
       const projectData = getProjectData();
