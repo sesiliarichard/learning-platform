@@ -3983,6 +3983,7 @@ function setEditorColor(editorIndex, input) {
     const editor = document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
     editor.focus({ preventScroll: true });
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
@@ -4005,6 +4006,7 @@ function setEditorHighlight(editorIndex, input) {
     const editor = document.getElementById(`editor-${editorIndex}`)
                 || document.getElementById(`editEditor_${editorIndex}`);
     if (!editor) return;
+    if (window._editorSaveSnapshot) window._editorSaveSnapshot(editor);
     editor.focus({ preventScroll: true });
     const selection = window.getSelection();
     if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
