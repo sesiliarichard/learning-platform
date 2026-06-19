@@ -307,11 +307,17 @@
     .logo-teal  { background: linear-gradient(135deg, #0099aa, #007788); }
 
     /* Pills */
-    .card-pills {
+  .card-pills {
       display: flex;
       gap: 7px;
       flex-wrap: wrap;
-      margin-bottom: 22px;
+      margin-bottom: 10px;
+    }
+    .card-bio {
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--muted);
+      margin-bottom: 16px;
     }
     .pill {
       display: inline-flex; align-items: center;
@@ -772,6 +778,8 @@
     const typeLabel = (TYPE_BADGES[j.job_type] || { label: j.job_type || 'Full-time' }).label;
     const locLabel  = LOC_LABELS[j.location_type] || j.location_type || '';
     const flag      = j.country ? countryFlag(j.country) : '';
+    const descLines = (j.talent_needs || '').split('\n').slice(1).join(' ').trim();
+    const preview   = descLines.slice(0, 80) + (descLines.length > 80 ? '…' : '');
 
     const logoHtml = j.logo_url
       ? `<img src="${escHtml(j.logo_url)}" alt="${escHtml(j.company_name)}"
@@ -798,11 +806,13 @@
           </div>
         </div>
 
-        <div class="card-pills">
+       <div class="card-pills">
           ${typeLabel  ? `<span class="pill">${escHtml(typeLabel)}</span>` : ''}
           ${locLabel   ? `<span class="pill">${escHtml(locLabel)}</span>`  : ''}
           ${j.industry ? `<span class="pill">${escHtml(j.industry)}</span>` : ''}
         </div>
+
+        ${preview ? `<div class="card-bio">${escHtml(preview)}</div>` : ''}
 
         <div class="card-bottom">
           ${j.country ? `
