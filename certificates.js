@@ -295,7 +295,7 @@ if (!T) T = themes.classic;
             nameSize -= 2;
             ctx.font = `bold italic ${nameSize}px Georgia`;
         }
-        ctx.fillText(studentName, cx, 382);
+        ctx.fillText(studentName, cx, 310);
 
         // ── Cert ID bottom right (small, subtle) ──
         ctx.fillStyle = 'rgba(255,255,255,0.5)';
