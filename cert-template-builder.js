@@ -315,7 +315,7 @@
                                 <div style="font-size:13px;font-weight:600;color:#5b21b6;">Click to upload background</div>
                                 <div style="font-size:11px;color:#9ca3af;margin-top:4px;">PNG, JPG, WebP — Recommended: 1200×850px</div>
                             </div>
-                            <input type="file" id="tplBgImageInput" accept="image/*" style="display:none"
+                            <input type="file" id="tplBgImageInput" accept="image/*,application/pdf" style="display:none"
                                 onchange="handleTplBgImageUpload(this)">
                             <div id="tplImagePreviewThumb" style="margin-top:10px;display:none;">
                                 <img id="tplThumbImg" style="width:100%;max-height:80px;object-fit:cover;border-radius:8px;border:2px solid #e5e7eb;">
@@ -602,15 +602,59 @@
         updateCertPreview();
     };
 
-    window.handleTplBgImageUpload = function (input) {
+   window.handleTplBgImageUpload = async function (input) {
         const file = input.files[0];
         if (!file) return;
+
+        if (file.type === 'application/pdf') {
+            // Convert first PDF page to image using PDF.js
+            const pdfjsLib = window['pdfjs-dist/build/pdf'];
+            if (!pdfjsLib) {
+                // Dynamically load PDF.js if not already loaded
+                await new Promise((resolve, reject) => {
+                    const s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+                    s.onload = resolve;
+                    s.onerror = reject;
+                    document.head.appendChild(s);
+                });
+                window['pdfjs-dist/build/pdf'].GlobalWorkerOptions.workerSrc =
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            }
+            const pdfLib = window['pdfjs-dist/build/pdf'];
+            pdfLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfLib.getDocument({ data: arrayBuffer }).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 2 });
+            const canvas = document.createElement('canvas');
+            canvas.width  = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+            const dataUrl = canvas.toDataURL('image/png');
+
+            window._tplBgImageDataUrl = dataUrl;
+            window._tplBgImageFile    = new File([await (await fetch(dataUrl)).blob()], file.name.replace('.pdf', '.png'), { type: 'image/png' });
+            window._tplBgType         = 'image';
+            const thumb = document.getElementById('tplImagePreviewThumb');
+            const img   = document.getElementById('tplThumbImg');
+            if (thumb) thumb.style.display = 'block';
+            if (img)   img.src = dataUrl;
+            const existing = document.getElementById('tplExistingImage');
+            if (existing) existing.style.display = 'none';
+            updateCertPreview();
+            return;
+        }
+
+        // Regular image upload (unchanged)
         const reader = new FileReader();
         reader.onload = (e) => {
-        window._tplBgImageDataUrl = e.target.result;
-        window._tplBgImageFile    = file;
-        window._tplBgType         = 'image';
-        const thumb = document.getElementById('tplImagePreviewThumb');
+            window._tplBgImageDataUrl = e.target.result;
+            window._tplBgImageFile    = file;
+            window._tplBgType         = 'image';
+            const thumb = document.getElementById('tplImagePreviewThumb');
             const img   = document.getElementById('tplThumbImg');
             if (thumb) thumb.style.display = 'block';
             if (img)   img.src = e.target.result;
