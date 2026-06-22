@@ -283,9 +283,13 @@ if (!T) T = themes.classic;
     if (T.bgImageUrl) {
         const cx = W / 2;
 
-       // ── No background box needed — PDF template has no placeholder to cover ──
+       const cx = W / 2;
+
+        // ── Draw a clean white semi-transparent band behind the name ──
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.fillRect(cx - 420, 290, 840, 100);
         // ── Student Name — same style/position as original "Name Surname" ──
-        ctx.fillStyle = '#c9a84c'; // gold color matching original script font color
+       ctx.fillStyle = '#0d1b2e'; // dark navy, visible on white band
         ctx.font      = 'bold italic 62px Georgia';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
