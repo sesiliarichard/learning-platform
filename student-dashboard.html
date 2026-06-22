@@ -4528,17 +4528,13 @@ async function renderCertificateHTML(cert, targetEl, date) {
                 <img src="${theme.bgImageUrl}"
                      style="position:absolute;top:0;left:0;width:100%;height:100%;
                             object-fit:cover;z-index:0;" crossorigin="anonymous">
-                <div style="position:relative;z-index:1;display:flex;flex-direction:column;
+               <div style="position:relative;z-index:1;display:flex;flex-direction:column;
                             align-items:center;justify-content:center;min-height:490px;
-                            padding:45px 55px;background:rgba(0,0,0,0.4);">
-                    <div style="font-size:42px;font-weight:800;color:${theme.nameColor};margin-bottom:16px;">
+                            padding:45px 55px;background:transparent;">
+                    <div style="font-size:42px;font-weight:800;font-style:italic;color:#c9a84c;font-family:Georgia,serif;margin-bottom:60px;">
                         ${escapeHtml(cert.studentName)}
                     </div>
-                    <div style="font-size:18px;color:${theme.textColor};">Certificate of Completion</div>
-                    <div style="font-size:16px;color:${theme.subColor};margin:10px 0;">
-                        ${escapeHtml(cert.courseName)}
-                    </div>
-                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${theme.subColor};">
+                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:rgba(255,255,255,0.6);">
                         ID: ${cert.id}
                     </div>
                 </div>
