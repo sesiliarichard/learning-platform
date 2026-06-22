@@ -2926,6 +2926,9 @@ to{
     margin-bottom: 4px;
     transition: all 0.18s;
     position: relative;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+    overflow: hidden;
 }
 
 .nl:hover {
