@@ -4277,6 +4277,8 @@ async function previewCertificate(certId) {
     const cert = myCertificates.find(c => c.id === certId);
     if (!cert) return;
     
+    currentPreviewCertId = certId;
+    
     const canvas = document.getElementById('certPreviewCanvas');
     
     // Complete themes for built-in templates
@@ -4633,7 +4635,7 @@ async function downloadCertificate(certId) {
         if (typeof html2pdf !== 'undefined') {
            const opt = {
                 margin: 0,
-                filename: `certificate_${cert.courseName.replace(/\s+/g, '_')}.pdf`,
+                filename: `ASAI_Certificate.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
                 html2canvas: { scale: 2, useCORS: true, logging: false, width: 1122, height: 794 },
                 jsPDF: { unit: 'px', format: [1122, 794], orientation: 'landscape' }
