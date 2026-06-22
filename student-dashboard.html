@@ -4523,8 +4523,8 @@ async function renderCertificateHTML(cert, targetEl, date) {
 
     if (theme.bgImageUrl) {
         targetEl.innerHTML = `
-            <div style="width:700px;min-height:490px;position:relative;font-family:Georgia,serif;
-                        text-align:center;overflow:hidden;border-radius:8px;">
+            <div style="width:1122px;height:794px;position:relative;font-family:Georgia,serif;
+                        text-align:center;overflow:hidden;border-radius:0;">
                 <img src="${theme.bgImageUrl}"
                      style="position:absolute;top:0;left:0;width:100%;height:100%;
                             object-fit:cover;z-index:0;" crossorigin="anonymous">
@@ -4541,7 +4541,7 @@ async function renderCertificateHTML(cert, targetEl, date) {
             </div>`;
     } else {
         targetEl.innerHTML = `
-            <div style="width:700px;min-height:490px;background:${theme.bg};border:${theme.border};
+            <div style="width:1122px;height:794px;background:${theme.bg};border:${theme.border};
                         padding:45px 55px;position:relative;font-family:Georgia,serif;text-align:center;">
                 <div style="position:absolute;inset:12px;border:${theme.innerBorder};
                             pointer-events:none;border-radius:2px;"></div>
@@ -4631,12 +4631,12 @@ async function downloadCertificate(certId) {
         }
 
         if (typeof html2pdf !== 'undefined') {
-            const opt = {
-                margin: 0.3,
+           const opt = {
+                margin: 0,
                 filename: `certificate_${cert.courseName.replace(/\s+/g, '_')}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true, logging: false },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+                html2canvas: { scale: 2, useCORS: true, logging: false, width: 1122, height: 794 },
+                jsPDF: { unit: 'px', format: [1122, 794], orientation: 'landscape' }
             };
             await html2pdf().set(opt).from(certEl).save();
         } else {
