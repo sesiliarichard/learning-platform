@@ -283,15 +283,7 @@ if (!T) T = themes.classic;
     if (T.bgImageUrl) {
         const cx = W / 2;
 
-       // ── Cover the "Name Surname" placeholder area completely ──
-        // Sample the background color of that area exactly
-        ctx.fillStyle = '#0d1b2e';  // dark navy matching template background
-        ctx.fillRect(cx - 420, 290, 840, 120);
-        
-        // Second layer to fully kill the script font
-        ctx.fillStyle = 'rgba(8, 15, 28, 0.98)';
-        ctx.fillRect(cx - 420, 290, 840, 120);
-
+       // ── No background box needed — PDF template has no placeholder to cover ──
         // ── Student Name — same style/position as original "Name Surname" ──
         ctx.fillStyle = '#c9a84c'; // gold color matching original script font color
         ctx.font      = 'bold italic 62px Georgia';
