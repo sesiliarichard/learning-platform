@@ -4385,11 +4385,9 @@ async function previewCertificate(certId) {
         canvas.innerHTML = `
             <div style="width:700px;min-height:490px;position:relative;font-family:Georgia,serif;text-align:center;margin:0 auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);overflow:hidden;border-radius:8px;">
                 <img src="${theme.bgImageUrl}" style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;">
-                <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:490px;padding:45px 55px;background:rgba(0,0,0,0.4);">
-                    <div style="font-size:42px;font-weight:800;color:${theme.nameColor};margin-bottom:16px;">${escapeHtml(cert.studentName)}</div>
-                    <div style="font-size:18px;color:${theme.textColor};">Certificate of Completion</div>
-                    <div style="font-size:16px;color:${theme.subColor};margin:10px 0;">${escapeHtml(cert.courseName)}</div>
-                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:${theme.subColor};">ID: ${cert.id}</div>
+               <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:490px;padding:45px 55px;background:transparent;">
+                    <div style="font-size:42px;font-weight:800;font-style:italic;color:#c9a84c;font-family:Georgia,serif;">${escapeHtml(cert.studentName)}</div>
+                    <div style="position:absolute;bottom:14px;right:18px;font-size:9px;color:rgba(255,255,255,0.6);">ID: ${cert.id}</div>
                 </div>
             </div>
         `;
