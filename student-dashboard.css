@@ -7848,14 +7848,14 @@ body.dark-mode .notes-content tr:nth-child(even) td {
     background-color: #243044 !important;
 }
 
-/* Table header row — keep a dark purple accent */
 body.dark-mode .notes-content thead td,
 body.dark-mode .notes-content thead th,
 body.dark-mode .notes-content th[style*="background"] {
     background-color: #312e81 !important;
     color: #ffffff !important;
 }
-/* Dark mode CSS variable for JS-rendered cards */
+
+/* ===== DARK MODE: JS-rendered week structure cards ===== */
 body.dark-mode {
     --ws-card-bg: #1e293b;
 }
