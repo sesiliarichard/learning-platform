@@ -1800,9 +1800,9 @@ const progLabel = isCompleted
 
             const card = document.createElement('div');
             card.dataset.course = course.id;
-            card.style.cssText = `
-                background: white; border-radius: 16px; overflow: hidden;
-                border: 1px solid #e5e7eb; cursor: pointer;
+           card.style.cssText = `
+                background: ${document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode') ? '#1f2937' : 'white'}; border-radius: 16px; overflow: hidden;
+                border: 1px solid ${document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode') ? '#374151' : '#e5e7eb'}; cursor: pointer;
                 transition: transform 0.25s ease, box-shadow 0.25s ease;
                 display: flex; flex-direction: column; padding: 0;
             `;
