@@ -117,7 +117,7 @@
                 const scAllRead = scTotal > 0 && scRead === scTotal;
 
                 html += `
-                <div class="ws-subchapter-block" style="margin-bottom:20px;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;background:white;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div class="ws-subchapter-block" style="margin-bottom:20px;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;background:var(--ws-card-bg,white);box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                     <div style="background:${scAllRead ? 'linear-gradient(135deg,#f0fdf4,#dcfce7)' : 'linear-gradient(135deg,#fafafa,#f5f3ff)'};
                                 padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;"
                          onclick="wsToggleSubChapter('${sc.id}')">
@@ -144,7 +144,7 @@
 
         if (orphanTopics.length > 0) {
             html += `
-            <div style="margin-bottom:20px;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;background:white;">
+           <div style="margin-bottom:20px;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;background:var(--ws-card-bg,white);">
                 <div style="background:#f9fafb;padding:12px 18px;border-bottom:1px solid #f3f4f6;">
                     <div style="font-weight:700;color:#374151;font-size:13px;">
                         <i class="fas fa-book-open" style="color:#7c3aed;margin-right:6px;"></i>Topics

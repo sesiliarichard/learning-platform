@@ -7835,3 +7835,27 @@ body.dark-mode .notes-chapter-item.completed {
     background: #052e16 !important;
     color: #6ee7b7 !important;
 }
+/* ===== DARK MODE: Table fix ===== */
+body.dark-mode .notes-content table,
+body.dark-mode .notes-content td,
+body.dark-mode .notes-content th {
+    background-color: #1e293b !important;
+    border-color: #374151 !important;
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .notes-content tr:nth-child(even) td {
+    background-color: #243044 !important;
+}
+
+/* Table header row — keep a dark purple accent */
+body.dark-mode .notes-content thead td,
+body.dark-mode .notes-content thead th,
+body.dark-mode .notes-content th[style*="background"] {
+    background-color: #312e81 !important;
+    color: #ffffff !important;
+}
+/* Dark mode CSS variable for JS-rendered cards */
+body.dark-mode {
+    --ws-card-bg: #1e293b;
+}
