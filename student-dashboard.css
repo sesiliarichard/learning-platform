@@ -2111,11 +2111,7 @@ body.dark-mode .notes-chapter-item:hover {
 body.dark-mode .notes-reader {
     background: #1f2937;
     border-color: #374151;
-}
-
-body.dark-mode .notes-reader {
-    background: #1f2937;
-    border-color: #374151;
+    color: #e5e7eb !important;
 }
 
 .notes-header {
@@ -2183,6 +2179,26 @@ body.dark-mode .notes-meta {
 
 body.dark-mode .notes-content {
     color: #e5e7eb;
+}
+
+body.dark-mode .notes-content *:not(pre):not(code):not(.code-block):not(a) {
+    color: #e5e7eb !important;
+}
+
+body.dark-mode .notes-content h1,
+body.dark-mode .notes-content h2,
+body.dark-mode .notes-content h3,
+body.dark-mode .notes-content h4 {
+    color: #ffffff !important;
+}
+
+body.dark-mode .notes-content a {
+    color: #60a5fa !important;
+}
+
+body.dark-mode .notes-content pre,
+body.dark-mode .notes-content code {
+    color: #c7d2fe !important;
 }
 
 .notes-content h2 {
@@ -7773,4 +7789,32 @@ body.dark-mode .notes-chapter-item:hover span span {
 #assignQuestionsModal .modal-content > div[style*="overflow-y: auto"] {
     flex: 1;
     overflow-y: auto !important;
+}
+/* ===== DARK MODE FIXES ===== */
+
+/* Fix 1: Icon buttons in header */
+body.dark-mode .icon-btn {
+    background: #1e293b;
+    border-color: #334155;
+    color: #d1d5db;
+}
+body.dark-mode .icon-btn:hover {
+    border-color: #60a5fa;
+    color: #60a5fa;
+}
+
+/* Fix 2: Notes sidebar chapter items — override the !important rules in dark mode */
+body.dark-mode .notes-chapter-item:hover {
+    background: #374151 !important;
+    color: #d1d5db !important;
+}
+
+body.dark-mode .notes-chapter-item.active {
+    background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%) !important;
+    color: white !important;
+}
+
+body.dark-mode .notes-chapter-item.completed {
+    background: #052e16 !important;
+    color: #6ee7b7 !important;
 }
