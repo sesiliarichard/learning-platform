@@ -11,9 +11,9 @@
         if (localStorage.getItem('sidebarCollapsed') === 'true') {
             document.documentElement.classList.add('sidebar-pre-collapsed');
         }
-        // Apply dark mode immediately to prevent white flash on reload
+       // Apply dark mode immediately to prevent white flash on reload
         if (localStorage.getItem('themePreference') === 'dark') {
-            document.body.classList.add('dark-mode');
+            document.documentElement.classList.add('dark-mode');
         }
     })();
 </script>
