@@ -2181,7 +2181,19 @@ body.dark-mode .notes-content {
     color: #e5e7eb;
 }
 
-body.dark-mode .notes-content *:not(pre):not(code):not(.code-block):not(a) {
+/* Only override elements with NO inline color — preserves admin-set colors like blue, teal etc */
+body.dark-mode .notes-content *:not(pre):not(code):not(a):not([style*="color"]) {
+    color: #e5e7eb !important;
+}
+
+/* Override inline black/dark colors specifically */
+body.dark-mode .notes-content [style*="color: rgb(0"],
+body.dark-mode .notes-content [style*="color: #000"],
+body.dark-mode .notes-content [style*="color: #111"],
+body.dark-mode .notes-content [style*="color: #1f2937"],
+body.dark-mode .notes-content [style*="color: #374151"],
+body.dark-mode .notes-content [style*="color: #1a1a1a"],
+body.dark-mode .notes-content [style*="color: black"] {
     color: #e5e7eb !important;
 }
 
@@ -2190,10 +2202,6 @@ body.dark-mode .notes-content h2,
 body.dark-mode .notes-content h3,
 body.dark-mode .notes-content h4 {
     color: #ffffff !important;
-}
-
-body.dark-mode .notes-content a {
-    color: #60a5fa !important;
 }
 
 body.dark-mode .notes-content pre,
