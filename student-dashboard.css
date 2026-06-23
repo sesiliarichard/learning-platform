@@ -7858,4 +7858,7 @@ body.dark-mode .notes-content th[style*="background"] {
 /* ===== DARK MODE: JS-rendered week structure cards ===== */
 body.dark-mode {
     --ws-card-bg: #1e293b;
+    --ws-bg: #1e293b;
+    --ws-text: #e5e7eb;
+    --ws-muted: #9ca3af;
 }

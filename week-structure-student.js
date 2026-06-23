@@ -127,8 +127,8 @@
                             ${scAllRead ? '<i class="fas fa-check" style="font-size:12px;"></i>' : (scIndex + 1)}
                         </div>
                         <div style="flex:1;">
-                            <div style="font-weight:700;color:#1f2937;font-size:15px;">${_esc(sc.title)}</div>
-                            <div style="font-size:12px;color:#6b7280;margin-top:1px;">${scRead}/${scTotal} topics read</div>
+                            <div style="font-weight:700;color:var(--ws-text,#1f2937);font-size:15px;">${_esc(sc.title)}</div>
+                           <div style="font-size:12px;color:var(--ws-muted,#6b7280);margin-top:1px;">${scRead}/${scTotal} topics read</div>
                         </div>
                         <i id="wsScArrow_${sc.id}" class="fas fa-chevron-down" style="color:#7c3aed;transition:transform 0.25s;"></i>
                     </div>
@@ -146,7 +146,7 @@
             html += `
            <div style="margin-bottom:20px;border:1.5px solid #e5e7eb;border-radius:14px;overflow:hidden;background:var(--ws-card-bg,white);">
                 <div style="background:#f9fafb;padding:12px 18px;border-bottom:1px solid #f3f4f6;">
-                    <div style="font-weight:700;color:#374151;font-size:13px;">
+                    <div style="font-weight:700;color:var(--ws-text,#374151);font-size:13px;">
                         <i class="fas fa-book-open" style="color:#7c3aed;margin-right:6px;"></i>Topics
                     </div>
                 </div>
@@ -253,11 +253,11 @@
                 }
             </div>
             <div style="flex:1;min-width:0;">
-                <div style="font-weight:600;color:#1f2937;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <div style="font-weight:600;color:var(--ws-text,#1f2937);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                     ${_esc(topic.title)}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px;margin-top:3px;flex-wrap:wrap;">
-                    <span style="font-size:11px;color:#6b7280;"><i class="fas fa-clock" style="margin-right:3px;"></i>${topic.duration || 15} min</span>
+                    <span style="font-size:11px;color:var(--ws-muted,#6b7280);"><i class="fas fa-clock" style="margin-right:3px;"></i>${topic.duration || 15} min</span>
                     <span style="background:${cc.bg};color:${cc.color};padding:1px 8px;border-radius:20px;font-size:10px;font-weight:700;">${topic.category || 'basics'}</span>
                     ${codingBadge}
                 </div>
@@ -827,8 +827,8 @@
         questions.forEach((q, qi) => {
             const opts = q.options || q.answer_options || [];
             html += `
-            <div style="background:white;border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid #e0f2fe;">
-                <div style="font-weight:700;color:#1f2937;margin-bottom:12px;">
+            <div style="background:var(--ws-bg,white);border-radius:12px;padding:16px;margin-bottom:14px;border:1.5px solid #e0f2fe;">
+                <div style="font-weight:700;color:var(--ws-text,#1f2937);margin-bottom:12px;">
                     <span style="color:#0ea5e9;margin-right:6px;">${qi + 1}.</span> ${_esc(q.question || q.question_text || '')}
                 </div>`;
 
