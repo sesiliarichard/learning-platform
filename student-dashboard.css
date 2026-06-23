@@ -45,27 +45,14 @@ html.dark-mode .container { background: #1e293b; color: #ffffff; }
 html.dark-mode .main-content { background: #0f172a; }
 html.dark-mode .notes-reader { background: #1f2937; border-color: #374151; color: #e5e7eb !important; }
 html.dark-mode .notes-content { color: #e5e7eb; }
-html.dark-mode .notes-content *:not(pre):not(code):not(a):not([style*="color"]) { color: #e5e7eb !important; }
+html.dark-mode .notes-content * { color: #e5e7eb !important; }
 html.dark-mode .notes-content h1,
 html.dark-mode .notes-content h2,
 html.dark-mode .notes-content h3,
 html.dark-mode .notes-content h4 { color: #ffffff !important; }
-html.dark-mode .notes-content [style*="color: rgb(0"],
-html.dark-mode .notes-content [style*="color:rgb(0"],
-html.dark-mode .notes-content [style*="color: rgb(1"],
-html.dark-mode .notes-content [style*="color: rgb(2"],
-html.dark-mode .notes-content [style*="color: rgb(3"],
-html.dark-mode .notes-content [style*="color: rgb(4"],
-html.dark-mode .notes-content [style*="color: rgb(5"],
-html.dark-mode .notes-content [style*="color: #000"],
-html.dark-mode .notes-content [style*="color: #111"],
-html.dark-mode .notes-content [style*="color: #222"],
-html.dark-mode .notes-content [style*="color: #333"],
-html.dark-mode .notes-content [style*="color: #1f2937"],
-html.dark-mode .notes-content [style*="color: #374151"],
-html.dark-mode .notes-content [style*="color: #1a1a1a"],
-html.dark-mode .notes-content [style*="color: black"],
-html.dark-mode .notes-content [style*="color: windowtext"] { color: #e5e7eb !important; }
+html.dark-mode .notes-content a { color: #60a5fa !important; }
+html.dark-mode .notes-content [style*="color"] { color: #e5e7eb !important; }
+html.dark-mode .notes-content [style*="font-family"] { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 html.dark-mode .notes-content table,
 html.dark-mode .notes-content td,
 html.dark-mode .notes-content th { background-color: #1e293b !important; border-color: #374151 !important; color: #e5e7eb !important; }
