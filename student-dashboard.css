@@ -2188,12 +2188,21 @@ body.dark-mode .notes-content *:not(pre):not(code):not(a):not([style*="color"]) 
 
 /* Override inline black/dark colors specifically */
 body.dark-mode .notes-content [style*="color: rgb(0"],
+body.dark-mode .notes-content [style*="color:rgb(0"],
+body.dark-mode .notes-content [style*="color: rgb(1"],
+body.dark-mode .notes-content [style*="color: rgb(2"],
+body.dark-mode .notes-content [style*="color: rgb(3"],
+body.dark-mode .notes-content [style*="color: rgb(4"],
+body.dark-mode .notes-content [style*="color: rgb(5"],
 body.dark-mode .notes-content [style*="color: #000"],
 body.dark-mode .notes-content [style*="color: #111"],
+body.dark-mode .notes-content [style*="color: #222"],
+body.dark-mode .notes-content [style*="color: #333"],
 body.dark-mode .notes-content [style*="color: #1f2937"],
 body.dark-mode .notes-content [style*="color: #374151"],
 body.dark-mode .notes-content [style*="color: #1a1a1a"],
-body.dark-mode .notes-content [style*="color: black"] {
+body.dark-mode .notes-content [style*="color: black"],
+body.dark-mode .notes-content [style*="color: windowtext"] {
     color: #e5e7eb !important;
 }
 
