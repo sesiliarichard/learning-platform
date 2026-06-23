@@ -1798,11 +1798,11 @@ const progLabel = isCompleted
     : isStarted ? progress + '% complete'
     : 'Not started';
 
-            const card = document.createElement('div');
+           const card = document.createElement('div');
             card.dataset.course = course.id;
-           card.style.cssText = `
-                background: ${document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode') ? '#1f2937' : 'white'}; border-radius: 16px; overflow: hidden;
-                border: 1px solid ${document.documentElement.classList.contains('dark-mode') || document.body.classList.contains('dark-mode') ? '#374151' : '#e5e7eb'}; cursor: pointer;
+            card.className = 'course-card';
+            card.style.cssText = `
+                border-radius: 16px; overflow: hidden; cursor: pointer;
                 transition: transform 0.25s ease, box-shadow 0.25s ease;
                 display: flex; flex-direction: column; padding: 0;
             `;
@@ -5917,10 +5917,9 @@ async function loadCourseRecordings(courseId) {
             });
             const isCloudinary = videoSrc?.includes('cloudinary.com');
 
-            const card = document.createElement('div');
+           const card = document.createElement('div');
+            card.className = 'course-card';
             card.style.cssText = `
-                background: white;
-                border: 1.5px solid #e5e7eb;
                 border-radius: 16px;
                 overflow: hidden;
                 margin-bottom: 16px;

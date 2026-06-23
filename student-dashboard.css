@@ -730,13 +730,12 @@ body.dark-mode .see-all-btn:hover {
 
 .course-card {
     border: 1px solid #e5e7eb;
-    border-radius: 18px;
-    padding: 20px;
+    border-radius: 16px;
+    padding: 0;
     background: white;
     cursor: pointer;
     transition: all 0.3s;
 }
-
 body.dark-mode .course-card {
     background: #1f2937;
     border-color: #374151;
