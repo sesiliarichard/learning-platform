@@ -1948,12 +1948,15 @@ async function initDashboard() {
     renderCourseCards();          
      broadcastPresence();
     
-    const savedTheme = localStorage.getItem('themePreference');
-    if (savedTheme === 'dark') {
-        body.classList.add('dark-mode');
-        themeToggle.checked = true;
-        appearanceStatus.textContent = 'Dark Mode';
-    }
+   const savedTheme = localStorage.getItem('themePreference');
+if (savedTheme === 'dark') {
+    body.classList.add('dark-mode');
+    document.documentElement.classList.add('dark-mode');
+    themeToggle.checked = true;
+    appearanceStatus.textContent = 'Dark Mode';
+} else {
+    document.documentElement.classList.remove('dark-mode');
+}
 
     setTimeout(updateUserProfile, 1500);
     setupEventListeners();
@@ -2172,18 +2175,20 @@ if (savedSidebarState === 'true') {
             reader.readAsDataURL(file);
         }
 
-        // Handle theme toggle
-        function handleThemeToggle() {
-            if (themeToggle.checked) {
-                body.classList.add('dark-mode');
-                appearanceStatus.textContent = 'Dark Mode';
-                localStorage.setItem('themePreference', 'dark');
-            } else {
-                body.classList.remove('dark-mode');
-                appearanceStatus.textContent = 'Light Mode';
-                localStorage.setItem('themePreference', 'light');
-            }
-        }
+       // Handle theme toggle
+function handleThemeToggle() {
+    if (themeToggle.checked) {
+        body.classList.add('dark-mode');
+        document.documentElement.classList.add('dark-mode');
+        appearanceStatus.textContent = 'Dark Mode';
+        localStorage.setItem('themePreference', 'dark');
+    } else {
+        body.classList.remove('dark-mode');
+        document.documentElement.classList.remove('dark-mode');
+        appearanceStatus.textContent = 'Light Mode';
+        localStorage.setItem('themePreference', 'light');
+    }
+}
 
  // Logout function
 // Logout function
