@@ -15,6 +15,22 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script type="module" src="notes.js"></script>
 <script src="supabase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<script>
+    function s(val) {
+        if (val === null || val === undefined) return '';
+        return DOMPurify.sanitize(String(val));
+    }
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+</script>
 <script>
     const db = window.supabaseClient;
     function getSB() { return window.supabaseClient || window.db; }
@@ -2113,7 +2129,8 @@ async function loadCourses() {
         .order('order_num', { ascending: true });
 
     if (error) {
-        container.innerHTML = `<div class="card"><p style="color:#ef4444;">Error: ${error.message}</p></div>`;
+        console.error('Load courses error:', error);
+        container.innerHTML = `<div class="card"><p style="color:#ef4444;">Failed to load courses. Please try again.</p></div>`;
         return;
     }
 
@@ -2141,22 +2158,22 @@ async function loadCourses() {
         card.className = 'card';
         card.innerHTML = `
             <div class="card-header">
-                <div class="card-title">${course.title || 'Untitled'}</div>
+                <div class="card-title">${s(course.title) || 'Untitled'}</div>
                 <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editCourse('${course.id}')">
+                    <button class="action-btn edit" onclick="editCourse('${escapeHtml(course.id)}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteCourse('${course.id}')">
+                    <button class="action-btn delete" onclick="deleteCourse('${escapeHtml(course.id)}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
             </div>
             <p style="color:#6b7280;margin-bottom:15px;">
-                ${course.description || 'No description'}
+                ${s(course.description) || 'No description'}
             </p>
             <div style="display:flex;gap:20px;align-items:center;font-size:14px;color:#6b7280;">
                 <span><i class="fas fa-book-open"></i> Active Course</span>
-                <button onclick="cycleCourseLockState('${course.id}', '${lockState}')"
+                <button onclick="cycleCourseLockState('${escapeHtml(course.id)}', '${lockState}')"
                         style="margin-left:auto;border:1px solid ${lockBtnColor};color:${lockBtnColor};
                                background:transparent;border-radius:8px;padding:6px 12px;
                                font-size:12px;font-weight:600;cursor:pointer;">
@@ -2180,7 +2197,7 @@ async function cycleCourseLockState(courseId, currentState) {
         .eq('id', courseId);
 
     if (error) {
-        if (typeof showToast === 'function') showToast('Failed to update lock state: ' + error.message, 'error');
+        if (typeof showToast === 'function') showToast('Failed to update lock state. Please try again.', 'error');
         return;
     }
 
@@ -2283,7 +2300,7 @@ async function handleAddCourse(event) {
         })
         .select();
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     closeModal('addCourseModal');
     event.target.reset();
@@ -2309,7 +2326,7 @@ async function deleteCourse(courseId) {
         .eq('id', courseId);
 
     if (error) {
-        showToast('Error: ' + error.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
         return;
     }
 
@@ -4149,7 +4166,7 @@ const topicsToInsert = topics.map((t, i) => ({
 
    } catch (err) {
         console.error('Save chapter error:', err.message);
-        showToast('Failed to save: ' + err.message, 'error');
+        showToast('Failed to save. Please try again.', 'error');
         event.target.dataset.submitting = 'false';
         const btn = document.querySelector('#createChapterForm button[type="submit"]');
         if (btn) btn.dataset.saving = 'false';
@@ -4265,22 +4282,22 @@ db.from('assignments')
                         </span>
                         ${escapeHtml(chapter.title)}
                     </div>
-                    <div style="font-size:13px;color:rgba(31,41,55,0.6);margin-top:4px;">${chapter.description||''}</div>
+                    <div style="font-size:13px;color:rgba(31,41,55,0.6);margin-top:4px;">${s(chapter.description)||''}</div>
                     <span class="badge ${chapter.published?'active':'pending'}" style="margin-top:6px;display:inline-block;">
                         ${chapter.published ? '✓ Published' : '⏳ Unpublished'}
                     </span>
                 </div>
                <div class="action-buttons">
                     <button class="btn-primary" style="padding:8px 14px;font-size:12px;"
-                        onclick="togglePublishChapter('${chapter.id}',${chapter.published})">
+                        onclick="togglePublishChapter('${escapeHtml(chapter.id)}',${chapter.published})">
                         <i class="fas fa-${chapter.published?'eye-slash':'eye'}"></i>
                         ${chapter.published ? 'Unpublish' : 'Publish'}
                     </button>
                     <button class="action-btn edit" title="Edit"
-                        onclick="(function(id){ openEditChapterModal(id); })('${chapter.id}')">
+                        onclick="(function(id){ openEditChapterModal(id); })('${escapeHtml(chapter.id)}')">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="action-btn delete" onclick="deleteChapter('${chapter.id}')">
+                    <button class="action-btn delete" onclick="deleteChapter('${escapeHtml(chapter.id)}')">
                         <i class="fas fa-trash"></i>
                     </button>
                 </div>
@@ -4416,7 +4433,7 @@ async function unlinkItem(type, itemId, chapterId) {
         .update({ chapter_id: null })
         .eq('id', itemId);
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     // Remove from chapter_assessments
     await db
@@ -4477,7 +4494,7 @@ async function moveTopicOrder(chapterId, topicId, direction) {
         showToast('Topic order updated');
     } catch (err) {
         console.error('moveTopicOrder error:', err.message);
-        showToast('Failed to reorder: ' + err.message, 'error');
+        showToast('Failed to reorder. Please try again.', 'error');
     }
 }
 
@@ -4534,7 +4551,7 @@ async function togglePublishChapter(chapterId, currentlyPublished) {
         
     } catch (err) {
         console.error('Toggle publish error:', err.message);
-        showToast('Failed to update chapter: ' + err.message, 'error');
+        showToast('Failed to update chapter. Please try again.', 'error');
     }
 }
 function previewTopic(courseId, chapterId, topicId) {
@@ -4686,7 +4703,7 @@ async function forceDeleteChapter(chapterId) {
         await loadChapters();
         
     } catch (err) {
-        showToast(`Failed to delete: ${err.message}`, 'error');
+        showToast('Failed to delete. Please try again.', 'error');
     }
 }
 // ============================================
@@ -5115,7 +5132,7 @@ if (linkedAssessments && linkedAssessments.length > 0) {
 
     } catch (err) {
         console.error('Edit chapter error:', err);
-        showToast('Failed to save: ' + err.message, 'error');
+        showToast('Failed to save. Please try again.', 'error');
     }
 }
 // ============================================
@@ -5791,7 +5808,7 @@ function startAdminRecording() {
 
     } catch (error) {
         console.error('Recording error:', error);
-        showToast('Recording failed: ' + error.message, 'error');
+        showToast('Recording failed. Please try again.', 'error');
     }
 }
 
@@ -6269,7 +6286,7 @@ async function loadProjectSubmissionsView() {
     } catch (err) {
         console.error('[loadProjectSubmissionsView]', err);
         container.innerHTML = `<div style="padding:20px;color:#ef4444;">
-            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Error: ${err.message}
+            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Something went wrong. Please try again.
         </div>`;
     }
 }
@@ -6354,7 +6371,7 @@ async function loadProjectSubmissionsFallback() {
         highlightProjectSubTab('proposals');
 
     } catch (err) {
-        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Error: ${err.message}</div>`;
+        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Something went wrong. Please try again.</div>`;
     }
 }
 
@@ -6416,7 +6433,7 @@ function renderProposalsTable(rows) {
         <tr style="border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
             <td style="padding:14px 16px;vertical-align:top;">
                 <div style="font-weight:700;color:#111827;">${name}</div>
-                <div style="font-size:12px;color:#6b7280;">${email}</div>
+                <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
                 <div style="font-size:12px;color:#6b7280;">${phone}</div>
             </td>
             <td style="padding:14px 16px;vertical-align:top;font-weight:600;color:#374151;">${r.title || r.project_title || '—'}</td>
@@ -6725,7 +6742,7 @@ function renderFinalTable(rows) {
         <tr style="border-bottom:1px solid #f0f0f0;" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
             <td style="padding:14px 16px;vertical-align:top;">
                 <div style="font-weight:700;color:#111827;">${name}</div>
-                <div style="font-size:12px;color:#6b7280;">${email}</div>
+                <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
             </td>
             <td style="padding:14px 16px;vertical-align:top;font-weight:600;color:#374151;">${r.title || r.project_title || '—'}</td>
             <td style="padding:14px 16px;vertical-align:top;color:#6b7280;max-width:220px;">${summary}${summary.length===100?'…':''}</td>
@@ -7055,7 +7072,7 @@ async function deletePhaseSubmission(phaseId, cardIdx) {
         .from('project_phases')
         .delete()
         .eq('id', phaseId);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast('Phase submission deleted.');
     loadProjectSubmissionsView();
 }
@@ -7181,7 +7198,7 @@ async function updateProposalStatus(proposalId, status) {
         .update({ status, updated_at: new Date().toISOString() })
         .eq('id', proposalId);
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     showToast(status === 'approved'
         ? '✅ Proposal approved! Student will be notified.'
@@ -7672,7 +7689,7 @@ async function loadEligibleStudents() {
 
     } catch (err) {
         console.error('loadEligibleStudents error:', err);
-        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Error: ${err.message}</div>`;
+        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Something went wrong. Please try again.</div>`;
     }
 }
 
@@ -7821,15 +7838,15 @@ function issueSingleCert(studentId, courseId, courseName, studentName, email, ex
                         ${studentName.split(' ').map(n=>n[0]).join('').toUpperCase().substring(0,2)}
                     </div>
                     <div>
-                        <div style="font-weight:700;color:#1f2937;font-size:16px;">${studentName}</div>
-                        <div style="font-size:13px;color:#6b7280;">${email}</div>
+                        <div style="font-weight:700;color:#1f2937;font-size:16px;">${s(studentName)}</div>
+                        <div style="font-size:13px;color:#6b7280;">${s(email)}</div>
                     </div>
                 </div>
                 <div style="background:white;border-radius:10px;padding:14px;border:1px solid #ddd6fe;">
                     <div style="font-size:12px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">
                         <i class="fas fa-book"></i> Course
                     </div>
-                    <div style="font-weight:600;color:#1f2937;">${courseName}</div>
+                    <div style="font-weight:600;color:#1f2937;">${s(courseName)}</div>
                 </div>
             </div>
 
@@ -7962,7 +7979,7 @@ async function confirmIssueCert(studentId, courseId, courseName, studentName, em
         });
 
     if (error) {
-        showToast('Error: ' + error.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
         return;
     }
 
@@ -7997,7 +8014,7 @@ async function togglePublishCert(certId, currentlyPublished, studentName, email,
         .update(updates)
         .eq('id', certId);
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     if (!currentlyPublished) {
         sendCertificateEmail({ studentName, email, courseName, certNumber });
@@ -8139,10 +8156,10 @@ function renderIssuedCerts(certs) {
 
         row.innerHTML = `
             <div>
-                <div style="font-weight:600;color:#1f2937;font-size:14px;">${name}</div>
-                <div style="font-size:12px;color:#6b7280;">${email}</div>
+                <div style="font-weight:600;color:#1f2937;font-size:14px;">${s(name)}</div>
+                <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
             </div>
-            <div style="font-size:14px;color:#374151;">${cert.course_name || '—'}</div>
+            <div style="font-size:14px;color:#374151;">${s(cert.course_name) || '—'}</div>
             <div style="font-size:13px;color:#6b7280;">${issued}</div>
             <div style="font-size:13px;color:#6b7280;">${pubDate}</div>
             <div>
@@ -8186,7 +8203,7 @@ async function revokeCert(certId, studentName) {
         .update({ revoked: true, published: false, revoked_at: new Date().toISOString() })
         .eq('id', certId);
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     showToast('Certificate revoked');
     await loadIssuedCerts();
@@ -8324,7 +8341,7 @@ async function saveCriteria() {
             require_assignments: document.getElementById('requireAssignments')?.value === 'yes'
         });
 
-    if (error) { showToast('Error saving criteria: ' + error.message, 'error'); return; }
+    if (error) { showToast('Failed to save criteria. Please try again.', 'error'); return; }
     showToast('Certificate criteria saved! ✅');
     await loadEligibleStudents();
 }
@@ -8443,7 +8460,7 @@ async function viewEmailLog() {
                 <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
                     <div>
                         <div style="font-weight:600;color:#1f2937;margin-bottom:2px;">📧 ${name}</div>
-                        <div style="font-size:12px;color:#6b7280;">${email}</div>
+                        <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
                     </div>
                     <span class="badge active">Sent</span>
                 </div>
@@ -8793,7 +8810,7 @@ async function loadTeacherApprovals() {
 
     } catch (err) {
         console.error('Error loading teacher approvals:', err);
-        showToast('Error loading users: ' + err.message, 'error');
+        showToast('Failed to load users. Please try again.', 'error');
     }
 }
 
@@ -8927,10 +8944,10 @@ function renderTeacherList(containerId, teachers, type) {
                     </div>
                     <div>
                         <div style="font-weight:700;color:#1f2937;font-size:15px;margin-bottom:3px;">
-                            ${t.name}
+                            ${s(t.name)}
                         </div>
                         <div style="font-size:13px;color:#6b7280;margin-bottom:5px;">
-                            ${t.email} &nbsp;•&nbsp; Registered: ${t.created}
+                            ${s(t.email)} &nbsp;•&nbsp; Registered: ${s(t.created)}
                         </div>
                         <span style="background:${rc.bg};color:${rc.color};
                                      padding:3px 10px;border-radius:20px;
@@ -8943,13 +8960,13 @@ function renderTeacherList(containerId, teachers, type) {
                     ${type === 'pending' ? `
                         <button class="btn-primary" 
                                 style="padding:9px 18px;font-size:13px;"
-                                onclick="approveTeacher('${t.id}', '${t.email}')">
+                                onclick="approveTeacher('${escapeHtml(t.id)}', '${escapeHtml(t.email)}')">
                             <i class="fas fa-check"></i> Approve as Teacher
                         </button>
                         <button style="padding:9px 18px;font-size:13px;background:#fee2e2;
                                        color:#dc2626;border:none;border-radius:8px;cursor:pointer;
                                        font-weight:600;font-family:inherit;"
-                                onclick="rejectTeacher('${t.id}', '${t.email}')">
+                                onclick="rejectTeacher('${escapeHtml(t.id)}', '${escapeHtml(t.email)}')">
                             <i class="fas fa-times"></i> Reject
                         </button>
                     ` : ''}
@@ -8961,7 +8978,7 @@ function renderTeacherList(containerId, teachers, type) {
                         <button style="padding:9px 14px;font-size:13px;background:#fee2e2;
                                        color:#dc2626;border:none;border-radius:8px;cursor:pointer;
                                        font-weight:600;font-family:inherit;"
-                                onclick="revokeTeacher('${t.id}', '${t.email}')">
+                                onclick="revokeTeacher('${escapeHtml(t.id)}', '${escapeHtml(t.email)}')">
                             <i class="fas fa-ban"></i> Revoke
                         </button>
                     ` : ''}
@@ -8972,7 +8989,7 @@ function renderTeacherList(containerId, teachers, type) {
                         </span>
                         <button class="btn-primary"
                                 style="padding:9px 14px;font-size:13px;"
-                                onclick="approveTeacher('${t.id}', '${t.email}')">
+                                onclick="approveTeacher('${escapeHtml(t.id)}', '${escapeHtml(t.email)}')">
                             <i class="fas fa-redo"></i> Re-approve
                         </button>
                     ` : ''}
@@ -9006,7 +9023,7 @@ async function approveTeacher(userId, email) {
         loadTeacherApprovals();
 
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -9026,7 +9043,7 @@ async function rejectTeacher(userId, email) {
         showToast(`${email} rejected. Role set back to student.`);
         loadTeacherApprovals();
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -9049,7 +9066,7 @@ async function revokeTeacher(userId, email) {
         showToast(`Access revoked for ${email}. Role set back to student.`);
         loadTeacherApprovals();
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -9643,27 +9660,27 @@ tr.innerHTML = `
             <span class="status-dot ${u.online ? 'online' : 'offline'}"></span>
           </div>
           <div>
-            <div class="user-name">${u.firstName} ${u.lastName}</div>
+            <div class="user-name">${s(u.firstName)} ${s(u.lastName)}</div>
             <div class="user-status-text ${u.online ? 'online' : ''}">${u.online ? '● Online' : '● Offline'}</div>
           </div>
         </div>
       </td>
       <td class="id-cell" title="${u.id}">${String(u.id).substring(0,8)}…</td>
-      <td style="color:#475569;font-size:13px;">${u.email}</td>
-      <td class="phone-cell">${u.phone}</td>
+      <td style="color:#475569;font-size:13px;">${s(u.email)}</td>
+      <td class="phone-cell">${s(u.phone)}</td>
       <td>
         <div class="country-cell">
           <span class="flag">${flag}</span>
           <span>${countryLabel}</span>
         </div>
       </td>
-      <td><span class="role-badge ${roleClass}">${u.role.charAt(0).toUpperCase()+u.role.slice(1)}</span></td>
-      <td><span class="status-badge ${statusClass}">${u.status.charAt(0).toUpperCase()+u.status.slice(1)}</span></td>
-      <td style="color:#94a3b8;font-size:12.5px;">${u.registeredDate}</td>
+      <td><span class="role-badge ${roleClass}">${s(u.role).charAt(0).toUpperCase()+s(u.role).slice(1)}</span></td>
+      <td><span class="status-badge ${statusClass}">${s(u.status).charAt(0).toUpperCase()+s(u.status).slice(1)}</span></td>
+      <td style="color:#94a3b8;font-size:12.5px;">${s(u.registeredDate)}</td>
       <td>
         <div class="action-group">
-          <button class="act-btn act-view"   title="View"   onclick="viewUser('${u.id}')"><i class="fas fa-eye"></i></button>
-          <button class="act-btn act-delete" title="Delete" onclick="deleteUser('${u.id}')"><i class="fas fa-trash-alt"></i></button>
+          <button class="act-btn act-view"   title="View"   onclick="viewUser('${escapeHtml(u.id)}')"><i class="fas fa-eye"></i></button>
+          <button class="act-btn act-delete" title="Delete" onclick="deleteUser('${escapeHtml(u.id)}')"><i class="fas fa-trash-alt"></i></button>
         </div>
       </td>
     `;
@@ -9729,26 +9746,26 @@ function viewUser(id) {
             ${((u.firstName||'?')[0]+(u.lastName||'')[0]).toUpperCase()}
           </div>
           <div>
-            <div style="font-weight:700;font-size:17px;color:#1f2937;">${u.firstName} ${u.lastName}</div>
-            <div style="font-size:13px;color:#6b7280;">${u.role}</div>
+            <div style="font-weight:700;font-size:17px;color:#1f2937;">${s(u.firstName)} ${s(u.lastName)}</div>
+            <div style="font-size:13px;color:#6b7280;">${s(u.role)}</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Email</div>
-            <div style="font-size:13px;color:#374151;word-break:break-all;">${u.email}</div>
+            <div style="font-size:13px;color:#374151;word-break:break-all;">${s(u.email)}</div>
           </div>
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Phone</div>
-            <div style="font-size:13px;color:#374151;">${u.phone || '—'}</div>
+            <div style="font-size:13px;color:#374151;">${s(u.phone) || '—'}</div>
           </div>
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Country</div>
-            <div style="font-size:13px;color:#374151;">${u.country || '—'}</div>
+            <div style="font-size:13px;color:#374151;">${s(u.country) || '—'}</div>
           </div>
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Status</div>
-            <div style="font-size:13px;color:#374151;">${u.status || '—'}</div>
+            <div style="font-size:13px;color:#374151;">${s(u.status) || '—'}</div>
           </div>
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">Registered</div>
@@ -9756,7 +9773,7 @@ function viewUser(id) {
           </div>
           <div style="background:#f9fafb;border-radius:10px;padding:14px;">
             <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:4px;">User ID</div>
-            <div style="font-size:11px;color:#374151;word-break:break-all;">${u.id}</div>
+            <div style="font-size:11px;color:#374151;word-break:break-all;">${s(u.id)}</div>
           </div>
         </div>
         <button onclick="this.closest('.modal').remove()"
@@ -9896,7 +9913,7 @@ async function resetStudentCourseProgress(studentId, courseId, studentName, cour
         showToast(`✅ Progress reset for ${studentName} in ${courseName}!`);
 
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 async function deleteUser(id) {
@@ -9935,7 +9952,7 @@ async function deleteUser(id) {
     showToast(`✅ User "${u.firstName} ${u.lastName}" deleted successfully`);
 
   } catch (err) {
-    showToast('Error: ' + err.message, 'error');
+    showToast('Something went wrong. Please try again.', 'error');
   }
 }
 
@@ -10211,7 +10228,7 @@ async function deleteQuizSubmission(submissionId) {
         loadQuizSubmissionsView();
 
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -10255,7 +10272,7 @@ async function deleteAssignmentSubmission(submissionId) {
         loadAssignmentSubmissionsView();
 
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -10470,7 +10487,7 @@ const subProfileMap = {};
                                 onmouseleave="this.style.background=''">
                                 <td style="padding:12px 16px;">
                                     <div style="font-weight:600;color:#1f2937;">${name}</div>
-                                    <div style="font-size:12px;color:#6b7280;">${email}</div>
+                                    <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
                                 </td>
                                 <td style="padding:12px 16px;color:#374151;">${quiz}</td>
                                 <td style="padding:12px 16px;">
@@ -10505,7 +10522,7 @@ const subProfileMap = {};
     } catch (err) {
         console.error('loadQuizSubmissionsView error:', err);
         container.innerHTML = `<div style="padding:20px;color:#ef4444;">
-            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Error: ${err.message}
+            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Something went wrong. Please try again.
         </div>`;
     }
 };
@@ -10629,7 +10646,7 @@ loadAssignmentSubmissionsView = async function () {
                                 onmouseleave="this.style.background=''">
                                 <td style="padding:12px 16px;">
                                     <div style="font-weight:600;color:#1f2937;">${name}</div>
-                                    <div style="font-size:12px;color:#6b7280;">${email}</div>
+                                    <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
                                 </td>
                                 <td style="padding:12px 16px;color:#374151;font-weight:600;">${title}</td>
                                 <td style="padding:12px 16px;">
@@ -10658,7 +10675,7 @@ loadAssignmentSubmissionsView = async function () {
     } catch (err) {
         console.error('loadAssignmentSubmissionsView error:', err);
         container.innerHTML = `<div style="padding:20px;color:#ef4444;">
-            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Error: ${err.message}
+            <i class="fas fa-exclamation-circle" style="margin-right:8px;"></i>Something went wrong. Please try again.
         </div>`;
     }
 };
@@ -10856,7 +10873,7 @@ const enrollments = (rawEnrollments || []).filter(e => {
 
     } catch (err) {
         console.error('loadEligibleStudents error:', err);
-        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Error: ${err.message}</div>`;
+        container.innerHTML = `<div style="padding:20px;color:#ef4444;">Something went wrong. Please try again.</div>`;
     }
 };
 
@@ -10884,7 +10901,7 @@ async function resetStudentProgress(studentId, courseId, studentName) {
         await loadEligibleStudents();
 
     } catch (err) {
-        showToast('Error: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -11108,7 +11125,7 @@ async function deleteProposal(id) {
         loadProjectSubmissionsView();
     } catch (err) {
         console.error(err);
-        showToast('Error deleting proposal: ' + err.message, 'error');
+        showToast('Failed to delete proposal. Please try again.', 'error');
     }
 }
 
@@ -11125,7 +11142,7 @@ async function deleteProgressReport(id) {
         loadProjectSubmissionsView();
     } catch (err) {
         console.error(err);
-        showToast('Error deleting progress report: ' + err.message, 'error');
+        showToast('Failed to delete progress report. Please try again.', 'error');
     }
 }
 
@@ -11142,7 +11159,7 @@ async function deleteFinalSubmission(id) {
         loadProjectSubmissionsView();
     } catch (err) {
         console.error(err);
-        showToast('Error deleting submission: ' + err.message, 'error');
+        showToast('Failed to delete submission. Please try again.', 'error');
     }
 }
 // ============================================
@@ -11209,7 +11226,7 @@ const { error } = await db.from('session_recordings').insert({
             loadRecordingsSection();
 
         } catch (err) {
-            showToast('Error: ' + err.message, 'error');
+            showToast('Something went wrong. Please try again.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Save Recording';
@@ -11243,7 +11260,7 @@ async function loadTalentProfiles() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Error: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Something went wrong. Please try again.</td></tr>`;
         return;
     }
 
@@ -11429,7 +11446,7 @@ function viewTalentProfile(id) {
 
 async function updateTalentStatus(id, status) {
     const { error } = await db.from('talent_profiles').update({ status }).eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast(status === 'approved' ? '✅ Profile approved! Now visible in Talent Discovery.' : '❌ Profile rejected.');
     loadTalentProfiles();
 }
@@ -11437,7 +11454,7 @@ async function updateTalentStatus(id, status) {
 async function deleteTalentProfile(id) {
     if (!confirm('Delete this talent profile? This cannot be undone.')) return;
     const { error } = await db.from('talent_profiles').delete().eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast('Profile deleted.');
     loadTalentProfiles();
 }
@@ -11475,7 +11492,7 @@ async function loadHireRequests() {
         .order('created_at', { ascending: false });
 
     if (error) {
-        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Error: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="padding:20px;color:#ef4444;">Something went wrong. Please try again.</td></tr>`;
         return;
     }
 
@@ -11586,7 +11603,7 @@ function renderHireTable(rows) {
 
 async function updateHireStatus(id, status) {
     const { error } = await db.from('hire_requests').update({ status }).eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     const labels = { pending:'Marked as Pending', contacted:'✅ Marked as Contacted', closed:'✅ Marked as Closed' };
     showToast(labels[status] || 'Status updated');
     const row = _allHire.find(r => r.id === id);
@@ -11676,7 +11693,7 @@ ${r.application_link ? `
 async function deleteHireRequest(id) {
     if (!confirm('Delete this hire request? This cannot be undone.')) return;
     const { error } = await db.from('hire_requests').delete().eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast('Hire request deleted.');
     loadHireRequests();
 }
@@ -11760,7 +11777,7 @@ async function loadRecentActivity() {
                 time: new Date(u.created_at),
                 icon: 'user',
                 faIcon: 'fa-user-plus',
-                text: `<strong>${u.first_name} ${u.last_name}</strong> registered as ${u.role}`
+                text: `<strong>${s(u.first_name)} ${s(u.last_name)}</strong> registered as ${s(u.role)}`
             });
         });
 
@@ -11770,7 +11787,7 @@ async function loadRecentActivity() {
                 time: new Date(c.created_at),
                 icon: 'course',
                 faIcon: 'fa-book-open',
-                text: `New chapter <strong>"${c.title}"</strong> added to ${c.courses?.title || 'a course'}`
+                text: `New chapter <strong>"${s(c.title)}"</strong> added to ${s(c.courses?.title) || 'a course'}`
             });
         });
 
@@ -11796,7 +11813,7 @@ async function loadRecentActivity() {
                 time: new Date(c.issued_at),
                 icon: 'cert',
                 faIcon: 'fa-certificate',
-                text: `Certificate issued to <strong>${name}</strong> — ${c.course_name || 'a course'}`
+                text: `Certificate issued to <strong>${s(name)}</strong> — ${s(c.course_name) || 'a course'}`
             });
         });
 
@@ -11809,7 +11826,7 @@ async function loadRecentActivity() {
                 time: new Date(a.submitted_at),
                 icon: 'submit',
                 faIcon: 'fa-file-upload',
-                text: `<strong>${name}</strong> submitted: <strong>${a.assignments?.title || 'an assignment'}</strong>`
+                text: `<strong>${s(name)}</strong> submitted: <strong>${s(a.assignments?.title) || 'an assignment'}</strong>`
             });
         });
 
@@ -11863,7 +11880,7 @@ async function loadRecentActivity() {
                 <div class="activity-icon submit"><i class="fas fa-exclamation-circle"></i></div>
                 <div class="activity-content">
                     <div class="activity-text">Failed to load activity</div>
-                    <div class="activity-time">${err.message}</div>
+                    <div class="activity-time">An error occurred</div>
                 </div>
             </div>`;
     }
@@ -12044,7 +12061,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadVideosSection();
 
         } catch (err) {
-            showToast('Error: ' + err.message, 'error');
+            showToast('Something went wrong. Please try again.', 'error');
             progressWrap.classList.remove('visible');
         } finally {
             btn.disabled = false;
@@ -12134,7 +12151,7 @@ async function loadVideosSection() {
     } catch (err) {
         grid.innerHTML = `
             <div class="card" style="padding:30px;color:#ef4444;">
-                Error: ${err.message}
+                Something went wrong. Please try again.
             </div>`;
     }
 }
@@ -12144,7 +12161,7 @@ async function toggleVideoPublish(id, current) {
         .from('session_recordings')
         .update({ published: !current })
         .eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast(current
         ? 'Video hidden from students.'
         : '✅ Video published! Students can watch it now.');
@@ -12155,7 +12172,7 @@ async function deleteVideo(id) {
     if (!confirm('Delete this video? This cannot be undone.')) return;
     const { error } = await db
         .from('session_recordings').delete().eq('id', id);
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
     showToast('Video deleted.');
     loadVideosSection();
 }
@@ -12766,8 +12783,8 @@ console.log('✅ Table UI fixed and ready');
                 <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border:1.5px solid #fde68a;border-radius:14px;padding:16px 18px;margin-bottom:18px;display:flex;align-items:center;gap:14px;">
                     <div style="width:44px;height:44px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;color:white;font-weight:800;font-size:16px;">${initials}</div>
                     <div style="flex:1;">
-                        <div style="font-weight:700;color:#1f2937;font-size:16px;">${studentName}</div>
-                        <div style="font-size:13px;color:#6b7280;">${email}</div>
+                        <div style="font-weight:700;color:#1f2937;font-size:16px;">${s(studentName)}</div>
+                        <div style="font-size:13px;color:#6b7280;">${s(email)}</div>
                         <div style="font-size:12px;color:#92400e;margin-top:3px;font-weight:600;"><i class="fas fa-book" style="margin-right:4px;"></i>${courseName}</div>
                     </div>
                 </div>
@@ -13060,7 +13077,7 @@ window.confirmIssueCert = async function(studentId, courseId, courseName, studen
         approved_at:   null,
     });
 
-    if (error) { showToast('Error: ' + error.message, 'error'); return; }
+    if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
     document.getElementById('certApprovalModal')?.remove();
     showToast(`✅ Certificate (${tpl} template) approved for ${studentName}!`);
@@ -13360,7 +13377,7 @@ window.previewCert = async function(certId, studentName, courseName, certNumber,
                 }, 1200);
 
             } catch(err) {
-                showToast('Error saving: ' + err.message, 'error');
+                showToast('Failed to save. Please try again.', 'error');
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> Save Template Choice';
             }
@@ -13407,7 +13424,7 @@ window.previewCert = async function(certId, studentName, courseName, certNumber,
                 admin_approved: false, approved_at: null,
             });
 
-            if (error) { showToast('Error: ' + error.message, 'error'); return; }
+            if (error) { showToast('Something went wrong. Please try again.', 'error'); return; }
 
             document.getElementById('certApprovalModal')?.remove();
             showToast(`✅ Certificate (${tpl}) approved for ${studentName}!`);
@@ -13585,7 +13602,7 @@ async function linkAssignmentToChapter(assignmentId, chapterId, courseId) {
         loadChapters(); // Refresh view
         
     } catch (err) {
-        showToast('Error linking assignment: ' + err.message, 'error');
+        showToast('Failed to link assignment. Please try again.', 'error');
     }
 }
 
@@ -13622,7 +13639,7 @@ async function checkEditorGrammar(editorIndex) {
         _showGrammarPanel(matches, editor, text);
 
     } catch (err) {
-        showToast('Grammar check failed: ' + err.message, 'error');
+        showToast('Grammar check failed. Please try again.', 'error');
     }
 }
 

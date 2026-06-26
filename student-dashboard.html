@@ -34,6 +34,22 @@
     }
 </script>
 <script src="supabase-config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<script>
+    function s(val) {
+        if (val === null || val === undefined) return '';
+        return DOMPurify.sanitize(String(val));
+    }
+    function escapeHtml(str) {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+</script>
 <script>
     const db = supabaseClient;
 </script>
@@ -2967,7 +2983,7 @@ async function loadCourseNotes(courseId) {
 
     } catch (err) {
         console.error('loadCourseNotes error:', err.message);
-        chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Error: ${err.message}</li>`;
+        chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Failed to load content. Please try again.</li>`;
         window._notesLoadingFor = null;
     }
 }
@@ -3391,7 +3407,7 @@ function displayNote(index) {
         </div>
     `;
 
-   reader.innerHTML = contentHtml;
+   reader.innerHTML = DOMPurify.sanitize(contentHtml);
 
 // ── Convert static coding blocks to interactive runners ──
 reader.querySelectorAll('.asai-inline-coding').forEach(block => {
@@ -4667,7 +4683,7 @@ async function downloadCertificate(certId) {
 
     } catch (err) {
         console.error('Download error:', err);
-        showToast('Error generating certificate: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -6911,7 +6927,7 @@ async function submitCodingAssignment() {
         closeCodingEnvironment();
         
     } catch (err) {
-        showToast('Error submitting: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
 
@@ -7453,7 +7469,7 @@ async function submitInlineCodingExercise(uid, topicId, lang) {
         }
         showToast('✅ Coding exercise submitted!');
     } catch (err) {
-        showToast('Error submitting: ' + err.message, 'error');
+        showToast('Something went wrong. Please try again.', 'error');
     }
 }
     </script>
