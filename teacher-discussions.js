@@ -65,7 +65,7 @@ async function loadDiscussionsFromDB() {
   try {
     const { data: threads, error: tErr } = await db
       .from('discussion_threads')
-      .select('id, title, content, is_solved, created_at, course_id, author_id')
+      .select('id, title, content, is_solved, is_pinned, created_at, course_id, author_id')
       .order('created_at', { ascending: false });
 
     if (tErr) throw tErr;
@@ -119,6 +119,8 @@ async function loadDiscussionsFromDB() {
         replyCount:  replyCountMap[t.id] || 0,
         time:        _discTimeAgo(t.created_at),
         createdAt:   t.created_at,
+         pinned:      t.is_pinned || false,   
+        category:    t.category || 'general', 
       };
     });
 
@@ -419,13 +421,24 @@ async function submitReply(threadId) {
   try {
     const { data: { user } } = await db.auth.getUser();
 
+   const { data: profile } = await db
+      .from('profiles')
+      .select('first_name, last_name')
+      .eq('id', user?.id)
+      .maybeSingle();
+
+    const authorName = profile
+      ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || 'Teacher'
+      : 'Teacher';
+
     const { error } = await db
       .from('discussion_replies')
       .insert({
-        thread_id:  threadId,
-        content:    body,
-        author_id:  user?.id,
-        created_at: new Date().toISOString(),
+        thread_id:   threadId,
+        content:     body,
+        author_id:   user?.id,
+        author_name: authorName,
+        created_at:  new Date().toISOString(),
       });
 
     if (error) throw error;

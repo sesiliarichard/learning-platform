@@ -17,6 +17,7 @@ const _discUI = {
     sending:         false,
     currentUser:     null,
     currentProfile:  null,
+    unread:          new Set(),   
 };
 
 // ── Avatar helpers ────────────────────────────────────────────
@@ -264,6 +265,7 @@ function _renderThreadList() {
           <div class="_disc-ti-foot">
             <span><i class="fas fa-reply"></i> ${count}</span>
             <span><i class="fas fa-clock"></i> ${time}</span>
+            ${_discUI.unread.has(String(t.id)) ? '<span class="_disc-unread-dot"></span>' : ''}
           </div>
         </div>`;
     }).join('');
@@ -282,6 +284,7 @@ async function _discOpen(threadId) {
 
     _discUI.typingUsers = {};
 
+    _discUI.unread.delete(String(threadId));
     document.querySelectorAll('._disc-ti').forEach(e=>e.classList.remove('_active'));
     const item = document.getElementById(`_dt_${threadId}`);
     if (item) item.classList.add('_active');
@@ -347,12 +350,15 @@ async function _discOpen(threadId) {
     const showAv = !last || String(last.author_id) !== String(reply.author_id);
     _appendBubble(reply, showAv);
     _scrollBottom();
-
-    const t = _discUI.threads.find(x=>x.id==payload.new.thread_id);
-    if (t) { 
-        t.replies_count=(t.replies_count||0)+1; 
-        t.last_reply_at=reply.created_at; 
-        _renderThreadList(); 
+const t = _discUI.threads.find(x=>x.id==payload.new.thread_id);
+    if (t) {
+        t.replies_count=(t.replies_count||0)+1;
+        t.last_reply_at=reply.created_at;
+        // Mark as unread only if it's not the currently open thread
+        if (!_discUI.active || String(_discUI.active.id) !== String(payload.new.thread_id)) {
+            _discUI.unread.add(String(payload.new.thread_id));
+        }
+        _renderThreadList();
     }
 })
         .on('broadcast',{event:'typing'}, ({payload}) => {
@@ -469,12 +475,26 @@ const isSelf = !isTeach && uid && String(reply.author_id) === String(uid);
             ${badges.join('')}
         </div>` : '';
 
+  const isMine = isSelf && !String(reply.id).startsWith('_opt_');
+    const actionsHtml = isMine ? `
+        <div class="_disc-msg-actions" id="_acts_${reply.id}">
+            <button onclick="_discEditReply('${reply.id}')" title="Edit">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button onclick="_discDeleteReply('${reply.id}','${_discUI.active?.id}')" title="Delete" style="color:#ef4444">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>` : '';
+
     wrap.innerHTML = `
       <div class="_disc-mav-col">${avatarHtml}</div>
       <div class="_disc-mcontent">
         ${headerHtml}
-        <div class="_disc-bubble ${bubbleClass}">${_safe(reply.content)}</div>
-        <div class="_disc-mtime">${_ago(reply.created_at)}</div>
+        <div class="_disc-bubble ${bubbleClass}" id="_bubble_${reply.id}">${_safe(reply.content)}</div>
+        <div style="display:flex;align-items:center;gap:8px">
+            <div class="_disc-mtime">${_ago(reply.created_at)}</div>
+            ${actionsHtml}
+        </div>
       </div>`;
 
     return wrap;
@@ -793,14 +813,131 @@ async function _populateCourseDropdown() {
     const sel = document.getElementById('_discCourse');
     if (!sel) return;
     const db = window.supabaseClient;
-    const { data } = await db.from('courses').select('id,title').order('title');
-    (data||[]).forEach(c=>{
-        const opt=document.createElement('option');
-        opt.value=c.id; opt.textContent=c.title;
+    const { data: { user } } = await db.auth.getUser();
+    if (!user) return;
+
+    const { data: enrollments } = await db
+        .from('enrollments')
+        .select('course_id, courses(id, title)')
+        .eq('student_id', user.id)
+        .order('course_id');
+
+    const courses = (enrollments || [])
+        .map(e => e.courses)
+        .filter(Boolean);
+
+    if (!courses.length) {
+        const opt = document.createElement('option');
+        opt.value = ''; opt.textContent = 'No enrolled courses';
+        opt.disabled = true;
+        sel.appendChild(opt);
+        return;
+    }
+
+    courses.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id; opt.textContent = c.title;
         sel.appendChild(opt);
     });
 }
+// ============================================================
+//  EDIT / DELETE REPLY  (student own messages)
+// ============================================================
+async function _discEditReply(replyId) {
+    const bubbleEl = document.getElementById(`_bubble_${replyId}`);
+    if (!bubbleEl) return;
+    const oldText = bubbleEl.textContent;
 
+    bubbleEl.contentEditable = 'true';
+    bubbleEl.style.outline   = '2px solid #7c3aed';
+    bubbleEl.style.borderRadius = '8px';
+    bubbleEl.focus();
+
+    // Move cursor to end
+    const range = document.createRange();
+    range.selectNodeContents(bubbleEl);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    const actsEl = document.getElementById(`_acts_${replyId}`);
+    if (actsEl) actsEl.innerHTML = `
+        <button onclick="_discSaveEdit('${replyId}')" style="color:#059669;font-size:10px;font-weight:700">
+            <i class="fas fa-check"></i> Save
+        </button>
+        <button onclick="_discCancelEdit('${replyId}','${_safe(oldText)}')" style="font-size:10px;font-weight:700">
+            <i class="fas fa-times"></i> Cancel
+        </button>`;
+}
+
+async function _discSaveEdit(replyId) {
+    const bubbleEl = document.getElementById(`_bubble_${replyId}`);
+    if (!bubbleEl) return;
+    const newText = bubbleEl.textContent.trim();
+    if (!newText) { _discToast('Reply cannot be empty', 'warning'); return; }
+
+    bubbleEl.contentEditable = 'false';
+    bubbleEl.style.outline   = '';
+
+    const db = window.supabaseClient;
+    const { error } = await db
+        .from('discussion_replies')
+        .update({ content: newText })
+        .eq('id', replyId);
+
+    if (error) {
+        _discToast('Failed to save: ' + error.message, 'error');
+        return;
+    }
+
+    const actsEl = document.getElementById(`_acts_${replyId}`);
+    if (actsEl) actsEl.innerHTML = `
+        <button onclick="_discEditReply('${replyId}')" title="Edit">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+        <button onclick="_discDeleteReply('${replyId}','${_discUI.active?.id}')" title="Delete" style="color:#ef4444">
+            <i class="fas fa-trash"></i>
+        </button>`;
+
+    _discToast('Reply updated ✅', 'success');
+}
+
+function _discCancelEdit(replyId, oldText) {
+    const bubbleEl = document.getElementById(`_bubble_${replyId}`);
+    if (!bubbleEl) return;
+    bubbleEl.textContent     = oldText;
+    bubbleEl.contentEditable = 'false';
+    bubbleEl.style.outline   = '';
+
+    const actsEl = document.getElementById(`_acts_${replyId}`);
+    if (actsEl) actsEl.innerHTML = `
+        <button onclick="_discEditReply('${replyId}')" title="Edit">
+            <i class="fas fa-pencil-alt"></i>
+        </button>
+        <button onclick="_discDeleteReply('${replyId}','${_discUI.active?.id}')" title="Delete" style="color:#ef4444">
+            <i class="fas fa-trash"></i>
+        </button>`;
+}
+
+async function _discDeleteReply(replyId, threadId) {
+    if (!confirm('Delete this reply?')) return;
+    const db = window.supabaseClient;
+    const { error } = await db
+        .from('discussion_replies')
+        .delete()
+        .eq('id', replyId);
+
+    if (error) { _discToast('Failed: ' + error.message, 'error'); return; }
+
+    document.getElementById(`_r_${replyId}`)?.remove();
+
+    // Decrement count locally
+    const t = _discUI.threads.find(x => String(x.id) === String(threadId));
+    if (t) { t.replies_count = Math.max(0, (t.replies_count||1) - 1); _renderThreadList(); }
+
+    _discToast('Reply deleted', 'success');
+}
 // ============================================================
 //  SCROLL
 // ============================================================
@@ -1032,6 +1169,11 @@ function _injectDiscStyles() {
   ._disc-ta{font-size:16px}
   ._disc-bubble{font-size:12px;padding:8px 11px}
 }
+/* Edit/delete action buttons */
+._disc-msg-actions{display:flex;gap:6px;opacity:0;transition:opacity .2s}
+._disc-mrow:hover ._disc-msg-actions{opacity:1}
+._disc-msg-actions button{background:none;border:none;cursor:pointer;font-size:10px;color:#9ca3af;padding:2px 4px;border-radius:4px;transition:color .15s}
+._disc-msg-actions button:hover{color:#7c3aed}
 
 @media(max-width:540px){
   ._disc-root{
@@ -1096,6 +1238,8 @@ function _injectDiscStyles() {
     font-size:13px;
     padding:8px 11px;
   }
+._disc-unread-dot{width:8px;height:8px;border-radius:50%;background:#7c3aed;margin-left:auto;flex-shrink:0;box-shadow:0 0 0 2px #ede9fe;animation:_discPulse 2s infinite}
+@keyframes _discPulse{0%,100%{opacity:1}50%{opacity:.4}}
   ._disc-mcontent{max-width:82%}
   ._disc-chat-hdr{padding:9px 12px}
   ._disc-hd-ttl{font-size:13px}

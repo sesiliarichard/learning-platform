@@ -148,18 +148,7 @@ async function replyToDiscussion(threadId, content) {
 
         if (error) throw error;
 
-        // Update replies_count and last_reply_at on the thread
-        await db
-            .from('discussion_threads')
-            .update({
-                last_reply_at: new Date().toISOString(),
-                replies_count: db.rpc
-                    ? undefined  // handled by trigger if exists
-                    : undefined
-            })
-            .eq('id', threadId);
-
-        // Manually increment replies_count
+       // Increment replies_count and update last_reply_at
         const { data: threadData } = await db
             .from('discussion_threads')
             .select('replies_count')
@@ -173,6 +162,40 @@ async function replyToDiscussion(threadId, content) {
                 last_reply_at: new Date().toISOString()
             })
             .eq('id', threadId);
+
+        // Notify thread author if the replier is a teacher
+        try {
+            const { data: replierProfile } = await db
+                .from('profiles')
+                .select('role, first_name, last_name')
+                .eq('id', user.id)
+                .maybeSingle();
+
+            const isTeacher = replierProfile?.role === 'teacher' || replierProfile?.role === 'instructor';
+
+            if (isTeacher) {
+                const { data: thread } = await db
+                    .from('discussion_threads')
+                    .select('author_id, title')
+                    .eq('id', threadId)
+                    .maybeSingle();
+
+                if (thread && String(thread.author_id) !== String(user.id)) {
+                    await db.from('notifications').insert({
+                        user_id:  thread.author_id,
+                        type:     'discussion_reply',
+                        title:    'Teacher replied to your discussion',
+                        message:  `${replierProfile.first_name || 'Your teacher'} replied to "${thread.title}"`,
+                        metadata: { thread_id: threadId },
+                        is_read:  false,
+                        created_at: new Date().toISOString()
+                    });
+                }
+            }
+        } catch (notifErr) {
+            // Non-fatal — don't block the reply on notification failure
+            console.warn('Notification insert failed:', notifErr.message);
+        }
 
         return { success: true, reply, message: 'Reply posted! ✅' };
 

@@ -24,6 +24,7 @@ const _tDiscUI = {
     search:      '',
     sending:     false,
     me:          null,
+    unread:      new Set(),
 };
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -177,7 +178,7 @@ function _tRenderList() {
     el.innerHTML = list.map(d => {
         const isActive = _tDiscUI.active?.id === d.id;
         return `
-        <div class="_td-ti ${isActive?'_active':''} ${d.solved?'_solved':''}"
+        <div class="_td-ti ${isActive?'_active':''} ${d.solved?'_solved':''} ${d.pinned?'_pinned':''}"
              onclick="_tOpenThread('${d.id}')" id="_tdt_${d.id}">
           <div class="_td-ti-top">
             <div class="_td-av" style="background:${_tAvColor(d.author||'S')}">${_tAvInit(d.author||'S')}</div>
@@ -185,14 +186,16 @@ function _tRenderList() {
               <div class="_td-ti-ttl">${_tSafe(d.title)}</div>
               <div class="_td-ti-tags">
                 <span class="_td-tag" style="background:${d.courseColor||'#7c3aed'}20;color:${d.courseColor||'#7c3aed'}">${_tSafe((d.courseTitle||'').split(' ').slice(0,2).join(' '))}</span>
+                ${d.category==='announcement' ? '<span class="_td-tag" style="background:#fef3c720;color:#d97706">📢 Announcement</span>' : ''}
                 ${d.solved ? '<span class="_td-stag">✓ Solved</span>' : '<span class="_td-otag">● Open</span>'}
               </div>
             </div>
           </div>
-          <div class="_td-ti-foot">
+         <div class="_td-ti-foot">
             <span><i class="fas fa-reply"></i> ${d.replyCount||0}</span>
             <span><i class="fas fa-user"></i> ${_tSafe(d.author||'Student')}</span>
             <span><i class="fas fa-clock"></i> ${d.time||'—'}</span>
+            ${_tDiscUI.unread.has(String(d.id)) ? '<span class="_td-unread-dot"></span>' : ''}
           </div>
         </div>`;
     }).join('');
@@ -215,6 +218,7 @@ async function _tOpenThread(threadId) {
     _tDiscUI.active      = disc;
     _tDiscUI.typingUsers = {};
 
+    _tDiscUI.unread.delete(String(threadId));
     document.querySelectorAll('._td-ti').forEach(e=>e.classList.remove('_active'));
     const item = document.getElementById(`_tdt_${threadId}`);
     if (item) item.classList.add('_active');
@@ -261,7 +265,13 @@ const channel = db.channel(`tdisc-${threadId}`)
         _tScrollBottom();
 
         const d = cache.find(x=>String(x.id)===String(threadId));
-        if (d) { d.replyCount=(d.replyCount||0)+1; _tRenderList(); }
+        if (d) {
+            d.replyCount=(d.replyCount||0)+1;
+            if (!_tDiscUI.active || String(_tDiscUI.active.id) !== String(threadId)) {
+                _tDiscUI.unread.add(String(threadId));
+            }
+            _tRenderList();
+        }
     })
         .on('broadcast',{event:'typing'}, ({payload}) => {
             if (payload.userId===_tDiscUI.me?.id) return;
@@ -285,7 +295,8 @@ async function _tLoadAndRenderReplies(threadId) {
         // ── FIXED: select profiles so role/name/avatar are available ──
         const { data: replies, error } = await db
             .from('discussion_replies')
-            .select('id, content, created_at, author_id, author_name')
+            .select(`id, content, created_at, author_id, author_name,
+                profiles:author_id (first_name, last_name, role, avatar_url)`)
             .eq('thread_id', threadId)
             .order('created_at', { ascending: true });
 
@@ -483,7 +494,35 @@ async function _tSend() {
         input?.focus();
     }
 }
+// ============================================================
+//  PIN / UNPIN  (teacher only)
+// ============================================================
+async function _tTogglePin(threadId, pin) {
+    const db = window.supabaseClient;
+    const { error } = await db
+        .from('discussion_threads')
+        .update({ is_pinned: pin })
+        .eq('id', threadId);
 
+    if (error) { _tToast('Failed: ' + error.message, 'error'); return; }
+
+    const cache = typeof discussionsCache !== 'undefined' ? discussionsCache : [];
+    const d = cache.find(x => String(x.id) === String(threadId));
+    if (d) d.pinned = pin;
+
+    if (_tDiscUI.active?.id == threadId) {
+        _tDiscUI.active.pinned = pin;
+        _tRenderChatHdr(_tDiscUI.active);
+    }
+
+    // Re-sort: pinned threads float to top
+    if (typeof discussionsCache !== 'undefined') {
+        discussionsCache.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
+    }
+
+    _tRenderList();
+    _tToast(pin ? '📌 Thread pinned' : 'Thread unpinned', 'success');
+}
 // ============================================================
 //  MARK SOLVED
 // ============================================================
@@ -518,7 +557,11 @@ function _tRenderChatHdr(disc) {
           ${disc.solved ? '<span class="_td-stag">✓ Solved</span>' : '<span class="_td-otag">● Open</span>'}
         </div>
       </div>
-      <div class="_td-hd-r">
+     <div class="_td-hd-r">
+        <button class="_td-hdbtn" style="background:${disc.pinned?'#fef3c7':'#f3f4f6'};color:${disc.pinned?'#d97706':'#6b7280'}"
+                onclick="_tTogglePin('${disc.id}',${!disc.pinned})" title="${disc.pinned?'Unpin':'Pin to top'}">
+          <i class="fas fa-thumbtack"></i> ${disc.pinned ? 'Unpin' : 'Pin'}
+        </button>
         <button class="_td-hdbtn ${disc.solved?'_btn-reopen':'_btn-solve'}"
                 onclick="_tToggleSolved('${disc.id}',${!disc.solved})">
           <i class="fas fa-${disc.solved?'redo':'check'}"></i>
@@ -552,15 +595,13 @@ async function _tDeleteThread(threadId) {
       }
       _tRenderList();
 
-        // Hide chat panel, show empty state
+      // Hide chat panel, show empty state
         document.getElementById('_tdChatInner').style.display = 'none';
         document.getElementById('_tdEmpty').style.display     = 'flex';
 
-        // Re-render list immediately
+        // Reload from DB and re-render
+        await loadDiscussionsFromDB();
         _tRenderList();
-
-        // Also reload from DB to stay in sync
-        
 
         _tToast('Discussion deleted', 'success');
 
@@ -689,6 +730,17 @@ function _tOpenNewModal() {
             </select>
           </div>
           <div style="margin-bottom:14px">
+            <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:5px">Category</label>
+            <select id="_tdNewCat"
+                    style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;
+                           font-size:13px;font-family:inherit;box-sizing:border-box;outline:none">
+              <option value="announcement">📢 Announcement</option>
+              <option value="general">💬 General</option>
+              <option value="question">❓ Question</option>
+              <option value="resource">📚 Resource Share</option>
+            </select>
+          </div>
+          <div style="margin-bottom:14px">
             <label style="display:block;font-size:12px;font-weight:700;color:#374151;margin-bottom:5px">Message *</label>
             <textarea id="_tdNewContent" rows="4" placeholder="Write your message…"
                       style="width:100%;padding:9px 12px;border:1.5px solid #e5e7eb;border-radius:9px;
@@ -739,7 +791,7 @@ async function _tSubmitNew() {
             course_id:   course || null,
             author_id:   user?.id,
             author_name: authorName,
-            category:    'general',
+            category:    document.getElementById('_tdNewCat')?.value || 'announcement',
             is_solved:   false,
         })
         .select()
@@ -859,6 +911,9 @@ function _injectTDiscStyles() {
 ._td-mtime{font-size:9px;color:var(--mut,#9ca3af);margin-top:3px}
 ._td-mrow._self ._td-mtime{text-align:right}
 
+._td-ti._pinned{border-color:#fde68a;background:#fffbeb}
+._td-pin-icon{position:absolute;top:6px;right:7px;color:#d97706;font-size:9px}
+._td-ti{position:relative}
 /* Badges */
 ._td-tbadge{font-size:9px;font-weight:700;background:#e0f2fe;color:#0284c7;padding:1px 6px;border-radius:20px;display:inline-flex;align-items:center;gap:3px}
 ._td-sbadge{font-size:9px;font-weight:700;background:var(--s2,#f3f4f6);color:var(--txt2,#6b7280);padding:1px 6px;border-radius:20px}
@@ -916,6 +971,8 @@ function _injectTDiscStyles() {
   ._td-hdbtn{padding:5px 10px;font-size:10px}
   ._td-teacher-tag{font-size:9px}
 }
+  ._td-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--acc,#1a9fd4);margin-left:auto;flex-shrink:0;box-shadow:0 0 0 2px #e0f2fe;animation:_tdPulse 2s infinite}
+@keyframes _tdPulse{0%,100%{opacity:1}50%{opacity:.4}}
 `;
     document.head.appendChild(style);
 }
