@@ -127,13 +127,23 @@ function _renderTShell() {
             <div class="_td-dots"><span></span><span></span><span></span></div>
             <span id="_tdTypingTxt">Someone is typing…</span>
           </div>
-          <div class="_td-input-area">
+        <div class="_td-input-area">
             <div class="_td-teacher-tag">
               <i class="fas fa-chalkboard-teacher"></i> Replying as Teacher
             </div>
+            <div id="_tdMentionBox" class="_td-mention-box" style="display:none"></div>
+            <div id="_tdQuoteBar" style="display:none"></div>
+            <div id="_tdImagePreview" class="_td-img-preview" style="display:none">
+              <img id="_tdPreviewImg" src="" alt="preview"/>
+              <button onclick="_tClearImage()" class="_td-img-clear"><i class="fas fa-times"></i></button>
+            </div>
             <div class="_td-input-wrap">
+              <button class="_td-attach-btn" onclick="document.getElementById('_tdImgInput').click()" title="Attach image">
+                <i class="fas fa-image"></i>
+              </button>
+              <input type="file" id="_tdImgInput" accept="image/*" style="display:none" onchange="_tHandleImagePick(this)"/>
               <textarea id="_tdInput" class="_td-ta" rows="1"
-                placeholder="Reply to students… (Enter to send)"
+                placeholder="Reply to students… use @ to mention"
                 oninput="_tHandleInput(this)"
                 onkeydown="_tKeydown(event)"></textarea>
               <button class="_td-sendbtn" id="_tdSendBtn" onclick="_tSend()">
@@ -403,13 +413,44 @@ function _tBuildBubble(reply, showHeader=true) {
             ${teachBadge}${selfBadge}${studentBadge}
         </div>` : '';
 
-    wrap.innerHTML = `
+  wrap.innerHTML = `
       <div class="_td-mav-col">${avatarHtml}</div>
       <div class="_td-mcontent">
         ${headerHtml}
-        <div class="_td-bubble ${bubbleClass}">${_tSafe(reply.content)}</div>
+        <div class="_td-bubble-wrap">
+          <div class="_td-bubble ${bubbleClass}" id="_tbubble_${reply.id}">${_tRenderContent(reply.content)}</div>
+          <div class="_td-swipe-hint"><i class="fas fa-reply"></i></div>
+        </div>
         <div class="_td-mtime">${_tAgo(reply.created_at || reply.updated_at)}</div>
       </div>`;
+
+    let startX = 0, currentX = 0, swiping = false;
+    const bw = wrap.querySelector('._td-bubble-wrap');
+    bw.addEventListener('touchstart', e => { startX = e.touches[0].clientX; swiping = true; currentX = 0; bw.style.transition = 'none'; }, { passive: true });
+    bw.addEventListener('touchmove', e => {
+        if (!swiping) return;
+        const dx = e.touches[0].clientX - startX;
+        if (dx > 0 && dx < 80) { currentX = dx; bw.style.transform = `translateX(${dx}px)`; bw.querySelector('._td-swipe-hint').style.opacity = Math.min(dx/50,1); }
+    }, { passive: true });
+    bw.addEventListener('touchend', () => {
+        swiping = false; bw.style.transition = 'transform .25s ease'; bw.style.transform = 'translateX(0)';
+        bw.querySelector('._td-swipe-hint').style.opacity = '0';
+        if (currentX > 45) _tSetQuoteReply(reply.id, name, reply.content);
+    });
+    let md = false, msx = 0;
+    bw.addEventListener('mousedown', e => { md = true; msx = e.clientX; bw.style.transition = 'none'; });
+    window.addEventListener('mousemove', e => {
+        if (!md) return;
+        const dx = e.clientX - msx;
+        if (dx > 0 && dx < 80) { bw.style.transform = `translateX(${dx}px)`; bw.querySelector('._td-swipe-hint').style.opacity = Math.min(dx/50,1); }
+    });
+    window.addEventListener('mouseup', e => {
+        if (!md) return; md = false;
+        const dx = e.clientX - msx;
+        bw.style.transition = 'transform .25s ease'; bw.style.transform = 'translateX(0)';
+        bw.querySelector('._td-swipe-hint').style.opacity = '0';
+        if (dx > 45) _tSetQuoteReply(reply.id, name, reply.content);
+    });
 
     return wrap;
 }
@@ -427,12 +468,128 @@ function _tAppendBubble(reply, showHeader) {
 // ============================================================
 //  SEND
 // ============================================================
+function _tHandleInput(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    _tBroadcastTyping(true);
+    clearTimeout(_tDiscUI.typingTimer);
+    _tDiscUI.typingTimer = setTimeout(() => _tBroadcastTyping(false), 2000);
+    _tCheckMention(ta);
+}
+
+function _tCheckMention(ta) {
+    const val = ta.value, cursor = ta.selectionStart;
+    const match = val.slice(0, cursor).match(/@(\w*)$/);
+    const box = document.getElementById('_tdMentionBox');
+    if (!match) { box.style.display = 'none'; return; }
+    const query = match[1].toLowerCase();
+    const seen = new Map();
+    const myId = _tDiscUI.me?.id;
+    document.querySelectorAll('[id^="_tr_"]').forEach(el => {
+        const aid = el.dataset?.authorId;
+        if (!aid || aid === String(myId) || seen.has(aid)) return;
+        const nameEl = el.querySelector('._td-mname-text');
+        if (nameEl) seen.set(aid, { name: nameEl.textContent.trim() });
+    });
+    const matches = [...seen.values()].filter(u => u.name.toLowerCase().includes(query));
+    if (!matches.length) { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    box.innerHTML = matches.map(u => `
+        <div class="_td-mention-item" onmousedown="_tPickMention('${u.name}')">
+            <span class="_td-mention-av" style="background:${_tAvColor(u.name)}">${_tAvInit(u.name)}</span>
+            <span>${_tSafe(u.name)}</span>
+        </div>`).join('');
+}
+
+function _tPickMention(name) {
+    const ta = document.getElementById('_tdInput');
+    const cursor = ta.selectionStart;
+    const before = ta.value.slice(0, cursor).replace(/@\w*$/, `@${name} `);
+    const after  = ta.value.slice(cursor);
+    ta.value = before + after;
+    ta.focus(); ta.setSelectionRange(before.length, before.length);
+    document.getElementById('_tdMentionBox').style.display = 'none';
+}
+
+// Image helpers
+let _tPendingImage = null;
+
+function _tHandleImagePick(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { _tToast('Image must be under 5MB','warning'); input.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        _tPendingImage = { file, dataUrl: e.target.result };
+        document.getElementById('_tdPreviewImg').src = e.target.result;
+        document.getElementById('_tdImagePreview').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+function _tClearImage() {
+    _tPendingImage = null;
+    document.getElementById('_tdImagePreview').style.display = 'none';
+    document.getElementById('_tdPreviewImg').src = '';
+    document.getElementById('_tdImgInput').value = '';
+}
+
+async function _tUploadImage(file, threadId) {
+    const db = window.supabaseClient;
+    const ext = file.name.split('.').pop();
+    const path = `discussions/${threadId}/${Date.now()}.${ext}`;
+    const { error } = await db.storage.from('discussion-images').upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw error;
+    return db.storage.from('discussion-images').getPublicUrl(path).data.publicUrl;
+}
+
+// Quote helpers
+let _tQuoteReply = null;
+
+function _tSetQuoteReply(replyId, authorName, content) {
+    _tQuoteReply = { id: replyId, name: authorName, content };
+    const bar = document.getElementById('_tdQuoteBar');
+    if (!bar) return;
+    const preview = content.replace(/\[img:[^\]]+\]/g,'📷 Image').slice(0,80) + (content.length>80?'…':'');
+    bar.style.display = 'flex';
+    bar.className = '_td-quote-bar';
+    bar.innerHTML = `
+        <div class="_td-quote-body">
+            <span class="_td-quote-name">${_tSafe(authorName)}</span>
+            <span class="_td-quote-text">${_tSafe(preview)}</span>
+        </div>
+        <button class="_td-quote-close" onclick="_tClearQuote()"><i class="fas fa-times"></i></button>`;
+    document.getElementById('_tdInput')?.focus();
+}
+
+function _tClearQuote() {
+    _tQuoteReply = null;
+    const bar = document.getElementById('_tdQuoteBar');
+    if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+}
+
+function _tRenderContent(text) {
+    if (!text) return '';
+    let quoteHtml = '';
+    text = text.replace(/^\[quote:([^\|]+)\|([^\|]+)\|([^\]]+)\]\n?/, (_, id, name, quoted) => {
+        quoteHtml = `<div class="_td-quoted-msg"><div class="_td-quoted-line"></div><div><div class="_td-quoted-name">${_tSafe(name)}</div><div class="_td-quoted-text">${_tSafe(quoted.slice(0,100))}${quoted.length>100?'…':''}</div></div></div>`;
+        return '';
+    });
+    const parts = text.split(/(\[img:[^\]]+\])/g);
+    const bodyHtml = parts.map(part => {
+        const m = part.match(/^\[img:(.+)\]$/);
+        if (m) return `<img src="${m[1]}" class="_td-inline-img" onclick="window.open('${m[1]}','_blank')" alt="image"/>`;
+        return _tSafe(part).replace(/@(\w[\w\s]*)/g,'<span class="_td-at">@$1</span>');
+    }).join('');
+    return quoteHtml + bodyHtml;
+}
+
 async function _tSend() {
     if (_tDiscUI.sending || !_tDiscUI.active) return;
 
     const input   = document.getElementById('_tdInput');
     const content = input?.value?.trim();
-    if (!content) return;
+    if (!content && !_tPendingImage) return;
 
     _tDiscUI.sending = true;
     input.value = '';
@@ -445,26 +602,48 @@ async function _tSend() {
     const me   = _tDiscUI.me;
     const name = me ? `${me.first_name||''} ${me.last_name||''}`.trim() || 'Teacher' : 'Teacher';
 
+    // Upload image if pending
+    let imageUrl = null;
+    if (_tPendingImage) {
+        try {
+            imageUrl = await _tUploadImage(_tPendingImage.file, _tDiscUI.active.id);
+        } catch(err) {
+            _tToast('Image upload failed: ' + err.message, 'error');
+            _tDiscUI.sending = false;
+            if (btn) btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            return;
+        }
+        _tClearImage();
+    }
+
+    const quoteBlock = _tQuoteReply
+        ? `[quote:${_tQuoteReply.id}|${_tQuoteReply.name}|${_tQuoteReply.content.slice(0,120)}]\n`
+        : '';
+    const finalContent = imageUrl
+        ? (content ? `${quoteBlock}${content}\n[img:${imageUrl}]` : `${quoteBlock}[img:${imageUrl}]`)
+        : `${quoteBlock}${content}`;
+    _tClearQuote();
+
     // Optimistic bubble
     const opt = {
         id:          '_opt_' + Date.now(),
         author_id:   me?.id,
         author_name: name,
-        content,
+        content:     finalContent,
         created_at:  new Date().toISOString(),
         profiles: { first_name: me?.first_name, last_name: me?.last_name, role: me?.role || 'teacher', avatar_url: me?.avatar_url }
     };
     _tAppendBubble(opt, true);
     _tScrollBottom();
 
-    const db         = window.supabaseClient;
+    const db       = window.supabaseClient;
     const { data:{ user } } = await db.auth.getUser();
-    const threadId   = _tDiscUI.active.id;
+    const threadId = _tDiscUI.active.id;
 
     try {
         const { error } = await db.from('discussion_replies').insert({
             thread_id:   threadId,
-            content,
+            content:     finalContent,
             author_id:   user?.id,
             author_name: name,
             created_at:  new Date().toISOString(),
@@ -973,6 +1152,49 @@ function _injectTDiscStyles() {
 }
   ._td-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--acc,#1a9fd4);margin-left:auto;flex-shrink:0;box-shadow:0 0 0 2px #e0f2fe;animation:_tdPulse 2s infinite}
 @keyframes _tdPulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Swipe to reply */
+._td-bubble-wrap{position:relative;display:flex;align-items:center;gap:6px;user-select:none;touch-action:pan-y}
+._td-swipe-hint{position:absolute;left:-28px;color:var(--acc,#1a9fd4);font-size:13px;opacity:0;transition:opacity .15s;pointer-events:none}
+._td-mrow._self ._td-swipe-hint{left:auto;right:-28px}
+
+/* Quote bar above input */
+._td-quote-bar{display:flex;align-items:center;gap:8px;background:var(--s2,#f3f4f6);border-radius:10px;padding:7px 10px;margin-bottom:6px;border-left:3px solid var(--acc,#1a9fd4)}
+._td-quote-body{flex:1;min-width:0}
+._td-quote-name{display:block;font-size:11px;font-weight:700;color:var(--acc,#1a9fd4);margin-bottom:2px}
+._td-quote-text{display:block;font-size:11px;color:var(--txt2,#6b7280);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+._td-quote-close{background:none;border:none;color:var(--mut,#9ca3af);cursor:pointer;font-size:12px;flex-shrink:0;padding:2px 4px}
+._td-quote-close:hover{color:#ef4444}
+
+/* Quoted message inside bubble */
+._td-quoted-msg{display:flex;gap:6px;background:rgba(0,0,0,.06);border-radius:8px;padding:6px 8px;margin-bottom:6px}
+._td-quoted-line{width:3px;background:var(--acc,#1a9fd4);border-radius:2px;flex-shrink:0}
+._td-quoted-name{font-size:10px;font-weight:700;color:var(--acc,#1a9fd4);margin-bottom:2px}
+._td-quoted-text{font-size:11px;color:var(--txt2,#6b7280);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+._self-b ._td-quoted-msg{background:rgba(255,255,255,.15)}
+._self-b ._td-quoted-name{color:#e9d5ff}
+._self-b ._td-quoted-text{color:rgba(255,255,255,.75)}
+._teach-b ._td-quoted-msg{background:rgba(255,255,255,.15)}
+._teach-b ._td-quoted-name{color:#bae6fd}
+._teach-b ._td-quoted-text{color:rgba(255,255,255,.75)}
+
+/* @mention dropdown */
+._td-mention-box{position:absolute;bottom:100%;left:0;right:0;background:var(--card,#fff);border:1.5px solid var(--bdr,#e5e7eb);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;max-height:180px;overflow-y:auto;margin-bottom:6px}
+._td-mention-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:12px;transition:background .15s}
+._td-mention-item:hover{background:var(--s2,#f3f4f6)}
+._td-mention-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0}
+._td-at{color:var(--acc,#1a9fd4);font-weight:700;background:#e0f2fe;border-radius:4px;padding:0 3px}
+
+/* Image attach */
+._td-attach-btn{background:none;border:none;cursor:pointer;color:var(--mut,#9ca3af);font-size:15px;padding:4px 6px;transition:color .2s;flex-shrink:0}
+._td-attach-btn:hover{color:var(--acc,#1a9fd4)}
+._td-img-preview{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2,#f3f4f6);border-radius:10px;margin-bottom:6px}
+._td-img-preview img{height:56px;border-radius:8px;object-fit:cover;max-width:120px}
+._td-img-clear{background:#fee2e2;border:none;color:#dc2626;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center}
+._td-inline-img{max-width:100%;max-height:220px;border-radius:10px;cursor:pointer;margin-top:6px;display:block;object-fit:contain}
+
+/* Input area needs relative for dropdowns */
+._td-input-area{position:relative;padding:8px 14px 12px;background:var(--card,#fff);border-top:1.5px solid var(--bdr,#e5e7eb)}
 `;
     document.head.appendChild(style);
 }

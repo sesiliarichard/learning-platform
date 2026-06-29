@@ -146,9 +146,19 @@ function _renderShell() {
             <span id="_discTypingTxt">Someone is typing…</span>
           </div>
           <div class="_disc-input-area">
+            <div id="_discMentionBox" class="_disc-mention-box" style="display:none"></div>
+            <div id="_discQuoteBar" style="display:none"></div>
+            <div id="_discImagePreview" class="_disc-img-preview" style="display:none">
+              <img id="_discPreviewImg" src="" alt="preview"/>
+              <button onclick="_discClearImage()" class="_disc-img-clear"><i class="fas fa-times"></i></button>
+            </div>
             <div class="_disc-input-wrap">
+              <button class="_disc-attach-btn" onclick="document.getElementById('_discImgInput').click()" title="Attach image">
+                <i class="fas fa-image"></i>
+              </button>
+              <input type="file" id="_discImgInput" accept="image/*" style="display:none" onchange="_discHandleImagePick(this)"/>
               <textarea id="_discInput" class="_disc-ta" rows="1"
-                placeholder="Type a reply… (Enter to send)"
+                placeholder="Type a reply… use @ to mention"
                 oninput="_discHandleInput(this)"
                 onkeydown="_discKeydown(event)"></textarea>
               <button class="_disc-sendbtn" id="_discSendBtn" onclick="_discSend()">
@@ -485,17 +495,53 @@ const isSelf = !isTeach && uid && String(reply.author_id) === String(uid);
                 <i class="fas fa-trash"></i>
             </button>
         </div>` : '';
-
-    wrap.innerHTML = `
+wrap.innerHTML = `
       <div class="_disc-mav-col">${avatarHtml}</div>
       <div class="_disc-mcontent">
         ${headerHtml}
-        <div class="_disc-bubble ${bubbleClass}" id="_bubble_${reply.id}">${_safe(reply.content)}</div>
+        <div class="_disc-bubble-wrap">
+          <div class="_disc-bubble ${bubbleClass}" id="_bubble_${reply.id}">${_discRenderContent(reply.content)}</div>
+          <div class="_disc-swipe-hint"><i class="fas fa-reply"></i></div>
+        </div>
         <div style="display:flex;align-items:center;gap:8px">
             <div class="_disc-mtime">${_ago(reply.created_at)}</div>
             ${actionsHtml}
         </div>
       </div>`;
+
+    // Touch swipe
+    let startX = 0, currentX = 0, swiping = false;
+    const bw = wrap.querySelector('._disc-bubble-wrap');
+    bw.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX; swiping = true; currentX = 0;
+        bw.style.transition = 'none';
+    }, { passive: true });
+    bw.addEventListener('touchmove', e => {
+        if (!swiping) return;
+        const dx = e.touches[0].clientX - startX;
+        if (dx > 0 && dx < 80) { currentX = dx; bw.style.transform = `translateX(${dx}px)`; bw.querySelector('._disc-swipe-hint').style.opacity = Math.min(dx/50,1); }
+    }, { passive: true });
+    bw.addEventListener('touchend', () => {
+        swiping = false;
+        bw.style.transition = 'transform .25s ease'; bw.style.transform = 'translateX(0)';
+        bw.querySelector('._disc-swipe-hint').style.opacity = '0';
+        if (currentX > 45) _discSetQuoteReply(reply.id, name, reply.content);
+    });
+    // Mouse drag (desktop)
+    let md = false, msx = 0;
+    bw.addEventListener('mousedown', e => { md = true; msx = e.clientX; bw.style.transition = 'none'; });
+    window.addEventListener('mousemove', e => {
+        if (!md) return;
+        const dx = e.clientX - msx;
+        if (dx > 0 && dx < 80) { bw.style.transform = `translateX(${dx}px)`; bw.querySelector('._disc-swipe-hint').style.opacity = Math.min(dx/50,1); }
+    });
+    window.addEventListener('mouseup', e => {
+        if (!md) return; md = false;
+        const dx = e.clientX - msx;
+        bw.style.transition = 'transform .25s ease'; bw.style.transform = 'translateX(0)';
+        bw.querySelector('._disc-swipe-hint').style.opacity = '0';
+        if (dx > 45) _discSetQuoteReply(reply.id, name, reply.content);
+    });
 
     return wrap;
 }
@@ -511,12 +557,86 @@ function _appendBubble(reply, showHeader) {
 // ============================================================
 //  SEND
 // ============================================================
+// ── Image upload helpers ──────────────────────────────────────
+let _discPendingImage = null;
+
+function _discHandleImagePick(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { _discToast('Image must be under 5MB','warning'); input.value=''; return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+        _discPendingImage = { file, dataUrl: e.target.result };
+        document.getElementById('_discPreviewImg').src = e.target.result;
+        document.getElementById('_discImagePreview').style.display = 'flex';
+    };
+    reader.readAsDataURL(file);
+}
+
+function _discClearImage() {
+    _discPendingImage = null;
+    document.getElementById('_discImagePreview').style.display = 'none';
+    document.getElementById('_discPreviewImg').src = '';
+    document.getElementById('_discImgInput').value = '';
+}
+
+async function _discUploadImage(file, threadId) {
+    const db = window.supabaseClient;
+    const ext = file.name.split('.').pop();
+    const path = `discussions/${threadId}/${Date.now()}.${ext}`;
+    const { error } = await db.storage.from('discussion-images').upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw error;
+    return db.storage.from('discussion-images').getPublicUrl(path).data.publicUrl;
+}
+
+// ── Quote reply helpers ───────────────────────────────────────
+let _discQuoteReply = null;
+
+function _discSetQuoteReply(replyId, authorName, content) {
+    _discQuoteReply = { id: replyId, name: authorName, content };
+    const bar = document.getElementById('_discQuoteBar');
+    if (!bar) return;
+    const preview = content.replace(/\[img:[^\]]+\]/g,'📷 Image').slice(0,80) + (content.length>80?'…':'');
+    bar.style.display = 'flex';
+    bar.className = '_disc-quote-bar';
+    bar.innerHTML = `
+        <div class="_disc-quote-body">
+            <span class="_disc-quote-name">${_safe(authorName)}</span>
+            <span class="_disc-quote-text">${_safe(preview)}</span>
+        </div>
+        <button class="_disc-quote-close" onclick="_discClearQuote()"><i class="fas fa-times"></i></button>`;
+    document.getElementById('_discInput')?.focus();
+}
+
+function _discClearQuote() {
+    _discQuoteReply = null;
+    const bar = document.getElementById('_discQuoteBar');
+    if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+}
+
+// ── Content renderer ─────────────────────────────────────────
+function _discRenderContent(text) {
+    if (!text) return '';
+    let quoteHtml = '';
+    text = text.replace(/^\[quote:([^\|]+)\|([^\|]+)\|([^\]]+)\]\n?/, (_, id, name, quoted) => {
+        quoteHtml = `<div class="_disc-quoted-msg"><div class="_disc-quoted-line"></div><div><div class="_disc-quoted-name">${_safe(name)}</div><div class="_disc-quoted-text">${_safe(quoted.slice(0,100))}${quoted.length>100?'…':''}</div></div></div>`;
+        return '';
+    });
+    const parts = text.split(/(\[img:[^\]]+\])/g);
+    const bodyHtml = parts.map(part => {
+        const m = part.match(/^\[img:(.+)\]$/);
+        if (m) return `<img src="${m[1]}" class="_disc-inline-img" onclick="window.open('${m[1]}','_blank')" alt="image"/>`;
+        return _safe(part).replace(/@(\w[\w\s]*)/g,'<span class="_disc-at">@$1</span>');
+    }).join('');
+    return quoteHtml + bodyHtml;
+}
+
 async function _discSend() {
     if (_discUI.sending || !_discUI.active) return;
 
     const input   = document.getElementById('_discInput');
     const content = input?.value?.trim();
-    if (!content) return;
+    if (!content && !_discPendingImage) return;
 
     _discUI.sending = true;
     input.value = '';
@@ -532,11 +652,33 @@ async function _discSend() {
         ? `${cp.first_name||''} ${cp.last_name||''}`.trim()
         : (_discUI.currentUser?.email?.split('@')[0]||'You');
 
+    // Upload image if pending
+    let imageUrl = null;
+    if (_discPendingImage) {
+        try {
+            imageUrl = await _discUploadImage(_discPendingImage.file, _discUI.active.id);
+        } catch(err) {
+            _discToast('Image upload failed: ' + err.message, 'error');
+            _discUI.sending = false;
+            if (btn) btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            return;
+        }
+        _discClearImage();
+    }
+
+    const quoteBlock = _discQuoteReply
+        ? `[quote:${_discQuoteReply.id}|${_discQuoteReply.name}|${_discQuoteReply.content.slice(0,120)}]\n`
+        : '';
+    const finalContent = imageUrl
+        ? (content ? `${quoteBlock}${content}\n[img:${imageUrl}]` : `${quoteBlock}[img:${imageUrl}]`)
+        : `${quoteBlock}${content}`;
+    _discClearQuote();
+
     const optimistic = {
         id:          '_opt_' + Date.now(),
         author_id:   uid,
         author_name: name,
-        content,
+        content:     finalContent,
         created_at:  new Date().toISOString(),
         profiles: {
             first_name: cp?.first_name,
@@ -545,14 +687,14 @@ async function _discSend() {
         }
     };
 
-    const existing  = _discUI.active.replies;
-    const last      = existing[existing.length-1];
+    const existing   = _discUI.active.replies;
+    const last       = existing[existing.length-1];
     const showHeader = !last || String(last.author_id) !== String(uid);
     existing.push(optimistic);
     _appendBubble(optimistic, showHeader);
     _scrollBottom();
 
-    const result = await replyToDiscussion(_discUI.active.id, content);
+    const result = await replyToDiscussion(_discUI.active.id, finalContent);
 
     if (!result.success) {
         document.getElementById(`_r_${optimistic.id}`)?.remove();
@@ -677,6 +819,53 @@ function _discHandleInput(ta) {
     _discBroadcastTyping(true);
     clearTimeout(_discUI.typingTimer);
     _discUI.typingTimer = setTimeout(() => _discBroadcastTyping(false), 2000);
+    _discCheckMention(ta);
+}
+
+function _discCheckMention(ta) {
+    const val    = ta.value;
+    const cursor = ta.selectionStart;
+    const chunk  = val.slice(0, cursor);
+    const match  = chunk.match(/@(\w*)$/);
+    const box    = document.getElementById('_discMentionBox');
+    if (!match) { box.style.display = 'none'; return; }
+
+    const query = match[1].toLowerCase();
+    const seen  = new Map();
+    const me    = _discUI.currentUser?.id;
+    (_discUI.active?.replies || []).forEach(r => {
+        if (String(r.author_id) === String(me)) return;
+        if (!seen.has(r.author_id)) {
+            const p    = r.profiles || {};
+            const name = p.first_name
+                ? `${p.first_name} ${p.last_name||''}`.trim()
+                : (r.author_name || 'User');
+            seen.set(r.author_id, { name, role: p.role || 'student' });
+        }
+    });
+
+    const matches = [...seen.values()].filter(u => u.name.toLowerCase().includes(query));
+    if (!matches.length) { box.style.display = 'none'; return; }
+
+    box.style.display = 'block';
+    box.innerHTML = matches.map(u => `
+        <div class="_disc-mention-item" onmousedown="_discPickMention('${u.name}')">
+            <span class="_disc-mention-av" style="background:${_avColor(u.name)}">${_avInit(u.name)}</span>
+            <span>${_safe(u.name)}</span>
+            ${u.role==='teacher'||u.role==='instructor'
+                ? '<span class="_disc-tbadge"><i class="fas fa-chalkboard-teacher"></i> Teacher</span>' : ''}
+        </div>`).join('');
+}
+
+function _discPickMention(name) {
+    const ta     = document.getElementById('_discInput');
+    const cursor = ta.selectionStart;
+    const before = ta.value.slice(0, cursor).replace(/@\w*$/, `@${name} `);
+    const after  = ta.value.slice(cursor);
+    ta.value = before + after;
+    ta.focus();
+    ta.setSelectionRange(before.length, before.length);
+    document.getElementById('_discMentionBox').style.display = 'none';
 }
 
 function _discBroadcastTyping(isTyping) {
@@ -1245,6 +1434,49 @@ function _injectDiscStyles() {
   ._disc-hd-ttl{font-size:13px}
   ._disc-hdbtn{padding:5px 10px;font-size:10px}
 }
+
+/* Swipe to reply */
+._disc-bubble-wrap{position:relative;display:flex;align-items:center;gap:6px;user-select:none;touch-action:pan-y}
+._disc-swipe-hint{position:absolute;left:-28px;color:#7c3aed;font-size:13px;opacity:0;transition:opacity .15s;pointer-events:none}
+._disc-mrow._self ._disc-swipe-hint{left:auto;right:-28px}
+
+/* Quote bar above input */
+._disc-quote-bar{display:flex;align-items:center;gap:8px;background:#f5f3ff;border-radius:10px;padding:7px 10px;margin-bottom:6px;border-left:3px solid #7c3aed}
+._disc-quote-body{flex:1;min-width:0}
+._disc-quote-name{display:block;font-size:11px;font-weight:700;color:#7c3aed;margin-bottom:2px}
+._disc-quote-text{display:block;font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+._disc-quote-close{background:none;border:none;color:#9ca3af;cursor:pointer;font-size:12px;flex-shrink:0;padding:2px 4px}
+._disc-quote-close:hover{color:#ef4444}
+
+/* Quoted message inside bubble */
+._disc-quoted-msg{display:flex;gap:6px;background:rgba(0,0,0,.06);border-radius:8px;padding:6px 8px;margin-bottom:6px}
+._disc-quoted-line{width:3px;background:#7c3aed;border-radius:2px;flex-shrink:0}
+._disc-quoted-name{font-size:10px;font-weight:700;color:#7c3aed;margin-bottom:2px}
+._disc-quoted-text{font-size:11px;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+._self-b ._disc-quoted-msg{background:rgba(255,255,255,.15)}
+._self-b ._disc-quoted-name{color:#e9d5ff}
+._self-b ._disc-quoted-text{color:rgba(255,255,255,.75)}
+._teach-b ._disc-quoted-msg{background:rgba(255,255,255,.15)}
+._teach-b ._disc-quoted-name{color:#bae6fd}
+._teach-b ._disc-quoted-text{color:rgba(255,255,255,.75)}
+
+/* @mention dropdown */
+._disc-mention-box{position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1.5px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;max-height:180px;overflow-y:auto;margin-bottom:6px}
+._disc-mention-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;font-size:12px;transition:background .15s}
+._disc-mention-item:hover{background:#f5f3ff}
+._disc-mention-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;flex-shrink:0}
+._disc-at{color:#7c3aed;font-weight:700;background:#f5f3ff;border-radius:4px;padding:0 3px}
+
+/* Image attach */
+._disc-attach-btn{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:15px;padding:4px 6px;transition:color .2s;flex-shrink:0}
+._disc-attach-btn:hover{color:#7c3aed}
+._disc-img-preview{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#f5f3ff;border-radius:10px;margin-bottom:6px}
+._disc-img-preview img{height:56px;border-radius:8px;object-fit:cover;max-width:120px}
+._disc-img-clear{background:#fee2e2;border:none;color:#dc2626;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center}
+._disc-inline-img{max-width:100%;max-height:220px;border-radius:10px;cursor:pointer;margin-top:6px;display:block;object-fit:contain}
+
+/* Input area needs relative for dropdowns */
+._disc-input-area{position:relative;padding:10px 14px;background:#fff;border-top:1.5px solid #ede9fe}
 `;
     document.head.appendChild(style);
 }
