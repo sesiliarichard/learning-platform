@@ -18,6 +18,7 @@
 const _tDiscUI = {
     active:      null,
     channel:     null,
+    globalChannel: null,
     typingTimer: null,
     typingUsers: {},
     filter:      'all',
@@ -45,6 +46,33 @@ function _tToast(msg,type) {
     else if (typeof showToast==='function') showToast(msg,type);
 }
 
+// ── Persistent "seen" tracking (survives reloads) ─────────────
+function _tDiscSeenKey() {
+    const uid = _tDiscUI.me?.id || 'anon';
+    return `tDiscSeen_${uid}`;
+}
+function _tDiscLoadSeenMap() {
+    try { return JSON.parse(localStorage.getItem(_tDiscSeenKey())) || {}; }
+    catch { return {}; }
+}
+function _tDiscSaveSeenMap(map) {
+    try { localStorage.setItem(_tDiscSeenKey(), JSON.stringify(map)); } catch {}
+}
+function _tDiscMarkSeen(threadId, atIso) {
+    const map = _tDiscLoadSeenMap();
+    map[String(threadId)] = atIso || new Date().toISOString();
+    _tDiscSaveSeenMap(map);
+}
+
+// ── Sidebar nav badge ──────────────────────────────────────────
+function _tDiscUpdateNavBadge() {
+    const count = _tDiscUI.unread.size;
+    const badge = document.getElementById('discDashBadge');
+    if (!badge) return;
+    badge.textContent = count > 0 ? (count > 9 ? '9+' : String(count)) : '0';
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+}
+
 // ============================================================
 //  ENTRY
 // ============================================================
@@ -64,6 +92,77 @@ async function initTeacherDiscUI() {
 
     await loadDiscussionsFromDB();
     _tRenderList();
+    _tSeedUnreadFromHistory();
+    _tStartGlobalSubscription();
+}
+
+// ============================================================
+//  SEED UNREAD STATE ON LOAD (so it survives a page refresh)
+// ============================================================
+function _tSeedUnreadFromHistory() {
+    const seenMap = _tDiscLoadSeenMap();
+    const uid = _tDiscUI.me?.id;
+    const cache = typeof discussionsCache !== 'undefined' ? discussionsCache : [];
+
+    cache.forEach(d => {
+        const lastActivity = d.lastReplyAt || d.createdAt;
+        const seenAt        = seenMap[String(d.id)];
+        const isMine         = String(d.authorId) === String(uid);
+
+        if (!lastActivity) return;
+
+        if (!seenAt || new Date(lastActivity) > new Date(seenAt)) {
+            if (isMine && !d.lastReplyAt) return;
+            _tDiscUI.unread.add(String(d.id));
+        }
+    });
+
+    _tRenderList();
+    _tDiscUpdateNavBadge();
+}
+
+// ============================================================
+//  GLOBAL REALTIME SUBSCRIPTION (runs independent of any open thread)
+// ============================================================
+function _tStartGlobalSubscription() {
+    if (_tDiscUI.globalChannel) return;
+    const db = window.supabaseClient;
+    if (!db) return;
+
+    const uid = _tDiscUI.me?.id;
+    const cache = typeof discussionsCache !== 'undefined' ? discussionsCache : [];
+
+    const channel = db.channel('tdisc-global-watch')
+        .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'discussion_replies'
+        }, (payload) => {
+            const threadId = String(payload.new.thread_id);
+            if (uid && String(payload.new.author_id) === String(uid)) return;
+
+            const d = cache.find(x => String(x.id) === threadId);
+            if (d) {
+                d.replyCount  = (d.replyCount || 0) + 1;
+                d.lastReplyAt = payload.new.created_at;
+            }
+
+            if (!_tDiscUI.active || String(_tDiscUI.active.id) !== threadId) {
+                _tDiscUI.unread.add(threadId);
+                _tRenderList();
+                _tDiscUpdateNavBadge();
+            }
+        })
+        .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'discussion_threads'
+        }, async (payload) => {
+            if (uid && String(payload.new.author_id) === String(uid)) return;
+            _tDiscUI.unread.add(String(payload.new.id));
+            await loadDiscussionsFromDB();
+            _tRenderList();
+            _tDiscUpdateNavBadge();
+        })
+        .subscribe();
+
+    _tDiscUI.globalChannel = channel;
 }
 
 // ============================================================
@@ -229,6 +328,8 @@ async function _tOpenThread(threadId) {
     _tDiscUI.typingUsers = {};
 
     _tDiscUI.unread.delete(String(threadId));
+    _tDiscMarkSeen(threadId);
+    _tDiscUpdateNavBadge();
     document.querySelectorAll('._td-ti').forEach(e=>e.classList.remove('_active'));
     const item = document.getElementById(`_tdt_${threadId}`);
     if (item) item.classList.add('_active');
@@ -274,13 +375,17 @@ const channel = db.channel(`tdisc-${threadId}`)
         _tAppendBubble(reply, showHdr);
         _tScrollBottom();
 
-        const d = cache.find(x=>String(x.id)===String(threadId));
+       const d = cache.find(x=>String(x.id)===String(threadId));
         if (d) {
             d.replyCount=(d.replyCount||0)+1;
+            d.lastReplyAt = reply.created_at;
             if (!_tDiscUI.active || String(_tDiscUI.active.id) !== String(threadId)) {
                 _tDiscUI.unread.add(String(threadId));
+            } else {
+                _tDiscMarkSeen(threadId, reply.created_at);
             }
             _tRenderList();
+            _tDiscUpdateNavBadge();
         }
     })
         .on('broadcast',{event:'typing'}, ({payload}) => {

@@ -10,6 +10,7 @@ const _discUI = {
     threads:         [],
     active:          null,
     channel:         null,
+    globalChannel:   null,
     typingTimer:     null,
     typingUsers:     {},
     filter:          'all',
@@ -43,6 +44,33 @@ function _discToast(msg, type='success') {
     else console.log('[disc]', msg);
 }
 
+// ── Persistent "seen" tracking (survives reloads) ─────────────
+function _discSeenKey() {
+    const uid = _discUI.currentUser?.id || 'anon';
+    return `discSeen_${uid}`;
+}
+function _discLoadSeenMap() {
+    try { return JSON.parse(localStorage.getItem(_discSeenKey())) || {}; }
+    catch { return {}; }
+}
+function _discSaveSeenMap(map) {
+    try { localStorage.setItem(_discSeenKey(), JSON.stringify(map)); } catch {}
+}
+function _discMarkSeen(threadId, atIso) {
+    const map = _discLoadSeenMap();
+    map[String(threadId)] = atIso || new Date().toISOString();
+    _discSaveSeenMap(map);
+}
+
+// ── Sidebar nav badge ──────────────────────────────────────────
+function _discUpdateNavBadge() {
+    const count = _discUI.unread.size;
+    const badge = document.getElementById('discussionsBadge');
+    if (!badge) return;
+    badge.textContent = count > 0 ? (count > 9 ? '9+' : String(count)) : '0';
+    badge.style.display = count > 0 ? 'inline-flex' : 'none';
+}
+
 // ============================================================
 //  ENTRY
 // ============================================================
@@ -59,9 +87,78 @@ async function loadDiscussions() {
         .eq('id', user.id).maybeSingle();
     _discUI.currentProfile = profile;
 
-    _injectDiscStyles();
+  _injectDiscStyles();
     _renderShell();
     await _fetchAndRender();
+    _discSeedUnreadFromHistory();
+    _discStartGlobalSubscription();
+}
+
+// ============================================================
+//  SEED UNREAD STATE ON LOAD (so it survives a page refresh)
+// ============================================================
+function _discSeedUnreadFromHistory() {
+    const seenMap = _discLoadSeenMap();
+    const uid = _discUI.currentUser?.id;
+
+    _discUI.threads.forEach(t => {
+        const lastActivity = t.last_reply_at || t.created_at;
+        const seenAt        = seenMap[String(t.id)];
+        const isMine         = String(t.author_id) === String(uid);
+
+        if (!lastActivity) return;
+
+        if (!seenAt || new Date(lastActivity) > new Date(seenAt)) {
+            if (isMine && !t.last_reply_at) return;
+            _discUI.unread.add(String(t.id));
+        }
+    });
+
+    _renderThreadList();
+    _discUpdateNavBadge();
+}
+
+// ============================================================
+//  GLOBAL REALTIME SUBSCRIPTION (runs independent of any open thread)
+//  Keeps the sidebar badge live even while browsing other sections.
+// ============================================================
+function _discStartGlobalSubscription() {
+    if (_discUI.globalChannel) return; // already running
+    const db = window.supabaseClient;
+    if (!db) return;
+
+    const uid = _discUI.currentUser?.id;
+
+    const channel = db.channel('disc-global-watch')
+        .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'discussion_replies'
+        }, (payload) => {
+            const threadId = String(payload.new.thread_id);
+            if (uid && String(payload.new.author_id) === String(uid)) return;
+
+            const t = _discUI.threads.find(x => String(x.id) === threadId);
+            if (t) {
+                t.replies_count = (t.replies_count || 0) + 1;
+                t.last_reply_at = payload.new.created_at;
+            }
+
+            if (!_discUI.active || String(_discUI.active.id) !== threadId) {
+                _discUI.unread.add(threadId);
+                _renderThreadList();
+                _discUpdateNavBadge();
+            }
+        })
+        .on('postgres_changes', {
+            event: 'INSERT', schema: 'public', table: 'discussion_threads'
+        }, (payload) => {
+            if (uid && String(payload.new.author_id) === String(uid)) return;
+            _discUI.unread.add(String(payload.new.id));
+            _fetchAndRender().then(() => _renderThreadList());
+            _discUpdateNavBadge();
+        })
+        .subscribe();
+
+    _discUI.globalChannel = channel;
 }
 
 // ============================================================
@@ -294,7 +391,9 @@ async function _discOpen(threadId) {
 
     _discUI.typingUsers = {};
 
-    _discUI.unread.delete(String(threadId));
+   _discUI.unread.delete(String(threadId));
+    _discMarkSeen(threadId);
+    _discUpdateNavBadge();
     document.querySelectorAll('._disc-ti').forEach(e=>e.classList.remove('_active'));
     const item = document.getElementById(`_dt_${threadId}`);
     if (item) item.classList.add('_active');
@@ -367,8 +466,12 @@ const t = _discUI.threads.find(x=>x.id==payload.new.thread_id);
         // Mark as unread only if it's not the currently open thread
         if (!_discUI.active || String(_discUI.active.id) !== String(payload.new.thread_id)) {
             _discUI.unread.add(String(payload.new.thread_id));
+        } else {
+            // This thread is open right now — the user is seeing it live
+            _discMarkSeen(payload.new.thread_id, reply.created_at);
         }
         _renderThreadList();
+        _discUpdateNavBadge();
     }
 })
         .on('broadcast',{event:'typing'}, ({payload}) => {

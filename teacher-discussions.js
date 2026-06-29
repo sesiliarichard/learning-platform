@@ -65,7 +65,7 @@ async function loadDiscussionsFromDB() {
   try {
     const { data: threads, error: tErr } = await db
       .from('discussion_threads')
-      .select('id, title, content, is_solved, is_pinned, created_at, course_id, author_id')
+      .select('id, title, content, is_solved, is_pinned, created_at, last_reply_at, course_id, author_id')
       .order('created_at', { ascending: false });
 
     if (tErr) throw tErr;
@@ -119,6 +119,7 @@ async function loadDiscussionsFromDB() {
         replyCount:  replyCountMap[t.id] || 0,
         time:        _discTimeAgo(t.created_at),
         createdAt:   t.created_at,
+        lastReplyAt: t.last_reply_at,
          pinned:      t.is_pinned || false,   
         category:    t.category || 'general', 
       };
