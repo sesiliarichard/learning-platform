@@ -7245,7 +7245,55 @@ async function downloadFile(url, filename) {
         return result;
     };
     
-    console.log('✅ Admin UI elements blocked on student page');
+    console.log('✅ Admin UI elements blocked on student page')
+
+// ── Session recovery: auto-refresh when tab becomes visible again ──
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
+        // Token expired and could not refresh — redirect to login
+        sessionStorage.clear();
+        localStorage.removeItem('userProfileData');
+        window.location.replace('login.html');
+    }
+});
+
+// When user comes back to the tab after being away
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                // Session gone — redirect to login
+                window.location.replace('login.html');
+                return;
+            }
+            // Session still valid — reload current section content silently
+            const courseId = window.currentCourseId || window.currentCourse;
+            if (courseId && typeof loadCourseNotes === 'function') {
+                // Clear cache so fresh data loads
+                if (typeof _notesCache !== 'undefined') delete _notesCache[courseId];
+                window._notesLoadingFor = null;
+                loadCourseNotes(courseId);
+            }
+        } catch (e) {
+            // Silent fail — don't disrupt the user
+        }
+    }
+});
+
+// When user's internet comes back after being offline
+window.addEventListener('online', async () => {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.replace('login.html'); return; }
+        const courseId = window.currentCourseId || window.currentCourse;
+        if (courseId && typeof loadCourseNotes === 'function') {
+            if (typeof _notesCache !== 'undefined') delete _notesCache[courseId];
+            window._notesLoadingFor = null;
+            loadCourseNotes(courseId);
+        }
+    } catch (e) { /* silent */ }
+});;
 })();
 // Ensure coding modal is hidden on page load
 (function() {

@@ -13876,10 +13876,45 @@ document.head.appendChild(grammarStyle);
         });
     }
     
-    // Run on all editors
+  // Run on all editors
     setTimeout(fixImages, 500);
     new MutationObserver(() => fixImages()).observe(document.body, { childList: true, subtree: true });
 })();
+
+// ── Session recovery: prevents content disappearing after idle ──
+supabaseClient.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_OUT' || (!session && event === 'TOKEN_REFRESHED')) {
+        sessionStorage.clear();
+        localStorage.removeItem('userProfileData');
+        window.location.replace('login.html');
+    }
+});
+
+// When admin comes back to the tab after being away
+document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState === 'visible') {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) {
+                window.location.replace('login.html');
+                return;
+            }
+            // Session still valid — silently refresh current admin section
+            const activeSection = document.querySelector('.section.active, .admin-section.active');
+            if (activeSection && activeSection.id === 'chaptersSection') {
+                if (typeof loadChapters === 'function') loadChapters();
+            }
+        } catch (e) { /* silent */ }
+    }
+});
+
+// When internet comes back after being offline
+window.addEventListener('online', async () => {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.replace('login.html'); }
+    } catch (e) { /* silent */ }
+});
 </script>
 <script src="week-structure-admin.js"></script>
 <script src="edit-chapter-modal-patch.js"></script>
