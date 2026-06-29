@@ -2854,9 +2854,10 @@ async function loadCourseNotes(courseId) {
     const chapterList = document.getElementById('notesChapterList');
     const reader = document.getElementById('notesReader');
 
-    // ── Serve from cache if fresh (5 minutes) ────────────────────
+   // ── Serve from cache only when switching tabs (not first course open) ──
     const cached = _notesCache[courseId];
-    if (cached && (Date.now() - cached.ts) < 5 * 60 * 1000) {
+    const isTabSwitch = cached && window._lastLoadedCourse === courseId;
+    if (isTabSwitch && (Date.now() - cached.ts) < 5 * 60 * 1000) {
         currentCourseNotes = cached.notes;
         window._loadedSubChapters = cached.subChapters;
         window._loadedTopics      = cached.allTopics;
@@ -2870,6 +2871,8 @@ async function loadCourseNotes(courseId) {
         window._notesLoadingFor = null;
         return;
     }
+    // Mark this course as the last opened so next tab switch uses cache
+    window._lastLoadedCourse = courseId;
 
    // ── Skeleton screen — shows instantly while data loads ───────
     chapterList.innerHTML = `
@@ -3037,10 +3040,7 @@ async function loadCourseNotes(courseId) {
 
         if (currentCourseNotes.length > 0) displayNote(0);
 
-        // ── Kick off progress sync in background (non-blocking) ──
-        if (user && courseId) {
-            syncCourseProgressToDB(user.id, courseId).catch(() => {});
-        }
+       // Progress sync runs only when student marks a topic read — not on load
 
         window._notesLoadingFor = null;
 
