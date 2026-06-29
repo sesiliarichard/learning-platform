@@ -2308,41 +2308,42 @@ function showSection(sectionId) {
                 }
             }
 
-  let enrollment = null;
-try {
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (user?.id) {
-        const { data: enrollData } = await supabaseClient
-            .from('enrollments')
-            .select('progress')
-            .eq('student_id', user.id)
-            .eq('course_id', courseId)
-            .maybeSingle();
-        enrollment = enrollData;
-    }
-} catch (enrollErr) {
-    console.warn('Could not fetch enrollment progress:', enrollErr.message);
-}
-
-const savedProgress = enrollment?.progress || 0;
-
-         // Update course info UI
+ // Update course info UI immediately with what we already have
        courseTitle.textContent       = course.title;
        courseInstructor.textContent  = course.instructor || 'ASAI Instructor';
        courseDescription.textContent = course.description;
-       courseProgress.textContent    = `${savedProgress}%`;
-       progressText.textContent      = `${savedProgress}% Complete`;
-       progressFill.style.width      = `${savedProgress}%`;
-            
+       courseProgress.textContent    = `0%`;
+       progressText.textContent      = `0% Complete`;
+       progressFill.style.width      = `0%`;
+
             // Force set the course ID globally BEFORE loading
 window.currentCourse   = courseId;
 window.currentCourseId = courseId;
 
-            // Show course details UI only (no loadCourseNotes triggered here)
+            // Show skeleton instantly — no waiting for enrollment query
             showCourseDetails();
 
-// loadCourseNotes fetches everything in parallel internally — called once here
+// Load notes immediately — skeleton appears right away
 await loadCourseNotes(courseId);
+
+        // Fetch enrollment progress in background AFTER notes are shown
+        try {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user?.id) {
+                const { data: enrollData } = await supabaseClient
+                    .from('enrollments')
+                    .select('progress')
+                    .eq('student_id', user.id)
+                    .eq('course_id', courseId)
+                    .maybeSingle();
+                const savedProgress = enrollData?.progress || 0;
+                courseProgress.textContent  = `${savedProgress}%`;
+                progressText.textContent    = `${savedProgress}% Complete`;
+                progressFill.style.width    = `${savedProgress}%`;
+            }
+        } catch (enrollErr) {
+            console.warn('Could not fetch enrollment progress:', enrollErr.message);
+        }
         }
 
         // Load course content
