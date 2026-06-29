@@ -1757,7 +1757,6 @@ window.coursesData = coursesData;
 
 console.log('🔍 Final coursesData check:', Object.values(coursesData).map(c => `${c.title} order_num:${c.order_num}`));
 
-renderCourseCards();
 calculateProfileStats();
     }
 }
@@ -2335,14 +2334,14 @@ const savedProgress = enrollment?.progress || 0;
        progressText.textContent      = `${savedProgress}% Complete`;
        progressFill.style.width      = `${savedProgress}%`;
             
-            // Show course details
-            showCourseDetails();
-
-          // Force set the course ID globally BEFORE loading
+            // Force set the course ID globally BEFORE loading
 window.currentCourse   = courseId;
 window.currentCourseId = courseId;
 
-// loadCourseNotes fetches everything in parallel internally
+            // Show course details UI only (no loadCourseNotes triggered here)
+            showCourseDetails();
+
+// loadCourseNotes fetches everything in parallel internally — called once here
 await loadCourseNotes(courseId);
         }
 
@@ -2606,13 +2605,18 @@ function createAssignmentCard(assignment) {
             `;
         }
 
-        // Show course details
+       // Show course details
         function showCourseDetails() {
             courseSelection.style.display = 'none';
             courseDetailsArea.style.display = 'block';
             
-            // Reset to notes tab
-            showCourseContent('notes');
+            // Reset to notes tab UI only — loadCourseNotes is called by selectCourse
+            courseNavBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.content === 'notes');
+            });
+            courseSubPages.forEach(page => {
+                page.classList.toggle('active', page.id === 'notesSubPage');
+            });
         }
 
         // Show course selection
@@ -2635,10 +2639,13 @@ function showCourseContent(content) {
         if (courseId) loadCourseRecordings(courseId);
     }
 
-  // Notes tab — reload notes only if not already loaded for this course
+  // Notes tab — only reload if switching back after notes are empty
     if (content === 'notes') {
         const courseId = window.currentCourseId || window.currentCourse;
-        if (courseId && !window._notesLoadingFor) {
+        const chapterList = document.getElementById('notesChapterList');
+        const isEmpty = !chapterList || chapterList.children.length === 0
+            || chapterList.innerHTML.includes('fa-spinner');
+        if (courseId && !window._notesLoadingFor && isEmpty) {
             loadCourseNotes(courseId);
         }
     }
