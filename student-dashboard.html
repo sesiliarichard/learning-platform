@@ -2871,8 +2871,26 @@ async function loadCourseNotes(courseId) {
         return;
     }
 
-    chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
-    reader.innerHTML = '';
+   // ── Skeleton screen — shows instantly while data loads ───────
+    chapterList.innerHTML = `
+        <li style="padding:10px 14px;">
+            <div style="height:14px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:80%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:60%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:70%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;animation:skeletonShimmer 1.2s infinite;width:50%;"></div>
+        </li>`;
+    reader.innerHTML = `
+        <div style="padding:32px 28px;">
+            <div style="height:10px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:16px;animation:skeletonShimmer 1.2s infinite;width:30%;"></div>
+            <div style="height:28px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:20px;animation:skeletonShimmer 1.2s infinite;width:70%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:90%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:85%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:24px;animation:skeletonShimmer 1.2s infinite;width:60%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;margin-bottom:10px;animation:skeletonShimmer 1.2s infinite;width:95%;"></div>
+            <div style="height:12px;background:linear-gradient(90deg,#e5e7eb 25%,#f3f4f6 50%,#e5e7eb 75%);background-size:200% 100%;border-radius:8px;animation:skeletonShimmer 1.2s infinite;width:75%;"></div>
+        </div>`;
     currentCourseNotes = [];
 
     try {
@@ -6682,6 +6700,10 @@ public class Main {
     button:hover {
         background: #6d28d9;
     }
+@keyframes skeletonShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
 </style>`
     };
     
