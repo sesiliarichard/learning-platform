@@ -2338,17 +2338,12 @@ const savedProgress = enrollment?.progress || 0;
             // Show course details
             showCourseDetails();
 
-           // Force set the course ID globally BEFORE loading
+          // Force set the course ID globally BEFORE loading
 window.currentCourse   = courseId;
 window.currentCourseId = courseId;
 
-console.log('🔄 Loading quizzes/assignments for course:', courseId);
-
-// Wait for external scripts to be ready before loading
-// Quizzes and assignments are shown inline in the notes reader
-
-// loadCourseNotes now fetches everything in parallel internally
-loadCourseNotes(courseId);
+// loadCourseNotes fetches everything in parallel internally
+await loadCourseNotes(courseId);
         }
 
         // Load course content
@@ -2640,11 +2635,11 @@ function showCourseContent(content) {
         if (courseId) loadCourseRecordings(courseId);
     }
 
-    // Notes tab — make sure week assessments are loaded
+  // Notes tab — reload notes only if not already loaded for this course
     if (content === 'notes') {
         const courseId = window.currentCourseId || window.currentCourse;
-        if (courseId && typeof loadWeekQuizzesAndAssignments === 'function') {
-            loadWeekQuizzesAndAssignments(courseId);
+        if (courseId && !window._notesLoadingFor) {
+            loadCourseNotes(courseId);
         }
     }
 }
@@ -2841,7 +2836,12 @@ let currentCourseNotes = [];
 const _notesCache = {};
 
 async function loadCourseNotes(courseId) {
-    if (window._notesLoadingFor === courseId) return;
+    // If already loading this exact course, don't stack a second call
+    if (window._notesLoadingFor === courseId) {
+        console.warn('loadCourseNotes: already loading', courseId, '— skipped');
+        return;
+    }
+    // If loading a DIFFERENT course, reset first so we don't block
     window._notesLoadingFor = courseId;
 
     const chapterList = document.getElementById('notesChapterList');
