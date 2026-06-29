@@ -2347,12 +2347,7 @@ console.log('🔄 Loading quizzes/assignments for course:', courseId);
 // Wait for external scripts to be ready before loading
 // Quizzes and assignments are shown inline in the notes reader
 
-// Load assessments for the course BEFORE loading notes
-console.log('🔄 Loading assessments for course:', courseId);
-await loadTopicAssessments(courseId);
-await loadWeekQuizzesAndAssignments(courseId);
-
-// Then load notes (which calls buildWeekExtrasHTMLSafe, which reads window._chapterAssessments)
+// loadCourseNotes now fetches everything in parallel internally
 loadCourseNotes(courseId);
         }
 
@@ -2842,6 +2837,9 @@ let currentCourseNotes = [];
 
 // Load course notes
 
+// ── In-memory cache: avoids re-fetching on tab switches ──────────
+const _notesCache = {};
+
 async function loadCourseNotes(courseId) {
     if (window._notesLoadingFor === courseId) return;
     window._notesLoadingFor = courseId;
@@ -2849,22 +2847,43 @@ async function loadCourseNotes(courseId) {
     const chapterList = document.getElementById('notesChapterList');
     const reader = document.getElementById('notesReader');
 
+    // ── Serve from cache if fresh (5 minutes) ────────────────────
+    const cached = _notesCache[courseId];
+    if (cached && (Date.now() - cached.ts) < 5 * 60 * 1000) {
+        currentCourseNotes = cached.notes;
+        window._loadedSubChapters = cached.subChapters;
+        window._loadedTopics      = cached.allTopics;
+        const hasSubChapters = cached.subChapters && cached.subChapters.length > 0;
+        if (hasSubChapters) {
+            renderSidebarWithSubChapters(cached.sortedChapters, cached.subChaptersByChapter, cached.topicsBySubChapter, currentCourseNotes);
+        } else {
+            renderSidebarFlat(cached.sortedChapters, currentCourseNotes);
+        }
+        if (currentCourseNotes.length > 0) displayNote(0);
+        window._notesLoadingFor = null;
+        return;
+    }
+
     chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;"><i class="fas fa-spinner fa-spin"></i> Loading...</li>';
     reader.innerHTML = '';
     currentCourseNotes = [];
 
     try {
-        // Load chapters (ONLY published)
-        const { data: chapters, error } = await db
-            .from('chapters')
-            .select(`id, title, description, order_num`)
-            .eq('course_id', courseId)
-            .eq('published', true)
-            .order('order_num', { ascending: true });
+        // ── BATCH 1: chapters + user in parallel ─────────────────
+        const [chaptersRes, userRes] = await Promise.all([
+            db.from('chapters')
+              .select('id, title, description, order_num')
+              .eq('course_id', courseId)
+              .eq('published', true)
+              .order('order_num', { ascending: true }),
+            supabaseClient.auth.getUser()
+        ]);
 
-        if (error) throw error;
+        if (chaptersRes.error) throw chaptersRes.error;
+        const chapters = chaptersRes.data || [];
+        const user = userRes.data?.user;
 
-        if (!chapters || chapters.length === 0) {
+        if (chapters.length === 0) {
             chapterList.innerHTML = '<li style="color:#9ca3af;padding:10px;">No published notes yet</li>';
             reader.innerHTML = `<div style="padding:60px;text-align:center;color:#9ca3af;">
                 <i class="fas fa-book-open" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
@@ -2875,56 +2894,92 @@ async function loadCourseNotes(courseId) {
             return;
         }
 
-        // ✅ CRITICAL: Load sub-chapters
-        const { data: subChapters } = await db
-            .from('sub_chapters')
-            .select('id, title, chapter_id, order_num')
-            .eq('course_id', courseId)
-            .order('order_num', { ascending: true });
-
-        // Load topics
         const chapterIds = chapters.map(c => c.id);
-        const { data: allTopics } = await db
-            .from('topics')
-            .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
-            .in('chapter_id', chapterIds)
-            .eq('course_id', courseId)
-            .order('order_num', { ascending: true });
 
-        // Group sub-chapters by chapter_id
+        // ── BATCH 2: sub-chapters + topics + progress + assessments all at once ──
+        const [subChaptersRes, topicsRes, progressRes, quizzesRes, assignsRes] = await Promise.all([
+            db.from('sub_chapters')
+              .select('id, title, chapter_id, order_num')
+              .eq('course_id', courseId)
+              .order('order_num', { ascending: true }),
+            db.from('topics')
+              .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
+              .in('chapter_id', chapterIds)
+              .eq('course_id', courseId)
+              .order('order_num', { ascending: true }),
+            user
+              ? supabaseClient.from('course_progress').select('topic_id')
+                  .eq('student_id', user.id).eq('course_id', courseId).eq('completed', true)
+              : Promise.resolve({ data: [] }),
+            supabaseClient.from('quizzes')
+              .select('id, title, time_limit, passing_score, chapter_id, topic_id')
+              .eq('course_id', courseId).eq('published', true),
+            supabaseClient.from('assignments')
+              .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
+              .eq('course_id', courseId)
+        ]);
+
+        const subChapters = subChaptersRes.data || [];
+        const allTopics   = topicsRes.data      || [];
+        const saved       = progressRes.data     || [];
+        const quizzes     = quizzesRes.data      || [];
+        const assignments = assignsRes.data      || [];
+
+        // ── Store pre-loaded data so week-structure-student.js can reuse it ──
+        window._loadedSubChapters = subChapters;
+        window._loadedTopics      = allTopics;
+
+        // ── Build _topicAssessments / _chapterAssessments from fetched data ──
+        const assessmentRows = [
+            ...quizzes.map(q => ({
+                id: 'quiz-' + q.id, chapter_id: q.chapter_id, topic_id: q.topic_id,
+                assessment_type: 'quiz',
+                quizzes: { id: q.id, title: q.title, time_limit: q.time_limit, passing_score: q.passing_score },
+                assignments: null
+            })),
+            ...assignments.map(a => ({
+                id: 'assign-' + a.id, chapter_id: a.chapter_id, topic_id: a.topic_id,
+                assessment_type: 'assignment',
+                quizzes: null,
+                assignments: { id: a.id, title: a.title, due_date: a.due_date, max_points: a.max_points, instructions: a.instructions }
+            }))
+        ];
+        window._topicAssessments   = assessmentRows;
+        window._chapterAssessments = assessmentRows;
+        window._weekQuizzes        = quizzes.filter(q => q.chapter_id);
+        window._weekAssignments    = assignments.filter(a => a.chapter_id);
+
+        // ── Group sub-chapters by chapter ───────────────────────
         const subChaptersByChapter = {};
-        (subChapters || []).forEach(sc => {
-            if (!subChaptersByChapter[sc.chapter_id]) {
-                subChaptersByChapter[sc.chapter_id] = [];
-            }
+        subChapters.forEach(sc => {
+            if (!subChaptersByChapter[sc.chapter_id]) subChaptersByChapter[sc.chapter_id] = [];
             subChaptersByChapter[sc.chapter_id].push(sc);
         });
 
-        // Group topics by sub_chapter_id
+        // ── Group topics by sub-chapter ─────────────────────────
         const topicsBySubChapter = {};
-        (allTopics || []).forEach(topic => {
+        allTopics.forEach(topic => {
             if (topic.sub_chapter_id) {
-                if (!topicsBySubChapter[topic.sub_chapter_id]) {
-                    topicsBySubChapter[topic.sub_chapter_id] = [];
-                }
+                if (!topicsBySubChapter[topic.sub_chapter_id]) topicsBySubChapter[topic.sub_chapter_id] = [];
                 topicsBySubChapter[topic.sub_chapter_id].push(topic);
             }
         });
 
-        // Build currentCourseNotes
+        // ── Build currentCourseNotes ─────────────────────────────
         const sortedChapters = [...chapters].sort((a, b) => (a.order_num ?? 999) - (b.order_num ?? 999));
-        
-        (allTopics || []).forEach(topic => {
+        const doneIds = new Set(saved.map(r => r.topic_id));
+
+        allTopics.forEach(topic => {
             const chapter = sortedChapters.find(c => c.id === topic.chapter_id);
             if (chapter) {
                 const cleanTitle = topic.title.replace(/^\d+\.\s*/, '').trim();
-              currentCourseNotes.push({
+                currentCourseNotes.push({
                     id: topic.id,
                     title: cleanTitle,
                     category: topic.category || 'General',
                     duration: (topic.duration || '15') + ' min read',
                     updated: 'Recently',
-                    completed: false,
+                    completed: doneIds.has(topic.id),
                     content: topic.content || '<p>No content yet.</p>',
                     chapterTitle: chapter.title,
                     chapterId: chapter.id,
@@ -2939,44 +2994,27 @@ async function loadCourseNotes(courseId) {
             }
         });
 
-        // Load saved progress
-        const { data: { user } } = await supabaseClient.auth.getUser();
-        if (user) {
-            const { data: saved } = await supabaseClient
-                .from('course_progress')
-                .select('topic_id')
-                .eq('student_id', user.id)
-                .eq('course_id', courseId)
-                .eq('completed', true);
+        // ── Cache everything ─────────────────────────────────────
+        _notesCache[courseId] = {
+            ts: Date.now(),
+            notes: currentCourseNotes,
+            subChapters, allTopics, sortedChapters,
+            subChaptersByChapter, topicsBySubChapter
+        };
 
-            if (saved) {
-                const doneIds = new Set(saved.map(r => r.topic_id));
-                currentCourseNotes.forEach(n => {
-                    n.completed = doneIds.has(n.id);
-                });
-            }
-        }
-
-    // ✅ CRITICAL: Load chapter assessments BEFORE rendering
-        // This loads the link between topics and quizzes/assignments
-        await loadTopicAssessments(courseId);
-
-        const hasSubChapters = subChapters && subChapters.length > 0;
-
+        // ── Render ───────────────────────────────────────────────
+        const hasSubChapters = subChapters.length > 0;
         if (hasSubChapters) {
             renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
         } else {
             renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
-        if (currentCourseNotes.length > 0) {
-            await loadWeekQuizzesAndAssignments(courseId);
-            displayNote(0);
-        }
-        
+        if (currentCourseNotes.length > 0) displayNote(0);
 
+        // ── Kick off progress sync in background (non-blocking) ──
         if (user && courseId) {
-            await syncCourseProgressToDB(user.id, courseId);
+            syncCourseProgressToDB(user.id, courseId).catch(() => {});
         }
 
         window._notesLoadingFor = null;
@@ -2987,7 +3025,6 @@ async function loadCourseNotes(courseId) {
         window._notesLoadingFor = null;
     }
 }
-     
 
 // Simple sidebar render without sub-chapters
 function renderSidebarWithoutSubChapters(chapters, allNotes) {
@@ -3876,6 +3913,9 @@ async function loadWeekQuizzesAndAssignments(courseId) {
 async function toggleNoteComplete(index) {
     const note = currentCourseNotes[index];
     const isNowComplete = !note.completed;
+    // Invalidate cache so next open reflects updated progress
+    const _cid = window.currentCourseId || window.currentCourse;
+    if (_cid && _notesCache[_cid]) delete _notesCache[_cid];
     note.completed = isNowComplete;
 
     const { data: { user } } = await supabaseClient.auth.getUser();

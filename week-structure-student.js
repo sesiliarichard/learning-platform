@@ -728,6 +728,8 @@
     // MARK TOPIC AS READ
     // ─────────────────────────────────────────────────────────
     window.wsMarkTopicRead = async function (topicId, courseId, chapterId, btn) {
+    // Invalidate notes cache so next open reflects new progress
+    if (typeof _notesCache !== 'undefined') delete _notesCache[courseId];
         const sb = getSB();
         const { data: { user } } = await sb.auth.getUser();
         if (!user) return;
