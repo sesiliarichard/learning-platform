@@ -3706,13 +3706,7 @@ function buildWeekExtrasHTMLSafe(chapterTitle, topicId) {
     const currentNote = currentCourseNotes.find(n => String(n.id) === String(topicId));
         const chapterId = currentNote?.chapterId || null;
         
-        // DEBUG - remove after fixing
-        console.log('🔍 buildWeekExtrasHTMLSafe:', { topicId, chapterId, totalAssessments: window._chapterAssessments?.length });
-        
-        if (!chapterId) {
-            console.warn('❌ No chapterId found for topicId:', topicId);
-            return '';
-        }
+      if (!chapterId) return '';
     
 
    const topicIdStr    = topicId    ? String(topicId)    : null;
@@ -3737,14 +3731,6 @@ const chapterAssessments = (window._chapterAssessments || []).filter(a => {
     return false;
 });
 
-console.log('🎯 chapterAssessments found:', chapterAssessments.length, 'for topicId:', topicId);
-console.log('🎯 topicId being checked:', topicId);
-console.log('🎯 All _chapterAssessments:', JSON.stringify(window._chapterAssessments?.map(a => ({
-    topic_id: a.topic_id,
-    chapter_id: a.chapter_id,
-    type: a.assessment_type,
-    title: a.quizzes?.title || a.assignments?.title
-}))));
 if (!chapterAssessments.length) return '';
 
 
@@ -3926,7 +3912,7 @@ async function loadWeekQuizzesAndAssignments(courseId) {
         window._weekAssignments = allAssignments;
         window._quizSubmissions = quizSubsRes.data || [];
 
-        console.log('✅ Week assessments loaded:', allQuizzes.length, 'quizzes,', allAssignments.length, 'assignments');
+       
 
     } catch (err) {
         console.error('loadWeekQuizzesAndAssignments error:', err.message);
@@ -4010,14 +3996,7 @@ async function loadTopicAssessments(courseId) {
         window._topicAssessments   = rows;
         window._chapterAssessments = rows;
 
-        console.log('✅ Topic assessments loaded:', rows.length);
-        console.log('Sample:', rows.map(r => ({
-            type: r.assessment_type,
-            chapter_id: r.chapter_id,
-            topic_id: r.topic_id,
-            title: r.quizzes?.title || r.assignments?.title
-        })));
-
+    
     } catch (err) {
         console.error('loadTopicAssessments error:', err.message);
         window._topicAssessments   = [];
@@ -7378,8 +7357,7 @@ async function runInlineCode(uid, lang) {
                 body: JSON.stringify({ code, language: pl.language, version: pl.version })
             });
             const apiData = await apiRes.json();
-            console.log('[runInlineCode] lang:', pl.language, 'version:', pl.version, 'raw response:', apiData);
-            console.log('[runInlineCode] FULL JSON:', JSON.stringify(apiData, null, 2));
+            
 
             if (!apiData.run && !apiData.compile) {
                 res = { output: '', error: 'Runner returned unexpected response: ' + JSON.stringify(apiData) };
