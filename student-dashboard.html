@@ -7325,11 +7325,12 @@ document.addEventListener('visibilitychange', async () => {
                 window.location.replace('login.html');
                 return;
             }
-            // Session still valid — reload current section content silently
+           // Session still valid — only refetch if our cache is actually stale,
+            // not on every quick tab switch (cache already has a 5-min freshness window)
             const courseId = window.currentCourseId || window.currentCourse;
-            if (courseId && typeof loadCourseNotes === 'function') {
-                // Clear cache so fresh data loads
-                if (typeof _notesCache !== 'undefined') delete _notesCache[courseId];
+            const cached = typeof _notesCache !== 'undefined' ? _notesCache[courseId] : null;
+            const cacheIsFresh = cached && (Date.now() - cached.ts) < 5 * 60 * 1000;
+            if (courseId && typeof loadCourseNotes === 'function' && !cacheIsFresh) {
                 window._notesLoadingFor = null;
                 loadCourseNotes(courseId);
             }
