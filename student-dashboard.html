@@ -2898,16 +2898,24 @@ async function loadCourseNotes(courseId) {
         </div>`;
     currentCourseNotes = [];
 
+    // Helper: race any promise against a timeout so a hung request fails fast
+    function _withTimeout(promise, ms = 12000) {
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Request timed out')), ms))
+        ]);
+    }
+
     try {
         // ── BATCH 1: chapters + user in parallel ─────────────────
-        const [chaptersRes, userRes] = await Promise.all([
+        const [chaptersRes, userRes] = await _withTimeout(Promise.all([
             db.from('chapters')
               .select('id, title, description, order_num')
               .eq('course_id', courseId)
               .eq('published', true)
               .order('order_num', { ascending: true }),
             supabaseClient.auth.getUser()
-        ]);
+        ]));
 
         if (chaptersRes.error) throw chaptersRes.error;
         const chapters = chaptersRes.data || [];
@@ -2927,7 +2935,7 @@ async function loadCourseNotes(courseId) {
         const chapterIds = chapters.map(c => c.id);
 
         // ── BATCH 2: sub-chapters + topics + progress + assessments all at once ──
-        const [subChaptersRes, topicsRes, progressRes, quizzesRes, assignsRes] = await Promise.all([
+       const [subChaptersRes, topicsRes, progressRes, quizzesRes, assignsRes] = await _withTimeout(Promise.all([
             db.from('sub_chapters')
               .select('id, title, chapter_id, order_num')
               .eq('course_id', courseId)
@@ -2947,7 +2955,7 @@ async function loadCourseNotes(courseId) {
             supabaseClient.from('assignments')
               .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
               .eq('course_id', courseId)
-        ]);
+        ]));
 
         const subChapters = subChaptersRes.data || [];
         const allTopics   = topicsRes.data      || [];
@@ -3046,9 +3054,10 @@ async function loadCourseNotes(courseId) {
 
         window._notesLoadingFor = null;
 
-    } catch (err) {
+  } catch (err) {
         console.error('loadCourseNotes error:', err.message);
-        chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Failed to load content. Please try again.</li>`;
+        chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Failed to load content. <a href="#" onclick="window._notesLoadingFor=null;loadCourseNotes('${courseId}');return false;" style="color:#7c3aed;font-weight:700;">Tap to retry</a></li>`;
+    } finally {
         window._notesLoadingFor = null;
     }
 }
