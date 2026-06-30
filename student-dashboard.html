@@ -2004,13 +2004,16 @@ const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
 if (sidebarToggle) {
     sidebarToggle.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        
+
         // Save state to localStorage
         const isCollapsed = sidebar.classList.contains('collapsed');
         localStorage.setItem('sidebarCollapsed', isCollapsed);
+
+        // Keep the <html> flash-prevention class in sync with the real state,
+        // otherwise it overrides the toggle visually until the next reload.
+        document.documentElement.classList.toggle('sidebar-pre-collapsed', isCollapsed);
     });
 }
-
 // Mobile sidebar toggle with overlay
 if (mobileSidebarToggle) {
     mobileSidebarToggle.addEventListener('click', () => {
