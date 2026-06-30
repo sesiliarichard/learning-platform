@@ -2952,6 +2952,7 @@ async function loadCourseNotes(courseId) {
               .eq('course_id', courseId)
               .order('order_num', { ascending: true })
               .then(r => { console.log('⏱ topics (metadata only):', (performance.now()-_t1).toFixed(0)+'ms'); return r; }),
+            (user
               ? supabaseClient.from('course_progress').select('topic_id')
                   .eq('student_id', user.id).eq('course_id', courseId).eq('completed', true)
               : Promise.resolve({ data: [] })
@@ -2965,7 +2966,7 @@ async function loadCourseNotes(courseId) {
               .eq('course_id', courseId)
               .then(r => { console.log('⏱ assignments:', (performance.now()-_t1).toFixed(0)+'ms'); return r; })
         ]));
-
+        
         const subChapters = subChaptersRes.data || [];
         const allTopics   = topicsRes.data      || [];
         const saved       = progressRes.data     || [];
