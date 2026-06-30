@@ -24,28 +24,34 @@
         const sb = getSB();
         if (!sb) { containerEl.innerHTML = '<p>Not connected.</p>'; return; }
 
-        try {
-            const { data: subChapters } = await sb
-                .from('sub_chapters')
-                .select('id, title, order_num')
-                .eq('chapter_id', chapter.id)
-                .order('order_num', { ascending: true });
+      try {
+            // Run all independent queries in parallel instead of one-after-another.
+            const [
+                { data: subChapters },
+                { data: topics },
+                { data: assessments },
+                { data: { user } }
+            ] = await Promise.all([
+                sb.from('sub_chapters')
+                  .select('id, title, order_num')
+                  .eq('chapter_id', chapter.id)
+                  .order('order_num', { ascending: true }),
 
-            const { data: topics } = await sb
-                .from('topics')
-                .select('id, title, content, duration, category, order_num, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
-                .eq('chapter_id', chapter.id)
-                .order('order_num', { ascending: true });
+                sb.from('topics')
+                  .select('id, title, content, duration, category, order_num, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
+                  .eq('chapter_id', chapter.id)
+                  .order('order_num', { ascending: true }),
 
-            const { data: assessments } = await sb
-                .from('chapter_assessments')
-                .select(`id, assessment_type, quizzes(id, title, time_limit), assignments(id, title, instructions, due_date, max_points)`)
-                .eq('chapter_id', chapter.id)
-                .limit(1);
+                sb.from('chapter_assessments')
+                  .select(`id, assessment_type, quizzes(id, title, time_limit), assignments(id, title, instructions, due_date, max_points)`)
+                  .eq('chapter_id', chapter.id)
+                  .limit(1),
+
+                sb.auth.getUser()
+            ]);
 
             const assessment = assessments?.[0] || null;
 
-            const { data: { user } } = await sb.auth.getUser();
             let readTopicIds = new Set();
             if (user) {
                 const { data: progress } = await sb
@@ -57,7 +63,6 @@
             }
 
             _renderWeekView(containerEl, chapter, subChapters || [], topics || [], assessment, readTopicIds, user?.id);
-
         } catch (err) {
             console.error('loadWeekStructure error:', err);
             containerEl.innerHTML = `<div style="color:#ef4444;padding:20px;">Error: ${err.message}</div>`;

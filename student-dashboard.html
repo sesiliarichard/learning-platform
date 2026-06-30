@@ -3459,12 +3459,12 @@ function displayNote(index) {
             ${note.completed ? 'Completed' : 'Mark as Complete'}
         </button>
 
-        <div class="notes-navigation">
-            <button class="notes-nav-btn" onclick="displayNote(${index - 1})" ${index === 0 ? 'disabled' : ''}>
+       <div class="notes-navigation">
+            <button class="notes-nav-btn" data-nav-index="${index - 1}" ${index === 0 ? 'disabled' : ''}>
                 <i class="fas fa-arrow-left"></i>
                 Previous
             </button>
-            <button class="notes-nav-btn" onclick="displayNote(${index + 1})" ${index === currentCourseNotes.length - 1 ? 'disabled' : ''}>
+            <button class="notes-nav-btn" data-nav-index="${index + 1}" ${index === currentCourseNotes.length - 1 ? 'disabled' : ''}>
                 Next
                 <i class="fas fa-arrow-right"></i>
             </button>
@@ -3472,6 +3472,13 @@ function displayNote(index) {
     `;
 
    reader.innerHTML = DOMPurify.sanitize(contentHtml);
+
+   // DOMPurify strips inline onclick handlers, so wire nav buttons up manually
+   reader.querySelectorAll('.notes-nav-btn[data-nav-index]').forEach(btn => {
+       btn.addEventListener('click', () => {
+           displayNote(parseInt(btn.dataset.navIndex, 10));
+       });
+   });
 
 // ── Convert static coding blocks to interactive runners ──
 reader.querySelectorAll('.asai-inline-coding').forEach(block => {
