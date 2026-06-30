@@ -2908,14 +2908,18 @@ async function loadCourseNotes(courseId) {
 
     try {
         // ── BATCH 1: chapters + user in parallel ─────────────────
+        const _t0 = performance.now();
         const [chaptersRes, userRes] = await _withTimeout(Promise.all([
             db.from('chapters')
               .select('id, title, description, order_num')
               .eq('course_id', courseId)
               .eq('published', true)
-              .order('order_num', { ascending: true }),
+              .order('order_num', { ascending: true })
+              .then(r => { console.log('⏱ chapters query:', (performance.now()-_t0).toFixed(0)+'ms'); return r; }),
             supabaseClient.auth.getUser()
+              .then(r => { console.log('⏱ auth.getUser:', (performance.now()-_t0).toFixed(0)+'ms'); return r; })
         ]));
+
 
         if (chaptersRes.error) throw chaptersRes.error;
         const chapters = chaptersRes.data || [];
@@ -2935,28 +2939,34 @@ async function loadCourseNotes(courseId) {
         const chapterIds = chapters.map(c => c.id);
 
         // ── BATCH 2: sub-chapters + topics + progress + assessments all at once ──
+      const _t1 = performance.now();
        const [subChaptersRes, topicsRes, progressRes, quizzesRes, assignsRes] = await _withTimeout(Promise.all([
             db.from('sub_chapters')
               .select('id, title, chapter_id, order_num')
               .eq('course_id', courseId)
-              .order('order_num', { ascending: true }),
+              .order('order_num', { ascending: true })
+              .then(r => { console.log('⏱ sub_chapters:', (performance.now()-_t1).toFixed(0)+'ms'); return r; }),
             db.from('topics')
               .select('id, title, content, duration, category, order_num, chapter_id, sub_chapter_id, has_coding_exercise, coding_prompt, coding_language, coding_starter_code')
               .in('chapter_id', chapterIds)
               .eq('course_id', courseId)
-              .order('order_num', { ascending: true }),
-            user
+              .order('order_num', { ascending: true })
+              .then(r => { console.log('⏱ topics:', (performance.now()-_t1).toFixed(0)+'ms'); return r; }),
+            (user
               ? supabaseClient.from('course_progress').select('topic_id')
                   .eq('student_id', user.id).eq('course_id', courseId).eq('completed', true)
-              : Promise.resolve({ data: [] }),
+              : Promise.resolve({ data: [] })
+            ).then(r => { console.log('⏱ course_progress:', (performance.now()-_t1).toFixed(0)+'ms'); return r; }),
             supabaseClient.from('quizzes')
               .select('id, title, time_limit, passing_score, chapter_id, topic_id')
-              .eq('course_id', courseId).eq('published', true),
+              .eq('course_id', courseId).eq('published', true)
+              .then(r => { console.log('⏱ quizzes:', (performance.now()-_t1).toFixed(0)+'ms'); return r; }),
             supabaseClient.from('assignments')
               .select('id, title, due_date, max_points, instructions, chapter_id, topic_id')
               .eq('course_id', courseId)
+              .then(r => { console.log('⏱ assignments:', (performance.now()-_t1).toFixed(0)+'ms'); return r; })
         ]));
-
+        
         const subChapters = subChaptersRes.data || [];
         const allTopics   = topicsRes.data      || [];
         const saved       = progressRes.data     || [];
