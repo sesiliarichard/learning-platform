@@ -3054,9 +3054,15 @@ async function loadCourseNotes(courseId) {
 
         window._notesLoadingFor = null;
 
-  } catch (err) {
+ } catch (err) {
         console.error('loadCourseNotes error:', err.message);
         chapterList.innerHTML = `<li style="color:#ef4444;padding:10px;">Failed to load content. <a href="#" onclick="window._notesLoadingFor=null;loadCourseNotes('${courseId}');return false;" style="color:#7c3aed;font-weight:700;">Tap to retry</a></li>`;
+        // Clear the reader's skeleton too — otherwise its looping shimmer animation
+        // keeps running invisibly in the background after a failed load.
+        reader.innerHTML = `<div style="padding:60px;text-align:center;color:#9ca3af;">
+            <i class="fas fa-exclamation-circle" style="font-size:40px;margin-bottom:14px;display:block;opacity:0.4;"></i>
+            <p>Couldn't load this content. Please try again.</p>
+        </div>`;
     } finally {
         window._notesLoadingFor = null;
     }
