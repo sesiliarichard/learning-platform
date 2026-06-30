@@ -3028,7 +3028,7 @@ async function loadCourseNotes(courseId) {
                     duration: (topic.duration || '15') + ' min read',
                     updated: 'Recently',
                     completed: doneIds.has(topic.id),
-                    content: topic.content || '<p>No content yet.</p>',
+                    content: topic.content || null,
                     chapterTitle: chapter.title,
                     chapterId: chapter.id,
                     chapterOrderNum: chapter.order_num ?? 999,
