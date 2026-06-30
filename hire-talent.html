@@ -728,7 +728,7 @@
 <div class="two-col">
   <div class="form-group">
     <label>Email Address <span class="required">*</span></label>
-    <input type="email" placeholder="you@company.com" id="email"/>
+    <input type="email" placeholder="you@company.com" id="email" autocapitalize="off" autocorrect="off" spellcheck="false"/>
   </div>
   <div class="form-group">
     <label>Country</label>
@@ -986,7 +986,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function submitHire() {
   const firstname  = '';
   const lastname   = '';
-  const email      = document.getElementById('email').value.trim();
+  const email      = document.getElementById('email').value.trim().toLowerCase();
   const contact    = getFullPhone();
   const company    = document.getElementById('company').value.trim();
   const appLink    = document.getElementById('applicationLink').value.trim();
@@ -1558,7 +1558,7 @@ async function validateAndLoadSavedRequest() {
         👋 Submitted a request before? Enter your email to pick up where you left off.
       </p>
       <div style="display:flex;gap:8px;">
-        <input type="email" id="returningEmail" placeholder="you@company.com"
+        <input type="email" id="returningEmail" placeholder="you@company.com" autocapitalize="off" autocorrect="off" spellcheck="false"
           style="flex:1;padding:8px 12px;border:1.5px solid #e0e4f0;border-radius:8px;
           font-family:inherit;font-size:13px;outline:none;">
         <button onclick="lookupHirerByEmail()"
@@ -1587,7 +1587,7 @@ async function lookupHirerByEmail() {
   const { data, error } = await window.supabaseClient
     .from('hire_requests')
     .select('*')
-    .eq('email', email)
+    .ilike('email', email)
     .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle();

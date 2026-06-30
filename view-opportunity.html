@@ -697,6 +697,13 @@
     showSkeletons();
     document.getElementById('resultsCount').textContent = 'Loading…';
 
+    if (!window.supabaseClient) {
+      document.getElementById('tableBody').innerHTML =
+        `<div class="empty-state"><div class="emoji">⚠️</div><h3>Connection not ready</h3><p>Supabase failed to load. Check your connection and refresh.</p></div>`;
+      document.getElementById('resultsCount').textContent = '0 jobs';
+      return;
+    }
+
     const search   = document.getElementById('searchInput').value.trim();
     const type     = document.getElementById('filterType').value;
     const location = document.getElementById('filterLocation').value;
@@ -716,7 +723,15 @@
     if (location) query = query.eq('location_type', location);
     if (industry) query = query.ilike('industry', `%${industry}%`);
 
-    const { data, count, error } = await query;
+    let data, count, error;
+    try {
+      ({ data, count, error } = await query);
+    } catch (err) {
+      const body = document.getElementById('tableBody');
+      body.innerHTML = `<div class="empty-state"><div class="emoji">⚠️</div><h3>Something went wrong</h3><p>${escHtml(err.message || String(err))}</p></div>`;
+      document.getElementById('resultsCount').textContent = '0 jobs';
+      return;
+    }
     totalCount = count || 0;
 
     const body = document.getElementById('tableBody');
