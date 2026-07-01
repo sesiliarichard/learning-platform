@@ -726,6 +726,11 @@
     let data, count, error;
     try {
       ({ data, count, error } = await query);
+      const session = (await window.supabaseClient.auth.getSession()).data.session;
+      alert('DEBUG:\ndata length: ' + (data ? data.length : 'null') +
+            '\ncount: ' + count +
+            '\nerror: ' + (error ? JSON.stringify(error) : 'none') +
+            '\nsession: ' + (session ? 'LOGGED IN as ' + session.user.email : 'anon (no session)'));
     } catch (err) {
       const body = document.getElementById('tableBody');
       body.innerHTML = `<div class="empty-state"><div class="emoji">⚠️</div><h3>Something went wrong</h3><p>${escHtml(err.message || String(err))}</p></div>`;
