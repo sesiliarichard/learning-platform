@@ -514,6 +514,7 @@
                     </button>
                 </form>
 
+             <!-- Google/LinkedIn login temporarily disabled until OAuth consent screen is published.
                 <div class="social-login">
                     <div class="divider"><span>Or continue with</span></div>
                     <div class="social-buttons">
@@ -525,6 +526,7 @@
                         </button>
                     </div>
                 </div>
+                -->
 
                 <div class="auth-links">
                     Don't have an account? <a href="#" id="switchToSignup">Sign up here</a>
@@ -628,6 +630,7 @@
                     </button>
                 </form>
 
+           <!-- Google/LinkedIn signup temporarily disabled until OAuth consent screen is published.
                 <div class="social-login">
                     <div class="divider"><span>Or sign up with</span></div>
                     <div class="social-buttons">
@@ -639,6 +642,7 @@
                         </button>
                     </div>
                 </div>
+                -->
 
                 <div class="auth-links">
                     Already have an account? <a href="#" id="switchToLogin">Log in here</a>
@@ -850,7 +854,7 @@ document.getElementById('forgotPassword').addEventListener('click', async functi
         showAlert(result.error);
     }
 });
-
+/*
 // ─── GOOGLE OAUTH ─────────────────────────────────────────────
 async function handleGoogleAuth() {
     const { error } = await db.auth.signInWithOAuth({
@@ -872,6 +876,7 @@ async function handleLinkedInAuth() {
 }
 document.getElementById('linkedinLogin').addEventListener('click', handleLinkedInAuth);
 document.getElementById('linkedinSignup').addEventListener('click', handleLinkedInAuth);
+*/
 
 // ─── AUTO-REDIRECT IF ALREADY LOGGED IN ──────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
