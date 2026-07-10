@@ -3484,7 +3484,7 @@ function displayNote(index) {
 
     // Add complete button
     contentHtml += `
-        <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" onclick="toggleNoteComplete(${index})">
+       <button class="mark-complete-btn ${note.completed ? 'completed' : ''}" data-action="toggle-complete" data-note-index="${index}">
             <i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i>
             ${note.completed ? 'Completed' : 'Mark as Complete'}
         </button>
@@ -3515,20 +3515,42 @@ function displayNote(index) {
                  return;
              }
              note.content = data.content || '<p>No content available for this topic.</p>';
-             // Only update the DOM if the student is still viewing this same note
+             // Re-run displayNote (not just inject innerHTML) so the coding-block
+             // conversion + button wiring runs against the real content — before,
+             // that wiring ran BEFORE this lazy content arrived, so admin-style
+             // coding blocks (with edit/delete) never got converted for students.
              if (currentCourseNotes[currentNoteIndex]?.id === note.id) {
-                 const box = document.getElementById(`noteContentBody_${note.id}`);
-                 if (box) box.innerHTML = DOMPurify.sanitize(note.content);
+                 displayNote(currentNoteIndex);
              }
          });
    }
 
-   // DOMPurify strips inline onclick handlers, so wire nav buttons up manually
+
+// DOMPurify strips inline onclick handlers, so wire nav buttons up manually
    reader.querySelectorAll('.notes-nav-btn[data-nav-index]').forEach(btn => {
        btn.addEventListener('click', () => {
            displayNote(parseInt(btn.dataset.navIndex, 10));
        });
    });
+
+   // Same deal for the quiz/assignment/complete buttons above
+   reader.querySelectorAll('[data-action]').forEach(btn => {
+       btn.addEventListener('click', () => {
+           const action = btn.dataset.action;
+           if (action === 'toggle-complete') {
+               toggleNoteComplete(parseInt(btn.dataset.noteIndex, 10));
+           } else if (action === 'start-quiz') {
+               window.startQuiz && window.startQuiz(btn.dataset.quizId);
+           } else if (action === 'view-quiz-results') {
+               window.viewQuizResults && window.viewQuizResults(btn.dataset.quizId);
+           } else if (action === 'view-assignment') {
+               window.openAssignmentDetail && window.openAssignmentDetail(btn.dataset.assignId);
+           } else if (action === 'submit-assignment') {
+               window.submitAssignmentModal && window.submitAssignmentModal(btn.dataset.assignId);
+           }
+       });
+   });
+
 
 // ── Convert static coding blocks to interactive runners ──
 reader.querySelectorAll('.asai-inline-coding').forEach(block => {
@@ -3826,13 +3848,13 @@ if (!chapterAssessments.length) return '';
                         ${done ? ` · <span style="color:#10b981;font-weight:700;">Score: ${score}%</span>` : ''}
                     </div>
                 </div>
-                ${done
-                    ? `<button onclick="viewQuizResults('${q.id}')"
+           ${done
+                    ? `<button data-action="view-quiz-results" data-quiz-id="${q.id}"
                         style="padding:7px 14px;background:#d1fae5;color:#065f46;border:none;
                                border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                         <i class="fas fa-chart-bar"></i> View Results
                        </button>`
-                    : `<button onclick="window.startQuiz && window.startQuiz('${q.id}')"
+                    : `<button data-action="start-quiz" data-quiz-id="${q.id}"
                         style="padding:7px 14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);
                                color:white;border:none;border-radius:8px;font-size:12px;
                                font-weight:700;cursor:pointer;">
@@ -3863,12 +3885,12 @@ if (!chapterAssessments.length) return '';
                     </div>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button onclick="window.openAssignmentDetail && window.openAssignmentDetail('${assign.id}')"
+                    <button data-action="view-assignment" data-assign-id="${assign.id}"
                         style="padding:7px 14px;background:#f0fdf4;color:#065f46;border:1.5px solid #10b981;
                                border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;">
                         <i class="fas fa-eye"></i> View
                     </button>
-                    <button onclick="submitAssignmentModal && submitAssignmentModal('${assign.id}')"
+                    <button data-action="submit-assignment" data-assign-id="${assign.id}"
                         style="padding:7px 14px;background:linear-gradient(135deg,#10b981,#059669);
                                color:white;border:none;border-radius:8px;font-size:12px;
                                font-weight:700;cursor:pointer;">
