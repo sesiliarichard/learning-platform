@@ -2867,11 +2867,14 @@ async function loadCourseNotes(courseId) {
         window._loadedSubChapters = cached.subChapters;
         window._loadedTopics      = cached.allTopics;
         const hasSubChapters = cached.subChapters && cached.subChapters.length > 0;
-        if (hasSubChapters) {
+              if (hasSubChapters) {
             renderSidebarWithSubChapters(cached.sortedChapters, cached.subChaptersByChapter, cached.topicsBySubChapter, currentCourseNotes);
+            window._refreshSidebar = () => renderSidebarWithSubChapters(cached.sortedChapters, cached.subChaptersByChapter, cached.topicsBySubChapter, currentCourseNotes);
         } else {
             renderSidebarFlat(cached.sortedChapters, currentCourseNotes);
+            window._refreshSidebar = () => renderSidebarFlat(cached.sortedChapters, currentCourseNotes);
         }
+
         if (currentCourseNotes.length > 0) displayNote(0);
         window._notesLoadingFor = null;
         return;
@@ -3054,11 +3057,13 @@ async function loadCourseNotes(courseId) {
         };
 
         // ── Render ───────────────────────────────────────────────
-        const hasSubChapters = subChapters.length > 0;
+      const hasSubChapters = subChapters.length > 0;
         if (hasSubChapters) {
             renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
+            window._refreshSidebar = () => renderSidebarWithSubChapters(sortedChapters, subChaptersByChapter, topicsBySubChapter, currentCourseNotes);
         } else {
             renderSidebarFlat(sortedChapters, currentCourseNotes);
+            window._refreshSidebar = () => renderSidebarFlat(sortedChapters, currentCourseNotes);
         }
 
         if (currentCourseNotes.length > 0) displayNote(0);
@@ -4005,13 +4010,23 @@ async function loadWeekQuizzesAndAssignments(courseId) {
 async function toggleNoteComplete(index) {
     const note = currentCourseNotes[index];
     const isNowComplete = !note.completed;
-    // Invalidate cache so next open reflects updated progress
-    const _cid = window.currentCourseId || window.currentCourse;
-    if (_cid && _notesCache[_cid]) delete _notesCache[_cid];
     note.completed = isNowComplete;
 
+    // Invalidate cache so next course open reflects updated progress
+    const _cid = window.currentCourseId || window.currentCourse;
+    if (_cid && _notesCache[_cid]) delete _notesCache[_cid];
+
+  // Update the button in place — no full re-render, no scroll jump
+    const btn = document.querySelector(`.mark-complete-btn[data-note-index="${index}"]`);
+    if (btn) {
+        btn.classList.toggle('completed', isNowComplete);
+        btn.innerHTML = `<i class="fas fa-${isNowComplete ? 'check-circle' : 'circle'}"></i> ${isNowComplete ? 'Completed' : 'Mark as Complete'}`;
+    }
+
+    // Refresh sidebar checkmarks + chapter (x/y) counts to match
+    window._refreshSidebar && window._refreshSidebar();
     const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) { displayNote(index); return; }
+    if (!user) return;
 
     const courseId = window.currentCourseId || window.currentCourse;
 
@@ -4029,12 +4044,12 @@ async function toggleNoteComplete(index) {
             .eq('topic_id', note.id);
     }
 
-    displayNote(index);
-
+    // Fire-and-forget — don't make the student wait on this to see feedback
     if (courseId) {
-        await syncCourseProgressToDB(user.id, courseId);
+        syncCourseProgressToDB(user.id, courseId);
     }
 }
+
 
 
 async function loadTopicAssessments(courseId) {
@@ -4270,17 +4285,8 @@ window.syncCourseProgressToDB = async function syncCourseProgressToDB(studentId,
         }
         console.log(`📊 Progress ${courseId}: topics ${doneTopics}/${totalTopics} | quizzes ${doneQuizzes}/${totalQuizzes||0} | assignments ${doneAssignments}/${totalAssignments||0} → ${pct}%`);
 
-        // ── SAVE ───────────────────────────────────────────────
-       // ── Never go backwards — read current saved value first ──
-        const { data: existing } = await supabaseClient
-            .from('enrollments')
-            .select('progress')
-            .eq('student_id', studentId)
-            .eq('course_id', courseId)
-            .maybeSingle();
-
-        const previousPct = existing?.progress || 0;
-        const finalPct    = Math.max(pct, previousPct);
+// ── SAVE ───────────────────────────────────────────────
+        const finalPct = pct;
 
         const { error: upErr } = await supabaseClient
             .from('enrollments')
@@ -7526,13 +7532,23 @@ async function _runWithPyodide(code, outputDiv, resultEl) {
             resultEl.style.color = '#94a3b8';
             if (!window._pyodideLoading) {
                 window._pyodideLoading = true;
-                window._pyodide = await loadPyodide({ stdout: () => {}, stderr: () => {} });
-                window._pyodideReady = true;
-                window._pyodideLoading = false;
+                try {
+                    window._pyodide = await loadPyodide({ stdout: () => {}, stderr: () => {} });
+                    window._pyodideReady = true;
+                } finally {
+                    // Always release the lock, even if loadPyodide fails,
+                    // so the next click can retry instead of hanging forever
+                    window._pyodideLoading = false;
+                }
             } else {
-                // Wait for it
-                while (!window._pyodideReady) {
+                // Wait for it, but give up after ~15s instead of looping forever
+                let waited = 0;
+                while (!window._pyodideReady && window._pyodideLoading && waited < 15000) {
                     await new Promise(r => setTimeout(r, 200));
+                    waited += 200;
+                }
+                if (!window._pyodideReady) {
+                    throw new Error('Python engine failed to load. Please refresh and try again.');
                 }
             }
         }
