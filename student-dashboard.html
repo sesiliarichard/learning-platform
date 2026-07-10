@@ -4030,18 +4030,35 @@ async function toggleNoteComplete(index) {
 
     const courseId = window.currentCourseId || window.currentCourse;
 
+  let writeError = null;
     if (isNowComplete) {
-        await supabaseClient.from('course_progress').upsert({
+        const { error } = await supabaseClient.from('course_progress').upsert({
             student_id: user.id,
             course_id:  courseId,
             topic_id:   note.id,
             completed:  true
         }, { onConflict: 'student_id,course_id,topic_id' });
+        writeError = error;
     } else {
-        await supabaseClient.from('course_progress')
+        const { error } = await supabaseClient.from('course_progress')
             .delete()
             .eq('student_id', user.id)
+            .eq('course_id', courseId)
             .eq('topic_id', note.id);
+        writeError = error;
+    }
+
+    if (writeError) {
+        console.error('course_progress write failed:', writeError.message);
+        // Revert the optimistic UI update — the DB didn't actually change
+        note.completed = !isNowComplete;
+        if (btn) {
+            btn.classList.toggle('completed', note.completed);
+            btn.innerHTML = `<i class="fas fa-${note.completed ? 'check-circle' : 'circle'}"></i> ${note.completed ? 'Completed' : 'Mark as Complete'}`;
+        }
+        window._refreshSidebar && window._refreshSidebar();
+        showToast('Could not update progress: ' + writeError.message, 'error');
+        return;
     }
 
     // Fire-and-forget — don't make the student wait on this to see feedback
