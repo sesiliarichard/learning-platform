@@ -4030,7 +4030,7 @@ async function toggleNoteComplete(index) {
 
     const courseId = window.currentCourseId || window.currentCourse;
 
-  let writeError = null;
+let writeError = null;
     if (isNowComplete) {
         const { error } = await supabaseClient.from('course_progress').upsert({
             student_id: user.id,
@@ -4040,12 +4040,14 @@ async function toggleNoteComplete(index) {
         }, { onConflict: 'student_id,course_id,topic_id' });
         writeError = error;
     } else {
-        const { error } = await supabaseClient.from('course_progress')
-            .delete()
+        const { error, count } = await supabaseClient.from('course_progress')
+            .delete({ count: 'exact' })
             .eq('student_id', user.id)
             .eq('course_id', courseId)
             .eq('topic_id', note.id);
-        writeError = error;
+        writeError = error || (count === 0
+            ? { message: 'No matching row was deleted (likely blocked by a Row Level Security policy)' }
+            : null);
     }
 
     if (writeError) {
