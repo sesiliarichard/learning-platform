@@ -14,7 +14,6 @@
   <!-- Generate your favicon free at: https://favicon.io -->
  
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <style>
@@ -302,7 +301,8 @@
   flex-shrink: 0;
 }
 
-.stat-icon i {
+.stat-icon i
+.stat-icon i, svg {
   font-size: 24px;
   color: #0099ff;
 }
@@ -419,11 +419,12 @@
   flex-shrink: 0;
 }
 
-.feature-icon i {
+.feature-icon i,
+.feature-icon svg {
   font-size: 22px;
   color: #0099ff;
-}
-    .feature-item h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: #111; margin-bottom: 0.25rem; }
+} 
+.feature-item h4 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; color: #111; margin-bottom: 0.25rem; }
     .feature-item p { font-size: 0.82rem; color: var(--gray-text); line-height: 1.6; }
  
    /* Section 2 image collage right */
@@ -695,7 +696,7 @@ html {
  <!-- ==================== STATS BAR ==================== -->
 <div class="stats">
   <div class="stat-item">
-    <div class="stat-icon"><i class="ti ti-users"></i></div>
+    <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg></div>
     <div>
       <h3 id="statTalent">—</h3>
       <p>Registered Talents</p>
@@ -703,7 +704,7 @@ html {
   </div>
   <div class="stat-divider"></div>
   <div class="stat-item">
-    <div class="stat-icon"><i class="ti ti-building"></i></div>
+    <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l18 0"/><path d="M9 8l1 0"/><path d="M9 12l1 0"/><path d="M9 16l1 0"/><path d="M14 8l1 0"/><path d="M14 12l1 0"/><path d="M14 16l1 0"/><path d="M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16"/></svg></div>
     <div>
       <h3 id="statCompanies">—</h3>
       <p>Companies Hiring</p>
@@ -711,15 +712,15 @@ html {
   </div>
   <div class="stat-divider"></div>
   <div class="stat-item">
-    <div class="stat-icon"><i class="ti ti-world"></i></div>
+    <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M3.6 9h16.8"/><path d="M3.6 15h16.8"/><path d="M11.5 3a17 17 0 0 0 0 18"/><path d="M12.5 3a17 17 0 0 1 0 18"/></svg></div>
     <div>
       <h3 id="statCountries">—</h3>
       <p>Countries</p>
     </div>
   </div>
-  <div class="stat-divider"></div>
+    <div class="stat-divider"></div>
   <div class="stat-item">
-    <div class="stat-icon"><i class="ti ti-briefcase"></i></div>
+    <div class="stat-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7m0 2a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v9a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2z"/><path d="M8 7v-2a2 2 0 0 1 2 -2h4a2 2 0 0 1 2 2v2"/><path d="M12 12l0 .01"/><path d="M3 13a20 20 0 0 0 18 0"/></svg></div>
     <div>
       <h3 id="statJobs">—</h3>
       <p>Open Opportunities</p>
@@ -768,7 +769,7 @@ html {
      <div class="feature-list">
   <div class="feature-item">
     <div class="feature-icon">
-      <i class="ti ti-award"></i>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/><path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889"/><path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.233l3.4 -5.89"/></svg>
     </div>
     <div>
       <h4>Quality Talent for Every Role</h4>
@@ -777,7 +778,7 @@ html {
   </div>
   <div class="feature-item">
     <div class="feature-icon">
-      <i class="ti ti-users"></i>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg>
     </div>
     <div>
       <h4>Expert Team of Recruiters</h4>
@@ -786,7 +787,7 @@ html {
   </div>
   <div class="feature-item">
     <div class="feature-icon">
-      <i class="ti ti-headset"></i>
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l0 -3a8 8 0 0 1 16 0l0 3"/><path d="M18 19a2 2 0 0 1 -2 2l-1 0a2 2 0 0 1 -2 -2l0 -1a2 2 0 0 1 2 -2l3 0l0 3z"/><path d="M4 14a2 2 0 0 1 2 -2l1 0a2 2 0 0 1 2 2l0 1a2 2 0 0 1 -2 2l-3 0l0 -3z"/></svg>
     </div>
     <div>
       <h4>Fast & Responsive Support</h4>
