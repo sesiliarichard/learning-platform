@@ -1331,6 +1331,30 @@ nav:hover {
             padding: 6rem 5%;
             background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .quote-section::before {
+            content: '';
+            position: absolute;
+            top: -10%;
+            left: -15%;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite;
+        }
+        .quote-section::after {
+            content: '';
+            position: absolute;
+            bottom: -15%;
+            right: -15%;
+            width: 450px;
+            height: 450px;
+            background: radial-gradient(circle, rgba(0, 187, 255, 0.35) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: pulse 8s ease-in-out infinite 2s;
         }
         .quote-section blockquote {
             max-width: 800px;
@@ -1340,6 +1364,8 @@ nav:hover {
             font-weight: 600;
             line-height: 1.6;
             letter-spacing: -0.3px;
+            position: relative;
+            z-index: 2;
         }
         .quote-section blockquote p {
             margin-bottom: 0.5rem;
