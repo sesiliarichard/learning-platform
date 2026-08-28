@@ -1132,6 +1132,229 @@ nav:hover {
         height: auto;
     }
 }
+    /* ===== New sections: Learn AI Differently / Curriculum / Makers / Model / Quote ===== */
+        .section-heading {
+            text-align: center;
+            max-width: 750px;
+            margin: 0 auto 3.5rem;
+        }
+        .section-heading .eyebrow {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            color: #0099ff;
+            display: block;
+            margin-bottom: 0.8rem;
+        }
+        .section-heading h2 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.5px;
+            line-height: 1.2;
+        }
+        .section-heading p {
+            color: #64748b;
+            margin-top: 1rem;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+
+        /* Pillars: Build / Question / Reimagine / Transform */
+        .pillars {
+            padding: 6rem 5%;
+            background: #ffffff;
+        }
+        .pillars-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+        .pillar-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            border: 1px solid rgba(0, 153, 255, 0.12);
+            border-radius: 20px;
+            padding: 2.2rem 1.8rem;
+            transition: all 0.3s ease;
+        }
+        .pillar-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(0, 153, 255, 0.15);
+            border-color: rgba(0, 153, 255, 0.3);
+        }
+        .pillar-number {
+            font-family: inherit;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: #0099ff;
+            letter-spacing: 2px;
+            margin-bottom: 1.2rem;
+            display: block;
+        }
+        .pillar-card h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.9rem;
+        }
+        .pillar-card p {
+            color: #64748b;
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        /* What You Will Learn — two columns */
+        .curriculum {
+            padding: 6rem 5%;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        .curriculum-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.8rem;
+        }
+        .curriculum-card {
+            background: white;
+            border-radius: 20px;
+            padding: 2.2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+        }
+        .curriculum-card h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0099ff;
+            margin-bottom: 1.2rem;
+        }
+        .curriculum-card ul {
+            list-style: none;
+        }
+        .curriculum-card ul li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #475569;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .curriculum-card ul li:last-child {
+            border-bottom: none;
+        }
+        .curriculum-card ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 1rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #00bbff;
+        }
+
+        /* From AI Users to AI Makers */
+        .makers {
+            padding: 6rem 5%;
+            background: linear-gradient(135deg, #0f172a 0%, #0c1e3d 100%);
+            color: white;
+            text-align: center;
+        }
+        .makers .section-heading h2,
+        .makers .section-heading .eyebrow {
+            color: white;
+        }
+        .makers .section-heading .eyebrow {
+            color: #00bbff;
+        }
+        .makers .section-heading p {
+            color: rgba(255,255,255,0.7);
+        }
+        .roles-grid {
+            max-width: 950px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 0.7rem;
+        }
+        .role-chip {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(0, 187, 255, 0.35);
+            color: white;
+            padding: 0.7rem 1.4rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .role-chip:hover {
+            background: rgba(0, 187, 255, 0.15);
+            transform: translateY(-3px);
+        }
+
+        /* Our Learning Model */
+        .learning-model {
+            padding: 6rem 5%;
+            background: white;
+        }
+        .model-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.8rem;
+        }
+        .model-card {
+            padding: 2rem;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+            border: 1px solid rgba(0,153,255,0.1);
+        }
+        .model-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.7rem;
+        }
+        .model-card p {
+            color: #64748b;
+            font-size: 0.92rem;
+            line-height: 1.7;
+        }
+
+        /* Quote — feminist technologist */
+        .quote-section {
+            padding: 6rem 5%;
+            background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+            text-align: center;
+        }
+        .quote-section blockquote {
+            max-width: 800px;
+            margin: 0 auto;
+            color: white;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.6;
+            letter-spacing: -0.3px;
+        }
+        .quote-section blockquote p {
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 992px) {
+            .pillars-grid { grid-template-columns: repeat(2, 1fr); }
+            .curriculum-grid { grid-template-columns: 1fr; }
+            .model-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 600px) {
+            .pillars-grid { grid-template-columns: 1fr; }
+            .section-heading h2 { font-size: 1.8rem; }
+            .quote-section blockquote { font-size: 1.15rem; }
+        }
     </style>
 </head>
 <body>
@@ -1152,8 +1375,8 @@ nav:hover {
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
-            <h1>Empowering African Women Through AI Education</h1>
-            <p>Join our mission to bridge the gender gap in technology. Learn AI skills that transform careers and communities across Africa.</p>
+            <h1>Training Africa's Next Generation of <span>Feminist AI Technologists</span></h1>
+            <p>Learn to build, question and transform artificial intelligence through African feminist approaches to technology. Build AI. Question power. Design different futures.</p>
             <button class="cta-button">Start Your AI Journey</button>
         </div>
 
@@ -1317,7 +1540,145 @@ nav:hover {
     </div>
 </section>
 
-    
+    <!-- Learn AI Differently -->
+    <section class="pillars">
+        <div class="section-heading">
+            <span class="eyebrow">We Are Training Feminist Techies</span>
+            <h2>Learn AI Differently</h2>
+            <p>AI is not neutral. We believe Africa needs technologists who can understand its power structures while also having the technical ability to build alternatives.</p>
+        </div>
+        <div class="pillars-grid">
+            <div class="pillar-card">
+                <span class="pillar-number">01 — Build</span>
+                <h3>Build</h3>
+                <p>Develop practical skills in AI, machine learning, data, NLP, generative AI and emerging technologies — grounded in African realities.</p>
+            </div>
+            <div class="pillar-card">
+                <span class="pillar-number">02 — Question</span>
+                <h3>Question</h3>
+                <p>Learn to examine the assumptions embedded in technologies: who created the data, who is missing, who benefits, who carries the risks.</p>
+            </div>
+            <div class="pillar-card">
+                <span class="pillar-number">03 — Reimagine</span>
+                <h3>Reimagine</h3>
+                <p>Explore how AI could work differently when African feminist values — justice, care, consent, accountability — shape design from the start.</p>
+            </div>
+            <div class="pillar-card">
+                <span class="pillar-number">04 — Transform</span>
+                <h3>Transform</h3>
+                <p>Build tools, conduct research, audit algorithms, influence policy, and intervene wherever AI is imagined, designed or governed.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- What You Will Learn -->
+    <section class="curriculum">
+        <div class="section-heading">
+            <span class="eyebrow">Curriculum</span>
+            <h2>What You Will Learn</h2>
+        </div>
+        <div class="curriculum-grid">
+            <div class="curriculum-card">
+                <h3>Technical Foundations</h3>
+                <ul>
+                    <li>Python and computational thinking</li>
+                    <li>Data collection and analysis</li>
+                    <li>Machine learning</li>
+                    <li>Natural language processing</li>
+                    <li>Generative AI and large language models</li>
+                    <li>Responsible dataset development</li>
+                    <li>Model evaluation</li>
+                    <li>AI prototyping and experimentation</li>
+                </ul>
+            </div>
+            <div class="curriculum-card">
+                <h3>Feminist AI Practice</h3>
+                <ul>
+                    <li>Gender and algorithmic bias</li>
+                    <li>Data justice</li>
+                    <li>African feminist approaches to technology</li>
+                    <li>Coloniality and technological power</li>
+                    <li>Language and AI</li>
+                    <li>Digital labour</li>
+                    <li>Surveillance and privacy</li>
+                    <li>Consent and community governance</li>
+                    <li>AI accountability</li>
+                    <li>Environmental and extractive dimensions of AI</li>
+                </ul>
+            </div>
+            <div class="curriculum-card">
+                <h3>Building in African Contexts</h3>
+                <ul>
+                    <li>Work on problems shaped by African communities, languages and economies</li>
+                    <li>Move beyond treating Africa as an afterthought in technologies designed elsewhere</li>
+                    <li>Ground every project in local realities and needs</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- From AI Users to AI Makers -->
+    <section class="makers">
+        <div class="section-heading">
+            <span class="eyebrow">From AI Users to AI Makers</span>
+            <h2>African Women Must Be Present As</h2>
+            <p>Africa cannot participate in the AI era only as a source of data, labour, consumers or markets.</p>
+        </div>
+        <div class="roles-grid">
+            <span class="role-chip">Engineers</span>
+            <span class="role-chip">Researchers</span>
+            <span class="role-chip">Data Practitioners</span>
+            <span class="role-chip">AI Builders</span>
+            <span class="role-chip">Critical Technologists</span>
+            <span class="role-chip">Policy Technologists</span>
+            <span class="role-chip">Auditors</span>
+            <span class="role-chip">Designers</span>
+            <span class="role-chip">Founders</span>
+            <span class="role-chip">Community Technologists</span>
+            <span class="role-chip">Decision-Makers</span>
+        </div>
+    </section>
+
+    <!-- Our Learning Model -->
+    <section class="learning-model">
+        <div class="section-heading">
+            <span class="eyebrow">Our Learning Model</span>
+            <h2>How We Teach</h2>
+        </div>
+        <div class="model-grid">
+            <div class="model-card">
+                <h3>Technical Depth</h3>
+                <p>Participants learn how AI systems actually work — not simply how to use AI tools.</p>
+            </div>
+            <div class="model-card">
+                <h3>Critical Inquiry</h3>
+                <p>Every technical question can also be a question about power. Feminist analysis lives inside the technical classroom.</p>
+            </div>
+            <div class="model-card">
+                <h3>Learning Through Building</h3>
+                <p>Participants work on practical projects, datasets, models and prototypes connected to real challenges.</p>
+            </div>
+            <div class="model-card">
+                <h3>Collective Learning</h3>
+                <p>Technology is rarely built alone. Participants learn within a Pan-African community.</p>
+            </div>
+            <div class="model-card">
+                <h3>African Feminist Grounding</h3>
+                <p>Our work draws from African feminist thinking, lived experience, and histories of resistance and care.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quote -->
+    <section class="quote-section">
+        <blockquote>
+            <p>"A feminist technologist can write code and question the dataset.</p>
+            <p>She can train a model and ask whose knowledge trained it.</p>
+            <p>She understands that technology is never only technical —</p>
+            <p>and she has the skills to build something different."</p>
+        </blockquote>
+    </section>
+
     <!-- Footer -->
     <footer>
         <div class="footer-content">
