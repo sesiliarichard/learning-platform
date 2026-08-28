@@ -644,6 +644,224 @@ html {
   color: rgba(255,255,255,0.5);
   font-size: 0.82rem;
 }
+  /* ===== New sections: From Learning to Practice / Quote / Opportunities / Audience split ===== */
+  .cs-section-heading {
+    text-align: center;
+    max-width: 750px;
+    margin: 0 auto 3rem;
+  }
+  .cs-section-heading .eyebrow {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--cyan);
+    display: block;
+    margin-bottom: 0.7rem;
+  }
+  .cs-section-heading h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    line-height: 1.25;
+  }
+  .cs-section-heading p {
+    color: var(--gray-text);
+    margin-top: 0.9rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+  }
+
+  /* From Learning to Practice */
+  .practice-section {
+    padding: 5rem 4rem;
+    background: #0a1a4a;
+  }
+  .practice-section .cs-section-heading h2 { color: #fff; }
+  .practice-section .cs-section-heading p { color: rgba(255,255,255,0.65); }
+  .practice-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.2rem;
+  }
+  .practice-card {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 1.6rem 1.3rem;
+    transition: all 0.3s ease;
+  }
+  .practice-card:hover {
+    background: rgba(255,255,255,0.1);
+    transform: translateY(-4px);
+  }
+  .practice-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 0.6rem;
+  }
+  .practice-card p {
+    color: rgba(255,255,255,0.7);
+    font-size: 0.82rem;
+    line-height: 1.6;
+  }
+
+  /* Quote section with faded image */
+  .cs-quote-section {
+    padding: 5rem 4rem;
+    background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .cs-quote-bg-image {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: auto;
+    max-width: 42%;
+    object-fit: cover;
+    opacity: 0.2;
+    mix-blend-mode: soft-light;
+    -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 90%);
+    mask-image: linear-gradient(to left, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 90%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .cs-quote-section blockquote {
+    max-width: 780px;
+    margin: 0 auto;
+    color: white;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.7;
+    position: relative;
+    z-index: 2;
+  }
+  .cs-quote-section blockquote p { margin-bottom: 0.3rem; }
+
+  /* What Makes Our Talent Different */
+  .difference-section {
+    padding: 5rem 4rem;
+    background: #f0f4ff;
+  }
+  .difference-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.3rem;
+  }
+  .difference-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.8rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.05);
+  }
+  .difference-card h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 0.6rem;
+  }
+  .difference-card p {
+    color: var(--gray-text);
+    font-size: 0.85rem;
+    line-height: 1.65;
+  }
+
+  /* Opportunities tags */
+  .opportunities-section {
+    padding: 5rem 4rem;
+    background: #fff;
+    text-align: center;
+  }
+  .opp-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    max-width: 900px;
+    margin: 0 auto 2.2rem;
+  }
+  .opp-tag {
+    background: var(--gray-light);
+    border: 1px solid rgba(0,153,255,0.2);
+    color: var(--blue-dark);
+    padding: 0.55rem 1.2rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  /* For Organisations / For Feminist Technologists split */
+  .audience-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .audience-card {
+    padding: 4rem 3.5rem;
+  }
+  .audience-card.org { background: #0a1a4a; color: #fff; }
+  .audience-card.talent { background: var(--blue-hero); color: #fff; }
+  .audience-card .tag {
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--cyan);
+    display: block; margin-bottom: 1rem;
+  }
+  .audience-card h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.5rem; font-weight: 800;
+    line-height: 1.3; margin-bottom: 1rem;
+  }
+  .audience-card p {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+  }
+  .audience-card .check-list li::before { background: var(--cyan); }
+  .audience-card .btn-hero-main { display: inline-block; }
+
+  /* Final CTA */
+  .final-cta {
+    padding: 5rem 4rem;
+    background: linear-gradient(135deg, #0099ff 0%, #0077cc 100%);
+    text-align: center;
+    color: #fff;
+  }
+  .final-cta h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 2rem; font-weight: 800;
+    margin-bottom: 0.8rem;
+  }
+  .final-cta p {
+    color: rgba(255,255,255,0.85);
+    max-width: 600px;
+    margin: 0 auto 1.8rem;
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+  .final-cta .btn-hero-main { display: inline-block; }
+
+  @media (max-width: 992px) {
+    .practice-grid { grid-template-columns: repeat(2, 1fr); }
+    .difference-grid { grid-template-columns: 1fr 1fr; }
+    .audience-section { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    .practice-section, .cs-quote-section, .difference-section,
+    .opportunities-section, .audience-card, .final-cta {
+      padding: 3rem 1.5rem;
+    }
+    .practice-grid { grid-template-columns: 1fr; }
+    .difference-grid { grid-template-columns: 1fr; }
+    .cs-quote-section blockquote { font-size: 1rem; }
+    .cs-quote-bg-image { max-width: 60%; opacity: 0.14; }
+  }
   </style>
 </head>
 <body>
@@ -668,15 +886,15 @@ html {
     <div class="dot dot3"></div>
 
     <div class="hero-left">
-      <span class="hero-tag">Welcome to Women in AI talent hub</span>
-      <h1>We Connect Great Talent With  Companies.</h1>
-      <p>Our platform bridges the gap between skilled professionals and leading employers. Register your talent or post your opportunity — we handle the matching.</p>
+      <span class="hero-tag">African Feminist Tech Talent Hub</span>
+      <h1>Where Feminist Technologists Meet Opportunity.</h1>
+      <p>We connect African women building, researching, questioning and transforming AI with opportunities to put their skills into practice — from jobs and fellowships to research, consulting and public-interest technology.</p>
       <div class="hero-btns">
-     <a href="register-talent.html" class="btn-hero-main">Join the Hub</a>
+     <a href="register-talent.html" class="btn-hero-main">Join the Talent Community</a>
      
-     <a href="hire-talent.html" class="btn-hero-out" id="hireTalentBtn">Hire Talent</a>
+     <a href="hire-talent.html" class="btn-hero-out" id="hireTalentBtn">Find Feminist Tech Talent</a>
      <a href="view-talent.html" class="btn-hero-out">View Talent</a>
-    <a href="view-opportunity.html" class="btn-hero-out">View Opportunity</a>
+    <a href="view-opportunity.html" class="btn-hero-out">Find an Opportunity</a>
    
 </div>
     </div>
@@ -749,13 +967,13 @@ html {
     </div>
 
     <div class="sec1-right">
-      <span class="tag">Our Platform</span>
-      <h2>The Smartest Way to Find Talent & Opportunities</h2>
-      <p>Women in AI Talent Hub uses smart matching technology to connect skilled African women with the right companies. Whether you're job hunting or hiring, our platform makes it simple, fast, and effective.</p>
+      <span class="tag">More Than a Job Platform</span>
+      <h2>Technical Talent Should Also Change the Systems It Joins</h2>
+      <p>The Talent Hub connects organisations with women who bring both strong technical capabilities and an understanding of the social and political questions surrounding technology — across AI, ML, data science, NLP, generative AI, policy and public-interest technology.</p>
       <ul class="check-list">
-        <li>Smart skill-based matching system</li>
-        <li>Verified company and talent profiles</li>
-        <li>Real-time application tracking dashboard</li>
+        <li>Artificial intelligence, machine learning & data science</li>
+        <li>Responsible and feminist AI, digital rights & policy</li>
+        <li>Research, product design & civic technology</li>
       </ul>
      
     </div>
@@ -764,16 +982,16 @@ html {
   <!-- ==================== SECTION 2 — Features ==================== -->
   <section class="section2">
     <div class="sec2-left">
-      <h2>Supporting Talent & Companies to Grow and Succeed</h2>
-      <p>We provide the tools both sides need to connect, communicate, and close opportunities efficiently.</p>
+      <h2>Hire Technologists Who Think Beyond the Model</h2>
+      <p>Technical excellence, critical perspective, African context — for organisations building AI in Africa, this perspective isn't optional. It's part of building better technology.</p>
      <div class="feature-list">
   <div class="feature-item">
     <div class="feature-icon">
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"/><path d="M12 15l3.4 5.89l1.598 -3.233l3.598 .232l-3.4 -5.889"/><path d="M6.802 12l-3.4 5.89l3.598 -.233l1.598 3.233l3.4 -5.89"/></svg>
     </div>
     <div>
-      <h4>Quality Talent for Every Role</h4>
-      <p>Browse verified professionals with rated skills and proven experience across all industries.</p>
+      <h4>They Can Build</h4>
+      <p>Practical capabilities in coding, data, machine learning, NLP, generative AI and emerging technologies.</p>
     </div>
   </div>
   <div class="feature-item">
@@ -781,8 +999,8 @@ html {
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"/><path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0 -3 -3.85"/></svg>
     </div>
     <div>
-      <h4>Expert Team of Recruiters</h4>
-      <p>Our support team helps companies and talent navigate the platform and find the best match.</p>
+      <h4>They Can Question</h4>
+      <p>They identify assumptions, exclusions and power relations embedded in datasets, models and systems.</p>
     </div>
   </div>
   <div class="feature-item">
@@ -790,8 +1008,8 @@ html {
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14l0 -3a8 8 0 0 1 16 0l0 3"/><path d="M18 19a2 2 0 0 1 -2 2l-1 0a2 2 0 0 1 -2 -2l0 -1a2 2 0 0 1 2 -2l3 0l0 3z"/><path d="M4 14a2 2 0 0 1 2 -2l1 0a2 2 0 0 1 2 2l0 1a2 2 0 0 1 -2 2l-3 0l0 -3z"/></svg>
     </div>
     <div>
-      <h4>Fast & Responsive Support</h4>
-      <p>Get assistance quickly — we're here to make sure every connection on Women in AI Talent Hub counts.</p>
+      <h4>They Understand Context</h4>
+      <p>They bring knowledge of African contexts, languages, communities and realities into every project.</p>
       </div>
      </div>
     </div>
@@ -812,12 +1030,139 @@ html {
 
   
 
+  <!-- From Learning to Practice -->
+  <section class="practice-section">
+    <div class="cs-section-heading">
+      <span class="eyebrow">From Learning to Practice</span>
+      <h2>The School Develops Feminist Technologists. The Hub Helps Them Take the Next Step.</h2>
+    </div>
+    <div class="practice-grid">
+      <div class="practice-card">
+        <h3>Work</h3>
+        <p>Find employment, consulting and project opportunities where your technical skills can grow.</p>
+      </div>
+      <div class="practice-card">
+        <h3>Research</h3>
+        <p>Connect with research institutions, universities and organisations looking for African AI researchers.</p>
+      </div>
+      <div class="practice-card">
+        <h3>Build</h3>
+        <p>Find opportunities to develop products, datasets, community technologies and open-source projects.</p>
+      </div>
+      <div class="practice-card">
+        <h3>Lead</h3>
+        <p>Access fellowships, residencies, speaking opportunities, grants and leadership programmes.</p>
+      </div>
+      <div class="practice-card">
+        <h3>Transform</h3>
+        <p>Work with organisations that need people capable of asking who benefits, who is harmed, and what to build instead.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote -->
+  <section class="cs-quote-section">
+    <img src="images/care3.jpg" alt="" class="cs-quote-bg-image" aria-hidden="true">
+    <blockquote>
+      <p>"Can we build this?" — but also —</p>
+      <p>"Who benefits? Who might be harmed?</p>
+      <p>Whose knowledge is represented? Who gets to decide?</p>
+      <p>What should we build instead?"</p>
+    </blockquote>
+  </section>
+
+  <!-- What Makes Our Talent Different -->
+  <section class="difference-section">
+    <div class="cs-section-heading">
+      <span class="eyebrow">What Makes Our Talent Different?</span>
+      <h2 style="color:#111;">Technical Excellence. Critical Perspective. African Context.</h2>
+    </div>
+    <div class="difference-grid">
+      <div class="difference-card">
+        <h3>They Can Build</h3>
+        <p>Practical capabilities in coding, data, machine learning, NLP, generative AI and emerging technologies.</p>
+      </div>
+      <div class="difference-card">
+        <h3>They Can Question</h3>
+        <p>They identify assumptions, exclusions and power relations embedded in datasets, models and systems.</p>
+      </div>
+      <div class="difference-card">
+        <h3>They Understand Context</h3>
+        <p>They bring knowledge of African contexts, languages, communities and realities into development.</p>
+      </div>
+      <div class="difference-card">
+        <h3>They Can Imagine Alternatives</h3>
+        <p>Different ways of designing, governing and deploying technology — grounded in justice, care and collective agency.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Opportunities, Not Just Jobs -->
+  <section class="opportunities-section">
+    <div class="cs-section-heading">
+      <span class="eyebrow" style="color:var(--blue);">Opportunities, Not Just Jobs</span>
+      <h2 style="color:#111;">Many Paths Into Feminist Tech</h2>
+    </div>
+    <div class="opp-tags">
+      <span class="opp-tag">Jobs</span>
+      <span class="opp-tag">Internships</span>
+      <span class="opp-tag">Fellowships</span>
+      <span class="opp-tag">Research</span>
+      <span class="opp-tag">Consulting</span>
+      <span class="opp-tag">Grants</span>
+      <span class="opp-tag">Residencies</span>
+      <span class="opp-tag">Open-source projects</span>
+      <span class="opp-tag">Speaking opportunities</span>
+      <span class="opp-tag">Mentorship</span>
+      <span class="opp-tag">Venture support</span>
+      <span class="opp-tag">Community technology projects</span>
+    </div>
+    <a href="hire-talent.html" class="btn-hero-main" style="display:inline-block;color:var(--blue-dark);">Post an Opportunity</a>
+  </section>
+
+  <!-- For Organisations / For Feminist Technologists -->
+  <section class="audience-section">
+    <div class="audience-card org">
+      <span class="tag">For Organisations</span>
+      <h2>Work With Africa's Emerging Feminist AI Talent</h2>
+      <p>Companies, research institutions, civil society organisations, governments, foundations and universities can use the Hub to identify people with the technical and critical skills contemporary AI work needs.</p>
+      <ul class="check-list">
+        <li>Post opportunities & discover emerging talent</li>
+        <li>Find researchers, collaborators & consultants</li>
+        <li>Sponsor fellowships and feminist tech projects</li>
+      </ul>
+      <a href="hire-talent.html" class="btn-hero-main">Partner With Us</a>
+    </div>
+    <div class="audience-card talent">
+      <span class="tag">For Feminist Technologists</span>
+      <h2>Your Path Does Not Have to Look Like Everyone Else's</h2>
+      <p>Create a profile that shows not only where you have worked, but what you can build, the questions you're exploring, and the problems you want to solve.</p>
+      <ul class="check-list">
+        <li>Showcase projects, research & publications</li>
+        <li>Share your feminist technology interests</li>
+        <li>Connect with organisations that value your perspective</li>
+      </ul>
+      <a href="register-talent.html" class="btn-hero-main">Join the Talent Community</a>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="final-cta">
+    <h2>Build AI. Question Power. Take Your Place.</h2>
+    <p>Africa's AI future will be shaped by the people who research it, fund it, regulate it, code it, deploy it and challenge it. We are building pathways for more African women to be among those people.</p>
+    <a href="register-talent.html" class="btn-hero-main" style="color:var(--blue-dark);">Join the Hub</a>
+  </section>
+
+
+
+  
+
   <!-- ==================== FOOTER ==================== -->
   <footer>
     <div class="footer-top">
       <div class="footer-brand">
-        <h3>Women in <span>AI Talent Hub</span></h3>
-        <p>Connecting skilled African women in AI<br>with top companies across East Africa.</p>
+        <h3>African Feminist <span>Tech Talent Hub</span></h3>
+        <p>Connecting African feminist technologists<br>with organisations shaping AI's future.</p>
       </div>
       <div class="footer-links">
         <div class="footer-col">
