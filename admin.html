@@ -1886,7 +1886,9 @@ body { visibility: hidden }
 window._countryCache = [];
 (async function loadCountryCache() {
     try {
-        const res  = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2');
+               const res  = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2', {
+            headers: { 'Accept': 'application/json' }
+        });
         const data = await res.json();
         window._countryCache = data.map(c => ({
             name: c.name.common,
@@ -10487,7 +10489,7 @@ const subProfileMap = {};
                                 onmouseleave="this.style.background=''">
                                 <td style="padding:12px 16px;">
                                     <div style="font-weight:600;color:#1f2937;">${name}</div>
-                                    <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
+                                    <div style="font-size:12px;color:#6b7280;">${escapeHtml(email)}</div>
                                 </td>
                                 <td style="padding:12px 16px;color:#374151;">${quiz}</td>
                                 <td style="padding:12px 16px;">
@@ -10644,9 +10646,9 @@ loadAssignmentSubmissionsView = async function () {
                             <tr style="border-bottom:1px solid #f3f4f6;"
                                 onmouseenter="this.style.background='#f9fafb'"
                                 onmouseleave="this.style.background=''">
-                                <td style="padding:12px 16px;">
+                                  <td style="padding:12px 16px;">
                                     <div style="font-weight:600;color:#1f2937;">${name}</div>
-                                    <div style="font-size:12px;color:#6b7280;">${s(email)}</div>
+                                    <div style="font-size:12px;color:#6b7280;">${escapeHtml(email)}</div>
                                 </td>
                                 <td style="padding:12px 16px;color:#374151;font-weight:600;">${title}</td>
                                 <td style="padding:12px 16px;">
