@@ -3511,6 +3511,14 @@ body.dark-mode .filter-tab {
     display: none;
 }
 
+.icon-purple {
+    color: #7c3aed;
+}
+
+.badge-hidden {
+    display: none;
+}
+
 .btn-live-session {
     background: linear-gradient(135deg, #0077cc 0%, #0099ff 100%);
     color: white;
