@@ -19,9 +19,7 @@
 </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Lora:wght@400;500&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
        <!-- Favicon - Multiple sizes for better display -->
 <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
 <link rel="shortcut icon" href="images/favicon-32x32.png">
@@ -35,6 +33,25 @@
 </script>
 <script src="supabase-config.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.5/purify.min.js"></script>
+<script>
+    // Lazy-load heavy libraries only when actually needed
+    function loadScriptOnce(src) {
+        return new Promise((resolve, reject) => {
+            if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+    }
+    function loadPyodideScript() {
+        return loadScriptOnce('https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js');
+    }
+    function loadHtml2PdfScript() {
+        return loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+    }
+</script>
 <script>
     function s(val) {
         if (val === null || val === undefined) return '';
@@ -4806,7 +4823,7 @@ async function downloadCertificate(certId) {
             document.body.removeChild(tempCanvas);
             return;
         }
-
+        await loadHtml2PdfScript();
         if (typeof html2pdf !== 'undefined') {
            const opt = {
                 margin: 0,
@@ -6816,6 +6833,7 @@ async function getPyodide() {
         return _pyodide;
     }
     _pyodideLoading = true;
+    await loadPyodideScript();
     _pyodide = await loadPyodide({
         stdout: () => {},
         stderr: () => {}
@@ -6823,7 +6841,6 @@ async function getPyodide() {
     _pyodideLoading = false;
     return _pyodide;
 }
-
 
 async function runCode() {
     const codeEditor = document.getElementById('codeEditor');
@@ -7549,9 +7566,10 @@ async function _runWithPyodide(code, outputDiv, resultEl) {
         if (!window._pyodideReady) {
             resultEl.textContent = '⏳ Loading Python engine (first run only ~5s)…';
             resultEl.style.color = '#94a3b8';
-            if (!window._pyodideLoading) {
+                       if (!window._pyodideLoading) {
                 window._pyodideLoading = true;
                 try {
+                    await loadPyodideScript();
                     window._pyodide = await loadPyodide({ stdout: () => {}, stderr: () => {} });
                     window._pyodideReady = true;
                 } finally {
